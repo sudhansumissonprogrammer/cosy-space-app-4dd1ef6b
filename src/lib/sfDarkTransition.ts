@@ -117,12 +117,22 @@ function fillLayer(color: string): HTMLDivElement {
 
 type Phase = { cover: () => Promise<void>; reveal: () => Promise<void> };
 
-/** Radius needed for a circle at (x, y) to cover the whole viewport. */
+/**
+ * Overlay geometry. All effect coordinates are expressed **relative to the
+ * overlay host**, never to the window: on mobile the visual viewport can be
+ * offset/zoomed (URL bar, pinch zoom, keyboard) so window.innerWidth/scroll
+ * based maths makes the reveal start from the wrong spot. Measuring the host
+ * itself is exact on every device.
+ */
+let hostSize = { w: 0, h: 0 };
+
+/** Radius needed for a circle at (x, y) to cover the whole overlay. */
 function coverRadius(x: number, y: number) {
-  const w = window.innerWidth;
-  const h = window.innerHeight;
+  const w = hostSize.w || window.innerWidth;
+  const h = hostSize.h || window.innerHeight;
   return Math.hypot(Math.max(x, w - x), Math.max(y, h - y));
 }
+
 
 function buildEffect(
   effect: SfDarkEffect,
