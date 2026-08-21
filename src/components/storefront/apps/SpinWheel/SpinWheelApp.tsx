@@ -314,13 +314,10 @@ export default function SpinWheelApp({ storeId, storeName, primaryColor, accentC
   const spin = () => {
     if (spinning || segments.length < 2) return;
     // "fixed" mode: the merchant decided the prize — every shopper lands on the
-    // same slice. Guard the index so a stale config (slice deleted after being
-    // pinned) silently degrades to the weighted draw instead of breaking.
-    const pinned = Number(cfg.fixed_segment_index);
-    const idx =
-      cfg.outcome_mode === "fixed" && Number.isFinite(pinned) && pinned >= 0 && pinned < segments.length
-        ? Math.floor(pinned)
-        : pickWeightedIndex(segments);
+    // same slice, resolved by code/label first so reordering slices can never
+    // hand out a different prize than the dashboard shows.
+    const idx = resolveWinningIndex(cfg, segments);
+
 
     const sliceAngle = 360 / segments.length;
     const targetSlice = (idx + 0.5) * sliceAngle;
