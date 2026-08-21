@@ -88,6 +88,7 @@ export type Database = {
           ip: string | null
           phone: string
           purpose: string
+          store_id: string | null
           updated_at: string
           user_id: string | null
         }
@@ -101,6 +102,7 @@ export type Database = {
           ip?: string | null
           phone: string
           purpose?: string
+          store_id?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -114,6 +116,7 @@ export type Database = {
           ip?: string | null
           phone?: string
           purpose?: string
+          store_id?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -2733,6 +2736,7 @@ export type Database = {
           marketing_opt_in: boolean
           metadata: Json
           phone: string
+          phone_verified: boolean
           segment_label: string | null
           store_id: string
           user_agent: string | null
@@ -2747,6 +2751,7 @@ export type Database = {
           marketing_opt_in?: boolean
           metadata?: Json
           phone?: string
+          phone_verified?: boolean
           segment_label?: string | null
           store_id: string
           user_agent?: string | null
@@ -2761,6 +2766,7 @@ export type Database = {
           marketing_opt_in?: boolean
           metadata?: Json
           phone?: string
+          phone_verified?: boolean
           segment_label?: string | null
           store_id?: string
           user_agent?: string | null
