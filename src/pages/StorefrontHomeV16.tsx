@@ -307,16 +307,17 @@ export default function StorefrontHomeV16() {
         <UniversalCategories categories={storeCategories} storeSlug={slug!} isLoading={!storeCategories} categoryStyle={categoryStyle} />
 
         <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 pt-4 pb-8 space-y-8 min-h-[80vh]">
-          {/* Best Sellers — first 12 on cold load, infinite scroll */}
-          <BestSellersSection storeId={store.id} slug={slug!} store={store} cardStyle={cardStyle} isCarousel={isCarousel} />
-
-          {/* Shop by Video — App Store add-on (only renders when enabled + products have video_url) */}
+          {/* Shop by Video must stay above infinite product feeds. Stores with
+              thousands of best sellers otherwise push this enabled app below
+              an ever-growing list, making it effectively unreachable. */}
           <Suspense fallback={null}>
             <DeferUntilVisible rootMargin="600px" minHeight={0}>
               <ShopByVideoCarousel storeSlug={slug!} storeId={store.id} />
             </DeferUntilVisible>
           </Suspense>
 
+          {/* Best Sellers — first 12 on cold load, infinite scroll */}
+          <BestSellersSection storeId={store.id} slug={slug!} store={store} cardStyle={cardStyle} isCarousel={isCarousel} />
 
           {/* Per-category sections — lazy loaded via IntersectionObserver, each with infinite scroll */}
           {sortedCategories.map((cat: any) => (
