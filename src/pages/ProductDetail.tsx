@@ -55,9 +55,27 @@ const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/
 const ReviewsShowcase = lazy(() => import("@/components/storefront/pdp/ReviewsShowcase"));
 import PdpReviewsBadge from "@/components/storefront/pdp/PdpReviewsBadge";
 const PdpCarousels = lazy(() => import("@/components/storefront/pdp/PdpCarousels"));
-const VideoSlide = lazy(() =>
-  import("@/components/storefront/VideoSlide").then((m) => ({ default: m.VideoSlide }))
-);
+// A stale/partial chunk after a deploy can resolve to an undefined module
+// namespace — reading `m.VideoSlide` then throws and kills the whole PDP.
+// Retry once, and if it still fails render nothing instead of crashing.
+const VideoSlide = lazy(async () => {
+  const load = () => import("@/components/storefront/VideoSlide");
+  let mod: any;
+  try {
+    mod = await load();
+  } catch {
+    mod = undefined;
+  }
+  if (!mod?.VideoSlide) {
+    try {
+      mod = await load();
+    } catch {
+      mod = undefined;
+    }
+  }
+  return { default: mod?.VideoSlide ?? (() => null) };
+});
+
 
 
 import DeliveryTimeline from "@/components/storefront/DeliveryTimeline";
