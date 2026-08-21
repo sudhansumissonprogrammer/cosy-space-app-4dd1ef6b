@@ -533,6 +533,7 @@ export default function SpinWheelConfigPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Phone</TableHead>
+                      <TableHead>Verified</TableHead>
                       <TableHead>Coupon</TableHead>
                       <TableHead>Segment</TableHead>
                       <TableHead>Opt-in</TableHead>
@@ -541,14 +542,22 @@ export default function SpinWheelConfigPage() {
                   </TableHeader>
                   <TableBody>
                     {(leads ?? []).length === 0 ? (
-                      <TableRow><TableCell colSpan={5} className="text-center text-xs text-muted-foreground py-6">No leads yet</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={6} className="text-center text-xs text-muted-foreground py-6">No leads yet</TableCell></TableRow>
                     ) : (leads ?? []).map((l: any) => (
                       <TableRow key={l.id}>
                         <TableCell className="font-mono text-xs">{l.country_code} {l.phone}</TableCell>
+                        <TableCell>
+                          {l.phone_verified ? (
+                            <Badge className="gap-1 text-[10px]"><ShieldCheck className="h-3 w-3" /> OTP</Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
                         <TableCell><Badge variant="outline">{l.coupon_code ?? "—"}</Badge></TableCell>
                         <TableCell className="text-xs">{l.segment_label ?? "—"}</TableCell>
                         <TableCell>{l.marketing_opt_in ? "✓" : "—"}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{new Date(l.created_at).toLocaleString()}</TableCell>
+
                       </TableRow>
                     ))}
                   </TableBody>
