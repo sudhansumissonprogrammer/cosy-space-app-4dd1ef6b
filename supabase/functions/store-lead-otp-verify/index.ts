@@ -47,12 +47,13 @@ Deno.serve(async (req) => {
       .eq("app_id", appId)
       .maybeSingle();
     if (appErr) return json({ error: "db_error" }, 500);
-    if (!appRow || !appRow.enabled) return json({ error: "app_not_enabled" }, 403);
+    if (!appRow) return json({ error: "app_not_installed" }, 403);
 
     const { data: row } = await admin
       .from("auth_otp_codes")
       .select("id, code_hash, attempts, expires_at")
       .eq("purpose", PURPOSE)
+      .eq("store_id", storeId)
       .eq("phone", phone)
       .is("consumed_at", null)
       .order("created_at", { ascending: false })

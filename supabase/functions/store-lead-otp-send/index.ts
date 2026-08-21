@@ -2,8 +2,8 @@
 // (currently Spin the Wheel).
 //
 // Safety:
-//  - only works when the store actually INSTALLED + ENABLED the app
-//  - only works when that app's config has require_otp = true
+//  - only works when the store actually installed the app
+//  - Spin Wheel OTP is mandatory; legacy config cannot turn it off
 //  - codes are hashed (SHA-256 + service-key pepper), 5 min TTL, single use
 //  - 30s resend cooldown, 3 sends / 15 min per phone, 12 sends / hour per IP
 //  - sent via wa-platform-send with message_type "auth_otp" (exempt from
@@ -56,7 +56,8 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // The widget only exists when the merchant installed + enabled the app.
+    // Installation is the sole lifecycle switch. Spin Wheel rows are kept
+    // enabled permanently by the dashboard; OTP is never config-optional.
     const { data: appRow, error: appErr } = await admin
       .from("store_apps")
       .select("enabled, config")
@@ -64,10 +65,7 @@ Deno.serve(async (req) => {
       .eq("app_id", appId)
       .maybeSingle();
     if (appErr) return json({ error: "db_error" }, 500);
-    if (!appRow || !appRow.enabled) return json({ error: "app_not_enabled" }, 403);
-    if ((appRow.config as any)?.require_otp !== true) {
-      return json({ error: "otp_not_enabled" }, 403);
-    }
+    if (!appRow) return json({ error: "app_not_installed" }, 403);
 
     const ip = clientIp(req);
     const now = Date.now();
