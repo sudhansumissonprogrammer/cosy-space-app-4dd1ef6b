@@ -18,6 +18,8 @@ import ThemeMobilePreviewDrawer from "@/components/dashboard/theme/ThemeMobilePr
 import ThemeCategoryStyleIcon from "@/components/dashboard/theme/ThemeCategoryStyleIcon";
 import NavIconPicker from "@/components/dashboard/theme/NavIconPicker";
 import TrustVideosManager from "@/components/dashboard/theme/TrustVideosManager";
+import DarkEffectPreview from "@/components/settings/DarkEffectPreview";
+
 
 import { getHeadingTuning, getBodyTuning, getPairingAdvice } from "@/lib/themeUtils";
 
@@ -529,6 +531,8 @@ interface ThemeConfig {
   trust_badges?: { emoji: string; label: string }[];
   nav_icons?: Record<string, string>;
   pdp_trust_seals?: string[];
+  /** Theme 16 only — night-mode switch animation */
+  dark_toggle_effect?: string;
 }
 
 const DEFAULT_MARQUEE_TEXT = "🚚 Free Delivery • 🔄 Easy Returns • 🔒 Secure Payments • 💰 Cash On Delivery • 👜 Premium Quality";
@@ -747,6 +751,7 @@ export default function StoreThemeSettings() {
         pdp_trust_seals: Array.isArray((themeConfig as any).pdp_trust_seals)
           ? (themeConfig as any).pdp_trust_seals
           : DEFAULT_TRUST_SEAL_KEYS,
+        dark_toggle_effect: (themeConfig as any).dark_toggle_effect || "spotlight",
       });
     } else {
       setConfig(defaults);
@@ -850,6 +855,7 @@ export default function StoreThemeSettings() {
             header_style: themeConfig.header_style ?? config.header_style,
             marquee_text: themeConfig.marquee_text ?? config.marquee_text,
             marquee_enabled: themeConfig.marquee_enabled ?? config.marquee_enabled,
+            dark_toggle_effect: (themeConfig as any).dark_toggle_effect ?? config.dark_toggle_effect,
           }
         : {};
 
@@ -1651,6 +1657,46 @@ export default function StoreThemeSettings() {
               ))}
             </div>
           </Section>
+
+          {currentTheme === "theme-16" && (
+            <Section
+              title="Night Mode Switch Effect"
+              hint="Your header has a night-mode toggle. Pick the animation shoppers see when they switch. Light mode stays the default and checkout is never affected."
+            >
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {[
+                  { value: "spotlight", label: "Spotlight Reveal", desc: "Dark ink expands from the toggle" },
+                  { value: "curtain", label: "Velvet Curtain", desc: "Panel drops down, then slides away" },
+                  { value: "blinds", label: "Shutter Blinds", desc: "Editorial slats close and open" },
+                  { value: "eclipse", label: "Solar Eclipse", desc: "Glowing disc swallows the screen" },
+                  { value: "dissolve", label: "Ink Dissolve", desc: "Frosted blur crossfade" },
+                  { value: "none", label: "Instant", desc: "No animation at all" },
+                ].map((s) => {
+                  const isActive = (config.dark_toggle_effect || "spotlight") === s.value;
+                  return (
+                    <button
+                      key={s.value}
+                      onClick={() => updateField("dark_toggle_effect" as any, s.value as any)}
+                      className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-[transform,opacity,colors,box-shadow] ${
+                        isActive ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/30"
+                      }`}
+                    >
+                      {isActive && (
+                        <div className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                          <Check className="h-3 w-3" />
+                        </div>
+                      )}
+                      <DarkEffectPreview variant={s.value} active={isActive} />
+                      <span className="text-[11px] font-semibold">{s.label}</span>
+                      <span className="text-[9px] text-muted-foreground text-center leading-tight">{s.desc}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </Section>
+          )}
+
+
 
           <Section title="Mobile Bottom Navigation" hint="The fixed bottom bar shoppers see on phones.">
             <div className="grid grid-cols-2 gap-3">
