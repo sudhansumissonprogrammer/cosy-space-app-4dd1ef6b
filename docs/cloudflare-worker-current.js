@@ -3480,7 +3480,7 @@ async function proxyToOriginCached(request, ctx) {
   const timeout = setTimeout(() => controller.abort(), ORIGIN_TIMEOUT_MS);
 
   try {
-    const res = await fetch(url.toString(), {
+    const res = await fetchOriginNoRedirectLoop(url.toString(), {
       method: request.method,
       headers,
       signal: controller.signal,
