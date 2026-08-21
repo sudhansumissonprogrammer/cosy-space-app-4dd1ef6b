@@ -28,6 +28,14 @@ export interface SpinWheelConfig {
    */
   outcome_mode?: "random" | "fixed";
   fixed_segment_index?: number;
+  /**
+   * Stable identity of the pinned slice. The index alone breaks the moment a
+   * merchant reorders/deletes slices, so we also store the code + label and
+   * resolve by those first at spin time.
+   */
+  fixed_segment_code?: string;
+  fixed_segment_label?: string;
+
   heading: string;
   subheading: string;
   button_label: string;
