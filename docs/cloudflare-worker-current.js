@@ -225,7 +225,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.76.0-chunk-hash-regex-fix";
+const WORKER_VERSION = "8.77.0-origin-redirect-loop-fix";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -520,7 +520,7 @@ function isSocialInAppBrowser(ua) {
    ============================================================ */
 
 // FIX #22: Reduced from 8000→3500 to fail fast and serve skeleton instead
-const ORIGIN_TIMEOUT_MS = 3_500;
+const ORIGIN_TIMEOUT_MS = 6_000; // v8.77.0: was 3_500 — cold asset misses need headroom for the single redirect hop
 const EDGE_FN_TIMEOUT_MS = 10_000;
 // FIX #20: Raised from 1000→1500ms. Only applies to warm path (_memShell exists);
 // the instant skeleton path (FIX #21) bypasses serveStreamedHtml entirely.
