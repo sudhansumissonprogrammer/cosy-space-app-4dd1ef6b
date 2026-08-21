@@ -48,6 +48,24 @@ function syncThemeColor(on: boolean) {
   }
 }
 
+/**
+ * Removes any transition overlay left on document.body. The animation host is
+ * created outside React (see sfDarkTransition), so an SPA navigation during
+ * the animation would otherwise leave a full-viewport, click-blocking layer on
+ * the next screen. Lives here (not in the transition module) so layouts can
+ * call it without pulling the animation engine into their chunk.
+ */
+export function removeSfDarkOverlays() {
+  if (typeof document === "undefined") return;
+  document.querySelectorAll("[data-sf-dark-overlay]").forEach((node) => {
+    try {
+      node.remove();
+    } catch {
+      /* ignore */
+    }
+  });
+}
+
 /** Adds/removes the root class. Safe to call repeatedly. */
 export function applySfDarkClass(on: boolean) {
   if (typeof document === "undefined") return;
