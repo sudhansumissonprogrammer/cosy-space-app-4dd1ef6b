@@ -303,7 +303,7 @@ export default function SpinWheelConfigPage() {
                     </SelectContent>
                   </Select>
                   <p className="mt-1 text-[10px] text-muted-foreground">
-                    Weights are ignored in this mode. The wheel still animates realistically before stopping here.
+                    Weights are ignored in this mode. Saved instantly — every shopper will land on this slice.
                   </p>
                 </div>
               )}
