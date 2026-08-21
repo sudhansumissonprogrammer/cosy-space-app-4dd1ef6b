@@ -28,10 +28,49 @@ export function readSfDark(): boolean {
   }
 }
 
+/** The surface the dark palette paints on — keep in sync with sf-dark.css. */
+export const SF_DARK_SURFACE = "#0a0a0a";
+
+/**
+ * Keeps the mobile browser chrome (address bar / status bar) in step with the
+ * storefront. Without this the phone UI stays white while the page is black,
+ * which is the most visible part of the screen on mobile.
+ */
+function syncThemeColor(on: boolean) {
+  const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+  if (!meta) return;
+  if (on) {
+    if (!meta.dataset.sfLight) meta.dataset.sfLight = meta.content || "";
+    meta.content = SF_DARK_SURFACE;
+  } else if (meta.dataset.sfLight !== undefined) {
+    meta.content = meta.dataset.sfLight;
+    delete meta.dataset.sfLight;
+  }
+}
+
+/**
+ * Removes any transition overlay left on document.body. The animation host is
+ * created outside React (see sfDarkTransition), so an SPA navigation during
+ * the animation would otherwise leave a full-viewport, click-blocking layer on
+ * the next screen. Lives here (not in the transition module) so layouts can
+ * call it without pulling the animation engine into their chunk.
+ */
+export function removeSfDarkOverlays() {
+  if (typeof document === "undefined") return;
+  document.querySelectorAll("[data-sf-dark-overlay]").forEach((node) => {
+    try {
+      node.remove();
+    } catch {
+      /* ignore */
+    }
+  });
+}
+
 /** Adds/removes the root class. Safe to call repeatedly. */
 export function applySfDarkClass(on: boolean) {
   if (typeof document === "undefined") return;
   document.documentElement.classList.toggle(SF_DARK_CLASS, on);
+  syncThemeColor(on);
 }
 
 export function setSfDark(on: boolean) {

@@ -285,6 +285,27 @@
     <meta name="description" content="India's agentic commerce OS. Store, WhatsApp, ads, logistics, AI calling and checkout — one platform. ₹0 subscription, 3% only when orders deliver.">
 
     <meta name="theme-color" content="#4361ee" />
+    <!-- ─── STOREFRONT NIGHT MODE PRE-PAINT ───
+         The shopper's night-mode choice lives in localStorage and was applied
+         only after React hydrated, so returning dark-mode shoppers got a full
+         white flash on every cold load. This runs before first paint: it sets
+         the root class, darkens the inline loader and the mobile browser
+         chrome. Costs nothing for light-mode shoppers (one localStorage read)
+         and never applies on /checkout, which stays pixel-identical.
+         The tiny style below is critical-path only: the full palette still
+         ships inside the theme-16 chunk (sf-dark.css). -->
+    <style>html.sf-dark,html.sf-dark body{background:#0a0a0a !important;color-scheme:dark}html.sf-dark #inline-skel{background:#0a0a0a !important}</style>
+    <script>
+      (function () {
+        try {
+          if (location.pathname.indexOf("/checkout") >= 0) return;
+          if (localStorage.getItem("sf_dark_mode") !== "1") return;
+          document.documentElement.classList.add("sf-dark");
+          var m = document.querySelector('meta[name="theme-color"]');
+          if (m) { m.setAttribute("data-sf-light", m.content || ""); m.content = "#0a0a0a"; }
+        } catch (e) { /* private mode — light stays the default */ }
+      })();
+    </script>
     <link rel="apple-touch-icon" href="/favicon.png?v=2" />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />

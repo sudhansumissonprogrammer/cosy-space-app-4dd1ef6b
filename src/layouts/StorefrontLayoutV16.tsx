@@ -5,7 +5,7 @@
 import { Suspense, lazy, useLayoutEffect } from "react";
 import { useLocation } from "react-router-dom";
 import "@/styles/sf-dark.css";
-import { applySfDarkClass, readSfDark } from "@/lib/sfDarkMode";
+import { applySfDarkClass, readSfDark, removeSfDarkOverlays } from "@/lib/sfDarkMode";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 import CheckoutAwareLayout from "@/components/storefront/CheckoutAwareLayout";
 import StorefrontShell from "@/layouts/StorefrontShell";
@@ -20,6 +20,9 @@ export default function StorefrontLayoutV16({ slugOverride }: { slugOverride?: s
   // keep it off on checkout (which must stay pixel-identical to today).
   const { pathname } = useLocation();
   useLayoutEffect(() => {
+    // A route change mid-animation would strand the body-level overlay on top
+    // of the new page (it eats clicks until the watchdog fires) — drop it.
+    removeSfDarkOverlays();
     applySfDarkClass(readSfDark() && !pathname.includes("/checkout"));
     return () => applySfDarkClass(false);
   }, [pathname]);

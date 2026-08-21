@@ -21,6 +21,7 @@
  *  - Nothing is loaded or executed until the shopper actually taps the toggle
  *    (this module lives in the toggle's lazy chunk) → zero cold-load cost.
  */
+import { removeSfDarkOverlays } from "@/lib/sfDarkMode";
 
 export const SF_DARK_EFFECTS = [
   "spotlight",
@@ -48,6 +49,29 @@ const EASE_OUT = "cubic-bezier(0.22, 1, 0.36, 1)";
 const WATCHDOG_MS = 2600;
 
 let running = false;
+
+/**
+ * Cleanup handle for the transition currently in flight. The overlay lives on
+ * document.body (outside React), so an SPA route change during the animation
+ * would otherwise leave a full-viewport, click-eating layer on top of the new
+ * page until the watchdog fires. Callers tear it down via
+ * `cancelSfDarkTransition()` on unmount / navigation.
+ */
+let activeCleanup: (() => void) | null = null;
+
+/** Removes any in-flight (or orphaned) transition overlay immediately. */
+export function cancelSfDarkTransition() {
+  if (typeof document === "undefined") return;
+  try {
+    activeCleanup?.();
+  } catch {
+    /* ignore */
+  }
+  activeCleanup = null;
+  running = false;
+  // Belt and braces: sweep orphans left behind by a hard teardown.
+  removeSfDarkOverlays();
+}
 
 /** Destination background: the dark surface, or the store's own light background. */
 function targetColor(toDark: boolean): string {
@@ -325,16 +349,25 @@ export async function runSfDarkTransition(
 
   running = true;
   const host = makeHost();
+  let watchdog = 0;
+  let done = false;
   const cleanup = () => {
+    // Idempotent: cancel, watchdog and the finally block can all reach here,
+    // and a late second call must not clobber a newer transition's state.
+    if (done) return;
+    done = true;
     applyOnce();
     try {
       host.remove();
     } catch {
       /* already detached */
     }
+    if (watchdog) window.clearTimeout(watchdog);
+    if (activeCleanup === cleanup) activeCleanup = null;
     running = false;
   };
-  const watchdog = window.setTimeout(cleanup, WATCHDOG_MS);
+  activeCleanup = cleanup;
+  watchdog = window.setTimeout(cleanup, WATCHDOG_MS);
 
   try {
     // Mount first, then measure: the host is the exact surface the effects
