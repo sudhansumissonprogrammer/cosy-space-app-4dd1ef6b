@@ -206,9 +206,68 @@ export default function SpinWheelConfigPage() {
         <div className="space-y-3 md:space-y-6 lg:col-span-2">
           <Card>
             <CardHeader>
+              <CardTitle className="text-base">Spin Outcome</CardTitle>
+              <CardDescription>Decide whether the prize is random or always the same slice.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid gap-2 sm:grid-cols-2">
+                {([
+                  { v: "random", t: "Random (weighted)", d: "Each slice wins based on its weight below." },
+                  { v: "fixed", t: "Always one slice", d: "Every shopper lands on the slice you pick." },
+                ] as const).map((o) => {
+                  const active = (config.outcome_mode || "random") === o.v;
+                  return (
+                    <button
+                      key={o.v}
+                      type="button"
+                      onClick={() => setConfig((c) => ({ ...c, outcome_mode: o.v }))}
+                      className={`rounded-xl border-2 p-3 text-left transition-all ${
+                        active ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-muted-foreground/40"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold">{o.t}</span>
+                        {active && <Badge className="text-[10px]">Active</Badge>}
+                      </div>
+                      <p className="mt-1 text-[11px] text-muted-foreground">{o.d}</p>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {(config.outcome_mode || "random") === "fixed" && (
+                <div>
+                  <Label className="text-xs">Winning slice</Label>
+                  <Select
+                    value={String(
+                      Math.min(Math.max(0, Number(config.fixed_segment_index) || 0), Math.max(0, config.segments.length - 1)),
+                    )}
+                    onValueChange={(v) => setConfig((c) => ({ ...c, fixed_segment_index: Number(v) }))}
+                  >
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {config.segments.map((s, i) => (
+                        <SelectItem key={i} value={String(i)}>
+                          Slice {i + 1} — {s.label}
+                          {s.type === "coupon" && s.code ? ` (${s.code})` : " (no prize)"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="mt-1 text-[10px] text-muted-foreground">
+                    Weights are ignored in this mode. The wheel still animates realistically before stopping here.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle className="text-base">Wheel Segments</CardTitle>
               <CardDescription>2–8 slices. Higher weight = higher chance of landing there.</CardDescription>
             </CardHeader>
+
             <CardContent className="space-y-3">
               {config.segments.map((seg, i) => (
                 <div key={i} className="rounded-lg border p-3">
