@@ -71,3 +71,8 @@ src/components/storefront/apps/SpinWheel/
 - Analytics per app beyond leads table.
 - A/B testing per app.
 - Scratch card / Countdown bar / Wishlist reminder implementations (registry entries already stubbed as coming-soon).
+## Spin Wheel v2 (2026-08-21)
+- `outcome_mode: "random" | "fixed"` + `fixed_segment_index` in store_apps.config — "fixed" makes every shopper land on the merchant-chosen slice (guarded: invalid index falls back to weighted draw).
+- `require_otp: true` gates the lead form behind a WhatsApp OTP. Edge fns `store-lead-otp-send` / `store-lead-otp-verify` reuse `auth_otp_codes` with `purpose = 'store_lead'` and template `merchant_otp_v1`; verify writes the lead itself with `store_app_leads.phone_verified = true`. Both refuse unless the store installed AND enabled the app (and send also requires require_otp).
+- Coupon is written to `pending_coupon` (session+local) on reveal, not on copy — checkout auto-applies it.
+- Lead phone is mirrored to `localStorage.checkout_phone`, so the Buy Now / checkout phone gate is skipped for that shopper.
