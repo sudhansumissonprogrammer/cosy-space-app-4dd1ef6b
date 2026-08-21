@@ -8,7 +8,12 @@ import {
   readSfDark,
   setSfDark,
 } from "@/lib/sfDarkMode";
-import { normalizeSfDarkEffect, runSfDarkTransition, type SfDarkEffect } from "@/lib/sfDarkTransition";
+import {
+  cancelSfDarkTransition,
+  normalizeSfDarkEffect,
+  runSfDarkTransition,
+  type SfDarkEffect,
+} from "@/lib/sfDarkTransition";
 
 /**
  * Premium night-mode toggle — Theme 16 (Classic + Quick Buy) only.
