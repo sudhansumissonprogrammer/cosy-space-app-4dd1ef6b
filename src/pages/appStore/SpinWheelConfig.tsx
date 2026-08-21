@@ -183,7 +183,12 @@ export default function SpinWheelConfigPage() {
       title={appMeta.name}
       subtitle={appMeta.tagline}
       enabled={enabled}
-      onEnabledChange={setEnabled}
+      onEnabledChange={(v) => {
+        // Persist immediately — otherwise the toggle looks on but the app was
+        // never installed (no store_apps row) until the user pressed Save.
+        setEnabled(v);
+        upsert.mutate({ enabled: v, config });
+      }}
       onSave={() => upsert.mutate({ enabled, config })}
       saving={upsert.isPending}
       saveDisabled={totalWeight <= 0}
