@@ -299,7 +299,12 @@
       (function () {
         try {
           if (location.pathname.indexOf("/checkout") >= 0) return;
-          if (localStorage.getItem("sf_dark_mode") !== "1") return;
+          var pathMatch = location.pathname.match(/^\/store\/([^/?#]+)/);
+          var host = location.hostname.toLowerCase();
+          var platformSuffix = ".shopbanao.in";
+          var platformSlug = host.endsWith(platformSuffix) ? host.slice(0, -platformSuffix.length) : "";
+          var identity = window.__STORE_SLUG__ || (pathMatch && pathMatch[1]) || platformSlug || host || "default";
+          if (localStorage.getItem("sf_dark_mode:" + identity) !== "1") return;
           document.documentElement.classList.add("sf-dark");
           var m = document.querySelector('meta[name="theme-color"]');
           if (m) { m.setAttribute("data-sf-light", m.content || ""); m.content = "#0a0a0a"; }
