@@ -180,3 +180,182 @@ html.sf-dark body [class*="storefront-font"] {
   background-color: #0a0a0a !important;
   color: #f2f2f2 !important;
 }
+
+/* ══════════════════════════════════════════════════════════════
+ * MERCHANT THEME TOKENS
+ * The storefront paints almost everything from inline CSS vars that
+ * come from each store's Theme Settings (primary/accent/footer/marquee
+ * colours). On black those merchant colours are the #1 source of
+ * invisible text and invisible buttons, so every one of them is
+ * remapped here. Light mode is untouched (all rules are scoped to
+ * html.sf-dark).
+ * ══════════════════════════════════════════════════════════════ */
+html.sf-dark body .storefront-font,
+html.sf-dark body [class*="storefront-font"],
+html.sf-dark body [style*="--storefront-primary"] {
+  /* button / badge surface — always black in Dark Streetwear */
+  --storefront-primary: #121212 !important;
+  --storefront-primary-light: #1f1f1f !important;
+  --storefront-primary-foreground: #ffffff !important;
+  --storefront-btn-text: #ffffff !important;
+  --storefront-accent: #161616 !important;
+  --storefront-footer-text: #f2f2f2 !important;
+  --storefront-nav-bg: #0a0a0a !important;
+  --storefront-star-color: #ffc94d !important;
+  --storefront-marquee-gradient: linear-gradient(90deg, #101010, #1c1c1c, #101010) !important;
+  --storefront-marquee-text-color: #f2f2f2 !important;
+  --primary: 0 0% 100% !important;
+  --primary-foreground: 0 0% 6% !important;
+}
+
+/* ── Text painted with a merchant colour ──────────────────────
+ * Matches only a `color:` declaration at the start of the inline style
+ * or after a `; ` separator, so `background-color: var(...)` is never
+ * caught by the same selector.
+ */
+html.sf-dark [style^="color: var(--storefront-primary"],
+html.sf-dark [style*="; color: var(--storefront-primary"],
+html.sf-dark [style^="color: var(--storefront-bg"],
+html.sf-dark [style*="; color: var(--storefront-bg"],
+html.sf-dark [style^="color: var(--storefront-accent"],
+html.sf-dark [style*="; color: var(--storefront-accent"],
+html.sf-dark [style^="color: color-mix(in srgb, var(--storefront-primary"],
+html.sf-dark [style*="; color: color-mix(in srgb, var(--storefront-primary"],
+html.sf-dark .text-primary,
+html.sf-dark .text-accent-foreground,
+html.sf-dark .text-secondary-foreground,
+html.sf-dark .text-primary-foreground,
+html.sf-dark .text-background {
+  color: #f2f2f2 !important;
+}
+
+/* Muted merchant text (color-mix with transparency) stays readable */
+html.sf-dark [style^="color: color-mix(in srgb, var(--storefront-text"],
+html.sf-dark [style*="; color: color-mix(in srgb, var(--storefront-text"] {
+  color: #a8a8a8 !important;
+}
+
+/* Icons inheriting a merchant colour */
+html.sf-dark svg[style*="color: var(--storefront-primary"],
+html.sf-dark svg[style*="color: var(--storefront-btn-text"],
+html.sf-dark svg[style*="color: var(--storefront-bg"] {
+  color: #f2f2f2 !important;
+}
+
+/* ── Inverted strips (bg = text colour) ───────────────────────
+ * e.g. the "FREE • Free Shipping" band. In light mode that is a black
+ * band with white text; on black it would flip to a blinding white
+ * band, so it becomes a raised charcoal band instead.
+ */
+html.sf-dark [style*="background-color: var(--storefront-text"],
+html.sf-dark [style*="background: var(--storefront-text"] {
+  background-color: #161616 !important;
+  color: #f2f2f2 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+html.sf-dark [style*="background-color: var(--storefront-text"] *,
+html.sf-dark [style*="background: var(--storefront-text"] * {
+  color: #f2f2f2 !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+ * BUTTONS — every CTA is a black tile with white content
+ * (Add to Cart, Buy Now, quantity steppers, chips, sticky bars…)
+ * ══════════════════════════════════════════════════════════════ */
+html.sf-dark button[style*="background-color: var(--storefront-primary"],
+html.sf-dark a[style*="background-color: var(--storefront-primary"],
+html.sf-dark [role="button"][style*="background-color: var(--storefront-primary"],
+html.sf-dark button[style*="background: var(--storefront-primary"],
+html.sf-dark a[style*="background: var(--storefront-primary"],
+html.sf-dark button[style*="background-color: var(--storefront-accent"],
+html.sf-dark a[style*="background-color: var(--storefront-accent"],
+html.sf-dark .bg-primary,
+html.sf-dark .bg-foreground,
+html.sf-dark .bg-black,
+html.sf-dark .bg-gray-900,
+html.sf-dark .bg-gray-800,
+html.sf-dark .bg-neutral-900,
+html.sf-dark .bg-zinc-900,
+html.sf-dark .bg-slate-900 {
+  background-color: #121212 !important;
+  background-image: none !important;
+  color: #ffffff !important;
+}
+
+/* Only interactive elements get the hairline so black tiles are
+   separable from the black page; static sections stay flat. */
+html.sf-dark button[style*="var(--storefront-primary"],
+html.sf-dark a[style*="background-color: var(--storefront-primary"],
+html.sf-dark button.bg-primary,
+html.sf-dark a.bg-primary,
+html.sf-dark button.bg-foreground,
+html.sf-dark button.bg-black,
+html.sf-dark a.bg-black,
+html.sf-dark [role="button"].bg-primary {
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+}
+
+/* Everything inside a black CTA is white — labels, prices, icons,
+   sub-captions that carry their own colour class. */
+html.sf-dark button[style*="background-color: var(--storefront-primary"] *,
+html.sf-dark a[style*="background-color: var(--storefront-primary"] *,
+html.sf-dark button[style*="background: var(--storefront-primary"] *,
+html.sf-dark button.bg-primary *,
+html.sf-dark a.bg-primary *,
+html.sf-dark button.bg-foreground *,
+html.sf-dark button.bg-black *,
+html.sf-dark a.bg-black *,
+html.sf-dark .bg-primary > span,
+html.sf-dark .bg-foreground > span {
+  color: #ffffff !important;
+  fill: none;
+}
+html.sf-dark button[style*="background-color: var(--storefront-primary"] svg,
+html.sf-dark a[style*="background-color: var(--storefront-primary"] svg,
+html.sf-dark button.bg-primary svg,
+html.sf-dark button.bg-foreground svg,
+html.sf-dark button.bg-black svg,
+html.sf-dark a.bg-black svg {
+  color: #ffffff !important;
+  stroke: currentColor;
+}
+
+/* Outline / ghost buttons */
+html.sf-dark button.border,
+html.sf-dark a.border[role="button"] {
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+/* ── Merchant-coloured badges (discount %, offers) ───────────── */
+html.sf-dark [style*="background-color: var(--storefront-primary"]:not(button):not(a) {
+  background-color: #1c1c1c !important;
+  color: #ffffff !important;
+}
+
+/* ── Bottom navigation ───────────────────────────────────────── */
+html.sf-dark nav[style*="var(--storefront-bg"] {
+  background-color: rgba(10, 10, 10, 0.96) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* ── Footer ──────────────────────────────────────────────────── */
+html.sf-dark footer[style*="var(--storefront-primary"],
+html.sf-dark footer[style*="var(--storefront-accent"] {
+  background-color: #0f0f0f !important;
+  color: #f2f2f2 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ── Marquee ─────────────────────────────────────────────────── */
+html.sf-dark [style*="var(--storefront-marquee-gradient"] {
+  color: #f2f2f2 !important;
+}
+
+/* ── Overlay chips that were already white-on-glass stay as-is ── */
+html.sf-dark .bg-black\/50,
+html.sf-dark .bg-black\/60,
+html.sf-dark .bg-black\/70 {
+  background-color: rgba(0, 0, 0, 0.62) !important;
+  color: #ffffff !important;
+}
