@@ -1,0 +1,1 @@
+update public.store_theme_config set dark_toggle_effect='spotlight' where store_id=(select id from public.stores where slug='watchtrade');
