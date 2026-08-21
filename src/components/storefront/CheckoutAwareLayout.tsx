@@ -61,6 +61,8 @@ interface CheckoutAwareLayoutProps {
   swapCartWhatsApp?: boolean;
   /** Theme-16 only: show the Dark Streetwear night-mode toggle in the header */
   showDarkToggle?: boolean;
+  /** Merchant-chosen night-mode switch animation (theme setting) */
+  darkToggleEffect?: string | null;
 }
 
 export default function CheckoutAwareLayout({
@@ -78,6 +80,7 @@ export default function CheckoutAwareLayout({
   showPremiumBadge = false,
   swapCartWhatsApp = false,
   showDarkToggle = false,
+  darkToggleEffect,
 }: CheckoutAwareLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -180,7 +183,7 @@ export default function CheckoutAwareLayout({
     <div className="flex items-center gap-1 sm:gap-2" style={{ minHeight: 40, contain: "layout", ...(iconStyle || {}) }}>
       {showDarkToggle && (
         <Suspense fallback={<div className="h-10 w-10" aria-hidden />}>
-          <LazySfDarkToggle />
+          <LazySfDarkToggle effect={darkToggleEffect} />
         </Suspense>
       )}
       {useSearchInHeader ? (
@@ -211,7 +214,7 @@ export default function CheckoutAwareLayout({
       {/* Desktop nav bar — hidden on mobile, hidden during checkout */}
       {!isCheckout && (
         <Suspense fallback={null}>
-          <LazyDesktopNavBar store={store} onSearchOpen={() => setSearchOpen(true)} extra={showDarkToggle ? <Suspense fallback={<div className="h-9 w-9" aria-hidden />}><LazySfDarkToggle size={36} /></Suspense> : undefined} style={headerBgOverride ? { backgroundColor: headerBgOverride, color: headerIconColor || undefined, borderBottom: `1px solid ${headerIconColor || '#fff'}12` } : undefined} />
+          <LazyDesktopNavBar store={store} onSearchOpen={() => setSearchOpen(true)} extra={showDarkToggle ? <Suspense fallback={<div className="h-9 w-9" aria-hidden />}><LazySfDarkToggle size={36} effect={darkToggleEffect} /></Suspense> : undefined} style={headerBgOverride ? { backgroundColor: headerBgOverride, color: headerIconColor || undefined, borderBottom: `1px solid ${headerIconColor || '#fff'}12` } : undefined} />
         </Suspense>
       )}
 

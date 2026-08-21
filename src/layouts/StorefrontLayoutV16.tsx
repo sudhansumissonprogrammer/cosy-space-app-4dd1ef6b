@@ -52,6 +52,7 @@ export default function StorefrontLayoutV16({ slugOverride }: { slugOverride?: s
             }
             swapCartWhatsApp
             showDarkToggle
+            darkToggleEffect={(themeConfig as any)?.dark_toggle_effect}
             showPremiumBadge={(themeConfig as any)?.show_premium_header_badge === true}
             headerStyle={themeConfig?.header_style || "normal"}
           />
