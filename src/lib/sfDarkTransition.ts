@@ -21,6 +21,7 @@
  *  - Nothing is loaded or executed until the shopper actually taps the toggle
  *    (this module lives in the toggle's lazy chunk) → zero cold-load cost.
  */
+import { removeSfDarkOverlays } from "@/lib/sfDarkMode";
 
 export const SF_DARK_EFFECTS = [
   "spotlight",
