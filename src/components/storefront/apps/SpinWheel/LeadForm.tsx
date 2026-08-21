@@ -27,10 +27,13 @@ const APP_ID = "spin-wheel";
  */
 function rememberPhoneForCheckout(phone: string) {
   try {
-    localStorage.setItem("checkout_phone", phone);
+    // Store the canonical (+91…) form so the Buy Now gate and checkout both
+    // recognise it and never ask for the number again.
+    localStorage.setItem("checkout_phone", normalizePhone(phone) || phone);
     localStorage.setItem("sf_spin_phone", phone);
   } catch {}
 }
+
 
 export default function LeadForm({
   storeId,
