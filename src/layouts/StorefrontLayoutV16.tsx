@@ -22,7 +22,7 @@ export default function StorefrontLayoutV16({ slugOverride }: { slugOverride?: s
   useLayoutEffect(() => {
     // A route change mid-animation would strand the body-level overlay on top
     // of the new page (it eats clicks until the watchdog fires) — drop it.
-    cancelSfDarkTransition();
+    removeSfDarkOverlays();
     applySfDarkClass(readSfDark() && !pathname.includes("/checkout"));
     return () => applySfDarkClass(false);
   }, [pathname]);
