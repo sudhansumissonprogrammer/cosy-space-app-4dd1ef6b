@@ -3,6 +3,7 @@
  * Only difference: Buy Now triggers a phone-collection modal before checkout.
  */
 import { Suspense, lazy, useLayoutEffect } from "react";
+import { useLocation } from "react-router-dom";
 import "@/styles/sf-dark.css";
 import { applySfDarkClass, readSfDark } from "@/lib/sfDarkMode";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
@@ -15,12 +16,13 @@ const VALID_NAV_STYLES = ["classic", "modern", "v15", "v17", "glass", "notch", "
 type NavVariant = typeof VALID_NAV_STYLES[number];
 
 export default function StorefrontLayoutV16({ slugOverride }: { slugOverride?: string } = {}) {
-  // Restore the shopper's night-mode choice before the storefront paints.
+  // Restore the shopper's night-mode choice before the storefront paints, and
+  // keep it off on checkout (which must stay pixel-identical to today).
+  const { pathname } = useLocation();
   useLayoutEffect(() => {
-    const on = readSfDark() && !window.location.pathname.includes("/checkout");
-    applySfDarkClass(on);
+    applySfDarkClass(readSfDark() && !pathname.includes("/checkout"));
     return () => applySfDarkClass(false);
-  }, []);
+  }, [pathname]);
 
   return (
     <StorefrontShell
