@@ -45,6 +45,34 @@ export interface SpinWheelConfig {
   segments: WheelSegment[];
 }
 
+/**
+ * Resolves which slice the shopper must land on.
+ * Fixed mode wins by identity (code, then label) and falls back to the stored
+ * index, so reordering or renaming slices can never silently hand out the
+ * wrong prize. Anything unresolvable degrades to the weighted draw.
+ */
+export function resolveWinningIndex(
+  cfg: Pick<SpinWheelConfig, "outcome_mode" | "fixed_segment_index" | "fixed_segment_code" | "fixed_segment_label">,
+  segments: WheelSegment[],
+): number {
+  if (!segments.length) return 0;
+  if (cfg.outcome_mode !== "fixed") return pickWeightedIndex(segments);
+
+  const code = (cfg.fixed_segment_code || "").trim().toUpperCase();
+  if (code) {
+    const byCode = segments.findIndex((s) => (s.code || "").trim().toUpperCase() === code);
+    if (byCode >= 0) return byCode;
+  }
+  const label = (cfg.fixed_segment_label || "").trim().toLowerCase();
+  if (label) {
+    const byLabel = segments.findIndex((s) => (s.label || "").trim().toLowerCase() === label);
+    if (byLabel >= 0) return byLabel;
+  }
+  const pinned = Number(cfg.fixed_segment_index);
+  if (Number.isFinite(pinned) && pinned >= 0 && pinned < segments.length) return Math.floor(pinned);
+  return pickWeightedIndex(segments);
+}
+
 
 export function pickWeightedIndex(segments: WheelSegment[]): number {
   const total = segments.reduce((s, x) => s + Math.max(0, x.weight || 0), 0);

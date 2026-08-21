@@ -78,6 +78,21 @@ export default function SpinWheelConfigPage() {
         );
       if (error) throw error;
 
+      // Read back: an RLS-blocked write can return no error yet change nothing,
+      // which is how a merchant's "always this slice" choice appeared saved in
+      // the UI while shoppers kept getting a random prize.
+      const { data: verify } = await (supabase as any)
+        .from("store_apps")
+        .select("config")
+        .eq("store_id", storeId!)
+        .eq("app_id", APP_ID)
+        .maybeSingle();
+      const savedMode = verify?.config?.outcome_mode ?? "random";
+      if (!verify || savedMode !== (payload.config.outcome_mode ?? "random")) {
+        throw new Error("Settings did not save. Please reload and try again.");
+      }
+
+
       const couponSegs = payload.config.segments.filter(
         (s) => s.type === "coupon" && s.code && (s.discount_value ?? 0) > 0
       );
@@ -151,6 +166,38 @@ export default function SpinWheelConfigPage() {
     [config.segments]
   );
 
+  /**
+   * Re-stamps the pinned slice's identity (index + code + label) so the
+   * storefront resolves the exact slice the merchant sees here, even after
+   * slices are renamed or reordered.
+   */
+  const stampedConfig = (c: SpinWheelConfig): SpinWheelConfig => {
+    if ((c.outcome_mode || "random") !== "fixed") return c;
+    const i = Math.min(Math.max(0, Number(c.fixed_segment_index) || 0), Math.max(0, c.segments.length - 1));
+    const seg = c.segments[i];
+    return {
+      ...c,
+      fixed_segment_index: i,
+      fixed_segment_code: seg?.code || "",
+      fixed_segment_label: seg?.label || "",
+    };
+  };
+
+  /**
+   * The outcome choice decides which prize every shopper gets, so it persists
+   * the moment it is picked (same reasoning as the Enabled toggle) instead of
+   * waiting for Save.
+   */
+  const applyOutcome = (patch: Partial<SpinWheelConfig>) => {
+    setConfig((c) => {
+      const merged = stampedConfig({ ...c, ...patch } as SpinWheelConfig);
+      if (row) upsert.mutate({ enabled, config: merged });
+      return merged;
+    });
+  };
+
+
+
   const updateSegment = (i: number, patch: Partial<WheelSegment>) => {
     setConfig((c) => {
       const next = [...c.segments];
@@ -188,9 +235,10 @@ export default function SpinWheelConfigPage() {
         // Persist immediately — otherwise the toggle looks on but the app was
         // never installed (no store_apps row) until the user pressed Save.
         setEnabled(v);
-        upsert.mutate({ enabled: v, config });
+        upsert.mutate({ enabled: v, config: stampedConfig(config) });
       }}
-      onSave={() => upsert.mutate({ enabled, config })}
+      onSave={() => upsert.mutate({ enabled, config: stampedConfig(config) })}
+
       saving={upsert.isPending}
       saveDisabled={(config.outcome_mode || "random") !== "fixed" && totalWeight <= 0}
       saveLabel={isInstalled ? "Save" : "Install"}
@@ -220,7 +268,7 @@ export default function SpinWheelConfigPage() {
                     <button
                       key={o.v}
                       type="button"
-                      onClick={() => setConfig((c) => ({ ...c, outcome_mode: o.v }))}
+                      onClick={() => applyOutcome({ outcome_mode: o.v })}
                       className={`rounded-xl border-2 p-3 text-left transition-all ${
                         active ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-muted-foreground/40"
                       }`}
@@ -242,7 +290,7 @@ export default function SpinWheelConfigPage() {
                     value={String(
                       Math.min(Math.max(0, Number(config.fixed_segment_index) || 0), Math.max(0, config.segments.length - 1)),
                     )}
-                    onValueChange={(v) => setConfig((c) => ({ ...c, fixed_segment_index: Number(v) }))}
+                    onValueChange={(v) => applyOutcome({ fixed_segment_index: Number(v) })}
                   >
                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -255,7 +303,7 @@ export default function SpinWheelConfigPage() {
                     </SelectContent>
                   </Select>
                   <p className="mt-1 text-[10px] text-muted-foreground">
-                    Weights are ignored in this mode. The wheel still animates realistically before stopping here.
+                    Weights are ignored in this mode. Saved instantly — every shopper will land on this slice.
                   </p>
                 </div>
               )}
