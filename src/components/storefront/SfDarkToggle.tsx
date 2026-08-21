@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Moon, Sun } from "lucide-react";
 import {
@@ -8,14 +8,25 @@ import {
   readSfDark,
   setSfDark,
 } from "@/lib/sfDarkMode";
+import { normalizeSfDarkEffect, runSfDarkTransition, type SfDarkEffect } from "@/lib/sfDarkTransition";
 
 /**
  * Premium night-mode toggle — Theme 16 (Classic + Quick Buy) only.
  * Light is the default; the dark palette is opt-in and never applies on checkout.
+ * The switch animation is chosen by the merchant in Theme Settings.
  */
-export default function SfDarkToggle({ size = 40 }: { size?: number }) {
+export default function SfDarkToggle({
+  size = 40,
+  effect,
+}: {
+  size?: number;
+  effect?: string | null;
+}) {
   const { pathname } = useLocation();
   const [dark, setDark] = useState<boolean>(() => readSfDark());
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const busyRef = useRef(false);
+  const chosen: SfDarkEffect = normalizeSfDarkEffect(effect);
 
   // Keep <html> in sync: honor the preference everywhere except checkout.
   useEffect(() => {
@@ -36,10 +47,26 @@ export default function SfDarkToggle({ size = 40 }: { size?: number }) {
 
   if (isCheckoutPath(pathname)) return null;
 
+  const handleClick = async () => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    const next = !dark;
+    const rect = btnRef.current?.getBoundingClientRect();
+    const origin = rect
+      ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+      : null;
+    try {
+      await runSfDarkTransition(chosen, origin, next, () => setSfDark(next));
+    } finally {
+      busyRef.current = false;
+    }
+  };
+
   return (
     <button
+      ref={btnRef}
       type="button"
-      onClick={() => setSfDark(!dark)}
+      onClick={handleClick}
       aria-pressed={dark}
       aria-label={dark ? "Switch to light mode" : "Switch to night mode"}
       title={dark ? "Light mode" : "Night mode"}
