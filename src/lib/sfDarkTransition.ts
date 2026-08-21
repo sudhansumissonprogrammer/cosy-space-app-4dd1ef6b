@@ -69,13 +69,7 @@ export function cancelSfDarkTransition() {
   activeCleanup = null;
   running = false;
   // Belt and braces: sweep orphans left behind by a hard teardown.
-  document.querySelectorAll("[data-sf-dark-overlay]").forEach((node) => {
-    try {
-      node.remove();
-    } catch {
-      /* ignore */
-    }
-  });
+  removeSfDarkOverlays();
 }
 
 /** Destination background: the dark surface, or the store's own light background. */
