@@ -57,7 +57,6 @@ function AdminMobileMenu({
         { label: "Analytics", icon: BarChart3, path: "/admin/analytics" },
         { label: "Usage Monitor", icon: Activity, path: "/admin/usage" },
         { label: "Error Logs", icon: AlertTriangle, path: "/admin/error-logs" },
-        { label: "Uptime Monitor", icon: Activity, path: "/admin/uptime" },
       ],
     },
     {

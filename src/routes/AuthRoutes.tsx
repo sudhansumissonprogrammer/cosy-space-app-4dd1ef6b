@@ -22,7 +22,6 @@ const AdminSettings = lazy(() => import("@/pages/admin/AdminSettings"));
 const AdminWhatsApp = lazy(() => import("@/pages/admin/AdminWhatsApp"));
 const AdminUsageMonitoring = lazy(() => import("@/pages/admin/AdminUsageMonitoring"));
 const AdminErrorLogs = lazy(() => import("@/pages/admin/AdminErrorLogs"));
-const AdminUptime = lazy(() => import("@/pages/admin/AdminUptime"));
 const AdminMenuConfig = lazy(() => import("@/pages/admin/AdminMenuConfig"));
 const AdminPartners = lazy(() => import("@/pages/admin/AdminPartners"));
 const AdminPartnerPayouts = lazy(() => import("@/pages/admin/AdminPartnerPayouts"));
@@ -126,7 +125,6 @@ export default function AuthRoutes() {
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="usage" element={<AdminUsageMonitoring />} />
           <Route path="error-logs" element={<AdminErrorLogs />} />
-          <Route path="uptime" element={<AdminUptime />} />
           <Route path="settings" element={<AdminSettings />} />
           <Route path="menu-config" element={<AdminMenuConfig />} />
           <Route path="partners" element={<AdminPartners />} />
