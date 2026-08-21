@@ -78,6 +78,21 @@ export default function SpinWheelConfigPage() {
         );
       if (error) throw error;
 
+      // Read back: an RLS-blocked write can return no error yet change nothing,
+      // which is how a merchant's "always this slice" choice appeared saved in
+      // the UI while shoppers kept getting a random prize.
+      const { data: verify } = await (supabase as any)
+        .from("store_apps")
+        .select("config")
+        .eq("store_id", storeId!)
+        .eq("app_id", APP_ID)
+        .maybeSingle();
+      const savedMode = verify?.config?.outcome_mode ?? "random";
+      if (!verify || savedMode !== (payload.config.outcome_mode ?? "random")) {
+        throw new Error("Settings did not save. Please reload and try again.");
+      }
+
+
       const couponSegs = payload.config.segments.filter(
         (s) => s.type === "coupon" && s.code && (s.discount_value ?? 0) > 0
       );
