@@ -5,7 +5,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { IndiaFlagIcon } from "@/components/ui/IndiaFlagIcon";
 import { supabase } from "@/integrations/supabase/client";
+import { normalizePhone } from "@/lib/phoneUtils";
 import { toast } from "sonner";
+
 
 interface LeadFormProps {
   storeId: string;
@@ -27,10 +29,13 @@ const APP_ID = "spin-wheel";
  */
 function rememberPhoneForCheckout(phone: string) {
   try {
-    localStorage.setItem("checkout_phone", phone);
+    // Store the canonical (+91…) form so the Buy Now gate and checkout both
+    // recognise it and never ask for the number again.
+    localStorage.setItem("checkout_phone", normalizePhone(phone) || phone);
     localStorage.setItem("sf_spin_phone", phone);
   } catch {}
 }
+
 
 export default function LeadForm({
   storeId,
