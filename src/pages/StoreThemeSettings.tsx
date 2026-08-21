@@ -18,6 +18,8 @@ import ThemeMobilePreviewDrawer from "@/components/dashboard/theme/ThemeMobilePr
 import ThemeCategoryStyleIcon from "@/components/dashboard/theme/ThemeCategoryStyleIcon";
 import NavIconPicker from "@/components/dashboard/theme/NavIconPicker";
 import TrustVideosManager from "@/components/dashboard/theme/TrustVideosManager";
+import DarkEffectPreview from "@/components/settings/DarkEffectPreview";
+
 
 import { getHeadingTuning, getBodyTuning, getPairingAdvice } from "@/lib/themeUtils";
 
