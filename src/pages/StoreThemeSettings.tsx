@@ -1056,6 +1056,17 @@ export default function StoreThemeSettings() {
     saveConfigMutation.mutate(nextConfig);
   };
 
+  // Night-mode switch animation — same reasoning as product cards: a single
+  // direct pick, so persist it right away instead of relying on the save bar.
+  const selectDarkEffect = (value: string) => {
+    const nextConfig = { ...config, dark_toggle_effect: value };
+    setConfig(nextConfig);
+    setDirty(false);
+    sendToIframe(nextConfig);
+    saveConfigMutation.mutate(nextConfig);
+  };
+
+
   const resetToDefaults = () => {
     setConfig(defaults);
     setDirty(true);
