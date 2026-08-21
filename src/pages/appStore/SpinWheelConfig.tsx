@@ -228,9 +228,10 @@ export default function SpinWheelConfigPage() {
         // Persist immediately — otherwise the toggle looks on but the app was
         // never installed (no store_apps row) until the user pressed Save.
         setEnabled(v);
-        upsert.mutate({ enabled: v, config });
+        upsert.mutate({ enabled: v, config: stampedConfig(config) });
       }}
-      onSave={() => upsert.mutate({ enabled, config })}
+      onSave={() => upsert.mutate({ enabled, config: stampedConfig(config) })}
+
       saving={upsert.isPending}
       saveDisabled={(config.outcome_mode || "random") !== "fixed" && totalWeight <= 0}
       saveLabel={isInstalled ? "Save" : "Install"}
