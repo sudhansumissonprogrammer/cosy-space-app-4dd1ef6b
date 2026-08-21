@@ -107,7 +107,10 @@ export default function BundleBuilderConfig() {
   }, [row?.id]);
 
   const upsert = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (opts?: { enabled?: boolean }) => {
+      // The toggle persists immediately, so read the incoming value instead of
+      // the (still stale) `enabled` state captured in this closure.
+      const nextEnabled = opts?.enabled ?? enabled;
       // Validate before persisting so a broken bundle can never reach shoppers.
       for (const b of cfg.bundles) {
         if (!b.name?.trim()) throw new Error("Every bundle needs a name");
