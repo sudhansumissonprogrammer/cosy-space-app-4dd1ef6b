@@ -70,25 +70,24 @@ export default function SpinWheelConfigPage() {
 
   const upsert = useMutation({
     mutationFn: async (payload: { enabled: boolean; config: SpinWheelConfig }) => {
-      const { error } = await (supabase as any)
+      if (!storeId) throw new Error("Store is still loading. Please try again.");
+
+      const { data: saved, error } = await (supabase as any)
         .from("store_apps")
         .upsert(
           { store_id: storeId, app_id: APP_ID, enabled: payload.enabled, config: payload.config },
           { onConflict: "store_id,app_id" }
-        );
+        )
+        .select("*")
+        .single();
       if (error) throw error;
 
-      // Read back: an RLS-blocked write can return no error yet change nothing,
-      // which is how a merchant's "always this slice" choice appeared saved in
-      // the UI while shoppers kept getting a random prize.
-      const { data: verify } = await (supabase as any)
-        .from("store_apps")
-        .select("config")
-        .eq("store_id", storeId!)
-        .eq("app_id", APP_ID)
-        .maybeSingle();
-      const savedMode = verify?.config?.outcome_mode ?? "random";
-      if (!verify || savedMode !== (payload.config.outcome_mode ?? "random")) {
+      const savedMode = saved?.config?.outcome_mode ?? "random";
+      if (
+        !saved ||
+        saved.enabled !== payload.enabled ||
+        savedMode !== (payload.config.outcome_mode ?? "random")
+      ) {
         throw new Error("Settings did not save. Please reload and try again.");
       }
 
@@ -118,15 +117,23 @@ export default function SpinWheelConfigPage() {
           if (cErr) throw cErr;
         }
       }
+
+      return saved;
     },
-    onSuccess: () => {
+    onSuccess: (saved) => {
+      setEnabled(!!saved.enabled);
+      setConfig({ ...defaults, ...(saved.config || {}) });
+      qc.setQueryData(["store-app", storeId, APP_ID], saved);
       qc.invalidateQueries({ queryKey: ["store-app", storeId, APP_ID] });
       qc.invalidateQueries({ queryKey: ["store-apps", storeId] });
       qc.invalidateQueries({ queryKey: ["coupons", storeId] });
       qc.invalidateQueries({ queryKey: ["store-enabled-apps"] });
       toast.success("Saved");
     },
-    onError: (e: any) => toast.error(e?.message || "Save failed"),
+    onError: (e: any) => {
+      setEnabled(!!row?.enabled);
+      toast.error(e?.message || "Save failed");
+    },
   });
 
   const uninstall = useMutation({
@@ -232,6 +239,7 @@ export default function SpinWheelConfigPage() {
       subtitle={appMeta.tagline}
       enabled={enabled}
       onEnabledChange={(v) => {
+        if (upsert.isPending) return;
         // Persist immediately — otherwise the toggle looks on but the app was
         // never installed (no store_apps row) until the user pressed Save.
         setEnabled(v);
@@ -246,7 +254,7 @@ export default function SpinWheelConfigPage() {
     >
       {!enabled && (
         <div className="mx-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 md:mx-0">
-          The wheel is not shown to shoppers until you toggle <strong>Enabled</strong> and click <strong>Save</strong>.
+          The wheel is not shown to shoppers until you toggle <strong>Enabled</strong>. The toggle saves automatically.
         </div>
       )}
 
