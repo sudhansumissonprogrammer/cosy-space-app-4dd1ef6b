@@ -2,7 +2,9 @@
  * Theme 16 — Exact duplicate of Theme 1 (Classic).
  * Only difference: Buy Now triggers a phone-collection modal before checkout.
  */
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useLayoutEffect } from "react";
+import "@/styles/sf-dark.css";
+import { applySfDarkClass, readSfDark } from "@/lib/sfDarkMode";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 import CheckoutAwareLayout from "@/components/storefront/CheckoutAwareLayout";
 import StorefrontShell from "@/layouts/StorefrontShell";
@@ -13,6 +15,13 @@ const VALID_NAV_STYLES = ["classic", "modern", "v15", "v17", "glass", "notch", "
 type NavVariant = typeof VALID_NAV_STYLES[number];
 
 export default function StorefrontLayoutV16({ slugOverride }: { slugOverride?: string } = {}) {
+  // Restore the shopper's night-mode choice before the storefront paints.
+  useLayoutEffect(() => {
+    const on = readSfDark() && !window.location.pathname.includes("/checkout");
+    applySfDarkClass(on);
+    return () => applySfDarkClass(false);
+  }, []);
+
   return (
     <StorefrontShell
       slugOverride={slugOverride}
@@ -40,6 +49,7 @@ export default function StorefrontLayoutV16({ slugOverride }: { slugOverride?: s
               ) : undefined
             }
             swapCartWhatsApp
+            showDarkToggle
             showPremiumBadge={(themeConfig as any)?.show_premium_header_badge === true}
             headerStyle={themeConfig?.header_style || "normal"}
           />
