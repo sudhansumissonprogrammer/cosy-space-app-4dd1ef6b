@@ -81,7 +81,12 @@ export default function LeadForm({
     const { data, error } = await supabase.functions.invoke("store-lead-otp-send", {
       body: { store_id: storeId, app_id: APP_ID, phone },
     });
-    const payload: any = data ?? {};
+    let payload: any = data ?? {};
+    // invoke() collapses every non-2xx into a generic message — the real reason
+    // (undeliverable number, cooldown, …) only lives in the response body.
+    if (error && (error as any)?.context) {
+      try { payload = JSON.parse(await (error as any).context.text()); } catch {}
+    }
     if (error || payload?.error) {
       throw new Error(payload?.message || error?.message || "Could not send the code");
     }
@@ -91,6 +96,7 @@ export default function LeadForm({
     setResendIn(Number(payload?.resend_after) || 30);
     toast.success("Code sent on WhatsApp");
   };
+
 
   const submitPhone = async () => {
     if (!canSubmit) return;
@@ -132,11 +138,15 @@ export default function LeadForm({
           metadata: { source: "spin-wheel", ua: navigator.userAgent.slice(0, 200) },
         },
       });
-      const payload: any = data ?? {};
+      let payload: any = data ?? {};
+      if (error && (error as any)?.context) {
+        try { payload = JSON.parse(await (error as any).context.text()); } catch {}
+      }
       if (error || payload?.error) {
         setOtpError(payload?.message || error?.message || "Incorrect code");
         return;
       }
+
       finish();
     } catch (e: any) {
       setOtpError(e?.message || "Could not verify. Try again.");

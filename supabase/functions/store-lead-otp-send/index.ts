@@ -148,7 +148,46 @@ Deno.serve(async (req) => {
       }, 502);
     }
 
+    // Meta accepting the message (200 + wamid) does NOT mean it was delivered.
+    // Numbers with no WhatsApp account come back asynchronously as error 131026
+    // ("Message undeliverable") on the status webhook, which is exactly what a
+    // shopper experiences as "the OTP screen opened but no code ever arrived".
+    // Poll the logged row briefly so we can fail fast with an honest message
+    // instead of parking them on a code screen that will never fill.
+    const metaId: string | null = sendBody?.message_id ?? null;
+    if (metaId) {
+      for (let i = 0; i < 12; i++) {
+        await new Promise((r) => setTimeout(r, 600));
+        const { data: log } = await admin
+          .from("whatsapp_messages")
+          .select("status, error_message")
+          .eq("meta_message_id", metaId)
+          .maybeSingle();
+        const st = (log as any)?.status;
+        if (st === "delivered" || st === "read") break;
+        if (st === "failed") {
+          const err = String((log as any)?.error_message || "");
+          console.error("store lead otp undeliverable", metaId, err);
+          // Free the cooldown slot so the shopper can immediately retry with
+          // a different (WhatsApp-active) number.
+          await admin
+            .from("auth_otp_codes")
+            .update({ consumed_at: new Date().toISOString() })
+            .eq("purpose", PURPOSE)
+            .eq("phone", phone)
+            .is("consumed_at", null);
+          return json({
+            error: "undeliverable",
+            message: /131026/.test(err)
+              ? "This number can't receive WhatsApp messages. Please use a number that has WhatsApp active."
+              : "WhatsApp could not deliver the code to this number. Please try another number.",
+          }, 502);
+        }
+      }
+    }
+
     return json({ ok: true, sent: true, expires_in: OTP_TTL_MS / 1000, resend_after: RESEND_COOLDOWN_MS / 1000 });
+
   } catch (e) {
     return json({ error: "unexpected", message: (e as Error).message }, 500);
   }
