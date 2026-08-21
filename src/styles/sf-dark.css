@@ -1,0 +1,153 @@
+/**
+ * Dark Streetwear mode — Theme 16 (Classic + Quick Buy) only.
+ * Every rule is scoped under `html.sf-dark`, so when the toggle is OFF the
+ * storefront renders exactly as before (zero cascade impact).
+ *
+ * Palette (same all-black editorial system as Theme 18):
+ *   bg #0a0a0a · surface #141414 · raised #1c1c1c
+ *   text #f2f2f2 · muted #a8a8a8 · hairline rgba(255,255,255,.12)
+ */
+
+html.sf-dark {
+  color-scheme: dark;
+  background-color: #0a0a0a;
+}
+
+html.sf-dark body {
+  background-color: #0a0a0a;
+
+  /* storefront tokens */
+  --storefront-bg: #0a0a0a;
+  --storefront-text: #f2f2f2;
+
+  /* shadcn tokens (HSL triples) */
+  --background: 0 0% 4%;
+  --foreground: 0 0% 95%;
+  --card: 0 0% 8%;
+  --card-foreground: 0 0% 95%;
+  --popover: 0 0% 8%;
+  --popover-foreground: 0 0% 95%;
+  --secondary: 0 0% 12%;
+  --secondary-foreground: 0 0% 90%;
+  --muted: 0 0% 14%;
+  --muted-foreground: 0 0% 66%;
+  --accent: 0 0% 15%;
+  --accent-foreground: 0 0% 95%;
+  --border: 0 0% 20%;
+  --input: 0 0% 20%;
+  --ring: 0 0% 60%;
+}
+
+/* ── Surfaces ─────────────────────────────────────────────── */
+html.sf-dark .bg-white,
+html.sf-dark .bg-gray-50,
+html.sf-dark .bg-gray-100,
+html.sf-dark .bg-slate-50,
+html.sf-dark .bg-slate-100,
+html.sf-dark .bg-neutral-50,
+html.sf-dark .bg-neutral-100,
+html.sf-dark .bg-zinc-50,
+html.sf-dark .bg-zinc-100,
+html.sf-dark .bg-background,
+html.sf-dark .bg-card {
+  background-color: #141414 !important;
+}
+
+html.sf-dark .bg-gray-200,
+html.sf-dark .bg-slate-200,
+html.sf-dark .bg-neutral-200,
+html.sf-dark .bg-muted {
+  background-color: #1c1c1c !important;
+}
+
+/* ── Text ─────────────────────────────────────────────────── */
+html.sf-dark .text-black,
+html.sf-dark .text-gray-900,
+html.sf-dark .text-gray-800,
+html.sf-dark .text-gray-700,
+html.sf-dark .text-slate-900,
+html.sf-dark .text-slate-800,
+html.sf-dark .text-slate-700,
+html.sf-dark .text-neutral-900,
+html.sf-dark .text-neutral-800,
+html.sf-dark .text-zinc-900,
+html.sf-dark .text-zinc-800,
+html.sf-dark .text-foreground,
+html.sf-dark .text-card-foreground {
+  color: #f2f2f2 !important;
+}
+
+html.sf-dark .text-gray-600,
+html.sf-dark .text-gray-500,
+html.sf-dark .text-slate-600,
+html.sf-dark .text-slate-500,
+html.sf-dark .text-neutral-600,
+html.sf-dark .text-neutral-500,
+html.sf-dark .text-zinc-600,
+html.sf-dark .text-zinc-500,
+html.sf-dark .text-muted-foreground {
+  color: #a8a8a8 !important;
+}
+
+html.sf-dark .text-gray-400,
+html.sf-dark .text-gray-300,
+html.sf-dark .text-slate-400,
+html.sf-dark .text-neutral-400 {
+  color: #8f8f8f !important;
+}
+
+/* ── Borders & dividers ───────────────────────────────────── */
+html.sf-dark .border-white,
+html.sf-dark .border-gray-100,
+html.sf-dark .border-gray-200,
+html.sf-dark .border-gray-300,
+html.sf-dark .border-slate-100,
+html.sf-dark .border-slate-200,
+html.sf-dark .border-neutral-100,
+html.sf-dark .border-neutral-200,
+html.sf-dark .border-border,
+html.sf-dark .divide-gray-100 > * + *,
+html.sf-dark .divide-gray-200 > * + * {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* ── Depth: shadows read as glow-less hairlines on black ──── */
+html.sf-dark .shadow-sm,
+html.sf-dark .shadow,
+html.sf-dark .shadow-md,
+html.sf-dark .shadow-lg,
+html.sf-dark .shadow-xl {
+  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.06),
+    0 8px 24px -12px rgba(0, 0, 0, 0.9) !important;
+}
+
+/* ── Inputs ───────────────────────────────────────────────── */
+html.sf-dark input,
+html.sf-dark textarea,
+html.sf-dark select {
+  background-color: #141414;
+  color: #f2f2f2;
+  border-color: rgba(255, 255, 255, 0.14);
+}
+html.sf-dark input::placeholder,
+html.sf-dark textarea::placeholder {
+  color: #7d7d7d;
+}
+
+/* ── Skeletons ────────────────────────────────────────────── */
+html.sf-dark .animate-pulse {
+  background-color: transparent;
+}
+
+/* Product imagery must never be filtered/dimmed */
+html.sf-dark img,
+html.sf-dark video {
+  filter: none !important;
+}
+
+/* Opt-out hook for anything that must stay light */
+html.sf-dark .sf-no-dark,
+html.sf-dark .sf-no-dark * {
+  color: initial;
+  background-color: initial;
+}
