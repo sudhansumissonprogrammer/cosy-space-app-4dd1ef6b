@@ -495,8 +495,32 @@ export default function SpinWheelConfigPage() {
                   <Input value={config.marketing_consent_label} onChange={(e) => setConfig((c) => ({ ...c, marketing_consent_label: e.target.value }))} />
                 </div>
               </div>
+
+              <div className="rounded-lg border p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <Label className="text-sm font-semibold">Verify mobile with WhatsApp OTP</Label>
+                    <p className="text-[11px] text-muted-foreground">
+                      Shopper gets a 6-digit code on WhatsApp before the coupon unlocks. Blocks fake numbers and
+                      guarantees every lead is reachable.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={config.require_otp === true}
+                    onCheckedChange={(v) => setConfig((c) => ({ ...c, require_otp: v }))}
+                  />
+                </div>
+                {config.require_otp === true && (
+                  <p className="mt-2 rounded-md bg-muted p-2 text-[11px] text-muted-foreground">
+                    Each OTP is charged as a WhatsApp authentication message from your wallet. Codes expire in 5
+                    minutes, allow 5 attempts, and are rate-limited per number and device.
+                  </p>
+                )}
+              </div>
             </CardContent>
           </Card>
+
+
 
           <Card>
             <CardHeader>
