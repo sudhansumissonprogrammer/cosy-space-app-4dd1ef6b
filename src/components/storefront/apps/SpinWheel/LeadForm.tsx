@@ -138,11 +138,15 @@ export default function LeadForm({
           metadata: { source: "spin-wheel", ua: navigator.userAgent.slice(0, 200) },
         },
       });
-      const payload: any = data ?? {};
+      let payload: any = data ?? {};
+      if (error && (error as any)?.context) {
+        try { payload = JSON.parse(await (error as any).context.text()); } catch {}
+      }
       if (error || payload?.error) {
         setOtpError(payload?.message || error?.message || "Incorrect code");
         return;
       }
+
       finish();
     } catch (e: any) {
       setOtpError(e?.message || "Could not verify. Try again.");
