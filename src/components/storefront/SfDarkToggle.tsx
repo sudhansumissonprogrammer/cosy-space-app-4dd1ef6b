@@ -47,6 +47,9 @@ export default function SfDarkToggle({
     return () => {
       window.removeEventListener(SF_DARK_EVENT, onChange as EventListener);
       window.removeEventListener("storage", onStorage);
+      // The animation overlay lives on document.body, so it survives React
+      // teardown — drop it or it eats clicks on the next screen.
+      cancelSfDarkTransition();
     };
   }, []);
 
