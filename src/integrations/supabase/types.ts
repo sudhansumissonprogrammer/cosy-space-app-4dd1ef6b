@@ -3374,6 +3374,7 @@ export type Database = {
           button_style: string
           category_style: string
           created_at: string
+          dark_toggle_effect: string
           font_preset: string | null
           header_logo_alignment: string
           header_style: string
@@ -3405,6 +3406,7 @@ export type Database = {
           button_style?: string
           category_style?: string
           created_at?: string
+          dark_toggle_effect?: string
           font_preset?: string | null
           header_logo_alignment?: string
           header_style?: string
@@ -3436,6 +3438,7 @@ export type Database = {
           button_style?: string
           category_style?: string
           created_at?: string
+          dark_toggle_effect?: string
           font_preset?: string | null
           header_logo_alignment?: string
           header_style?: string
