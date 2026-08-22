@@ -401,3 +401,96 @@ html.sf-dark .ring-black\/5,
 html.sf-dark .ring-black\/20 {
   --tw-ring-color: rgba(255, 255, 255, 0.14) !important;
 }
+
+/* ══════════════════════════════════════════════════════════════
+ * SPIN WHEEL POPUP — always renders in its own palette
+ * The spin dialog ships a self-contained design (dark gradient
+ * shell + cream ticket + white lead/OTP card). The global dark
+ * remaps above turned its slate text to near-white on top of the
+ * cream/white cards, making "You Won", the code, the form labels
+ * and the OTP field invisible. Everything inside [data-sf-spin]
+ * is therefore reset to its light-mode values.
+ * ══════════════════════════════════════════════════════════════ */
+html.sf-dark [data-sf-spin] .bg-white,
+html.sf-dark [data-sf-spin] .bg-gray-50,
+html.sf-dark [data-sf-spin] .bg-slate-50,
+html.sf-dark [data-sf-spin] .bg-gray-100,
+html.sf-dark [data-sf-spin] .bg-slate-100 {
+  background-color: #ffffff !important;
+}
+
+html.sf-dark [data-sf-spin] .text-slate-900,
+html.sf-dark [data-sf-spin] .text-gray-900,
+html.sf-dark [data-sf-spin] .text-black,
+html.sf-dark [data-sf-spin] .text-foreground {
+  color: #0f172a !important;
+}
+
+html.sf-dark [data-sf-spin] .text-slate-800,
+html.sf-dark [data-sf-spin] .text-slate-700,
+html.sf-dark [data-sf-spin] .text-gray-700 {
+  color: #334155 !important;
+}
+
+html.sf-dark [data-sf-spin] .text-slate-600,
+html.sf-dark [data-sf-spin] .text-slate-500,
+html.sf-dark [data-sf-spin] .text-gray-600,
+html.sf-dark [data-sf-spin] .text-gray-500,
+html.sf-dark [data-sf-spin] .text-muted-foreground {
+  color: #64748b !important;
+}
+
+html.sf-dark [data-sf-spin] .text-slate-400,
+html.sf-dark [data-sf-spin] .text-gray-400,
+html.sf-dark [data-sf-spin] .placeholder\:text-slate-400::placeholder {
+  color: #94a3b8 !important;
+}
+
+html.sf-dark [data-sf-spin] .border-slate-200,
+html.sf-dark [data-sf-spin] .border-gray-200,
+html.sf-dark [data-sf-spin] .border-slate-100,
+html.sf-dark [data-sf-spin] .border-gray-100,
+html.sf-dark [data-sf-spin] .border-border {
+  border-color: #e2e8f0 !important;
+}
+
+/* Inputs (phone, OTP) — the global dark input rule made them
+   black-on-black inside the white card. */
+html.sf-dark [data-sf-spin] input,
+html.sf-dark [data-sf-spin] textarea,
+html.sf-dark [data-sf-spin] select {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0;
+}
+html.sf-dark [data-sf-spin] input::placeholder,
+html.sf-dark [data-sf-spin] textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Primary CTAs inside the popup keep their own brand fill instead of
+   the global "black tile" treatment. */
+html.sf-dark [data-sf-spin] button.bg-primary,
+html.sf-dark [data-sf-spin] .bg-primary {
+  background-color: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+/* Shell chrome stays as designed (dark gradient + white text). */
+html.sf-dark [data-sf-spin] .text-white,
+html.sf-dark [data-sf-spin] .text-white\/80,
+html.sf-dark [data-sf-spin] .text-white\/60 {
+  color: inherit;
+}
+html.sf-dark [data-sf-spin] .bg-white\/10 {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+html.sf-dark [data-sf-spin] .bg-white\/10 svg {
+  color: #ffffff !important;
+}
+html.sf-dark [data-sf-spin] .shadow-xl,
+html.sf-dark [data-sf-spin] .shadow-lg,
+html.sf-dark [data-sf-spin] .shadow-inner {
+  box-shadow: 0 20px 45px -20px rgba(0, 0, 0, 0.55) !important;
+}
