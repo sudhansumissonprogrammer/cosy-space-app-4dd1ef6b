@@ -40,7 +40,7 @@ const PAGE_SIZE = 24;
 /** Listing pages walked per run while backfilling. */
 const PAGE_BUDGET = 40;
 /** Newest pages re-scanned every run once backfill is done. */
-const STEADY_PAGES = 4;
+const STEADY_PAGES = 12;
 /** Max new products imported per run (each costs one PDP request). */
 const IMPORT_BUDGET = 260;
 const CONCURRENCY = 4;
