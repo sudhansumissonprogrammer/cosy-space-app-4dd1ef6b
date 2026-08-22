@@ -732,6 +732,22 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
         </div>
       )}
 
+      {isEditing && sourceUrl && (
+        <a
+          href={sourceUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5 transition-colors hover:bg-primary/10"
+        >
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-foreground">Open on {sourceLabel(sourcePlatform)}</p>
+            <p className="truncate text-xs text-muted-foreground">{sourceUrl}</p>
+          </div>
+          <ExternalLink className="h-4 w-4 shrink-0 text-primary" />
+        </a>
+      )}
+
+
       <form onSubmit={handleSubmit}>
         <Card className={cn(onClose && "border-0 shadow-none")}>
 
