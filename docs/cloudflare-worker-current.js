@@ -225,7 +225,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.78.0-direct-preview-origin";
+const WORKER_VERSION = "8.79.0-stale-shell-selfheal";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -3467,16 +3467,62 @@ async function proxyToOrigin(request) {
   }
 }
 
-async function proxyToOriginCached(request, ctx) {
+/**
+ * v8.79.0 — STALE-SHELL SELF-HEAL.
+ *
+ * Symptom seen 2026-08-22: the cached SPA shell still referenced the previous
+ * build's entry chunk (`/assets/index-<oldhash>.js`). After a publish that file
+ * no longer exists at origin → 404 → the Worker converted it to a 503, and the
+ * 404 was cached at the CF edge for 30 days (cacheEverything + cacheTtl), so
+ * EVERY storefront rendered a blank page until the shell TTL expired.
+ *
+ * Fix: (1) never long-cache a non-200 asset response, (2) when a hashed
+ * /assets/* file 404s, immediately invalidate the SPA shell + prebuilt head so
+ * the next HTML request pulls the current build hashes from origin.
+ */
+async function invalidateShellCaches(env, ctx) {
+  _memShell = null;
+  _memShellTs = 0;
+  _memPrebuiltHead = null;
+  const ops = [
+    cache.delete(new Request("https://cache/spa-shell")).catch(() => {}),
+    cache.delete(new Request("https://cache/prebuilt-head")).catch(() => {}),
+  ];
+  _kvWriteRecent.delete(SPA_SHELL_KV_KEY);
+  _kvWriteRecent.delete(PREBUILT_HEAD_KV_KEY);
+  if (env?.STORE_KV) {
+    ops.push(kvDeleteForce(env, SPA_SHELL_KV_KEY));
+    ops.push(kvDeleteForce(env, PREBUILT_HEAD_KV_KEY));
+  }
+  const done = Promise.allSettled(ops);
+  if (ctx?.waitUntil) ctx.waitUntil(done);
+  return done;
+}
+
+// Only self-heal once per isolate per minute — a burst of stale chunk requests
+// must not turn into a KV delete storm.
+let _lastShellSelfHeal = 0;
+function maybeSelfHealShell(env, ctx) {
+  const now = Date.now();
+  if (now - _lastShellSelfHeal < 60_000) return;
+  _lastShellSelfHeal = now;
+  invalidateShellCaches(env, ctx);
+}
+
+async function proxyToOriginCached(request, ctx, env) {
   if (request.method !== "GET" && request.method !== "HEAD") {
     return proxyToOrigin(request);
   }
 
   const cached = await cache.match(request).catch(() => null);
-  if (cached) {
+  if (cached && cached.ok) {
     const hit = new Response(request.method === "HEAD" ? null : cached.body, cached);
     hit.headers.set("X-Static-Asset-Cache", "HIT");
     return hit;
+  }
+  // A previously stored error response must never be replayed for 30 days.
+  if (cached && !cached.ok) {
+    ctx?.waitUntil?.(cache.delete(request).catch(() => {}));
   }
 
   const url = new URL(request.url);
@@ -3497,10 +3543,30 @@ async function proxyToOriginCached(request, ctx) {
       method: request.method,
       headers,
       signal: controller.signal,
-      cf: { cacheTtl: 2592000, cacheEverything: true },
+
+      // Cache ONLY successful bodies for 30 days. A 404 (stale build hash) or
+      // 5xx must expire in seconds so a fresh publish heals itself.
+      cf: {
+        cacheEverything: true,
+        cacheTtlByStatus: { "200-299": 2592000, "404": 10, "500-599": 0 },
+      },
     });
     clearTimeout(timeout);
-    if (!res.ok) return proxyToOrigin(request);
+    if (!res.ok) {
+      // Stale hashed chunk → the cached SPA shell is out of date. Flush it.
+      if (res.status === 404 && /^\/assets\/.*\.(?:js|mjs|css)$/i.test(new URL(request.url).pathname)) {
+        maybeSelfHealShell(env, ctx);
+      }
+      return new Response("Upstream asset unavailable", {
+        status: 503,
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+          "CDN-Cache-Control": "no-store",
+        },
+      });
+    }
+
     const newRes = new Response(request.method === "HEAD" ? null : res.body, res);
     if (newRes.ok) {
       newRes.headers.set("Cache-Control", "public, max-age=2592000, immutable");
@@ -6811,7 +6877,13 @@ async function _handleFetch(request, env, ctx) {
       if (cached) {
         if (cached.status === 403 && cached.headers.get("x-blocked-by") === "shopbanao-bot-policy") {
           ctx.waitUntil(cache.delete(request).catch(() => {}));
+        } else if (cached.status >= 500) {
+          // v8.79.0: never replay a stored 5xx (e.g. the "Upstream asset
+          // unavailable" 503 from a stale build hash) — it blanks storefronts
+          // for the whole TTL. Drop it and fall through to a live fetch.
+          ctx.waitUntil(cache.delete(request).catch(() => {}));
         } else {
+
           const hit = new Response(cached.body, cached);
           hit.headers.set("X-Edge-Cache", "HIT-EARLY");
           hit.headers.set("cf-cache-status", "HIT");
@@ -7081,7 +7153,7 @@ async function _handleFetch(request, env, ctx) {
     // (not just /assets/* and /static/*). Icons, manifests, SW files, favicons,
     // and any extensioned file are immutable in practice — cache them at the
     // edge with 30-day TTL so repeat visitors never re-execute worker logic.
-    return proxyToOriginCached(request, ctx);
+    return proxyToOriginCached(request, ctx, env);
   }
 
   // ─── PHASE 1 FIX #1: SUPABASE STORAGE IMAGE EDGE CACHE (1yr immutable) ───
