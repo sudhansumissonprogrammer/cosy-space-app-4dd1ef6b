@@ -70,6 +70,7 @@ export default function ShopByVideoCarousel({ storeSlug, storeId, previewConfig,
         const data = await fetchStoreEnabledApps(storeSlug);
         if (cancelled) return;
         const row = Array.isArray(data) ? data.find((r: any) => r.app_id === "shop-by-video") : null;
+        console.log("[SBVDBG] cfg row", !!row, storeSlug, storeId);
         setConfig(row ? { ...(row.config || {}), enabled: true } : null);
       } catch {
         if (!cancelled) setConfig(null);
@@ -81,6 +82,7 @@ export default function ShopByVideoCarousel({ storeSlug, storeId, previewConfig,
   // Fetch products with video
   useEffect(() => {
     if (previewProducts) return;
+    console.log("[SBVDBG] prod effect", !!config, storeId);
     if (!config || !storeId) return;
     let cancelled = false;
     (async () => {
