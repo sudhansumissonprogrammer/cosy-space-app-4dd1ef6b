@@ -849,7 +849,9 @@ export default function StoreOrders() {
       {/* Invoice Dialog */}
       <Dialog open={!!invoiceOrder} onOpenChange={(v) => { if (!v) setInvoiceOrder(null); }}>
         <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
-          {invoiceOrder && <OrderInvoice order={withItems(invoiceOrder)} store={store} onClose={() => setInvoiceOrder(null)} />}
+          {invoiceOrder && detailItems && (
+            <OrderInvoice order={withItems(invoiceOrder)} store={store} onClose={() => setInvoiceOrder(null)} />
+          )}
         </DialogContent>
       </Dialog>
     </div>
@@ -954,10 +956,10 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
                   <OrderItemImage imageUrl={item.image_url || item.products?.image_url} productName={item.product_name} />
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{item.product_name}</p>
-                    <p className="text-xs text-muted-foreground">Qty: {item.quantity} × {order.currency} {Number(item.unit_price).toFixed(0)}</p>
+                    <p className="text-xs text-muted-foreground">Qty: {item.quantity} × {order.currency} {Number.isFinite(Number(item.unit_price)) ? Number(item.unit_price).toFixed(0) : "…"}</p>
                   </div>
                 </div>
-                <p className="text-sm font-semibold text-foreground shrink-0">{order.currency} {Number(item.total).toFixed(0)}</p>
+                <p className="text-sm font-semibold text-foreground shrink-0">{order.currency} {Number.isFinite(Number(item.total)) ? Number(item.total).toFixed(0) : "…"}</p>
               </div>
             ))}
           </div>

@@ -32,6 +32,12 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
   });
 
   const items = order.order_items || [];
+  // Line items can arrive lazily (the orders list only ships name + qty), so
+  // never let an undefined price render as "NaN" on screen or in the print job.
+  const money = (v: any, digits = 2) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n.toFixed(digits) : (0).toFixed(digits);
+  };
   const currency = order.currency || store?.currency || "INR";
   const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
   const subtotal = items.reduce((sum: number, item: any) => sum + Number(item.total || 0), 0);
@@ -213,8 +219,8 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
           <td>${idx + 1}</td>
           <td class="name">${item.product_name}</td>
           <td class="c">${item.quantity || 1}</td>
-          <td class="r">${currencySymbol}${Number(item.unit_price || item.total / (item.quantity || 1)).toFixed(2)}</td>
-          <td class="r">${currencySymbol}${Number(item.total).toFixed(2)}</td>
+          <td class="r">${currencySymbol}${money(item.unit_price ?? item.total / (item.quantity || 1))}</td>
+          <td class="r">${currencySymbol}${money(item.total)}</td>
         </tr>
       `).join("")}
     </tbody>
@@ -345,10 +351,10 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
                     <td className="px-1.5 py-1 text-[9px] font-medium text-foreground truncate max-w-[100px]">{item.product_name}</td>
                     <td className="px-1.5 py-1 text-[9px] text-center text-muted-foreground">{item.quantity || 1}</td>
                     <td className="px-1.5 py-1 text-[9px] text-right tabular-nums text-muted-foreground">
-                      {currencySymbol}{Number(item.unit_price || item.total / (item.quantity || 1)).toFixed(2)}
+                      {currencySymbol}{money(item.unit_price ?? item.total / (item.quantity || 1))}
                     </td>
                     <td className="px-1.5 py-1 text-[9px] text-right tabular-nums font-medium text-foreground">
-                      {currencySymbol}{Number(item.total).toFixed(2)}
+                      {currencySymbol}{money(item.total)}
                     </td>
                   </tr>
                 );

@@ -5564,6 +5564,12 @@ export type Database = {
           title: string
         }[]
       }
+      get_store_disabled_apps: {
+        Args: { _store_slug: string }
+        Returns: {
+          app_id: string
+        }[]
+      }
       get_store_enabled_apps: {
         Args: { _store_slug: string }
         Returns: {

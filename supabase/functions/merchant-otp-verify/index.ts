@@ -105,13 +105,23 @@ Deno.serve(async (req) => {
       .eq("user_id", userId)
       .maybeSingle();
 
-    if (existingProfile) {
-      await admin
-        .from("profiles")
-        .update({ phone, phone_verified: true })
-        .eq("user_id", userId);
-    } else {
-      await admin.from("profiles").insert({ user_id: userId, phone, phone_verified: true });
+    // profiles.phone is unique — surface a clash instead of silently ending up
+    // with an account that has no stored/verified mobile.
+    const profileWrite = existingProfile
+      ? await admin.from("profiles").update({ phone, phone_verified: true }).eq("user_id", userId)
+      : await admin.from("profiles").insert({ user_id: userId, phone, phone_verified: true });
+
+    if (profileWrite.error) {
+      const dup = /duplicate key|unique/i.test(profileWrite.error.message);
+      return json(
+        {
+          error: dup ? "phone_taken" : "profile_write_failed",
+          message: dup
+            ? "This mobile number is already linked to another account. Please use a different number or log in."
+            : "Could not save your mobile number. Please try again.",
+        },
+        dup ? 409 : 500,
+      );
     }
 
     // Mint a session without touching the password.

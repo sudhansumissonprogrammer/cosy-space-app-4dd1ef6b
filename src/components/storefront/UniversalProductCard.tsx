@@ -73,6 +73,7 @@ import { useVariantCount } from "@/hooks/useVariantCounts";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import WarrantyBadge from "./WarrantyBadge";
 import ProductCardVideo from "./ProductCardVideo";
+import { useAppDisabled } from "@/hooks/useAppDisabled";
 
 interface Props {
   product: any;
@@ -87,8 +88,8 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
   preloadCardStyle(store?.theme === "theme-19" || store?.theme === "theme-20" ? store.theme : cardStyle);
   const [variantOpen, setVariantOpen] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
-  // Tap-to-play video is available on every store/theme: it costs nothing
-  // until the shopper taps, so it is not gated behind the App Store add-on.
+  // Tap-to-play video is available on every store/theme by default; the
+  // App Store "Card Video (Mobile)" toggle is an explicit opt-out.
   const inlineVideoUrl = ((product as any)?.video_url as string | null) || null;
   // Some payloads (edge-cached product lists, shell previews) omit the column
   // entirely — batch-resolve it so those cards still get the play badge.
@@ -101,6 +102,10 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
     return requestCardVideo(product.id, (url) => setLookedUp(url));
   }, [needsLookup, product?.id]);
   const cardVideoUrl = inlineVideoUrl || lookedUp;
+  // Default ON for every store; merchants can switch the "Card Video (Mobile)"
+  // App Store add-on OFF to remove the play badge from their cards entirely.
+  const cardVideoOff = useAppDisabled(slug, "card-video", !!cardVideoUrl);
+  const showCardVideo = !!cardVideoUrl && !cardVideoOff;
 
   const variantCount = useVariantCount(product.id);
   const hasVariants = variantCount > 0;
@@ -183,8 +188,8 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
       onPointerDown={prime}
     >
       {wrapped}
-      {cardVideoUrl && (
-        <ProductCardVideo hostRef={hostRef} enabled videoUrl={cardVideoUrl} />
+      {showCardVideo && (
+        <ProductCardVideo hostRef={hostRef} enabled videoUrl={cardVideoUrl!} />
       )}
 
       {hasVariants && variantOpen && (
