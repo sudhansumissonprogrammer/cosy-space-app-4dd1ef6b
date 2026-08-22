@@ -56,9 +56,8 @@ export default function SpinWheelConfigPage() {
     },
   });
 
-  // Spin Wheel is live whenever it is installed. There is deliberately no
-  // separate off state: uninstalling is the only way to remove it.
-  const enabled = true;
+  // Spin Wheel is NOT mandatory: it only goes live on a storefront once the
+  // merchant installs it here. Uninstalling takes it off the storefront again.
   const [config, setConfig] = useState<SpinWheelConfig>(defaults);
   const [previewKey, setPreviewKey] = useState(0);
 
@@ -226,11 +225,12 @@ export default function SpinWheelConfigPage() {
     setConfig((c) => ({ ...c, segments: c.segments.filter((_, x) => x !== i) }));
   };
 
+  const isInstalled = !!row;
+  const enabled = isInstalled;
+
   if (isLoading) {
     return <div className="flex items-center justify-center p-16"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   }
-
-  const isInstalled = !!row;
 
   return (
     <AppConfigShell
@@ -243,16 +243,33 @@ export default function SpinWheelConfigPage() {
 
       saving={upsert.isPending}
       saveDisabled={(config.outcome_mode || "random") !== "fixed" && totalWeight <= 0}
-      saveLabel={isInstalled ? "Save" : "Install"}
+      saveLabel={isInstalled ? "Save changes" : "Install & go live"}
       statusBadge={<AppLiveBadge enabled={enabled} />}
     >
-      <div className="mx-4 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-900 md:mx-0">
-        <ShieldCheck className="h-4 w-4 shrink-0" />
-        Spin Wheel stays live after installation, and WhatsApp OTP verification is always required.
-      </div>
+      {isInstalled ? (
+        <div className="mx-4 flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-900 md:mx-0">
+          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>Installed and live on your storefront. WhatsApp OTP verification is always required for lead capture. Use “Uninstall app” below to take it off.</span>
+        </div>
+      ) : (
+        <div className="mx-4 rounded-lg border border-indigo-200 bg-indigo-50 p-3 md:mx-0">
+          <div className="flex items-start gap-2 text-xs text-indigo-900">
+            <Disc3 className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>Not installed yet — the wheel is <b>not</b> showing to shoppers. Set up your slices below, then install it to go live.</span>
+          </div>
+          <Button
+            className="mt-3 w-full gap-2 sm:w-auto"
+            onClick={() => upsert.mutate({ config: stampedConfig(config) })}
+            disabled={upsert.isPending || ((config.outcome_mode || "random") !== "fixed" && totalWeight <= 0)}
+          >
+            {upsert.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            Install &amp; go live
+          </Button>
+        </div>
+      )}
 
-      <div className="grid gap-3 md:gap-6 lg:grid-cols-3">
-        <div className="space-y-3 md:space-y-6 lg:col-span-2">
+      <div className="grid min-w-0 gap-3 md:gap-6 lg:grid-cols-3">
+        <div className="min-w-0 space-y-3 md:space-y-6 lg:col-span-2">
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Spin Outcome</CardTitle>
@@ -617,7 +634,7 @@ export default function SpinWheelConfigPage() {
           )}
         </div>
 
-        <div className="lg:col-span-1">
+        <div className="min-w-0 lg:col-span-1">
           <Card className="sticky top-4">
             <CardHeader className="flex-row items-center justify-between space-y-0">
               <CardTitle className="text-base flex items-center gap-2"><Eye className="h-4 w-4" /> Live preview</CardTitle>

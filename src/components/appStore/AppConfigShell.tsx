@@ -51,7 +51,8 @@ export function AppConfigShell({
   const hasSave = !!onSave;
 
   return (
-    <div className="pb-32 md:pb-6">
+    // pb accounts for BOTH the sticky action bar and the dashboard bottom nav (h-16).
+    <div className="w-full max-w-full overflow-x-hidden pb-48 md:pb-6">
       {/* Sticky app header */}
       <div className="sticky top-0 z-20 -mx-4 md:-mx-6 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-2.5 md:px-6 md:py-3">
@@ -109,13 +110,13 @@ export function AppConfigShell({
       </div>
 
       {/* Scrollable body */}
-      <div className="mx-auto max-w-5xl space-y-3 px-0 pt-3 md:space-y-4 md:pt-5">
+      <div className="mx-auto w-full max-w-5xl min-w-0 space-y-3 px-0 pt-3 md:space-y-4 md:pt-5">
         {children}
       </div>
 
-      {/* Sticky mobile save bar */}
+      {/* Sticky mobile save bar — offset above the dashboard bottom nav (h-16, z-30) */}
       {hasSave && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_16px_rgba(0,0,0,0.04)] backdrop-blur md:hidden">
+        <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-40 border-t bg-background/95 px-4 py-3 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] backdrop-blur md:hidden">
           <Button
             onClick={onSave}
             disabled={saving || saveDisabled}
