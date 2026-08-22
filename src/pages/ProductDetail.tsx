@@ -1767,7 +1767,7 @@ function ImageGallery({
             ref={emblaRef}
             className="overflow-hidden rounded-none sm:rounded-2xl bg-background cursor-zoom-in select-none"
           >
-            <div className="flex touch-pan-y items-start transition-[height] duration-200">
+            <div className="flex touch-pan-y items-stretch">
               {renderSlides.map((slide, i) => {
                 const realIdx = len === 1 ? 0 : i;
                 if (slide.kind === "video") {
@@ -1792,32 +1792,34 @@ function ImageGallery({
                 return (
                   <div
                     key={`${i}-${slide.url}`}
-                    className="relative flex-[0_0_100%] min-w-0 overflow-hidden"
+                    // Fixed aspect box (identical to the video slide) so a small
+                    // square photo and a tall video never make the carousel row
+                    // taller than the visible media — that mismatch was the source
+                    // of the large blank gap under short images.
+                    className="relative flex-[0_0_100%] min-w-0 overflow-hidden aspect-[4/5] sm:aspect-square bg-background"
                     onClick={() => setLightboxOpen(true)}
                   >
-                    {!loaded && <Skeleton className="aspect-[4/5] sm:aspect-square w-full rounded-none" />}
-                    {/* Blurred fill behind portrait images so gutters disappear on desktop */}
+                    {/* Blurred fill behind portrait/square images so gutters disappear */}
                     <div
                       aria-hidden
                       className="absolute inset-0 bg-center bg-cover scale-110 blur-2xl opacity-60"
                       style={{ backgroundImage: `url(${optimizedUrl})` }}
                     />
+                    {!loaded && <Skeleton className="absolute inset-0 z-[2] h-full w-full rounded-none" />}
                     <img
                       src={optimizedUrl}
                       alt={productName}
-                      className={`relative z-[1] w-full h-auto max-h-[80vh] sm:w-auto sm:max-w-full sm:mx-auto object-contain transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
+                      className={`relative z-[1] h-full w-full object-contain transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`}
                       decoding="async"
                       fetchPriority={realIdx === 0 ? "high" : "auto"}
                       draggable={false}
                       ref={(el) => {
                         if (el && el.complete && el.naturalWidth > 0 && !imageLoaded[realIdx]) {
                           setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }));
-                          embla?.reInit();
                         }
                       }}
                       onLoad={() => {
                         setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }));
-                        embla?.reInit();
                       }}
                       onError={() => setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }))}
                     />
@@ -1826,6 +1828,7 @@ function ImageGallery({
                 );
               })}
             </div>
+
           </div>
 
           {/* Zoom/enlarge icon — hide on video slides so it doesn't overlap the play button */}
