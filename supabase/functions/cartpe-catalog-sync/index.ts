@@ -40,7 +40,7 @@ const PAGE_SIZE = 24;
 /** Listing pages walked per run while backfilling. */
 const PAGE_BUDGET = 40;
 /** Newest pages re-scanned every run once backfill is done. */
-const STEADY_PAGES = 4;
+const STEADY_PAGES = 12;
 /** Max new products imported per run (each costs one PDP request). */
 const IMPORT_BUDGET = 260;
 const CONCURRENCY = 4;
@@ -336,7 +336,8 @@ Deno.serve(async (req) => {
 
     const pagesToWalk = phase === "backfill" ? pageBudget : STEADY_PAGES;
     const found = new Map<string, Candidate>();
-    let page = phase === "backfill" ? startPage : 1;
+    let page = startPage;
+
     let pagesWalked = 0;
     let reachedEnd = false;
     let listErrors = 0;
@@ -491,10 +492,12 @@ Deno.serve(async (req) => {
     }
 
     // ── Advance cursor / phase ───────────────────────────────────────────
-    // Only flip to steady once our catalog matches the source count; otherwise
-    // restart the walk from page 1 so anything skipped earlier gets picked up.
+    // Completeness is measured against products we imported FROM cartpe only.
+    // Counting every product (manual imports, hand-added items) inflated the
+    // total and made a grown source catalog look already-synced.
     const { count: ourCount } = await admin
-      .from("products").select("id", { count: "exact", head: true }).eq("store_id", store.id);
+      .from("products").select("id", { count: "exact", head: true })
+      .eq("store_id", store.id).eq("source_platform", "cartpe");
     let nextPhase = phase;
     let nextCursor = 1;
     if (phase === "backfill") {
@@ -503,15 +506,17 @@ Deno.serve(async (req) => {
         nextPhase = complete ? "steady" : "backfill";
         nextCursor = 1;
       } else nextCursor = page;
-    } else if (
-      // Steady only re-scans the newest pages. If the source catalog has grown
-      // well beyond what we hold (merchant bulk-uploaded), drop back into a
-      // full backfill walk automatically instead of waiting for a manual reset.
-      totalAtSource && (ourCount || 0) < totalAtSource - 25
-    ) {
-      nextPhase = "backfill";
-      nextCursor = 1;
+    } else {
+      // Steady rotates a small window across the WHOLE page space, so every
+      // category gets re-checked over time instead of only the first pages.
+      nextCursor = reachedEnd || (totalPages && page > totalPages) ? 1 : page;
+      // Source grew beyond what we hold → go back to a full backfill walk.
+      if (totalAtSource && (ourCount || 0) < totalAtSource - 5) {
+        nextPhase = "backfill";
+        nextCursor = 1;
+      }
     }
+
 
 
 
