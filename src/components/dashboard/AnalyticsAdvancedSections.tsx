@@ -13,7 +13,7 @@ import {
   Activity, MapPin, Smartphone, Megaphone, GitBranch, RefreshCcw,
   TrendingDown, Timer, MousePointerClick,
 } from "lucide-react";
-import { subDays, parseISO, format, startOfMonth, differenceInMonths } from "date-fns";
+import { parseISO, format } from "date-fns";
 
 const CHART_COLORS = [
   "hsl(var(--primary))",
