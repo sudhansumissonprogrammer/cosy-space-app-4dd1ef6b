@@ -339,6 +339,7 @@ export default function SpinWheelApp({ storeId, storeName, primaryColor, accentC
 
   const close = () => setPhase("hidden");
 
+
   if (phase === "hidden") return null;
 
   const winner = resultIndex != null ? segments[resultIndex] : null;
