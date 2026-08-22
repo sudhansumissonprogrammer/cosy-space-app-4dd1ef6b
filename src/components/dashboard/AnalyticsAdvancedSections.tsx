@@ -391,7 +391,7 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
         <Card className="border shadow-none">
           <CardHeader className="p-3 pb-0">
             <CardTitle className="text-sm font-medium flex items-center gap-1.5">
-              <TrendingDown className="h-3.5 w-3.5 text-destructive" /> Why they didn't buy (today)
+              <TrendingDown className="h-3.5 w-3.5 text-destructive" /> Why they didn&rsquo;t buy
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-2 space-y-3 text-xs">
@@ -473,7 +473,7 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
       {(orderCounts?.paid ?? 0) > 0 && (
         <Card className="border shadow-none">
           <CardHeader className="p-3 pb-0">
-            <CardTitle className="text-sm font-medium">New vs Repeat buyers (today)</CardTitle>
+            <CardTitle className="text-sm font-medium">New vs Repeat buyers</CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-2 space-y-3 text-xs">
             <div className="grid grid-cols-2 gap-2">
