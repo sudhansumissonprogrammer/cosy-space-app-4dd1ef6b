@@ -710,7 +710,10 @@ export default function StoreAnalytics() {
           rangeStart={rangeStart}
           rangeEnd={rangeEnd}
           breakdowns={analyticsBreakdowns}
+          rangeSessions={totalSessions}
+          ordersBreakdown={ordersBreakdown}
         />
+
       )}
     </div>
   );
