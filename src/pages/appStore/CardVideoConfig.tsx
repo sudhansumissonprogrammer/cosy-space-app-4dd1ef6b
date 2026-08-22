@@ -45,10 +45,12 @@ export default function CardVideoConfig() {
     },
   });
 
-  const [enabled, setEnabled] = useState(false);
+  // Default ON: the add-on runs for every store until a merchant switches it
+  // off, so a missing store_apps row means "enabled".
+  const [enabled, setEnabled] = useState(true);
 
   useEffect(() => {
-    if (row) setEnabled(!!row.enabled);
+    setEnabled(row ? !!row.enabled : true);
   }, [row?.id, row?.enabled]);
 
   const save = useMutation({
@@ -64,6 +66,7 @@ export default function CardVideoConfig() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["store-app", storeId, APP_ID] });
       qc.invalidateQueries({ queryKey: ["store-enabled-apps"] });
+      qc.invalidateQueries({ queryKey: ["store-disabled-apps"] });
       toast.success("Saved");
     },
     onError: (e: any) => toast.error(e?.message || "Could not save"),
@@ -93,7 +96,7 @@ export default function CardVideoConfig() {
       }}
       onSave={() => save.mutate(enabled)}
       saving={save.isPending}
-      statusBadge={<AppLiveBadge enabled={!!row?.enabled} />}
+      statusBadge={<AppLiveBadge enabled={row ? !!row.enabled : true} />}
     >
       <div className="mx-auto max-w-5xl space-y-4 px-4 py-4 md:px-6">
         <Card>
