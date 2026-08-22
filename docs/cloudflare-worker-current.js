@@ -6877,7 +6877,13 @@ async function _handleFetch(request, env, ctx) {
       if (cached) {
         if (cached.status === 403 && cached.headers.get("x-blocked-by") === "shopbanao-bot-policy") {
           ctx.waitUntil(cache.delete(request).catch(() => {}));
+        } else if (cached.status >= 500) {
+          // v8.79.0: never replay a stored 5xx (e.g. the "Upstream asset
+          // unavailable" 503 from a stale build hash) — it blanks storefronts
+          // for the whole TTL. Drop it and fall through to a live fetch.
+          ctx.waitUntil(cache.delete(request).catch(() => {}));
         } else {
+
           const hit = new Response(cached.body, cached);
           hit.headers.set("X-Edge-Cache", "HIT-EARLY");
           hit.headers.set("cf-cache-status", "HIT");
