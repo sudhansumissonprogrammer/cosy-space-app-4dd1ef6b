@@ -158,37 +158,22 @@ export default function StoreAnalytics() {
     },
   });
 
-  // Page views — RAW is only used for TODAY (the bucket not yet rolled up by
-  // the nightly cron). All historical days come from page_views_daily below.
-  // Previously this pulled 30 days of raw rows (up to 50k) which gets expensive
-  // at scale; narrowing to today keeps the dashboard fast at 100M+ rows.
-  const { data: pageViews } = useQuery({
-    queryKey: ["analytics-views-today", storeIds],
-    staleTime: 5 * 60_000,
-    refetchOnWindowFocus: false,
+  // Today's session count — exact server-side aggregate. Previously this pulled
+  // up to 200k raw page_view rows into the browser just to size one chart bucket.
+  const { data: todayTotals } = useQuery({
+    queryKey: ["analytics-today-totals", storeId],
+    staleTime: 60_000,
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
+    enabled: !!storeId,
     queryFn: async () => {
-      // Paginate today's raw pageviews. Server RPCs handle exact aggregates for
-      // long ranges; this list is only used for path-level detail on today.
-      const since = startOfDay(new Date()).toISOString();
-      const PAGE = 1000;
-      const rows: any[] = [];
-      for (let from = 0; from < 200_000; from += PAGE) {
-        const { data, error } = await supabase
-          .from("page_views")
-          .select("created_at, path, visitor_id, session_id, is_bot")
-          .in("store_id", storeIds)
-          .eq("is_bot", false)
-          .gte("created_at", since)
-          .order("created_at", { ascending: false })
-          .range(from, from + PAGE - 1);
-        if (error) throw error;
-        const batch = (data || []) as any[];
-        rows.push(...batch);
-        if (batch.length < PAGE) break;
-      }
-      return rows;
+      const { data, error } = await (supabase as unknown as RpcClient).rpc<{ sessions?: number | string }>(
+        "get_today_analytics",
+        { _store_id: storeId },
+      );
+      if (error) throw error;
+      return { sessions: Number(data?.sessions ?? 0) };
     },
-    enabled: storeIds.length > 0,
   });
 
   // Historical daily rollups — used for ranges > 30 days (90d / custom / all)
@@ -213,23 +198,34 @@ export default function StoreAnalytics() {
     enabled: storeIds.length > 0,
   });
 
-
-
-
-  // Customers — unified view (storefront + WhatsApp).
-  const { data: customers } = useQuery({
-    queryKey: ["analytics-customers", storeIds],
-    staleTime: 5 * 60 * 1000,
+  // Order breakdown for the SELECTED range — exact, server-side. The old client
+  // query silently truncated at 1000 rows and the repeat-rate card measured the
+  // store's entire lifetime instead of the chosen period.
+  const { data: ordersBreakdown } = useQuery({
+    queryKey: [
+      "analytics-orders-breakdown",
+      storeId,
+      dateRange,
+      customFrom?.toISOString() || null,
+      customTo?.toISOString() || null,
+    ],
+    staleTime: 60_000,
+    refetchOnWindowFocus: true,
+    enabled: !!storeId,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("merchant_customers_v")
-        .select("id, created_at, order_count")
-        .in("store_id", storeIds);
+      const { data, error } = await (supabase as unknown as RpcClient).rpc<Record<string, any>>(
+        "get_analytics_orders_breakdown",
+        {
+          _store_id: storeId,
+          _range_start: rangeStart.toISOString(),
+          _range_end: rangeEnd.toISOString(),
+        },
+      );
       if (error) throw error;
-      return data as any[];
+      return data || {};
     },
-    enabled: storeIds.length > 0,
   });
+
 
   const { data: trafficTotals } = useQuery({
     queryKey: [
