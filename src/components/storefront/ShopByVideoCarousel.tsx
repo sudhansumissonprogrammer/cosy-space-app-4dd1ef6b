@@ -14,7 +14,7 @@ import Autoplay from "embla-carousel-autoplay";
 import { Volume2, VolumeX, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchStoreEnabledApps } from "@/hooks/useStoreEnabledApps";
-import { storefrontPath } from "@/lib/subdomain";
+import { storefrontPath, getSubdomainSlug } from "@/lib/subdomain";
 import { cn } from "@/lib/utils";
 
 interface AppConfig {
@@ -42,7 +42,7 @@ interface Product {
 }
 
 interface Props {
-  storeSlug: string;
+  storeSlug?: string;
   storeId: string;
   /** Bypass RPC fetch — dashboard preview. */
   previewConfig?: AppConfig;
@@ -55,7 +55,13 @@ function formatMoney(amount: number, currency: string) {
   return `${sym}${Math.round(amount).toLocaleString("en-IN")}`;
 }
 
-export default function ShopByVideoCarousel({ storeSlug, storeId, previewConfig, previewProducts }: Props) {
+export default function ShopByVideoCarousel({ storeSlug: storeSlugProp, storeId, previewConfig, previewProducts }: Props) {
+  // On subdomain / custom-domain hosts the storefront routes are mounted at "/",
+  // so `useParams().slug` is undefined and callers used to pass `slug!` — that
+  // made `fetchStoreEnabledApps(undefined)` short-circuit to [], the config
+  // resolved to null and the whole section silently never rendered (the exact
+  // "Shop by Video missing on live store" bug). Resolve the slug locally.
+  const storeSlug = storeSlugProp || getSubdomainSlug() || "";
   const [config, setConfig] = useState<AppConfig | null | undefined>(
     previewConfig !== undefined ? { ...previewConfig } : undefined,
   );
