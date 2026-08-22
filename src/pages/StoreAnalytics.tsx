@@ -384,17 +384,6 @@ export default function StoreAnalytics() {
   ), [salesAnalytics?.payment_methods]);
 
   const viewsByDay = useMemo(() => {
-    // Today: unique sessions from raw page_views (not yet rolled up).
-    const todayMap: Record<string, Set<string>> = {};
-    (pageViews || [])
-      .filter((v: any) => parseISO(v.created_at).getTime() >= todayStart.getTime())
-      .forEach((v: any) => {
-        const day = v.created_at.slice(0, 10);
-        if (!todayMap[day]) todayMap[day] = new Set();
-        todayMap[day].add(v.session_id || v.visitor_id || "anon");
-      });
-    const todayBuckets = Object.entries(todayMap).map(([date, set]) => ({ date, views: set.size }));
-
     // Past days (< today): use rollup so charts stay accurate forever.
     const past = (viewsDaily || [])
       .filter((r: any) => {
@@ -403,8 +392,15 @@ export default function StoreAnalytics() {
       })
       .map((r: any) => ({ date: r.date, views: Number(r.sessions) || 0 }));
 
+    // Today is not rolled up yet — use the exact server-side session count.
+    const includesToday = rangeEnd.getTime() >= todayStart.getTime();
+    const todayBuckets = includesToday && (todayTotals?.sessions ?? 0) > 0
+      ? [{ date: format(todayStart, "yyyy-MM-dd"), views: Number(todayTotals?.sessions || 0) }]
+      : [];
+
     return [...past, ...todayBuckets].sort((a, b) => a.date.localeCompare(b.date));
-  }, [pageViews, viewsDaily, rangeStart, rangeEnd]);
+  }, [todayTotals, viewsDaily, rangeStart, rangeEnd, todayStart]);
+
 
 
   const topPages = useMemo(() => {
