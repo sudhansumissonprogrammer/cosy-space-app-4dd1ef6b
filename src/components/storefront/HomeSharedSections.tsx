@@ -63,7 +63,7 @@ export function HomeShopByVideoSection({ slug, store }: { slug: string; store: S
     <div className="py-4 px-4 lg:px-6">
       <Suspense fallback={null}>
         <DeferUntilVisible rootMargin="600px" minHeight={0}>
-          <ShopByVideoCarousel storeSlug={slug} storeId={store.id} />
+          <ShopByVideoCarousel storeSlug={slug || (store as any).slug} storeId={store.id} />
         </DeferUntilVisible>
       </Suspense>
     </div>

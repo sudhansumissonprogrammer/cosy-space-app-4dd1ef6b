@@ -42,7 +42,7 @@ interface Product {
 }
 
 interface Props {
-  storeSlug: string;
+  storeSlug?: string;
   storeId: string;
   /** Bypass RPC fetch — dashboard preview. */
   previewConfig?: AppConfig;

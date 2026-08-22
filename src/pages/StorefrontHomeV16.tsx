@@ -312,7 +312,7 @@ export default function StorefrontHomeV16() {
               an ever-growing list, making it effectively unreachable. */}
           <Suspense fallback={null}>
             <DeferUntilVisible rootMargin="600px" minHeight={0}>
-              <ShopByVideoCarousel storeSlug={slug!} storeId={store.id} />
+              <ShopByVideoCarousel storeSlug={slug || (store as any).slug} storeId={store.id} />
             </DeferUntilVisible>
           </Suspense>
 
