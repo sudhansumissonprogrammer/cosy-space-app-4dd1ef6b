@@ -477,11 +477,6 @@ html.sf-dark [data-sf-spin] .bg-primary {
 }
 
 /* Shell chrome stays as designed (dark gradient + white text). */
-html.sf-dark [data-sf-spin] .text-white,
-html.sf-dark [data-sf-spin] .text-white\/80,
-html.sf-dark [data-sf-spin] .text-white\/60 {
-  color: inherit;
-}
 html.sf-dark [data-sf-spin] .bg-white\/10 {
   background-color: rgba(255, 255, 255, 0.1) !important;
   color: #ffffff !important;
