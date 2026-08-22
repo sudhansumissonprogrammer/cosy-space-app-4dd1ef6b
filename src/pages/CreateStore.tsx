@@ -125,7 +125,6 @@ export default function CreateStore() {
     if (user.email) setOwnerEmail((v) => v || user.email!);
     if (meta.full_name) setOwnerName((v) => v || meta.full_name!);
     if (meta.phone) setWhatsappNumber((v) => v || `+91 ${meta.phone}`);
-    setPrefilled(true);
 
     supabase
       .from("profiles")
