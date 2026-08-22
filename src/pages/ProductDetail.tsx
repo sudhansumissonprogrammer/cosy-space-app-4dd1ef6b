@@ -1874,21 +1874,37 @@ function ImageGallery({
             </div>
           )}
 
-          {/* Dots */}
-          {showMultiUi && slides[activeIndex]?.kind !== "video" && (
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex gap-1.5 rounded-full bg-black/30 backdrop-blur-sm px-2.5 py-1.5">
-              {slides.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={(e) => { e.stopPropagation(); scrollTo(i); }}
-                  className={`rounded-full transition-[transform,opacity,colors,box-shadow] duration-300 ${
-                    i === activeIndex ? "w-5 h-1.5 bg-white" : "w-1.5 h-1.5 bg-white/50 hover:bg-white/70"
-                  }`}
-                  aria-label={`View slide ${i + 1}`}
-                />
-              ))}
-            </div>
-          )}
+          {/* Dots — windowed to max 5 so galleries with many images don't grow
+              a pill wide enough to collide with the counter / action buttons. */}
+          {showMultiUi && slides[activeIndex]?.kind !== "video" && (() => {
+            const MAX_DOTS = 5;
+            const start = len <= MAX_DOTS
+              ? 0
+              : Math.min(Math.max(activeIndex - Math.floor(MAX_DOTS / 2), 0), len - MAX_DOTS);
+            const visible = Array.from({ length: Math.min(MAX_DOTS, len) }, (_, k) => start + k);
+            return (
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 rounded-full bg-black/30 backdrop-blur-sm px-2 py-1.5">
+                {visible.map((i) => {
+                  const edge = len > MAX_DOTS && (i === start || i === start + MAX_DOTS - 1) && i !== activeIndex;
+                  return (
+                    <button
+                      key={i}
+                      onClick={(e) => { e.stopPropagation(); scrollTo(i); }}
+                      className={`rounded-full transition-[transform,opacity,colors,box-shadow] duration-300 ${
+                        i === activeIndex
+                          ? "w-4 h-1.5 bg-white"
+                          : edge
+                            ? "w-1 h-1 bg-white/40"
+                            : "w-1.5 h-1.5 bg-white/50 hover:bg-white/70"
+                      }`}
+                      aria-label={`View slide ${i + 1}`}
+                    />
+                  );
+                })}
+              </div>
+            );
+          })()}
+
 
           {/* Glass arrows — visible on mobile and desktop */}
           {showMultiUi && (
