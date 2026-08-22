@@ -225,7 +225,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.78.0-direct-preview-origin";
+const WORKER_VERSION = "8.79.0-stale-shell-selfheal";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
