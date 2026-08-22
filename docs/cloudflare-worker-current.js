@@ -7147,7 +7147,7 @@ async function _handleFetch(request, env, ctx) {
     // (not just /assets/* and /static/*). Icons, manifests, SW files, favicons,
     // and any extensioned file are immutable in practice — cache them at the
     // edge with 30-day TTL so repeat visitors never re-execute worker logic.
-    return proxyToOriginCached(request, ctx);
+    return proxyToOriginCached(request, ctx, env);
   }
 
   // ─── PHASE 1 FIX #1: SUPABASE STORAGE IMAGE EDGE CACHE (1yr immutable) ───
