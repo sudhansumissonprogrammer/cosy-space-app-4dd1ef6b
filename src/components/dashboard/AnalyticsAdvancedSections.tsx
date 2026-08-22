@@ -55,6 +55,10 @@ interface Props {
   rangeStart: Date;
   rangeEnd: Date;
   breakdowns?: AnalyticsBreakdownsPayload;
+  /** Exact de-duplicated sessions for the selected range (funnel entry step). */
+  rangeSessions?: number;
+  /** Exact server-side order aggregates for the selected range. */
+  ordersBreakdown?: Record<string, any>;
 }
 
 interface AnalyticsBreakdownsPayload {
@@ -62,6 +66,24 @@ interface AnalyticsBreakdownsPayload {
   countries?: Array<{ name: string; value: number | string }>;
   devices?: Array<{ name: string; value: number | string }>;
 }
+
+type RpcClient = {
+  rpc: <T>(fn: string, args: Record<string, unknown>) => Promise<{ data: T | null; error: Error | null }>;
+};
+
+type KeyCount = { key: string; n: number };
+
+interface FunnelPayload {
+  steps?: Record<string, number>;
+  field_stops?: KeyCount[];
+  pay_fail_reasons?: KeyCount[];
+  zero_result_searches?: KeyCount[];
+  cart_removes?: KeyCount[];
+  variant_select_sessions?: number;
+  pdp_deep_scroll_sessions?: number;
+  attributed_pct?: number;
+}
+
 
 export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEnd, breakdowns }: Props) {
   // Live visitors — last 5 min, refetched every 20s

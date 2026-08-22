@@ -158,37 +158,22 @@ export default function StoreAnalytics() {
     },
   });
 
-  // Page views — RAW is only used for TODAY (the bucket not yet rolled up by
-  // the nightly cron). All historical days come from page_views_daily below.
-  // Previously this pulled 30 days of raw rows (up to 50k) which gets expensive
-  // at scale; narrowing to today keeps the dashboard fast at 100M+ rows.
-  const { data: pageViews } = useQuery({
-    queryKey: ["analytics-views-today", storeIds],
-    staleTime: 5 * 60_000,
-    refetchOnWindowFocus: false,
+  // Today's session count — exact server-side aggregate. Previously this pulled
+  // up to 200k raw page_view rows into the browser just to size one chart bucket.
+  const { data: todayTotals } = useQuery({
+    queryKey: ["analytics-today-totals", storeId],
+    staleTime: 60_000,
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
+    enabled: !!storeId,
     queryFn: async () => {
-      // Paginate today's raw pageviews. Server RPCs handle exact aggregates for
-      // long ranges; this list is only used for path-level detail on today.
-      const since = startOfDay(new Date()).toISOString();
-      const PAGE = 1000;
-      const rows: any[] = [];
-      for (let from = 0; from < 200_000; from += PAGE) {
-        const { data, error } = await supabase
-          .from("page_views")
-          .select("created_at, path, visitor_id, session_id, is_bot")
-          .in("store_id", storeIds)
-          .eq("is_bot", false)
-          .gte("created_at", since)
-          .order("created_at", { ascending: false })
-          .range(from, from + PAGE - 1);
-        if (error) throw error;
-        const batch = (data || []) as any[];
-        rows.push(...batch);
-        if (batch.length < PAGE) break;
-      }
-      return rows;
+      const { data, error } = await (supabase as unknown as RpcClient).rpc<{ sessions?: number | string }>(
+        "get_today_analytics",
+        { _store_id: storeId },
+      );
+      if (error) throw error;
+      return { sessions: Number(data?.sessions ?? 0) };
     },
-    enabled: storeIds.length > 0,
   });
 
   // Historical daily rollups — used for ranges > 30 days (90d / custom / all)
@@ -213,23 +198,34 @@ export default function StoreAnalytics() {
     enabled: storeIds.length > 0,
   });
 
-
-
-
-  // Customers — unified view (storefront + WhatsApp).
-  const { data: customers } = useQuery({
-    queryKey: ["analytics-customers", storeIds],
-    staleTime: 5 * 60 * 1000,
+  // Order breakdown for the SELECTED range — exact, server-side. The old client
+  // query silently truncated at 1000 rows and the repeat-rate card measured the
+  // store's entire lifetime instead of the chosen period.
+  const { data: ordersBreakdown } = useQuery({
+    queryKey: [
+      "analytics-orders-breakdown",
+      storeId,
+      dateRange,
+      customFrom?.toISOString() || null,
+      customTo?.toISOString() || null,
+    ],
+    staleTime: 60_000,
+    refetchOnWindowFocus: true,
+    enabled: !!storeId,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("merchant_customers_v")
-        .select("id, created_at, order_count")
-        .in("store_id", storeIds);
+      const { data, error } = await (supabase as unknown as RpcClient).rpc<Record<string, any>>(
+        "get_analytics_orders_breakdown",
+        {
+          _store_id: storeId,
+          _range_start: rangeStart.toISOString(),
+          _range_end: rangeEnd.toISOString(),
+        },
+      );
       if (error) throw error;
-      return data as any[];
+      return data || {};
     },
-    enabled: storeIds.length > 0,
   });
+
 
   const { data: trafficTotals } = useQuery({
     queryKey: [
@@ -348,9 +344,13 @@ export default function StoreAnalytics() {
   const priorConversion = priorSessions > 0 ? (priorOrders / priorSessions) * 100 : 0;
   const conversionChange = priorConversion > 0 ? ((conversionRate - priorConversion) / priorConversion) * 100 : undefined;
 
-  const returningCustomers = customers?.filter((c: any) => c.order_count > 1).length || 0;
-  const totalCustomers = customers?.length || 0;
-  const returningRate = totalCustomers > 0 ? (returningCustomers / totalCustomers) * 100 : 0;
+  // Repeat rate = share of PAID orders in this range placed by returning buyers.
+  // (Was previously a lifetime customer-list ratio capped at 1000 rows, so it
+  // never matched the selected date range.)
+  const paidNew = Number(ordersBreakdown?.paid_new ?? 0);
+  const paidRepeat = Number(ordersBreakdown?.paid_repeat ?? 0);
+  const returningRate = paidNew + paidRepeat > 0 ? (paidRepeat / (paidNew + paidRepeat)) * 100 : 0;
+
 
   // Charts data
   const salesByDay = useMemo(() => (
@@ -384,17 +384,6 @@ export default function StoreAnalytics() {
   ), [salesAnalytics?.payment_methods]);
 
   const viewsByDay = useMemo(() => {
-    // Today: unique sessions from raw page_views (not yet rolled up).
-    const todayMap: Record<string, Set<string>> = {};
-    (pageViews || [])
-      .filter((v: any) => parseISO(v.created_at).getTime() >= todayStart.getTime())
-      .forEach((v: any) => {
-        const day = v.created_at.slice(0, 10);
-        if (!todayMap[day]) todayMap[day] = new Set();
-        todayMap[day].add(v.session_id || v.visitor_id || "anon");
-      });
-    const todayBuckets = Object.entries(todayMap).map(([date, set]) => ({ date, views: set.size }));
-
     // Past days (< today): use rollup so charts stay accurate forever.
     const past = (viewsDaily || [])
       .filter((r: any) => {
@@ -403,8 +392,15 @@ export default function StoreAnalytics() {
       })
       .map((r: any) => ({ date: r.date, views: Number(r.sessions) || 0 }));
 
+    // Today is not rolled up yet — use the exact server-side session count.
+    const includesToday = rangeEnd.getTime() >= todayStart.getTime();
+    const todayBuckets = includesToday && (todayTotals?.sessions ?? 0) > 0
+      ? [{ date: format(todayStart, "yyyy-MM-dd"), views: Number(todayTotals?.sessions || 0) }]
+      : [];
+
     return [...past, ...todayBuckets].sort((a, b) => a.date.localeCompare(b.date));
-  }, [pageViews, viewsDaily, rangeStart, rangeEnd]);
+  }, [todayTotals, viewsDaily, rangeStart, rangeEnd, todayStart]);
+
 
 
   const topPages = useMemo(() => {
@@ -714,7 +710,10 @@ export default function StoreAnalytics() {
           rangeStart={rangeStart}
           rangeEnd={rangeEnd}
           breakdowns={analyticsBreakdowns}
+          rangeSessions={totalSessions}
+          ordersBreakdown={ordersBreakdown}
         />
+
       )}
     </div>
   );
