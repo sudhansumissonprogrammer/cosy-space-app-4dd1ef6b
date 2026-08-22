@@ -339,22 +339,62 @@ export default function SpinWheelApp({ storeId, storeName, primaryColor, accentC
 
   const close = () => setPhase("hidden");
 
+  // In-app browsers (Instagram / Facebook / Snapchat webviews) do NOT resize the
+  // layout viewport when the keyboard opens, so a `fixed inset-0` overlay keeps
+  // its full height and the input the shopper is typing into ends up hidden
+  // behind the keyboard with no way to scroll. visualViewport gives us the real
+  // visible box; we pin the overlay to it and let the card scroll inside.
+  const [vv, setVv] = useState<{ top: number; height: number } | null>(null);
+  useEffect(() => {
+    const win = typeof window !== "undefined" ? window : undefined;
+    const v = win?.visualViewport;
+    if (!v) return;
+    const sync = () => {
+      setVv({ top: v.offsetTop || 0, height: v.height });
+    };
+    sync();
+    v.addEventListener("resize", sync);
+    v.addEventListener("scroll", sync);
+    return () => {
+      v.removeEventListener("resize", sync);
+      v.removeEventListener("scroll", sync);
+    };
+  }, []);
+
+  // Lock background scroll while the wheel is open so the overlay's own
+  // scrolling is the only thing that moves.
+  useEffect(() => {
+    if (phase === "hidden" || typeof document === "undefined") return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [phase]);
+
   if (phase === "hidden") return null;
 
   const winner = resultIndex != null ? segments[resultIndex] : null;
   const won = winner?.type === "coupon" && !!winner?.code;
 
+  const overlayStyle: React.CSSProperties = {
+    background: "rgba(0,0,0,0.55)",
+    backdropFilter: "blur(6px)",
+    ...(vv
+      ? { top: vv.top, height: vv.height, bottom: "auto" }
+      : {}),
+  };
+
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-3 sm:p-6"
-      style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)" }}
+      className="fixed inset-x-0 top-0 bottom-0 z-[9999] flex items-end sm:items-center justify-center p-3 sm:p-6 overflow-y-auto overscroll-contain"
+      style={overlayStyle}
       role="dialog"
       aria-modal="true"
     >
       <div
-        className="relative w-full max-w-[420px] rounded-3xl p-6 pt-10 animate-scale-in overflow-hidden"
+        className="relative my-auto w-full max-w-[420px] max-h-full overflow-y-auto overscroll-contain rounded-3xl p-6 pt-10 animate-scale-in"
         style={dialogSurfaceFor(wheelStyle, resolvedColors.p)}
       >
+
         {phase === "lead" && won && (
           <Confetti colors={confettiPaletteFor(wheelStyle, resolvedColors.p, resolvedColors.a)} />
         )}

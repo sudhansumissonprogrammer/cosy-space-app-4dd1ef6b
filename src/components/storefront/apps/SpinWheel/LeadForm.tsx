@@ -8,6 +8,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { normalizePhone } from "@/lib/phoneUtils";
 import { toast } from "sonner";
 
+// In-app browsers (Instagram/Facebook) open the keyboard over the page without
+// resizing it. Nudging the focused field into view keeps what the shopper is
+// typing visible.
+function keepVisible(e: React.FocusEvent<HTMLInputElement>) {
+  const el = e.currentTarget;
+  window.setTimeout(() => {
+    try { el.scrollIntoView({ block: "center", behavior: "smooth" }); } catch {}
+  }, 300);
+}
+
 
 interface LeadFormProps {
   storeId: string;
@@ -185,6 +195,7 @@ export default function LeadForm({
           value={code}
           onChange={(e) => { setOtpError(null); setCode(e.target.value.replace(/\D/g, "").slice(0, 6)); }}
           className="mt-4 h-14 text-center font-mono text-2xl font-black tracking-[0.4em] text-slate-900"
+          onFocus={keepVisible}
           autoFocus
         />
         {otpError ? <p className="mt-2 text-center text-xs font-medium text-destructive">{otpError}</p> : null}
@@ -240,6 +251,7 @@ export default function LeadForm({
           value={phone}
           onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
           className="border-0 shadow-none focus-visible:ring-0 px-0 h-8 text-base font-medium text-slate-900 placeholder:text-slate-400"
+          onFocus={keepVisible}
           autoFocus
         />
       </div>
