@@ -1112,6 +1112,47 @@
         }
       })();
     </script>
+    <!-- BOOT GUARD (2026-08-22 incident): if a cached HTML shell points at a
+         build hash that no longer exists, the entry bundle 404/503s and the
+         page stays blank with zero JS running. This guard is plain inline JS,
+         so it always runs: it asks the edge to drop its stale shell, then
+         hard-reloads with a cache-buster. Max 2 attempts per session. -->
+    <script>
+      (function () {
+        var K = 'sb_boot_heal';
+        function attempts() { try { return parseInt(sessionStorage.getItem(K) || '0', 10) || 0; } catch (e) { return 99; } }
+        var healing = false;
+        function heal(reason) {
+          if (healing || window.__APP_BOOTED__) return;
+          var n = attempts();
+          if (n >= 2) return;
+          healing = true;
+          try { sessionStorage.setItem(K, String(n + 1)); } catch (e) {}
+          var go = function () {
+            var u = new URL(window.location.href);
+            u.searchParams.set('__sb_heal', String(Date.now()));
+            window.location.replace(u.toString());
+          };
+          try {
+            fetch('/api/shell-broken?r=' + encodeURIComponent(reason), { method: 'POST', cache: 'no-store', keepalive: true })
+              .then(go, go);
+          } catch (e) { go(); }
+          setTimeout(go, 1500);
+        }
+        // 1) Entry script / stylesheet failed to load.
+        window.addEventListener('error', function (e) {
+          var t = e && e.target;
+          if (!t || t === window) return;
+          var src = t.src || t.href || '';
+          if (/\/assets\/[^/]+\.(js|css)$/.test(src)) heal('asset');
+        }, true);
+        // 2) Nothing booted within 12s (blank screen) — reload once.
+        setTimeout(function () { if (!window.__APP_BOOTED__) heal('timeout'); }, 12000);
+        // Successful boot clears the counter.
+        window.__sbBootOk = function () { try { sessionStorage.removeItem(K); } catch (e) {} };
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
+
   </body>
 </html>
