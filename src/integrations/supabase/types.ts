@@ -5452,6 +5452,10 @@ export type Database = {
         Args: { _range_end: string; _range_start: string; _store_id: string }
         Returns: Json
       }
+      get_analytics_quality: {
+        Args: { _range_end: string; _range_start: string; _store_id: string }
+        Returns: Json
+      }
       get_analytics_traffic: {
         Args: {
           _prior_end: string
