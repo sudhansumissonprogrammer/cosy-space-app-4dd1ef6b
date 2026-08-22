@@ -217,6 +217,10 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
     enabled: !!productId,
   });
 
+  // Supplier (source store) PDP link for synced products
+  const { url: sourceUrl, platform: sourcePlatform } = useProductSourceLink(storeId, existingProduct as any);
+
+
   // ── Multi-category: extra categories this product also appears in ──
   const { data: existingProductCategories } = useQuery({
     queryKey: ["product-categories", productId],
