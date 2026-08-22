@@ -258,12 +258,20 @@ export default function LeadForm({
         disabled={!canSubmit}
         className="mt-4 w-full h-12 rounded-xl text-base font-bold"
       >
-        {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send OTP on WhatsApp"}
+        {submitting ? (
+          <span className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Check your WhatsApp for OTP…
+          </span>
+        ) : (
+          "Claim My Reward"
+        )}
       </Button>
 
       <p className="mt-3 flex items-center justify-center gap-1 text-center text-[10px] text-slate-400">
-        <ShieldCheck className="h-3 w-3" /> We'll WhatsApp a 6-digit code to confirm it's you
+        <ShieldCheck className="h-3 w-3" /> Your number is safe with us
       </p>
+
     </div>
   );
 }
