@@ -989,10 +989,22 @@ export default function CreateStore() {
             )}
 
             {step < STEPS.length ? (
-              <Button type="button" onClick={goNext} className="gap-2 px-6">
-                Next <ArrowRight className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={loading || !name.trim() || !slug.trim()}
+                  onClick={handleSubmit}
+                  className="gap-1.5 text-xs sm:text-sm"
+                >
+                  <Rocket className="h-3.5 w-3.5" /> Skip & launch now
+                </Button>
+                <Button type="button" onClick={goNext} className="gap-2 px-6">
+                  Next <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
             ) : (
+
               <Button
                 type="button"
                 onClick={handleSubmit}
