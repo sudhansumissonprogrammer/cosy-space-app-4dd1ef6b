@@ -336,7 +336,8 @@ Deno.serve(async (req) => {
 
     const pagesToWalk = phase === "backfill" ? pageBudget : STEADY_PAGES;
     const found = new Map<string, Candidate>();
-    let page = phase === "backfill" ? startPage : 1;
+    let page = startPage;
+
     let pagesWalked = 0;
     let reachedEnd = false;
     let listErrors = 0;
