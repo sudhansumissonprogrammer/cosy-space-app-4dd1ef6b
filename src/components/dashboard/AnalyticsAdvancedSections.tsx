@@ -190,24 +190,14 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
     enabled: !!storeId,
   });
 
-  // Derived metrics
-  const bounceRate = useMemo(() => {
-    const sessions = (pvDaily || []).reduce((s, r) => s + (r.sessions || 0), 0);
-    const bounces = (pvDaily || []).reduce((s, r) => s + (r.bounce_sessions || 0), 0);
-    return sessions > 0 ? (bounces / sessions) * 100 : 0;
-  }, [pvDaily]);
+  // Derived metrics — all from the range-accurate server aggregate.
+  const qualitySessions = Number(quality?.sessions ?? 0);
+  const bounceRate = qualitySessions > 0
+    ? (Number(quality?.bounce_sessions ?? 0) / qualitySessions) * 100 : 0;
+  const pagesPerSession = qualitySessions > 0
+    ? Number(quality?.pageviews ?? 0) / qualitySessions : 0;
+  const avgDurationSec = Number(quality?.avg_duration_sec ?? 0);
 
-  const pagesPerSession = useMemo(() => {
-    const sessions = (pvDaily || []).reduce((s, r) => s + (r.sessions || 0), 0);
-    const pv = (pvDaily || []).reduce((s, r) => s + (r.pageviews || 0), 0);
-    return sessions > 0 ? pv / sessions : 0;
-  }, [pvDaily]);
-
-  const avgDurationSec = useMemo(() => {
-    const sessions = (pvDaily || []).reduce((s, r) => s + (r.sessions || 0), 0);
-    const dur = (pvDaily || []).reduce((s, r) => s + (r.total_session_duration_seconds || 0), 0);
-    return sessions > 0 ? dur / sessions : 0;
-  }, [pvDaily]);
 
   const sources = useMemo(() => {
     return (breakdowns?.sources || []).map((s) => ({
