@@ -145,7 +145,9 @@ function parseListing(html: string): Candidate[] {
   const out: Candidate[] = [];
   const blocks = html.split(/<div class="product-item /).slice(1);
   for (const block of blocks) {
-    const href = block.match(/href="(https?:\/\/[^"]*?\/([a-z0-9-]+)-lpi(\d+)-[a-z0-9-]+\.html)[^"]*"/i);
+    // Cartpe migrated product slugs from `-lpiNNN-` to `-npiNNN-`; matching only
+    // the legacy prefix made every new product invisible to the importer.
+    const href = block.match(/href="(https?:\/\/[^"]*?\/([a-z0-9-]+)-[ln]pi(\d+)-[a-z0-9-]+\.html)[^"]*"/i);
     if (!href) continue;
     const sourceId = href[3];
     const sourceSlug = href[2];

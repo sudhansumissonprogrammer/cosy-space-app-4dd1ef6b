@@ -45,17 +45,19 @@ const SOURCE_ORIGIN = "https://shodfedf.jdwebshop.com";
  *  carry; product detail + stock resolve on any origin, so discovery only. */
 const EXTRA_ORIGINS = ["https://fashionshub.co.in"];
 /** Listing pages walked per extra origin each run (their catalogs are small). */
-const EXTRA_PAGES = 6;
+const EXTRA_PAGES = 2;
 const ASSETS = "https://assets.jdwebnship.in/";
 
-/** Pages of the listing walked per run while backfilling. */
-const PAGE_BUDGET = 120;
+/** Pages of the listing walked per run while backfilling. The source enforces
+ *  a hard 200 requests / 15 min rolling quota shared with jd-stock-sync, so the
+ *  per-run budgets stay small and the cron runs every 15 minutes. */
+const PAGE_BUDGET = 10;
 /** Listing pages fetched in parallel (their WAF tolerates ~6). */
 const PAGE_CONCURRENCY = 2;
 /** Newest pages re-scanned every run once backfill is done. */
 const STEADY_PAGES = 8;
 /** Max new products imported in one run (each costs 1 detail request). */
-const IMPORT_BUDGET = 420;
+const IMPORT_BUDGET = 30;
 const CONCURRENCY = 3;
 const REQ_GAP_MS = 100;
 const REQ_TIMEOUT_MS = 12_000;
@@ -109,7 +111,13 @@ interface ListItem {
 }
 
 async function fetchListPage(page: number, origin: string = SOURCE_ORIGIN): Promise<ListItem[] | null> {
-  const body = await srcFetch(`products/v2/recent?sortBy=recently_added&page=${page}`, origin);
+  // The source renamed this route (old `products/v2/recent` now 404s), which
+  // silently stopped every catalog import. Try the current retailer route
+  // first and keep the legacy one as a fallback in case they revert.
+  let body = await srcFetch(`products/v2/retailer/recent?sortBy=recently_added&page=${page}`, origin);
+  if (!Array.isArray(body?.data)) {
+    body = await srcFetch(`products/v2/recent?sortBy=recently_added&page=${page}`, origin);
+  }
   const data = body?.data;
   if (!Array.isArray(data)) return null;
   return data

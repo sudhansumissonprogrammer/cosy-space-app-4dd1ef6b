@@ -57,7 +57,7 @@ async function mapLimit<T, R>(items: T[], limit: number, worker: (item: T) => Pr
   return out;
 }
 
-type SourceState = { inStock: boolean; price: number | null; sale: number | null };
+type SourceState = { inStock: boolean; price: number | null; sale: number | null; gone?: boolean };
 
 async function fetchSourceState(url: string): Promise<SourceState | null> {
   const ctrl = new AbortController();
@@ -67,6 +67,12 @@ async function fetchSourceState(url: string): Promise<SourceState | null> {
       signal: ctrl.signal,
       headers: { "User-Agent": UA, Accept: "text/html,*/*" },
     });
+    // 404 = the product was removed from the source catalog. Treating it as a
+    // plain failure left permanently-dead items showing as buyable; mark them
+    // sold out instead (never delete — the merchant may still want the row).
+    if (res.status === 404 || res.status === 410) {
+      return { inStock: false, price: null, sale: null, gone: true };
+    }
     if (!res.ok) return null;
     const html = await res.text();
     // A valid PDP always has the product name node — otherwise it is an error

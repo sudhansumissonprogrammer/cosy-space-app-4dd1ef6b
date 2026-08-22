@@ -35,15 +35,19 @@ const SOURCE_HASH = "360080b0b7289a6080e92018585cf114";
 const SOURCE_API_KEY = "9e5a4f4b49da226ab3b1bc396020bf831cb3c14584ced963";
 const SOURCE_ORIGIN = "https://shodfedf.jdwebshop.com";
 
-/** Products per run. 700 @ ~8 req/s ≈ 90s, and stays under the source's
- *  rolling rate limit (1000/run in one burst produced ~39% throttled 403s). */
-const CHUNK_SIZE = 1000;
-const CONCURRENCY = 5;
+/** Products per run. The source enforces a HARD rolling quota of 200 requests
+ *  per 15-minute window (`x-ratelimit-limit: 200`, reset ~900s), shared with
+ *  the catalog sync. At the previous 1000/run every window was burned in the
+ *  first run and ~all later lookups came back 403 → stock updates went dark.
+ *  40/run at a 5-minute cron = 120 req / 15 min, just inside the quota and
+ *  still ~17k products/day. */
+const CHUNK_SIZE = 40;
+const CONCURRENCY = 2;
 
 /** Minimum gap between requests inside one worker — politeness throttle. */
-const REQ_GAP_MS = 40;
+const REQ_GAP_MS = 250;
 /** Max throttled lookups retried in the slow second pass (time budget). */
-const MAX_RETRY = 120;
+const MAX_RETRY = 10;
 const REQ_TIMEOUT_MS = 12_000;
 /** Products with source quantity <= this are treated as sold out. */
 const OOS_THRESHOLD = 0;
