@@ -3542,6 +3542,8 @@ async function proxyToOriginCached(request, ctx, env) {
     const res = await fetchOriginNoRedirectLoop(url.toString(), {
       method: request.method,
       headers,
+      signal: controller.signal,
+
       // Cache ONLY successful bodies for 30 days. A 404 (stale build hash) or
       // 5xx must expire in seconds so a fresh publish heals itself.
       cf: {
