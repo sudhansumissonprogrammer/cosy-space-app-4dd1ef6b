@@ -44,10 +44,10 @@ const CURRENCIES = [
 
 const STEPS = [
   { id: 1, title: "Store Info", icon: Store, desc: "Name & branding", motivation: "Let's build something amazing! 🚀" },
-  { id: 2, title: "Location", icon: MapPin, desc: "Where you are", motivation: "Great start! Keep going 💪" },
-  { id: 3, title: "Contact", icon: Phone, desc: "How to reach you", motivation: "Almost there! 🎯" },
-  { id: 4, title: "Social", icon: Instagram, desc: "Your presence", motivation: "Final step — you're a star! ⭐" },
+  { id: 2, title: "Contact", icon: Phone, desc: "Location & contact", motivation: "Almost done — this is all optional 💪" },
+  { id: 3, title: "Social", icon: Instagram, desc: "Your presence", motivation: "Final step — you're a star! ⭐" },
 ];
+
 
 // Commission-only stores use website checkout so platform commission,
 // abandoned-cart recovery, order confirmations and wallet invoices stay linked.
@@ -69,6 +69,9 @@ export default function CreateStore() {
 
 
 
+  const [editContact, setEditContact] = useState(false);
+
+
   useEffect(() => {
     if (!user) return;
     supabase
@@ -84,6 +87,7 @@ export default function CreateStore() {
         setCheckingStore(false);
       });
   }, [user, navigate]);
+
 
   // Step 1
   const [name, setName] = useState("");
@@ -108,10 +112,32 @@ export default function CreateStore() {
   const [ownerEmail, setOwnerEmail] = useState("");
   const [ownerName, setOwnerName] = useState("");
 
-  // Step 4
+  // Step 3
   const [instagramUrl, setInstagramUrl] = useState("");
   const [facebookUrl, setFacebookUrl] = useState("");
   const [partnerCode, setPartnerCode] = useState("");
+
+  // Reuse the name / email / mobile already collected at signup —
+  // never ask the merchant for the same details twice.
+  useEffect(() => {
+    if (!user) return;
+    const meta = (user.user_metadata || {}) as { full_name?: string; phone?: string };
+    if (user.email) setOwnerEmail((v) => v || user.email!);
+    if (meta.full_name) setOwnerName((v) => v || meta.full_name!);
+    if (meta.phone) setWhatsappNumber((v) => v || `+91 ${meta.phone}`);
+
+    supabase
+      .from("profiles")
+      .select("full_name, phone")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) return;
+        if (data.full_name) setOwnerName((v) => v || data.full_name!);
+        if (data.phone) setWhatsappNumber((v) => v || `+91 ${data.phone}`);
+      });
+  }, [user]);
+
 
   const theme = "theme-1";
 
@@ -802,17 +828,62 @@ export default function CreateStore() {
               </div>
             )}
 
-            {/* Step 2: Location */}
+            {/* Step 2: Location & Contact */}
             {step === 2 && (
               <div className="space-y-5">
                 <div className="mb-4">
-                  <h2 className="text-xl font-semibold text-foreground">Location Details</h2>
-                  <p className="text-sm text-muted-foreground">Help customers find you</p>
+                  <h2 className="text-xl font-semibold text-foreground">Location & Contact</h2>
+                  <p className="text-sm text-muted-foreground">Shown on your storefront — all optional</p>
                 </div>
 
-                <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 p-3 text-center">
-                  <p className="text-xs text-muted-foreground">📍 All fields here are optional — you can skip ahead!</p>
+                {/* Contact — reused from the account you just created */}
+                <div className="rounded-xl border bg-accent/30 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground">Contact details from your account</p>
+                      <p className="mt-1 truncate text-xs text-muted-foreground">
+                        {ownerName.trim() || "—"} · {ownerEmail.trim() || "—"}
+                        {whatsappNumber.trim() ? ` · ${whatsappNumber.trim()}` : ""}
+                      </p>
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        We reuse what you gave at signup — no need to type it again.
+                      </p>
+                    </div>
+                    <Button type="button" variant="outline" size="sm" onClick={() => setEditContact((v) => !v)}>
+                      {editContact ? "Done" : "Change"}
+                    </Button>
+                  </div>
                 </div>
+
+                {editContact && (
+                  <div className="space-y-4 rounded-xl border border-dashed p-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="owner-name">Store Owner / Founder Name</Label>
+                      <div className="flex items-center gap-0 rounded-md border border-input bg-muted/50">
+                        <span className="flex-shrink-0 px-3 text-muted-foreground"><Crown className="h-4 w-4" /></span>
+                        <Input id="owner-name" placeholder="e.g. Jetharam" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} maxLength={80} className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0" />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="whatsapp">WhatsApp Number</Label>
+                      <div className="flex items-center gap-0 rounded-md border border-input bg-muted/50">
+                        <span className="flex-shrink-0 px-3 text-muted-foreground"><Phone className="h-4 w-4" /></span>
+                        <Input id="whatsapp" placeholder="+91 98765 43210" value={whatsappNumber} onChange={(e) => setWhatsappNumber(e.target.value)} maxLength={20} className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0" />
+                      </div>
+                      <p className="text-xs text-muted-foreground">Shown as a customer support contact.</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="owner-email">Support Email</Label>
+                      <div className="flex items-center gap-0 rounded-md border border-input bg-muted/50">
+                        <span className="flex-shrink-0 px-3 text-muted-foreground"><Globe className="h-4 w-4" /></span>
+                        <Input id="owner-email" type="email" placeholder="you@example.com" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} maxLength={200} className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0" />
+                      </div>
+                      <p className="text-xs text-muted-foreground">Shown on your storefront footer & contact page.</p>
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
@@ -826,9 +897,8 @@ export default function CreateStore() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="address">Full Address</Label>
+                  <Label htmlFor="address">Full Address <span className="text-xs font-normal text-muted-foreground">(optional)</span></Label>
                   <Textarea id="address" placeholder="123 Main Street, Building A, Floor 2..." value={location} onChange={(e) => setLocation(e.target.value)} maxLength={500} rows={3} />
-                  <p className="text-xs text-muted-foreground">This will be shown on your storefront</p>
                 </div>
 
                 <div className="rounded-xl border bg-accent/30 p-4">
@@ -843,59 +913,9 @@ export default function CreateStore() {
               </div>
             )}
 
-            {/* Step 3: Contact */}
+            {/* Step 3: Social Media */}
             {step === 3 && (
-              <div className="space-y-5">
-                <div className="mb-4">
-                  <h2 className="text-xl font-semibold text-foreground">Contact Details</h2>
-                  <p className="text-sm text-muted-foreground">How customers can reach you</p>
-                </div>
 
-                <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 p-3 text-center">
-                  <p className="text-xs text-muted-foreground">📞 Email is required — WhatsApp is optional for customer support.</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="owner-name">Store Owner / Founder Name</Label>
-                  <div className="flex items-center gap-0 rounded-md border border-input bg-muted/50">
-                    <span className="flex-shrink-0 px-3 text-muted-foreground"><Crown className="h-4 w-4" /></span>
-                    <Input id="owner-name" placeholder="e.g. Jetharam" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} maxLength={80} className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0" />
-                  </div>
-                  <p className="text-xs text-muted-foreground">Shown on your About page as “Founded by {ownerName.trim() || "your name"}” — builds trust with customers.</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="whatsapp">WhatsApp Number (optional)</Label>
-                  <div className="flex items-center gap-0 rounded-md border border-input bg-muted/50">
-                    <span className="flex-shrink-0 px-3 text-muted-foreground"><Phone className="h-4 w-4" /></span>
-                    <Input id="whatsapp" placeholder="+91 98765 43210" value={whatsappNumber} onChange={(e) => setWhatsappNumber(e.target.value)} maxLength={20} className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0" />
-                  </div>
-                  <p className="text-xs text-muted-foreground">Optional — shown as a customer support contact, not as a checkout bypass.</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="owner-email">Your Email *</Label>
-                  <div className="flex items-center gap-0 rounded-md border border-input bg-muted/50">
-                    <span className="flex-shrink-0 px-3 text-muted-foreground"><Globe className="h-4 w-4" /></span>
-                    <Input id="owner-email" type="email" placeholder="you@example.com" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} maxLength={200} className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0" />
-                  </div>
-                  <p className="text-xs text-muted-foreground">Used for order notifications and shown on your storefront's footer & contact page so customers can reach you.</p>
-                </div>
-
-                <div className="rounded-xl border bg-accent/30 p-4">
-                  <div className="flex items-start gap-3">
-                    <Globe className="mt-0.5 h-5 w-5 text-primary" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Website ordering</p>
-                      <p className="text-xs text-muted-foreground">Customers will see a “Buy Now” button and checkout directly on your website.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Step 4: Social Media */}
-            {step === 4 && (
               <div className="space-y-5">
                 <div className="mb-4">
                   <h2 className="text-xl font-semibold text-foreground">Social Media</h2>
@@ -968,10 +988,22 @@ export default function CreateStore() {
             )}
 
             {step < STEPS.length ? (
-              <Button type="button" onClick={goNext} className="gap-2 px-6">
-                Next <ArrowRight className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={loading || !name.trim() || !slug.trim()}
+                  onClick={handleSubmit}
+                  className="gap-1.5 text-xs sm:text-sm"
+                >
+                  <Rocket className="h-3.5 w-3.5" /> Skip & launch now
+                </Button>
+                <Button type="button" onClick={goNext} className="gap-2 px-6">
+                  Next <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
             ) : (
+
               <Button
                 type="button"
                 onClick={handleSubmit}
