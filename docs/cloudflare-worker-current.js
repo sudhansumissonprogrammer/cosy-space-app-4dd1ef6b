@@ -7482,10 +7482,22 @@ async function _handleFetch(request, env, ctx) {
       if (!_isPurgeAuthorized(request, env)) return new Response("Forbidden", { status: 403 });
       return handlePurgeProducts(request, url, ctx, env);
     }
+    // v8.79.0: browser-callable, UNAUTHENTICATED shell heal. The boot guard in
+    // index.html calls this when the entry bundle fails to load (stale shell
+    // referencing a deleted build hash). It only drops shell/head caches — no
+    // domain mapping, no store data — and is rate-limited to 1 per isolate per
+    // minute, so the worst an abuser achieves is one extra origin shell fetch.
+    if (url.pathname === "/api/shell-broken") {
+      if (request.method === "POST" || request.method === "GET") {
+        maybeSelfHealShell(env, ctx);
+        return new Response(null, { status: 204, headers: { "Cache-Control": "no-store" } });
+      }
+    }
     if (url.pathname === "/api/purge-shell" && request.method === "POST") {
       if (!_isPurgeAuthorized(request, env)) return new Response("Forbidden", { status: 403 });
       return handlePurgeShell(request, url, ctx, env, hostname);
     }
+
     if (url.pathname === "/api/prewarm") {
       if (request.method === "OPTIONS") return addCorsHeaders(new Response(null, { status: 204 }), "preflight");
       if (request.method === "POST") {
