@@ -199,20 +199,21 @@ export default function Signup() {
     setLoading(true);
 
     try {
-      // Pre-check duplicates so users get a clear message instead of a silent no-op
-      const [emailCheck, phoneCheck] = await Promise.all([
-        supabase.rpc("get_auth_user_id_by_email", { _email: normalizedEmail }),
-        supabase.rpc("get_user_id_by_phone", { _phone: mobile }),
-      ]);
+      // Pre-check duplicates so users get a clear message instead of a silent
+      // no-op. The lookup RPCs are service-role only, so this runs server-side.
+      const { data: dupe } = await supabase.functions.invoke("merchant-otp-send", {
+        body: { action: "check", phone: mobile, email: normalizedEmail },
+      });
 
-      if (!emailCheck.error && emailCheck.data) {
+      if (dupe?.email_taken) {
         toast.error("This email already exists — please use another email or log in.");
         return;
       }
-      if (!phoneCheck.error && phoneCheck.data) {
+      if (dupe?.phone_taken) {
         toast.error("This mobile number already exists — please use another number or log in.");
         return;
       }
+
 
 
       const { data: signUpData, error } = await supabase.auth.signUp({
