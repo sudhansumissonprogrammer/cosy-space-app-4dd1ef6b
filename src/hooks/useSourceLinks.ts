@@ -36,7 +36,7 @@ export function useProductSourceLinks(storeId?: string, productIds: string[] = [
 
   const { data: rows } = useQuery({
     queryKey: ["product-source-rows", storeId, ids.join(",")],
-    enabled: !!storeId && ids.length > 0 && !!cfg?.source_platform,
+    enabled: !!storeId && ids.length > 0,
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
