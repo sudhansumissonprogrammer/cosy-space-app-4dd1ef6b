@@ -17,7 +17,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, ShoppingBag, Truck, Search, X, CalendarIcon, CheckSquare, ChevronRight, Phone, MapPin, CreditCard, Package, FileText, Copy, Trash2, Send, MessageCircle, Plus } from "lucide-react";
+import { ArrowLeft, ShoppingBag, Truck, Search, X, CalendarIcon, CheckSquare, ChevronRight, Phone, MapPin, CreditCard, Package, FileText, Copy, Trash2, Send, MessageCircle, Plus, ExternalLink } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -27,6 +27,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Separator } from "@/components/ui/separator";
 import OrderInvoice from "@/components/OrderInvoice";
 import OrderItemImage from "@/components/OrderItemImage";
+import { useProductSourceLinks } from "@/hooks/useSourceLinks";
+import { sourceLabel } from "@/lib/sourcePdpUrl";
 import OrderShipmentSection from "@/components/shipping/OrderShipmentSection";
 import ShipmentEditorDialog from "@/components/shipping/ShipmentEditorDialog";
 import CreateOrderDialog from "@/components/CreateOrderDialog";
@@ -729,7 +731,15 @@ export default function StoreOrders() {
                                   onCheckedChange={() => toggleOrderSelection(order.id)}
                                 />
                               </TableCell>
-                              <TableCell className="font-mono text-xs text-muted-foreground">{getOrderDisplayId(order)}</TableCell>
+                              <TableCell className="font-mono text-xs text-muted-foreground">
+                                <button
+                                  type="button"
+                                  onClick={() => setMobileDetailOrder(order)}
+                                  className="hover:text-foreground hover:underline"
+                                >
+                                  {getOrderDisplayId(order)}
+                                </button>
+                              </TableCell>
                               <TableCell className="font-medium text-foreground">{order.customer_name || "—"}</TableCell>
                               <TableCell className="text-sm text-muted-foreground">{order.customer_phone || "—"}</TableCell>
                               <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
@@ -873,6 +883,10 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
   onClose: () => void;
 }) {
   const items = order.order_items || [];
+  const { linkFor: sourceLinkFor, platform: sourcePlatform } = useProductSourceLinks(
+    store?.id,
+    items.map((i: any) => i.product_id).filter(Boolean),
+  );
   const displayId = order.order_number ? `#${1000 + order.order_number}` : `#${order.id.slice(0, 8)}`;
   const address = [order.street_address, order.city, order.state, order.pincode].filter(Boolean).join(", ");
 
@@ -957,6 +971,16 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{item.product_name}</p>
                     <p className="text-xs text-muted-foreground">Qty: {item.quantity} × {order.currency} {Number.isFinite(Number(item.unit_price)) ? Number(item.unit_price).toFixed(0) : "…"}</p>
+                    {sourceLinkFor(item.product_id) && (
+                      <a
+                        href={sourceLinkFor(item.product_id)!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+                      >
+                        <ExternalLink className="h-3 w-3" /> Order on {sourceLabel(sourcePlatform)}
+                      </a>
+                    )}
                   </div>
                 </div>
                 <p className="text-sm font-semibold text-foreground shrink-0">{order.currency} {Number.isFinite(Number(item.total)) ? Number(item.total).toFixed(0) : "…"}</p>
