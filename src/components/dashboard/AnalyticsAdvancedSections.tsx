@@ -221,34 +221,23 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
   }, [breakdowns?.devices]);
 
   const funnel = useMemo(() => {
-    const map: Record<string, number> = {
-      view_product: 0, add_to_cart: 0, begin_checkout: 0, pay_click: 0, purchase: 0,
-    };
-    (funnelDaily || []).forEach((r: any) => {
-      if (map[r.event_name] !== undefined) map[r.event_name] += r.unique_sessions || 0;
-    });
-    // Today's raw events (rollup runs nightly, so append today's unique sessions).
-    const todayBySession: Record<string, Set<string>> = {
-      view_product: new Set(), add_to_cart: new Set(),
-      begin_checkout: new Set(), pay_click: new Set(), purchase: new Set(),
-    };
-    (funnelToday || []).forEach((e: any) => {
-      if (todayBySession[e.event_name]) todayBySession[e.event_name].add(e.session_id || "");
-    });
-    Object.keys(map).forEach(k => { map[k] += todayBySession[k].size; });
+    const steps_ = (funnelData?.steps || {}) as Record<string, number>;
+    const num = (k: string) => Number(steps_[k] || 0);
 
-    const sessions = (pvDaily || []).reduce((s: number, r: any) => s + (r.sessions || 0), 0);
-    const created = orderCounts?.created || 0;
-    const paid = orderCounts?.paid || 0;
+    // Entry step uses the exact de-duplicated session count for the range,
+    // which also covers today (the rollup-only sum used to drop today entirely).
+    const sessions = Number(rangeSessions || 0) || Number(quality?.sessions || 0);
+    const created = orderCounts.created;
+    const paid = orderCounts.paid;
 
     const steps = [
-      { name: "Sessions",       value: sessions,           color: CHART_COLORS[6] },
-      { name: "Product Views",  value: map.view_product,   color: CHART_COLORS[0] },
-      { name: "Add to Cart",    value: map.add_to_cart,    color: CHART_COLORS[1] },
-      { name: "Checkout",       value: map.begin_checkout, color: CHART_COLORS[3] },
-      { name: "Pay Clicked",    value: map.pay_click,      color: CHART_COLORS[4] },
-      { name: "Order Created",  value: created,            color: CHART_COLORS[7] },
-      { name: "Paid",           value: paid,               color: CHART_COLORS[2] },
+      { name: "Sessions",       value: sessions,               color: CHART_COLORS[6] },
+      { name: "Product Views",  value: num("view_product"),    color: CHART_COLORS[0] },
+      { name: "Add to Cart",    value: num("add_to_cart"),     color: CHART_COLORS[1] },
+      { name: "Checkout",       value: num("begin_checkout"),  color: CHART_COLORS[3] },
+      { name: "Pay Clicked",    value: num("pay_click"),       color: CHART_COLORS[4] },
+      { name: "Order Created",  value: created,                color: CHART_COLORS[7] },
+      { name: "Paid",           value: paid,                   color: CHART_COLORS[2] },
     ];
     const maxV = Math.max(...steps.map(s => s.value), 1);
     return steps.map((s, i) => ({
@@ -262,68 +251,25 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
         ? ((steps[i - 1].value - s.value) / steps[i - 1].value) * 100
         : 0,
     }));
-  }, [funnelDaily, funnelToday, pvDaily, orderCounts]);
+  }, [funnelData, rangeSessions, quality, orderCounts]);
 
-  // Diagnostics — mines today's raw events for actionable drop reasons.
+  // Diagnostics — actionable drop reasons for the SELECTED range (server-side).
   // Powers the "Why they didn't buy" card so the merchant sees a fix list,
   // not just a funnel shape.
   const diagnostics = useMemo(() => {
-    const rows = (funnelToday || []) as any[];
-    const fieldStops: Record<string, number> = {};
-    const payFailReasons: Record<string, number> = {};
-    const zeroResultSearches: Record<string, number> = {};
-    const variantSelects = new Set<string>();
-    const pdpDeepScrolls = new Set<string>();
-    const cartRemoves: Record<string, number> = {};
-    const attributedSessions = new Set<string>();
-    const allSessions = new Set<string>();
-
-    for (const r of rows) {
-      const md = r.metadata || {};
-      const sid = r.session_id || "";
-      if (sid) allSessions.add(sid);
-      if (sid && (md.fbclid || md.gclid || md.ttclid || md.msclkid || md.utm_source)) {
-        attributedSessions.add(sid);
-      }
-      switch (r.event_name) {
-        case "checkout_field_error": {
-          const f = String(md.field || "unknown");
-          fieldStops[f] = (fieldStops[f] || 0) + 1;
-          break;
-        }
-        case "payment_failed": {
-          const reason = String(md.reason || md.payu_status || "unknown");
-          payFailReasons[reason] = (payFailReasons[reason] || 0) + 1;
-          break;
-        }
-        case "search_no_results": {
-          const q = String(md.query || "").trim().slice(0, 40);
-          if (q) zeroResultSearches[q] = (zeroResultSearches[q] || 0) + 1;
-          break;
-        }
-        case "pdp_variant_select": if (sid) variantSelects.add(sid); break;
-        case "pdp_deep_scroll":   if (sid) pdpDeepScrolls.add(sid); break;
-        case "cart_remove": {
-          const pid = String(r.product_id || md.productId || "unknown");
-          cartRemoves[pid] = (cartRemoves[pid] || 0) + 1;
-          break;
-        }
-      }
-    }
-
-    const top = (obj: Record<string, number>, n = 5) =>
-      Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, n);
-
+    const pairs = (rows?: KeyCount[]) =>
+      (rows || []).map((r) => [String(r.key ?? "unknown"), Number(r.n || 0)] as [string, number]);
     return {
-      fieldStops: top(fieldStops),
-      payFailReasons: top(payFailReasons),
-      zeroResultSearches: top(zeroResultSearches),
-      cartRemoves: top(cartRemoves),
-      variantSelectSessions: variantSelects.size,
-      pdpDeepScrollSessions: pdpDeepScrolls.size,
-      attributedPct: allSessions.size > 0 ? (attributedSessions.size / allSessions.size) * 100 : 0,
+      fieldStops: pairs(funnelData?.field_stops),
+      payFailReasons: pairs(funnelData?.pay_fail_reasons),
+      zeroResultSearches: pairs(funnelData?.zero_result_searches),
+      cartRemoves: pairs(funnelData?.cart_removes),
+      variantSelectSessions: Number(funnelData?.variant_select_sessions || 0),
+      pdpDeepScrollSessions: Number(funnelData?.pdp_deep_scroll_sessions || 0),
+      attributedPct: Number(funnelData?.attributed_pct || 0),
     };
-  }, [funnelToday]);
+  }, [funnelData]);
+
 
   const cohortGrid = useMemo(() => {
     if (!cohorts || cohorts.length === 0) return { rows: [], maxOffset: 0 };
