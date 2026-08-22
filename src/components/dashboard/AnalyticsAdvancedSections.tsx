@@ -442,12 +442,13 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
                   Most-removed products from cart
                 </p>
                 <ul className="space-y-0.5">
-                  {diagnostics.cartRemoves.map(([pid, n]) => (
-                    <li key={pid} className="flex justify-between">
-                      <span className="text-foreground truncate mr-2 font-mono text-[10px]">{pid.slice(0, 8)}…</span>
+                  {diagnostics.cartRemoves.map(([label, n]) => (
+                    <li key={label} className="flex justify-between">
+                      <span className="text-foreground truncate mr-2">{label}</span>
                       <span className="tabular-nums font-semibold">{n}</span>
                     </li>
                   ))}
+
                 </ul>
               </div>
             )}
