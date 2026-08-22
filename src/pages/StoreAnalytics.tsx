@@ -344,9 +344,13 @@ export default function StoreAnalytics() {
   const priorConversion = priorSessions > 0 ? (priorOrders / priorSessions) * 100 : 0;
   const conversionChange = priorConversion > 0 ? ((conversionRate - priorConversion) / priorConversion) * 100 : undefined;
 
-  const returningCustomers = customers?.filter((c: any) => c.order_count > 1).length || 0;
-  const totalCustomers = customers?.length || 0;
-  const returningRate = totalCustomers > 0 ? (returningCustomers / totalCustomers) * 100 : 0;
+  // Repeat rate = share of PAID orders in this range placed by returning buyers.
+  // (Was previously a lifetime customer-list ratio capped at 1000 rows, so it
+  // never matched the selected date range.)
+  const paidNew = Number(ordersBreakdown?.paid_new ?? 0);
+  const paidRepeat = Number(ordersBreakdown?.paid_repeat ?? 0);
+  const returningRate = paidNew + paidRepeat > 0 ? (paidRepeat / (paidNew + paidRepeat)) * 100 : 0;
+
 
   // Charts data
   const salesByDay = useMemo(() => (
