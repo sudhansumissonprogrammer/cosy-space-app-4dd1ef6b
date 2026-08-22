@@ -187,9 +187,17 @@ const rootElement = document.getElementById("root")!;
  * Without the dynamic-string trick, Rollup walks both branches and emits
  * <link rel="modulepreload"> for ~500KB of code that landing never executes.
  */
+// Signals the inline boot guard in index.html that the app actually started,
+// so it never triggers a recovery reload on a healthy page.
+function markBooted() {
+  (window as any).__APP_BOOTED__ = true;
+  try { (window as any).__sbBootOk?.(); } catch {}
+}
+
 if (shouldUseLandingFastPath()) {
   import("./LandingApp").then(({ default: LandingApp }) => {
     createRoot(rootElement).render(<LandingApp />);
+    markBooted();
   });
 } else {
   // PERF (measured 2026-07-29): on storefront hosts the `storefront-shell`
@@ -215,8 +223,10 @@ if (shouldUseLandingFastPath()) {
 
   import("./App").then(({ default: App }) => {
     createRoot(rootElement).render(<App />);
+    markBooted();
   });
 }
+
 
 
 // storefront:mounted is no longer used for skeleton removal.
