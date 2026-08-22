@@ -70,7 +70,7 @@ export default function CreateStore() {
 
 
   const [editContact, setEditContact] = useState(false);
-  const [prefilled, setPrefilled] = useState(false);
+
 
   useEffect(() => {
     if (!user) return;
