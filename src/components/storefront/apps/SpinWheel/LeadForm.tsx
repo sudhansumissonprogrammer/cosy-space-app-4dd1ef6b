@@ -8,6 +8,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { normalizePhone } from "@/lib/phoneUtils";
 import { toast } from "sonner";
 
+// In-app browsers (Instagram/Facebook) open the keyboard over the page without
+// resizing it. Nudging the focused field into view keeps what the shopper is
+// typing visible.
+function keepVisible(e: React.FocusEvent<HTMLInputElement>) {
+  const el = e.currentTarget;
+  window.setTimeout(() => {
+    try { el.scrollIntoView({ block: "center", behavior: "smooth" }); } catch {}
+  }, 300);
+}
+
 
 interface LeadFormProps {
   storeId: string;
