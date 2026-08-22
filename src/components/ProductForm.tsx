@@ -14,9 +14,11 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Upload, X, ArrowLeft, Plus, GripVertical, Trash2, Image as ImageIcon, Sparkles, Video as VideoIcon, Play } from "lucide-react";
+import { Loader2, Upload, X, ArrowLeft, Plus, GripVertical, Trash2, Image as ImageIcon, Sparkles, Video as VideoIcon, Play, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 import MediaLibraryPicker from "@/components/MediaLibraryPicker";
+import { useProductSourceLink } from "@/hooks/useSourceLinks";
+import { sourceLabel } from "@/lib/sourcePdpUrl";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -214,6 +216,10 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
     },
     enabled: !!productId,
   });
+
+  // Supplier (source store) PDP link for synced products
+  const { url: sourceUrl, platform: sourcePlatform } = useProductSourceLink(storeId, existingProduct as any);
+
 
   // ── Multi-category: extra categories this product also appears in ──
   const { data: existingProductCategories } = useQuery({
@@ -725,6 +731,22 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
           )}
         </div>
       )}
+
+      {isEditing && sourceUrl && (
+        <a
+          href={sourceUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5 transition-colors hover:bg-primary/10"
+        >
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-foreground">Open on {sourceLabel(sourcePlatform)}</p>
+            <p className="truncate text-xs text-muted-foreground">{sourceUrl}</p>
+          </div>
+          <ExternalLink className="h-4 w-4 shrink-0 text-primary" />
+        </a>
+      )}
+
 
       <form onSubmit={handleSubmit}>
         <Card className={cn(onClose && "border-0 shadow-none")}>
