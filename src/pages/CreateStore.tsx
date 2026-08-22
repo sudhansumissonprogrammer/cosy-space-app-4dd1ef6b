@@ -44,10 +44,10 @@ const CURRENCIES = [
 
 const STEPS = [
   { id: 1, title: "Store Info", icon: Store, desc: "Name & branding", motivation: "Let's build something amazing! 🚀" },
-  { id: 2, title: "Location", icon: MapPin, desc: "Where you are", motivation: "Great start! Keep going 💪" },
-  { id: 3, title: "Contact", icon: Phone, desc: "How to reach you", motivation: "Almost there! 🎯" },
-  { id: 4, title: "Social", icon: Instagram, desc: "Your presence", motivation: "Final step — you're a star! ⭐" },
+  { id: 2, title: "Contact", icon: Phone, desc: "Location & contact", motivation: "Almost done — this is all optional 💪" },
+  { id: 3, title: "Social", icon: Instagram, desc: "Your presence", motivation: "Final step — you're a star! ⭐" },
 ];
+
 
 // Commission-only stores use website checkout so platform commission,
 // abandoned-cart recovery, order confirmations and wallet invoices stay linked.
