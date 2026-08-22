@@ -46,6 +46,34 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
+    // Duplicate pre-check for the signup form. The underlying RPCs are
+    // service-role only, so the browser cannot run them directly.
+    if (body.action === "check") {
+      const email = String(body.email || "").trim().toLowerCase();
+      const [phoneRes, emailRes] = await Promise.all([
+        admin.rpc("get_user_id_by_phone", { _phone: phone }),
+        email
+          ? admin.rpc("get_auth_user_id_by_email", { _email: email })
+          : Promise.resolve({ data: null } as any),
+      ]);
+      return json({
+        phone_taken: !!(phoneRes as any)?.data,
+        email_taken: !!(emailRes as any)?.data,
+      });
+    }
+
+    // Signup must not mint a code for a number that already has an account —
+    // profiles.phone is unique, so the verify step could never store it.
+    if (purpose === "signup") {
+      const { data: existingUid } = await admin.rpc("get_user_id_by_phone", { _phone: phone });
+      if (existingUid) {
+        return json(
+          { error: "phone_taken", message: "This mobile number already exists — please log in instead." },
+          409,
+        );
+      }
+    }
+
     // Login requires an existing verified merchant account on this number.
     if (purpose === "login") {
       const { data: uid } = await admin.rpc("get_user_id_by_phone", { _phone: phone });
