@@ -120,121 +120,58 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
     enabled: !!storeId,
   });
 
-  // Page-views daily for bounce/duration metrics
-  const { data: pvDaily } = useQuery({
-    queryKey: ["pv-daily-ext", storeId, rangeStart.toISOString(), rangeEnd.toISOString()],
-    staleTime: 10 * 60_000,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("page_views_daily")
-        .select("date, pageviews, sessions, visitors, bounce_sessions, total_session_duration_seconds")
-        .eq("store_id", storeId)
-        .gte("date", format(rangeStart, "yyyy-MM-dd"))
-        .lte("date", format(rangeEnd, "yyyy-MM-dd"))
-        .order("date", { ascending: true });
-      return (data || []) as any[];
-    },
+  // Engagement quality for the selected range — server-side, and unlike the old
+  // rollup-only read it also includes TODAY (rollups run nightly, so "Today" and
+  // any range ending today previously showed 0% bounce / 0s duration).
+  const { data: quality } = useQuery({
+    queryKey: ["analytics-quality", storeId, rangeStart.toISOString(), rangeEnd.toISOString()],
+    staleTime: 60_000,
     enabled: !!storeId,
+    queryFn: async () => {
+      const { data, error } = await (supabase as unknown as RpcClient).rpc<Record<string, any>>(
+        "get_analytics_quality",
+        { _store_id: storeId, _range_start: rangeStart.toISOString(), _range_end: rangeEnd.toISOString() },
+      );
+      if (error) throw error;
+      return data || {};
+    },
   });
 
-  // Funnel events daily
-  const { data: funnelDaily } = useQuery({
-    queryKey: ["funnel-daily", storeId, rangeStart.toISOString(), rangeEnd.toISOString()],
-    staleTime: 5 * 60_000,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("storefront_events_daily" as any)
-        .select("date, event_name, count, unique_sessions, value_sum")
-        .eq("store_id", storeId)
-        .gte("date", format(rangeStart, "yyyy-MM-dd"))
-        .lte("date", format(rangeEnd, "yyyy-MM-dd"));
-      return ((data as any[]) || []);
-    },
-    enabled: !!storeId,
-  });
-
-  // Today's funnel from raw events (since rollup runs nightly)
-  const { data: funnelToday } = useQuery({
-    queryKey: ["funnel-today", storeId],
+  // Funnel + drop-off diagnostics for the WHOLE selected range (server-side).
+  // Previously the funnel mixed nightly rollups with a 200k-row browser fetch of
+  // today's events, and diagnostics only ever described today.
+  const { data: funnelData } = useQuery({
+    queryKey: ["analytics-funnel", storeId, rangeStart.toISOString(), rangeEnd.toISOString()],
     staleTime: 60_000,
     refetchInterval: 60_000,
     refetchIntervalInBackground: false,
-    queryFn: async () => {
-      // Paginate today's events so funnels stay accurate on high-volume stores.
-      const since = new Date();
-      since.setHours(0, 0, 0, 0);
-      const PAGE = 1000;
-      const rows: any[] = [];
-      for (let from = 0; from < 200_000; from += PAGE) {
-        const { data, error } = await (supabase as any)
-          .from("storefront_events")
-          .select("event_name, session_id, value, metadata")
-          .eq("store_id", storeId)
-          .gte("created_at", since.toISOString())
-          .order("created_at", { ascending: false })
-          .range(from, from + PAGE - 1);
-        if (error) break;
-        const batch = (data || []) as any[];
-        rows.push(...batch);
-        if (batch.length < PAGE) break;
-      }
-      return rows;
-    },
     enabled: !!storeId,
+    queryFn: async () => {
+      const { data, error } = await (supabase as unknown as RpcClient).rpc<FunnelPayload>(
+        "get_analytics_funnel",
+        { _store_id: storeId, _range_start: rangeStart.toISOString(), _range_end: rangeEnd.toISOString() },
+      );
+      if (error) throw error;
+      return data || {};
+    },
   });
 
-  // Orders in range — created / paid / cancelled counts feed the tail of the funnel.
-  // Paid statuses mirror firePurchaseCapi.ts so partial-paid counts as revenue.
-  const { data: orderCounts } = useQuery({
-    queryKey: ["funnel-orders", storeId, rangeStart.toISOString(), rangeEnd.toISOString()],
-    staleTime: 60_000,
-    refetchInterval: 60_000,
-    refetchIntervalInBackground: false,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("orders")
-        .select("status, is_repeat_customer, attribution, total")
-        .eq("store_id", storeId)
-        .gte("created_at", rangeStart.toISOString())
-        .lte("created_at", rangeEnd.toISOString());
-      const rows = (data || []) as any[];
-      const PAID = new Set(["paid", "confirmed", "partially_paid", "delivered", "completed", "shipped"]);
-      let created = rows.length;
-      let paid = 0, cancelled = 0, pending = 0;
-      let paidNew = 0, paidRepeat = 0;
-      let revNew = 0, revRepeat = 0;
-      const srcMap = new Map<string, { orders: number; revenue: number }>();
-      for (const r of rows) {
-        const s = String(r.status || "").toLowerCase();
-        const isPaid = PAID.has(s);
+  const orderCounts = useMemo(() => ({
+    created: Number(ordersBreakdown?.created ?? 0),
+    paid: Number(ordersBreakdown?.paid ?? 0),
+    cancelled: Number(ordersBreakdown?.cancelled ?? 0),
+    pending: Number(ordersBreakdown?.pending ?? 0),
+    paidNew: Number(ordersBreakdown?.paid_new ?? 0),
+    paidRepeat: Number(ordersBreakdown?.paid_repeat ?? 0),
+    revNew: Number(ordersBreakdown?.rev_new ?? 0),
+    revRepeat: Number(ordersBreakdown?.rev_repeat ?? 0),
+    sources: ((ordersBreakdown?.sources || []) as any[]).map((s) => ({
+      source: String(s.source || "direct"),
+      orders: Number(s.orders || 0),
+      revenue: Number(s.revenue || 0),
+    })),
+  }), [ordersBreakdown]);
 
-        if (s === "cancelled" || s === "failed") cancelled++;
-        else if (isPaid) paid++;
-        else pending++;
-        if (isPaid) {
-          const rev = Number(r.total || 0);
-          if (r.is_repeat_customer) { paidRepeat++; revRepeat += rev; }
-          else { paidNew++; revNew += rev; }
-          const attr = r.attribution || {};
-          const src =
-            attr.utm_source ||
-            (attr.fbclid ? "meta-ad" : null) ||
-            (attr.gclid ? "google-ad" : null) ||
-            (attr.ttclid ? "tiktok-ad" : null) ||
-            (attr.referrer ? "referral" : "direct");
-          const key = String(src).slice(0, 40).toLowerCase();
-          const cur = srcMap.get(key) || { orders: 0, revenue: 0 };
-          cur.orders++; cur.revenue += rev;
-          srcMap.set(key, cur);
-        }
-      }
-      const sources = Array.from(srcMap.entries())
-        .map(([source, v]) => ({ source, ...v }))
-        .sort((a, b) => b.revenue - a.revenue);
-      return { created, paid, cancelled, pending, paidNew, paidRepeat, revNew, revRepeat, sources };
-    },
-    enabled: !!storeId,
-  });
 
 
   // Cohorts
