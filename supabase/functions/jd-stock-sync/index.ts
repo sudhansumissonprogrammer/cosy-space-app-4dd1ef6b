@@ -39,9 +39,9 @@ const SOURCE_ORIGIN = "https://shodfedf.jdwebshop.com";
  *  per 15-minute window (`x-ratelimit-limit: 200`, reset ~900s), shared with
  *  the catalog sync. At the previous 1000/run every window was burned in the
  *  first run and ~all later lookups came back 403 → stock updates went dark.
- *  60/run at a 5-minute cron = 180 req / 15 min, just inside the quota and
+ *  40/run at a 5-minute cron = 120 req / 15 min, just inside the quota and
  *  still ~17k products/day. */
-const CHUNK_SIZE = 60;
+const CHUNK_SIZE = 40;
 const CONCURRENCY = 2;
 
 /** Minimum gap between requests inside one worker — politeness throttle. */
