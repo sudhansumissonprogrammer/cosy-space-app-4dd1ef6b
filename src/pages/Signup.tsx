@@ -160,6 +160,11 @@ export default function Signup() {
         setResendIn(payload?.retry_after ?? 30);
         return true; // stay on the OTP screen
       }
+      if (code === "phone_taken") {
+        toast.error(payload?.message || "This mobile number already exists — please log in instead.");
+        return false;
+      }
+
       if (!silent) {
         toast.error("WhatsApp code couldn't be sent — verify by email instead.");
         showVerificationStep(signupEmail);
