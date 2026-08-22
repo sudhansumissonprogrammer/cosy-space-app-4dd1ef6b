@@ -114,9 +114,8 @@ export function AppConfigShell({
         {children}
       </div>
 
-      {/* Sticky mobile save bar */}
+      {/* Sticky mobile save bar — offset above the dashboard bottom nav (h-16, z-30) */}
       {hasSave && (
-        {/* Sits above the dashboard bottom nav (fixed, h-16, z-30) so the button is never hidden */}
         <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-40 border-t bg-background/95 px-4 py-3 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] backdrop-blur md:hidden">
           <Button
             onClick={onSave}
