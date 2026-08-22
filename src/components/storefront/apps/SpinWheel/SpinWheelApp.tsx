@@ -385,6 +385,7 @@ export default function SpinWheelApp({ storeId, storeName, primaryColor, accentC
 
   return (
     <div
+      data-sf-spin
       className="fixed inset-x-0 top-0 bottom-0 z-[9999] flex items-end sm:items-center justify-center p-3 sm:p-6 overflow-y-auto overscroll-contain"
       style={overlayStyle}
       role="dialog"
