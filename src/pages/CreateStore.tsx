@@ -112,10 +112,33 @@ export default function CreateStore() {
   const [ownerEmail, setOwnerEmail] = useState("");
   const [ownerName, setOwnerName] = useState("");
 
-  // Step 4
+  // Step 3
   const [instagramUrl, setInstagramUrl] = useState("");
   const [facebookUrl, setFacebookUrl] = useState("");
   const [partnerCode, setPartnerCode] = useState("");
+
+  // Reuse the name / email / mobile already collected at signup —
+  // never ask the merchant for the same details twice.
+  useEffect(() => {
+    if (!user) return;
+    const meta = (user.user_metadata || {}) as { full_name?: string; phone?: string };
+    if (user.email) setOwnerEmail((v) => v || user.email!);
+    if (meta.full_name) setOwnerName((v) => v || meta.full_name!);
+    if (meta.phone) setWhatsappNumber((v) => v || `+91 ${meta.phone}`);
+    setPrefilled(true);
+
+    supabase
+      .from("profiles")
+      .select("full_name, phone")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) return;
+        if (data.full_name) setOwnerName((v) => v || data.full_name!);
+        if (data.phone) setWhatsappNumber((v) => v || `+91 ${data.phone}`);
+      });
+  }, [user]);
+
 
   const theme = "theme-1";
 
