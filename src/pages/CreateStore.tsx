@@ -69,6 +69,9 @@ export default function CreateStore() {
 
 
 
+  const [editContact, setEditContact] = useState(false);
+  const [prefilled, setPrefilled] = useState(false);
+
   useEffect(() => {
     if (!user) return;
     supabase
@@ -84,6 +87,7 @@ export default function CreateStore() {
         setCheckingStore(false);
       });
   }, [user, navigate]);
+
 
   // Step 1
   const [name, setName] = useState("");
