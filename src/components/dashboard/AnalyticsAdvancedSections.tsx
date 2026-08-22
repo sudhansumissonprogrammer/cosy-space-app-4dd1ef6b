@@ -85,7 +85,7 @@ interface FunnelPayload {
 }
 
 
-export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEnd, breakdowns }: Props) {
+export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEnd, breakdowns, rangeSessions, ordersBreakdown }: Props) {
   // Live visitors — last 5 min, refetched every 20s
   const { data: liveCount } = useQuery({
     queryKey: ["analytics-live-count", storeId],
