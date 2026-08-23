@@ -237,9 +237,12 @@ html.sf-dark [style*="; color: color-mix(in srgb, var(--storefront-text"] {
 
 /* Icons inheriting a merchant colour */
 html.sf-dark svg[style*="color: var(--storefront-primary"],
-html.sf-dark svg[style*="color: var(--storefront-btn-text"],
 html.sf-dark svg[style*="color: var(--storefront-bg"] {
   color: #f2f2f2 !important;
+}
+/* Icons that sit on a CTA surface are black (white button) */
+html.sf-dark svg[style*="color: var(--storefront-btn-text"] {
+  color: #0a0a0a !important;
 }
 
 /* ── Inverted strips (bg = text colour) ───────────────────────
