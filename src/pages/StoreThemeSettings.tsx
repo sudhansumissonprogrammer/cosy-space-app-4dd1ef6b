@@ -739,6 +739,8 @@ export default function StoreThemeSettings() {
         mobile_nav_enabled: themeConfig.mobile_nav_enabled ?? false,
         mobile_nav_style: (themeConfig as any).mobile_nav_style || "classic",
         header_style: themeConfig.header_style || "normal",
+        header_bg_color: (themeConfig as any).header_bg_color || "",
+        header_text_color: (themeConfig as any).header_text_color || "",
         bilingual_cta: (themeConfig as any).bilingual_cta ?? false,
         show_warranty_badge: (themeConfig as any).show_warranty_badge ?? false,
         show_premium_header_badge: (themeConfig as any).show_premium_header_badge ?? false,
