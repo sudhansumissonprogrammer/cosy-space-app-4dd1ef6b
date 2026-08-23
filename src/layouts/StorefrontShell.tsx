@@ -137,8 +137,22 @@ export default function StorefrontShell({
   // Theme config (reactive — updates when cache changes via live preview)
   const themeConfig = useStorefrontThemeConfig(store?.id, shellThemeConfig);
 
+  // Cache brand identity for the black branded splash screen (index.html reads
+  // this at T+0 on the next visit so the splash shows the real logo instantly).
+  useEffect(() => {
+    if (!store?.name) return;
+    try {
+      const identity = store.slug || window.location.hostname;
+      localStorage.setItem(
+        `sb_splash:${identity}`,
+        JSON.stringify({ logo: store.logo_url || "", name: store.name })
+      );
+    } catch { /* storage blocked — splash falls back to the favicon/monogram */ }
+  }, [store?.slug, store?.name, store?.logo_url]);
+
   // Load Google Fonts eagerly but don't block paint — display=swap handles FOUT gracefully.
   useEffect(() => {
+
     if (!store?.id) return;
     loadGoogleFonts(themeConfig);
   }, [store?.id, themeConfig?.heading_font, themeConfig?.body_font]);
