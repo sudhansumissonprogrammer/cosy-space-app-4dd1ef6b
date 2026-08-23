@@ -20,7 +20,6 @@ import {
   Clock, Eye, Flame, Heart, Minus, Plus, Check, ChevronDown, CreditCard, ThumbsUp,
   Lock, Timer, Zap, ShieldCheck, Maximize2, Play
 } from "lucide-react";
-import PdpSimilarProductsIcon from "@/components/storefront/pdp/PdpSimilarProductsIcon";
 import { toast } from "sonner";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useProductJsonLd } from "@/hooks/useJsonLd";
@@ -1650,22 +1649,6 @@ function ImageGallery({
               aria-label="Enlarge image"
             >
               <Maximize2 className="h-4 w-4" />
-            </button>
-          )}
-
-          {/* Similar products — jumps to PDP carousels */}
-          {slides[activeIndex]?.kind !== "video" && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                const el = document.getElementById("pdp-carousels");
-                if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-              }}
-              className="absolute bottom-3 left-14 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 backdrop-blur-md ring-1 ring-black/10 text-black shadow-lg transition-[transform,opacity,colors,box-shadow] hover:bg-white active:scale-[0.96]"
-              aria-label="View similar products"
-              title="Similar products"
-            >
-              <PdpSimilarProductsIcon className="h-4 w-4" />
             </button>
           )}
 
