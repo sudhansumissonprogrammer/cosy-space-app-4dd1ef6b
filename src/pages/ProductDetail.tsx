@@ -1775,7 +1775,7 @@ function ImageGallery({
                   return (
                     <Suspense
                       key={`${i}-vid-${slide.url}`}
-                      fallback={<div className="flex-[0_0_100%] min-w-0 aspect-[4/5] sm:aspect-square bg-muted" />}
+                      fallback={<div className="flex-[0_0_100%] min-w-0 aspect-[3/4] sm:aspect-[4/5] bg-muted" />}
                     >
                       <VideoSlide
                         url={slide.url}
@@ -1796,7 +1796,7 @@ function ImageGallery({
                     // square photo and a tall video never make the carousel row
                     // taller than the visible media — that mismatch was the source
                     // of the large blank gap under short images.
-                    className="relative flex-[0_0_100%] min-w-0 overflow-hidden aspect-[4/5] sm:aspect-square bg-background"
+                    className="relative flex-[0_0_100%] min-w-0 overflow-hidden aspect-[3/4] sm:aspect-[4/5] bg-background"
                     onClick={() => setLightboxOpen(true)}
                   >
                     {/* Blurred fill behind portrait/square images so gutters disappear */}
