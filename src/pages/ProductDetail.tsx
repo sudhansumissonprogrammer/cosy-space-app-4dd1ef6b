@@ -19,7 +19,6 @@ import {
   Clock, Eye, Flame, Heart, Minus, Plus, Check, ChevronDown, CreditCard, ThumbsUp,
   Lock, Timer, Zap, ShieldCheck, Maximize2, Play
 } from "lucide-react";
-import PdpSimilarProductsIcon from "@/components/storefront/pdp/PdpSimilarProductsIcon";
 import { toast } from "sonner";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useProductJsonLd } from "@/hooks/useJsonLd";
@@ -1733,7 +1732,7 @@ function ImageGallery({
   return (
     <>
       <div className="min-w-0 max-w-full space-y-1 sm:space-y-2 lg:sticky lg:top-4">
-        <div className="relative -mx-4 sm:mx-0 px-2 pt-2 pb-1 sm:p-0">
+        <div className="relative -mx-4 sm:mx-0 p-0">
           {/* Discount badge */}
           {hasDiscount && discountPct > 0 && (
             <div className="absolute left-3 top-3 z-10">
@@ -1747,10 +1746,11 @@ function ImageGallery({
           {onShare && (
             <button
               onClick={(e) => { e.stopPropagation(); onShare(); }}
-              className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white shadow-lg transition-[transform,opacity,colors,box-shadow] hover:bg-black/70 active:scale-[0.96]"
+              className="absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/45 backdrop-blur-sm text-white shadow-md transition-[transform,opacity,colors,box-shadow] hover:bg-black/65 active:scale-[0.96]"
               aria-label="Share product"
             >
-              <Share2 className="h-4 w-4" />
+              <Share2 className="h-3.5 w-3.5" />
+
 
             </button>
           )}
@@ -1828,30 +1828,13 @@ function ImageGallery({
           {slides[activeIndex]?.kind !== "video" && (
             <button
               onClick={(e) => { e.stopPropagation(); setLightboxOpen(true); }}
-              className="absolute bottom-3 left-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white shadow-lg transition-[transform,opacity,colors,box-shadow] hover:bg-black/70 active:scale-[0.96]"
+              className="absolute bottom-3 left-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/45 backdrop-blur-sm text-white shadow-md transition-[transform,opacity,colors,box-shadow] hover:bg-black/65 active:scale-[0.96]"
               aria-label="Enlarge image"
             >
-              <Maximize2 className="h-4 w-4" />
-
+              <Maximize2 className="h-3.5 w-3.5" />
             </button>
           )}
 
-          {/* Similar products — jumps to PDP carousels */}
-          {slides[activeIndex]?.kind !== "video" && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                const el = document.getElementById("pdp-carousels");
-                if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-              }}
-              className="absolute bottom-3 left-14 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 backdrop-blur-md ring-1 ring-black/10 text-black shadow-lg transition-[transform,opacity,colors,box-shadow] hover:bg-white active:scale-[0.96]"
-              aria-label="View similar products"
-              title="Similar products"
-            >
-              <PdpSimilarProductsIcon className="h-4 w-4" />
-
-            </button>
-          )}
 
           {/* Rating pill → jumps to the reviews section */}
           <div className={`absolute right-3 z-10 ${showMultiUi ? "bottom-12 sm:bottom-3" : "bottom-3"}`}>
@@ -1906,17 +1889,17 @@ function ImageGallery({
                 type="button"
                 onClick={(e) => { e.stopPropagation(); scrollPrev(); }}
                 aria-label="Previous image"
-                className="absolute left-2 top-1/2 z-20 -translate-y-1/2 flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border border-white/40 bg-white/20 text-white shadow-[0_2px_10px_rgba(0,0,0,0.25)] backdrop-blur-md transition-transform active:scale-90 hover:bg-white/30"
+                className="absolute left-2 top-1/2 z-20 -translate-y-1/2 flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full border border-white/40 bg-white/20 text-white shadow-[0_2px_10px_rgba(0,0,0,0.25)] backdrop-blur-md transition-transform active:scale-90 hover:bg-white/30"
               >
-                <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+                <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </button>
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); scrollNext(); }}
                 aria-label="Next image"
-                className="absolute right-2 top-1/2 z-20 -translate-y-1/2 flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border border-white/40 bg-white/20 text-white shadow-[0_2px_10px_rgba(0,0,0,0.25)] backdrop-blur-md transition-transform active:scale-90 hover:bg-white/30"
+                className="absolute right-2 top-1/2 z-20 -translate-y-1/2 flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full border border-white/40 bg-white/20 text-white shadow-[0_2px_10px_rgba(0,0,0,0.25)] backdrop-blur-md transition-transform active:scale-90 hover:bg-white/30"
               >
-                <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
+                <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </button>
             </>
           )}
