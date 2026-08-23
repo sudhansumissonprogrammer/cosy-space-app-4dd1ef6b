@@ -78,7 +78,7 @@ export default function CategoryQuickJump({ storeId, slug, activeCategory }: Pro
   const isAllActive = !activeCategory;
 
   return (
-    <div className="-mx-3 sm:-mx-4 lg:-mx-6 px-3 sm:px-4 lg:px-6 mb-3">
+    <div className="sfg sfg-bar-top sticky top-[56px] z-20 -mx-3 sm:-mx-4 lg:-mx-6 px-3 sm:px-4 lg:px-6 mb-3 py-1.5" style={{ backgroundColor: "color-mix(in srgb, var(--storefront-bg, hsl(var(--background))) 70%, transparent)" }}>
       <div ref={scrollerRef} className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
         <Link
           to={storefrontPath(slug, "shop")}

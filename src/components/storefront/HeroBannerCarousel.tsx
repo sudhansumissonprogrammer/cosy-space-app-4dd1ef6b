@@ -269,7 +269,7 @@ function CarouselInner({
       {overlay}
 
       {/* Dots */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex gap-2">
+      <div className="sfg sfg-pill sfg-dark absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-2 py-1.5">
         {images.map((_, i) => (
           <button
             key={i}
@@ -288,14 +288,14 @@ function CarouselInner({
       {/* Arrow buttons for desktop */}
       <button
         onClick={() => { prev(); resetTimer(); }}
-        className="absolute left-2 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100 hover:opacity-100 sm:opacity-70"
+        className="sfg sfg-pill sfg-dark sfg-tap absolute left-2 top-1/2 -translate-y-1/2 z-10 h-8 w-8 text-white flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100 hover:opacity-100 sm:opacity-70"
         aria-label="Previous slide"
       >
         ‹
       </button>
       <button
         onClick={() => { next(); resetTimer(); }}
-        className="absolute right-2 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100 hover:opacity-100 sm:opacity-70"
+        className="sfg sfg-pill sfg-dark sfg-tap absolute right-2 top-1/2 -translate-y-1/2 z-10 h-8 w-8 text-white flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100 hover:opacity-100 sm:opacity-70"
         aria-label="Next slide"
       >
         ›

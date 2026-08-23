@@ -48,8 +48,8 @@ export default function CartTotalsFooter({
         </div>
       )}
       <div
-        className="rounded-t-2xl border-t px-3 pb-2 pt-4"
-        style={{ backgroundColor: "var(--storefront-bg, #fff)" }}
+        className="sfg sfg-sheet sfg-strong px-3 pb-2 pt-4"
+        style={{ backgroundColor: "color-mix(in srgb, var(--storefront-bg, #fff) 66%, transparent)" }}
       >
         <div className="flex items-center justify-between">
           <span

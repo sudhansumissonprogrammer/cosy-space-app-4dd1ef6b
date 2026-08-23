@@ -233,7 +233,7 @@ export default function BuyNowPhoneModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm mx-auto rounded-2xl">
+      <DialogContent className="sfg sfg-panel sfg-strong max-w-sm mx-auto">
         <DialogHeader>
           <DialogTitle className="text-center text-lg font-bold">
             Enter your mobile number

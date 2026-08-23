@@ -27,7 +27,7 @@ export default function PincodeSheet({ initial = "", onSubmit, onClose }: Props)
     <div className="fixed inset-0 z-50 flex flex-col justify-end pointer-events-auto">
       {/* Scrim */}
       <div
-        className="absolute inset-0 bg-black/50"
+        className="absolute inset-0 bg-black/40 backdrop-blur-[3px]"
         onClick={onClose}
         aria-hidden
       />
@@ -36,16 +36,17 @@ export default function PincodeSheet({ initial = "", onSubmit, onClose }: Props)
         type="button"
         onClick={onClose}
         aria-label="Close"
-        className="relative mx-auto mb-4 h-10 w-10 rounded-full bg-white shadow-md flex items-center justify-center"
+        className="sfg sfg-pill sfg-dark sfg-tap relative mx-auto mb-4 h-10 w-10 flex items-center justify-center"
       >
         <X className="h-5 w-5" />
       </button>
       {/* Sheet */}
-      <div className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl px-5 pt-5 pb-6">
+      <div className="sfg sfg-sheet sfg-strong relative mx-auto w-full max-w-md px-5 pt-3 pb-6" style={{ backgroundColor: "color-mix(in srgb, var(--storefront-bg, #fff) 78%, transparent)" }}>
+        <div aria-hidden className="mx-auto mb-3 h-1 w-10 rounded-full" style={{ backgroundColor: "color-mix(in srgb, var(--storefront-text, #111) 18%, transparent)" }} />
         <div className="text-[16px] font-semibold">Add Delivery Address</div>
 
         <div className="relative mt-6">
-          <label className="absolute -top-2 left-3 bg-white px-1 text-[11px] text-muted-foreground">
+          <label className="absolute -top-2 left-3 rounded px-1 text-[11px] text-muted-foreground" style={{ backgroundColor: "var(--storefront-bg, #fff)" }}>
             Pincode <span className="text-destructive">*</span>
           </label>
           <input
