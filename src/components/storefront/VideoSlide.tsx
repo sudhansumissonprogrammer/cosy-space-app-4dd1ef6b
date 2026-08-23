@@ -120,7 +120,7 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
         muted
         playsInline
         disablePictureInPicture
-        className="relative z-[1] w-full h-full object-contain bg-black"
+        className="relative z-[1] w-full h-full object-cover bg-black"
         onClick={(e) => {
           e.stopPropagation();
           handleToggle();
