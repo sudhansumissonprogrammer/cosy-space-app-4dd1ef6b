@@ -192,7 +192,7 @@ export default function CheckoutAwareLayout({
   const ActionButtons = !isCheckout ? (
     <div className="flex items-center gap-1 sm:gap-2" style={{ minHeight: 40, contain: "layout", ...(iconStyle || {}) }}>
       {showDarkToggle && (
-        <Suspense fallback={<div className="h-10 w-10" aria-hidden />}>
+        <Suspense fallback={<div className="h-8 w-8" aria-hidden />}>
           <LazySfDarkToggle effect={darkToggleEffect} />
         </Suspense>
       )}
