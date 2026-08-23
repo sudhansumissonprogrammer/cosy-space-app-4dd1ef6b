@@ -93,7 +93,7 @@ export default function DeliveryLocationDialog({ open, onClose, storeId, onSaved
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sfg sfg-panel sfg-strong sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
             <MapPin className="h-4 w-4" /> Set delivery location

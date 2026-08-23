@@ -34,13 +34,13 @@ export default function QuickViewModal({ open, onClose, product, store, slug }: 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" onClick={onClose}>
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-md" />
 
       {/* Modal */}
       <div
-        className="relative z-10 w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl animate-scale-in"
+        className="sfg sfg-panel sfg-strong relative z-10 w-full max-w-3xl max-h-[90vh] overflow-y-auto animate-scale-in"
         style={{
-          backgroundColor: "var(--storefront-bg, hsl(var(--background)))",
+          backgroundColor: "color-mix(in srgb, var(--storefront-bg, hsl(var(--background))) 84%, transparent)",
           color: "var(--storefront-text, hsl(var(--foreground)))",
         }}
         onClick={(e) => e.stopPropagation()}

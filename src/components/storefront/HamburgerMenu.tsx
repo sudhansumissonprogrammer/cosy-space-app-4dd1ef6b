@@ -27,7 +27,7 @@ export default function HamburgerMenu({ store }: { store: StoreData }) {
           </svg>
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="storefront-font w-[280px] p-0" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--card)))", color: "var(--storefront-text, hsl(var(--foreground)))" }}>
+      <SheetContent side="left" className="storefront-font sfg sfg-strong w-[280px] p-0" style={{ backgroundColor: "color-mix(in srgb, var(--storefront-bg, hsl(var(--card))) 84%, transparent)", color: "var(--storefront-text, hsl(var(--foreground)))" }}>
         <div className="flex flex-col">
           <div className="p-4" style={{ borderBottom: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)", backgroundColor: "var(--storefront-bg, hsl(var(--card)))" }}>
             {store.logo_url ? (
