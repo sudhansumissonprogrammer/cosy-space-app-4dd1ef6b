@@ -263,7 +263,7 @@ html.sf-dark [style*="background: var(--storefront-text"] * {
 }
 
 /* ══════════════════════════════════════════════════════════════
- * BUTTONS — every CTA is a black tile with white content
+ * BUTTONS — every CTA is a WHITE tile with black content
  * (Add to Cart, Buy Now, quantity steppers, chips, sticky bars…)
  * ══════════════════════════════════════════════════════════════ */
 html.sf-dark button[style*="background-color: var(--storefront-primary"],
@@ -273,54 +273,65 @@ html.sf-dark button[style*="background: var(--storefront-primary"],
 html.sf-dark a[style*="background: var(--storefront-primary"],
 html.sf-dark button[style*="background-color: var(--storefront-accent"],
 html.sf-dark a[style*="background-color: var(--storefront-accent"],
-html.sf-dark .bg-primary,
-html.sf-dark .bg-foreground,
-html.sf-dark .bg-black,
-html.sf-dark .bg-gray-900,
-html.sf-dark .bg-gray-800,
-html.sf-dark .bg-neutral-900,
-html.sf-dark .bg-zinc-900,
-html.sf-dark .bg-slate-900 {
-  background-color: #121212 !important;
-  background-image: none !important;
-  color: #ffffff !important;
-}
-
-/* Only interactive elements get the hairline so black tiles are
-   separable from the black page; static sections stay flat. */
-html.sf-dark button[style*="var(--storefront-primary"],
-html.sf-dark a[style*="background-color: var(--storefront-primary"],
 html.sf-dark button.bg-primary,
 html.sf-dark a.bg-primary,
+html.sf-dark [role="button"].bg-primary,
 html.sf-dark button.bg-foreground,
+html.sf-dark a.bg-foreground,
 html.sf-dark button.bg-black,
 html.sf-dark a.bg-black,
-html.sf-dark [role="button"].bg-primary {
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+html.sf-dark button.bg-gray-900,
+html.sf-dark button.bg-gray-800,
+html.sf-dark button.bg-neutral-900,
+html.sf-dark button.bg-zinc-900,
+html.sf-dark button.bg-slate-900 {
+  background-color: #ffffff !important;
+  background-image: none !important;
+  color: #0a0a0a !important;
+  border: 1px solid rgba(255, 255, 255, 0.9) !important;
 }
 
-/* Everything inside a black CTA is white — labels, prices, icons,
+/* Non-interactive surfaces that use the same classes stay dark. */
+html.sf-dark .bg-primary:not(button):not(a):not([role="button"]),
+html.sf-dark .bg-foreground:not(button):not(a):not([role="button"]),
+html.sf-dark .bg-black:not(button):not(a):not([role="button"]),
+html.sf-dark .bg-gray-900:not(button):not(a):not([role="button"]),
+html.sf-dark .bg-gray-800:not(button):not(a):not([role="button"]),
+html.sf-dark .bg-neutral-900:not(button):not(a):not([role="button"]),
+html.sf-dark .bg-zinc-900:not(button):not(a):not([role="button"]),
+html.sf-dark .bg-slate-900:not(button):not(a):not([role="button"]) {
+  background-color: #121212 !important;
+  background-image: none !important;
+  color: #f2f2f2 !important;
+}
+
+/* Everything inside a white CTA is black — labels, prices, icons,
    sub-captions that carry their own colour class. */
 html.sf-dark button[style*="background-color: var(--storefront-primary"] *,
 html.sf-dark a[style*="background-color: var(--storefront-primary"] *,
 html.sf-dark button[style*="background: var(--storefront-primary"] *,
+html.sf-dark [role="button"][style*="background-color: var(--storefront-primary"] *,
+html.sf-dark button[style*="background-color: var(--storefront-accent"] *,
 html.sf-dark button.bg-primary *,
 html.sf-dark a.bg-primary *,
+html.sf-dark [role="button"].bg-primary *,
 html.sf-dark button.bg-foreground *,
+html.sf-dark a.bg-foreground *,
 html.sf-dark button.bg-black *,
-html.sf-dark a.bg-black *,
-html.sf-dark .bg-primary > span,
-html.sf-dark .bg-foreground > span {
-  color: #ffffff !important;
+html.sf-dark a.bg-black * {
+  color: #0a0a0a !important;
   fill: none;
 }
 html.sf-dark button[style*="background-color: var(--storefront-primary"] svg,
 html.sf-dark a[style*="background-color: var(--storefront-primary"] svg,
+html.sf-dark button[style*="background: var(--storefront-primary"] svg,
+html.sf-dark [role="button"][style*="background-color: var(--storefront-primary"] svg,
 html.sf-dark button.bg-primary svg,
+html.sf-dark a.bg-primary svg,
 html.sf-dark button.bg-foreground svg,
 html.sf-dark button.bg-black svg,
 html.sf-dark a.bg-black svg {
-  color: #ffffff !important;
+  color: #0a0a0a !important;
   stroke: currentColor;
 }
 
