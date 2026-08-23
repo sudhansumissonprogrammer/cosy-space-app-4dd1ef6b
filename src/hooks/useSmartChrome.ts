@@ -84,5 +84,7 @@ export function useSmartChrome(): { headerVisible: boolean; navVisible: boolean 
     return () => window.removeEventListener("scroll", onScroll);
   }, [isCheckout]);
 
-  return { headerVisible: visible, navVisible: visible };
+  // Header is now ALWAYS sticky/visible across every theme — only the mobile
+  // bottom nav keeps the smart hide-on-scroll behaviour.
+  return { headerVisible: true, navVisible: visible };
 }
