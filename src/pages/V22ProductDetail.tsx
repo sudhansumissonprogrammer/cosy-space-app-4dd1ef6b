@@ -1568,7 +1568,7 @@ function ImageGallery({
         <div className="relative -mx-4 sm:mx-0 px-2 pt-2 pb-1 sm:p-0">
           {/* Discount badge */}
           {hasDiscount && discountPct > 0 && (
-            <div className="absolute left-3 top-3 z-10">
+            <div className="absolute left-5 sm:left-3 top-3 z-10">
               <Badge className="bg-emerald-600 text-white text-[11px] font-bold border-0 shadow-lg px-2 py-0.5">
                 -{discountPct}%
               </Badge>
@@ -1579,7 +1579,7 @@ function ImageGallery({
           {onShare && (
             <button
               onClick={(e) => { e.stopPropagation(); onShare(); }}
-              className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white shadow-lg transition-[transform,opacity,colors,box-shadow] hover:bg-black/70 active:scale-[0.96]"
+              className="absolute right-5 sm:right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white shadow-lg transition-[transform,opacity,colors,box-shadow] hover:bg-black/70 active:scale-[0.96]"
               aria-label="Share product"
             >
               <Share2 className="h-4 w-4" />
@@ -1645,7 +1645,7 @@ function ImageGallery({
           {slides[activeIndex]?.kind !== "video" && (
             <button
               onClick={(e) => { e.stopPropagation(); setLightboxOpen(true); }}
-              className="absolute bottom-3 left-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white shadow-lg transition-[transform,opacity,colors,box-shadow] hover:bg-black/70 active:scale-[0.96]"
+              className="absolute bottom-3 left-5 sm:left-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white shadow-lg transition-[transform,opacity,colors,box-shadow] hover:bg-black/70 active:scale-[0.96]"
               aria-label="Enlarge image"
             >
               <Maximize2 className="h-4 w-4" />
@@ -1654,7 +1654,7 @@ function ImageGallery({
 
           {/* Counter (mobile) */}
           {len > 1 && (
-            <div className="absolute bottom-3 right-3 z-10 sm:hidden rounded-full bg-black/50 backdrop-blur-sm px-2.5 py-1 text-[10px] font-bold text-white tabular-nums">
+            <div className="absolute bottom-3 right-5 z-10 sm:hidden rounded-full bg-black/50 backdrop-blur-sm px-2.5 py-1 text-[10px] font-bold text-white tabular-nums">
               {activeIndex + 1}/{len}
             </div>
           )}
