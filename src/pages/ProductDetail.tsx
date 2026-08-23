@@ -1775,7 +1775,7 @@ function ImageGallery({
                   return (
                     <Suspense
                       key={`${i}-vid-${slide.url}`}
-                      fallback={<div className="flex-[0_0_100%] min-w-0 aspect-[3/4] sm:aspect-[4/5] bg-muted" />}
+                      fallback={<div className="flex-[0_0_100%] min-w-0 h-[min(133vw,78svh)] sm:aspect-[4/5] sm:h-auto bg-muted" />}
                     >
                       <VideoSlide
                         url={slide.url}
@@ -1792,11 +1792,10 @@ function ImageGallery({
                 return (
                   <div
                     key={`${i}-${slide.url}`}
-                    // Fixed aspect box (identical to the video slide) so a small
-                    // square photo and a tall video never make the carousel row
-                    // taller than the visible media — that mismatch was the source
-                    // of the large blank gap under short images.
-                    className="relative flex-[0_0_100%] min-w-0 overflow-hidden aspect-[3/4] sm:aspect-[4/5] bg-background"
+                    // Use nearly the full mobile viewport height. The former 3:4
+                    // ratio still looked short on tall phones and cropped portrait
+                    // product media before shoppers could inspect the full item.
+                    className="relative flex-[0_0_100%] min-w-0 overflow-hidden h-[min(133vw,78svh)] sm:aspect-[4/5] sm:h-auto bg-background"
                     onClick={() => setLightboxOpen(true)}
                   >
                     {/* Blurred fill behind portrait/square images so gutters disappear */}
