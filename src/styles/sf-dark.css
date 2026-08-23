@@ -263,7 +263,7 @@ html.sf-dark [style*="background: var(--storefront-text"] * {
 }
 
 /* ══════════════════════════════════════════════════════════════
- * BUTTONS — every CTA is a WHITE tile with black content
+ * BUTTONS — every CTA is a BLACK tile with WHITE content + white outline
  * (Add to Cart, Buy Now, quantity steppers, chips, sticky bars…)
  * ══════════════════════════════════════════════════════════════ */
 html.sf-dark button[style*="background-color: var(--storefront-primary"],
