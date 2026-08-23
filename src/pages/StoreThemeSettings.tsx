@@ -120,15 +120,6 @@ function NavStylePreview({ variant }: { variant: string }) {
       </div>
     );
   }
-  if (variant === "curved") {
-    return (
-      <div className="w-full h-8 px-1 flex items-center">
-        <div className="w-full h-7 rounded-[14px] border border-white/40 bg-gradient-to-b from-white/50 to-white/10 backdrop-blur shadow-[0_4px_10px_-6px_rgba(0,0,0,0.5)] flex items-center justify-around px-2">
-          <span className={dotActive} /><span className={dot} /><span className={dot} /><span className={dot} /><span className={dot} />
-        </div>
-      </div>
-    );
-  }
   if (variant === "wave") {
     return (
       <div className="w-full h-9 flex items-end justify-center relative">
@@ -1886,7 +1877,6 @@ export default function StoreThemeSettings() {
                 { value: "skeuo3d", label: "3D Skeuomorphic", desc: "Lifted physical buttons with depth" },
                 { value: "indicator", label: "Indicator Bar", desc: "Sliding top progress bar, editorial" },
                 { value: "wave", label: "Wave Dip", desc: "Carved wave with floating active circle" },
-                { value: "curved", label: "Curved Glass", desc: "Floating rounded glass pill bar" },
                 ...(currentTheme === "theme-18" ? [{ value: "v15", label: "Minimal", desc: "Clean minimal icons" }] : []),
                 ...(["theme-1", "theme-14", "theme-15", "theme-18"].includes(currentTheme) ? [{ value: "v17", label: "Streetwear", desc: "Bold streetwear style" }] : []),
               ].map((s) => {
