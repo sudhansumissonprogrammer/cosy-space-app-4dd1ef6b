@@ -859,6 +859,8 @@ export default function StoreThemeSettings() {
             mobile_nav_enabled: themeConfig.mobile_nav_enabled ?? config.mobile_nav_enabled,
             header_logo_alignment: themeConfig.header_logo_alignment ?? config.header_logo_alignment,
             header_style: themeConfig.header_style ?? config.header_style,
+            header_bg_color: (themeConfig as any).header_bg_color ?? config.header_bg_color,
+            header_text_color: (themeConfig as any).header_text_color ?? config.header_text_color,
             marquee_text: themeConfig.marquee_text ?? config.marquee_text,
             marquee_enabled: themeConfig.marquee_enabled ?? config.marquee_enabled,
             dark_toggle_effect: (themeConfig as any).dark_toggle_effect ?? config.dark_toggle_effect,
