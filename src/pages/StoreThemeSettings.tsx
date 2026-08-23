@@ -17,6 +17,8 @@ import ThemeStickySaveBar from "@/components/dashboard/theme/ThemeStickySaveBar"
 import ThemeMobilePreviewDrawer from "@/components/dashboard/theme/ThemeMobilePreviewDrawer";
 import ThemeCategoryStyleIcon from "@/components/dashboard/theme/ThemeCategoryStyleIcon";
 import NavIconPicker from "@/components/dashboard/theme/NavIconPicker";
+import { HEADER_PRESETS } from "@/lib/headerTheme";
+import { isLightColor } from "@/lib/themeUtils";
 import TrustVideosManager from "@/components/dashboard/theme/TrustVideosManager";
 import DarkEffectPreview from "@/components/settings/DarkEffectPreview";
 
@@ -524,6 +526,10 @@ interface ThemeConfig {
   mobile_nav_enabled: boolean;
   mobile_nav_style: string;
   header_style: string;
+  /** Custom header background (hex) — empty string = theme default */
+  header_bg_color?: string;
+  /** Custom header text/icon colour (hex) — empty string = auto contrast */
+  header_text_color?: string;
   bilingual_cta?: boolean;
   show_warranty_badge?: boolean;
   show_premium_header_badge?: boolean;
@@ -735,6 +741,8 @@ export default function StoreThemeSettings() {
         mobile_nav_enabled: themeConfig.mobile_nav_enabled ?? false,
         mobile_nav_style: (themeConfig as any).mobile_nav_style || "classic",
         header_style: themeConfig.header_style || "normal",
+        header_bg_color: (themeConfig as any).header_bg_color || "",
+        header_text_color: (themeConfig as any).header_text_color || "",
         bilingual_cta: (themeConfig as any).bilingual_cta ?? false,
         show_warranty_badge: (themeConfig as any).show_warranty_badge ?? false,
         show_premium_header_badge: (themeConfig as any).show_premium_header_badge ?? false,
@@ -853,6 +861,8 @@ export default function StoreThemeSettings() {
             mobile_nav_enabled: themeConfig.mobile_nav_enabled ?? config.mobile_nav_enabled,
             header_logo_alignment: themeConfig.header_logo_alignment ?? config.header_logo_alignment,
             header_style: themeConfig.header_style ?? config.header_style,
+            header_bg_color: (themeConfig as any).header_bg_color ?? config.header_bg_color,
+            header_text_color: (themeConfig as any).header_text_color ?? config.header_text_color,
             marquee_text: themeConfig.marquee_text ?? config.marquee_text,
             marquee_enabled: themeConfig.marquee_enabled ?? config.marquee_enabled,
             dark_toggle_effect: (themeConfig as any).dark_toggle_effect ?? config.dark_toggle_effect,
@@ -1230,7 +1240,7 @@ export default function StoreThemeSettings() {
       colors: !!selectedCombo,
       typography: config.heading_font !== d.heading_font || config.body_font !== d.body_font,
       layout: config.button_style !== d.button_style,
-      header: config.header_logo_alignment !== d.header_logo_alignment || config.header_style !== d.header_style || config.mobile_nav_style !== d.mobile_nav_style,
+      header: config.header_logo_alignment !== d.header_logo_alignment || config.header_style !== d.header_style || config.mobile_nav_style !== d.mobile_nav_style || !!config.header_bg_color,
       cards: config.product_card_style !== d.product_card_style,
       categories: config.category_style !== d.category_style,
       extras: config.marquee_text !== d.marquee_text || !!config.bilingual_cta,
@@ -1625,6 +1635,99 @@ export default function StoreThemeSettings() {
 
   const renderHeaderSection = () => (
     <div className="space-y-6">
+      <Section title="Header Color" hint="Pick a premium header background. Logo, icons and menu text flip automatically for perfect contrast.">
+        <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+          {HEADER_PRESETS.map((p) => {
+            const active = (config.header_bg_color || "") === p.bg;
+            const fg = p.bg ? (isLightColor(p.bg) ? "#141414" : "#ffffff") : "hsl(var(--muted-foreground))";
+            return (
+              <button
+                key={p.id}
+                type="button"
+                title={p.label}
+                onClick={() => {
+                  const next = { ...config, header_bg_color: p.bg, header_text_color: "" };
+                  setConfig(next);
+                  setDirty(true);
+                  sendToIframe(next);
+                }}
+                className={`relative flex h-14 flex-col items-center justify-center gap-1 rounded-xl border-2 px-1 transition-[transform,opacity,colors,box-shadow] active:scale-[0.96] ${
+                  active ? "border-primary shadow-sm" : "border-border hover:border-primary/40"
+                }`}
+                style={{ background: p.bg || "repeating-linear-gradient(45deg,hsl(var(--muted)),hsl(var(--muted)) 6px,hsl(var(--background)) 6px,hsl(var(--background)) 12px)" }}
+                aria-pressed={active}
+              >
+                {active && (
+                  <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                    <Check className="h-3 w-3" />
+                  </span>
+                )}
+                <span className="text-[9px] font-semibold leading-tight text-center" style={{ color: fg }}>
+                  {p.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">Custom background</Label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={config.header_bg_color || "#3B2A1E"}
+                onChange={(e) => updateField("header_bg_color", e.target.value)}
+                className="h-9 w-12 cursor-pointer rounded-md border border-border bg-transparent p-0.5"
+                aria-label="Header background colour"
+              />
+              <input
+                type="text"
+                value={config.header_bg_color || ""}
+                placeholder="Theme default"
+                onChange={(e) => updateField("header_bg_color", e.target.value.trim())}
+                className="h-9 flex-1 rounded-md border border-border bg-background px-2 text-xs"
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">Icon &amp; text colour</Label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={config.header_text_color || "#ffffff"}
+                onChange={(e) => updateField("header_text_color", e.target.value)}
+                className="h-9 w-12 cursor-pointer rounded-md border border-border bg-transparent p-0.5"
+                aria-label="Header icon colour"
+              />
+              <input
+                type="text"
+                value={config.header_text_color || ""}
+                placeholder="Auto (best contrast)"
+                onChange={(e) => updateField("header_text_color", e.target.value.trim())}
+                className="h-9 flex-1 rounded-md border border-border bg-background px-2 text-xs"
+              />
+            </div>
+          </div>
+        </div>
+
+        {config.header_bg_color ? (
+          <button
+            type="button"
+            onClick={() => {
+              const next = { ...config, header_bg_color: "", header_text_color: "" };
+              setConfig(next);
+              setDirty(true);
+              sendToIframe(next);
+            }}
+            className="mt-3 text-xs font-semibold text-muted-foreground underline underline-offset-2"
+          >
+            Reset to theme default
+          </button>
+        ) : null}
+      </Section>
+
+
       {currentTheme !== "theme-19" && currentTheme !== "theme-20" && (
         <Section title="Logo Alignment" hint="Where the logo sits in your desktop header.">
           <div className="grid grid-cols-3 gap-3">

@@ -23,6 +23,9 @@ import ScrollProgressBar from "@/components/storefront/ScrollProgressBar";
 const LazyShareStoreDialog = lazy(() => import("@/components/ShareStoreDialog"));
 import { StorefrontContentSkeleton } from "@/components/ContentSkeleton";
 import { storefrontPath } from "@/lib/subdomain";
+import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
+import { resolveHeaderColors } from "@/lib/headerTheme";
+
 
 const LazySfDarkToggle = lazy(() => import("@/components/storefront/SfDarkToggle"));
 const LazySearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
@@ -85,6 +88,13 @@ export default function CheckoutAwareLayout({
   const location = useLocation();
   const navigate = useNavigate();
   const isCheckout = location.pathname.includes("/checkout");
+  // Merchant-chosen header colour (Theme Settings → Header & Nav).
+  // Theme-supplied overrides (e.g. dark themes) still win.
+  const layoutThemeConfig = useStorefrontThemeConfig(store.id);
+  const customHeader = resolveHeaderColors(layoutThemeConfig);
+  const headerBg = headerBgOverride ?? customHeader.bg;
+  const headerFg = headerIconColor ?? customHeader.fg;
+
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [paymentInProgress, setPaymentInProgress] = useState(false);
@@ -176,7 +186,7 @@ export default function CheckoutAwareLayout({
 
   const hideWishlistAndShare = isCentered || isWithSearch;
 
-  const iconStyle = headerIconColor ? { color: headerIconColor } : undefined;
+  const iconStyle = headerFg ? ({ color: headerFg, "--storefront-text": headerFg } as any) : undefined;
   const iconSize = headerIconColor ? "h-6 w-6" : "h-5 w-5";
 
   const ActionButtons = !isCheckout ? (
@@ -214,21 +224,21 @@ export default function CheckoutAwareLayout({
       {/* Desktop nav bar — hidden on mobile, hidden during checkout */}
       {!isCheckout && (
         <Suspense fallback={null}>
-          <LazyDesktopNavBar store={store} onSearchOpen={() => setSearchOpen(true)} extra={showDarkToggle ? <Suspense fallback={<div className="h-9 w-9" aria-hidden />}><LazySfDarkToggle size={36} effect={darkToggleEffect} /></Suspense> : undefined} style={headerBgOverride ? { backgroundColor: headerBgOverride, color: headerIconColor || undefined, borderBottom: `1px solid ${headerIconColor || '#fff'}12` } : undefined} />
+          <LazyDesktopNavBar store={store} onSearchOpen={() => setSearchOpen(true)} extra={showDarkToggle ? <Suspense fallback={<div className="h-9 w-9" aria-hidden />}><LazySfDarkToggle size={36} effect={darkToggleEffect} /></Suspense> : undefined} style={headerBg ? ({ backgroundColor: headerBg, color: headerFg || undefined, "--storefront-text": headerFg || undefined, borderBottom: `1px solid ${headerFg || '#fff'}12` } as any) : undefined} />
         </Suspense>
       )}
 
       {/* Mobile header + legacy checkout header. Checkout V2 renders its own header. */}
       {!checkoutOwnsHeader && <nav className={`${isCheckout ? 'sticky top-0' : 'md:hidden'} ${mobileNavEnabled && headerStyle === 'normal' ? 'sm:sticky sm:top-0' : isCheckout ? '' : 'sticky top-0'} z-30 smart-header ${!isCheckout && !headerVisible ? 'smart-header-hidden' : ''} ${
         headerClassName ? headerClassName :
-        headerBgOverride ? '' :
+        headerBg ? '' :
         isCheckout ? '' :
         headerStyle === 'transparent' ? '' :
         headerStyle === 'glassmorphic' ? '' :
         ''
       }`}
         style={
-          headerBgOverride && !isCheckout ? { backgroundColor: headerBgOverride, color: headerIconColor || undefined } :
+          headerBg && !isCheckout ? ({ backgroundColor: headerBg, color: headerFg || undefined, "--storefront-text": headerFg || undefined } as any) :
           headerClassName ? {} :
           isCheckout ? { backgroundColor: "color-mix(in srgb, var(--storefront-bg, hsl(var(--card))) 85%, transparent)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" } :
           !isCheckout && headerStyle === 'glassmorphic' ? {
