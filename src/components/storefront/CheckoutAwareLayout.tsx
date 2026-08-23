@@ -224,21 +224,21 @@ export default function CheckoutAwareLayout({
       {/* Desktop nav bar — hidden on mobile, hidden during checkout */}
       {!isCheckout && (
         <Suspense fallback={null}>
-          <LazyDesktopNavBar store={store} onSearchOpen={() => setSearchOpen(true)} extra={showDarkToggle ? <Suspense fallback={<div className="h-9 w-9" aria-hidden />}><LazySfDarkToggle size={36} effect={darkToggleEffect} /></Suspense> : undefined} style={headerBgOverride ? { backgroundColor: headerBgOverride, color: headerIconColor || undefined, borderBottom: `1px solid ${headerIconColor || '#fff'}12` } : undefined} />
+          <LazyDesktopNavBar store={store} onSearchOpen={() => setSearchOpen(true)} extra={showDarkToggle ? <Suspense fallback={<div className="h-9 w-9" aria-hidden />}><LazySfDarkToggle size={36} effect={darkToggleEffect} /></Suspense> : undefined} style={headerBg ? ({ backgroundColor: headerBg, color: headerFg || undefined, "--storefront-text": headerFg || undefined, borderBottom: `1px solid ${headerFg || '#fff'}12` } as any) : undefined} />
         </Suspense>
       )}
 
       {/* Mobile header + legacy checkout header. Checkout V2 renders its own header. */}
       {!checkoutOwnsHeader && <nav className={`${isCheckout ? 'sticky top-0' : 'md:hidden'} ${mobileNavEnabled && headerStyle === 'normal' ? 'sm:sticky sm:top-0' : isCheckout ? '' : 'sticky top-0'} z-30 smart-header ${!isCheckout && !headerVisible ? 'smart-header-hidden' : ''} ${
         headerClassName ? headerClassName :
-        headerBgOverride ? '' :
+        headerBg ? '' :
         isCheckout ? '' :
         headerStyle === 'transparent' ? '' :
         headerStyle === 'glassmorphic' ? '' :
         ''
       }`}
         style={
-          headerBgOverride && !isCheckout ? { backgroundColor: headerBgOverride, color: headerIconColor || undefined } :
+          headerBg && !isCheckout ? ({ backgroundColor: headerBg, color: headerFg || undefined, "--storefront-text": headerFg || undefined } as any) :
           headerClassName ? {} :
           isCheckout ? { backgroundColor: "color-mix(in srgb, var(--storefront-bg, hsl(var(--card))) 85%, transparent)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" } :
           !isCheckout && headerStyle === 'glassmorphic' ? {
