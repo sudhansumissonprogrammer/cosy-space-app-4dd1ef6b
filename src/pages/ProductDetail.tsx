@@ -1775,7 +1775,7 @@ function ImageGallery({
                   return (
                     <Suspense
                       key={`${i}-vid-${slide.url}`}
-                      fallback={<div className="flex-[0_0_100%] min-w-0 h-[min(133vw,78svh)] sm:aspect-[4/5] sm:h-auto bg-muted" />}
+                      fallback={<div className="flex-[0_0_100%] min-w-0 h-[min(178vw,85svh)] sm:aspect-[4/5] sm:h-auto bg-muted" />}
                     >
                       <VideoSlide
                         url={slide.url}
@@ -1792,10 +1792,9 @@ function ImageGallery({
                 return (
                   <div
                     key={`${i}-${slide.url}`}
-                    // Use nearly the full mobile viewport height. The former 3:4
-                    // ratio still looked short on tall phones and cropped portrait
-                    // product media before shoppers could inspect the full item.
-                    className="relative flex-[0_0_100%] min-w-0 overflow-hidden h-[min(133vw,78svh)] sm:aspect-[4/5] sm:h-auto bg-background"
+                    // Supplier media is commonly 9:16. Match that shape on mobile
+                    // and preserve the full product instead of cropping its ends.
+                    className="relative flex-[0_0_100%] min-w-0 overflow-hidden h-[min(178vw,85svh)] sm:aspect-[4/5] sm:h-auto bg-background"
                     onClick={() => setLightboxOpen(true)}
                   >
                     {/* Blurred fill behind portrait/square images so gutters disappear */}
@@ -1808,7 +1807,7 @@ function ImageGallery({
                     <img
                       src={optimizedUrl}
                       alt={productName}
-                      className={`relative z-[1] h-full w-full object-cover transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+                      className={`relative z-[1] h-full w-full object-contain transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`}
                       decoding="async"
                       fetchPriority={realIdx === 0 ? "high" : "auto"}
                       draggable={false}

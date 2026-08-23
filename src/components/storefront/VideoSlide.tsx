@@ -51,8 +51,8 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
 
   if (!source || failed) {
     return (
-      <div className="relative flex-[0_0_100%] min-w-0 bg-black h-[min(133vw,78svh)] sm:aspect-[4/5] sm:h-auto overflow-hidden">
-        {poster && <img src={poster} alt="" aria-hidden className="h-full w-full object-cover" />}
+      <div className="relative flex-[0_0_100%] min-w-0 bg-black h-[min(178vw,85svh)] sm:aspect-[4/5] sm:h-auto overflow-hidden">
+        {poster && <img src={poster} alt="" aria-hidden className="h-full w-full object-contain" />}
       </div>
     );
   }
@@ -96,7 +96,7 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
 
   return (
     <div
-      className="relative flex-[0_0_100%] min-w-0 bg-black h-[min(133vw,78svh)] sm:aspect-[4/5] sm:h-auto overflow-hidden"
+      className="relative flex-[0_0_100%] min-w-0 bg-black h-[min(178vw,85svh)] sm:aspect-[4/5] sm:h-auto overflow-hidden"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Poster fallback — guarantees the slide is never blank even if the
@@ -107,7 +107,7 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
           src={poster}
           alt=""
           aria-hidden
-          className="absolute inset-0 w-full h-full object-cover bg-black"
+          className="absolute inset-0 w-full h-full object-contain bg-black"
           draggable={false}
         />
       )}
@@ -120,7 +120,7 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
         muted
         playsInline
         disablePictureInPicture
-        className="relative z-[1] w-full h-full object-cover bg-black"
+        className="relative z-[1] w-full h-full object-contain bg-black"
         onClick={(e) => {
           e.stopPropagation();
           handleToggle();
