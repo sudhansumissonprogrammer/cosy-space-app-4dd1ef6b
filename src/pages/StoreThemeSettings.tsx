@@ -17,6 +17,8 @@ import ThemeStickySaveBar from "@/components/dashboard/theme/ThemeStickySaveBar"
 import ThemeMobilePreviewDrawer from "@/components/dashboard/theme/ThemeMobilePreviewDrawer";
 import ThemeCategoryStyleIcon from "@/components/dashboard/theme/ThemeCategoryStyleIcon";
 import NavIconPicker from "@/components/dashboard/theme/NavIconPicker";
+import { HEADER_PRESETS } from "@/lib/headerTheme";
+import { isLightColor } from "@/lib/themeUtils";
 import TrustVideosManager from "@/components/dashboard/theme/TrustVideosManager";
 import DarkEffectPreview from "@/components/settings/DarkEffectPreview";
 
