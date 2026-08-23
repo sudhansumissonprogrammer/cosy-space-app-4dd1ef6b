@@ -1809,7 +1809,7 @@ function ImageGallery({
                     <img
                       src={optimizedUrl}
                       alt={productName}
-                      className={`relative z-[1] h-full w-full object-contain transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+                      className={`relative z-[1] h-full w-full object-cover transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`}
                       decoding="async"
                       fetchPriority={realIdx === 0 ? "high" : "auto"}
                       draggable={false}
