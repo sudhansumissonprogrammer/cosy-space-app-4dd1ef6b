@@ -107,7 +107,7 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
           src={poster}
           alt=""
           aria-hidden
-          className="absolute inset-0 w-full h-full object-contain bg-black"
+          className="absolute inset-0 w-full h-full object-cover bg-black"
           draggable={false}
         />
       )}
