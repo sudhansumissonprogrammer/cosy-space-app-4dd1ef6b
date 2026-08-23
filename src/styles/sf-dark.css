@@ -193,12 +193,12 @@ html.sf-dark body [class*="storefront-font"] {
 html.sf-dark body .storefront-font,
 html.sf-dark body [class*="storefront-font"],
 html.sf-dark body [style*="--storefront-primary"] {
-  /* button / badge surface — always black in Dark Streetwear */
-  --storefront-primary: #121212 !important;
-  --storefront-primary-light: #1f1f1f !important;
-  --storefront-primary-foreground: #ffffff !important;
-  --storefront-btn-text: #ffffff !important;
-  --storefront-accent: #161616 !important;
+  /* button / badge surface — inverted (white tile, black content) */
+  --storefront-primary: #ffffff !important;
+  --storefront-primary-light: #ededed !important;
+  --storefront-primary-foreground: #0a0a0a !important;
+  --storefront-btn-text: #0a0a0a !important;
+  --storefront-accent: #ffffff !important;
   --storefront-footer-text: #f2f2f2 !important;
   --storefront-nav-bg: #0a0a0a !important;
   --storefront-star-color: #ffc94d !important;
@@ -237,9 +237,12 @@ html.sf-dark [style*="; color: color-mix(in srgb, var(--storefront-text"] {
 
 /* Icons inheriting a merchant colour */
 html.sf-dark svg[style*="color: var(--storefront-primary"],
-html.sf-dark svg[style*="color: var(--storefront-btn-text"],
 html.sf-dark svg[style*="color: var(--storefront-bg"] {
   color: #f2f2f2 !important;
+}
+/* Icons that sit on a CTA surface are black (white button) */
+html.sf-dark svg[style*="color: var(--storefront-btn-text"] {
+  color: #0a0a0a !important;
 }
 
 /* ── Inverted strips (bg = text colour) ───────────────────────
@@ -260,7 +263,7 @@ html.sf-dark [style*="background: var(--storefront-text"] * {
 }
 
 /* ══════════════════════════════════════════════════════════════
- * BUTTONS — every CTA is a black tile with white content
+ * BUTTONS — every CTA is a WHITE tile with black content
  * (Add to Cart, Buy Now, quantity steppers, chips, sticky bars…)
  * ══════════════════════════════════════════════════════════════ */
 html.sf-dark button[style*="background-color: var(--storefront-primary"],
@@ -270,54 +273,65 @@ html.sf-dark button[style*="background: var(--storefront-primary"],
 html.sf-dark a[style*="background: var(--storefront-primary"],
 html.sf-dark button[style*="background-color: var(--storefront-accent"],
 html.sf-dark a[style*="background-color: var(--storefront-accent"],
-html.sf-dark .bg-primary,
-html.sf-dark .bg-foreground,
-html.sf-dark .bg-black,
-html.sf-dark .bg-gray-900,
-html.sf-dark .bg-gray-800,
-html.sf-dark .bg-neutral-900,
-html.sf-dark .bg-zinc-900,
-html.sf-dark .bg-slate-900 {
-  background-color: #121212 !important;
-  background-image: none !important;
-  color: #ffffff !important;
-}
-
-/* Only interactive elements get the hairline so black tiles are
-   separable from the black page; static sections stay flat. */
-html.sf-dark button[style*="var(--storefront-primary"],
-html.sf-dark a[style*="background-color: var(--storefront-primary"],
 html.sf-dark button.bg-primary,
 html.sf-dark a.bg-primary,
+html.sf-dark [role="button"].bg-primary,
 html.sf-dark button.bg-foreground,
+html.sf-dark a.bg-foreground,
 html.sf-dark button.bg-black,
 html.sf-dark a.bg-black,
-html.sf-dark [role="button"].bg-primary {
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+html.sf-dark button.bg-gray-900,
+html.sf-dark button.bg-gray-800,
+html.sf-dark button.bg-neutral-900,
+html.sf-dark button.bg-zinc-900,
+html.sf-dark button.bg-slate-900 {
+  background-color: #ffffff !important;
+  background-image: none !important;
+  color: #0a0a0a !important;
+  border: 1px solid rgba(255, 255, 255, 0.9) !important;
 }
 
-/* Everything inside a black CTA is white — labels, prices, icons,
+/* Non-interactive surfaces that use the same classes stay dark. */
+html.sf-dark .bg-primary:not(button):not(a):not([role="button"]),
+html.sf-dark .bg-foreground:not(button):not(a):not([role="button"]),
+html.sf-dark .bg-black:not(button):not(a):not([role="button"]),
+html.sf-dark .bg-gray-900:not(button):not(a):not([role="button"]),
+html.sf-dark .bg-gray-800:not(button):not(a):not([role="button"]),
+html.sf-dark .bg-neutral-900:not(button):not(a):not([role="button"]),
+html.sf-dark .bg-zinc-900:not(button):not(a):not([role="button"]),
+html.sf-dark .bg-slate-900:not(button):not(a):not([role="button"]) {
+  background-color: #121212 !important;
+  background-image: none !important;
+  color: #f2f2f2 !important;
+}
+
+/* Everything inside a white CTA is black — labels, prices, icons,
    sub-captions that carry their own colour class. */
 html.sf-dark button[style*="background-color: var(--storefront-primary"] *,
 html.sf-dark a[style*="background-color: var(--storefront-primary"] *,
 html.sf-dark button[style*="background: var(--storefront-primary"] *,
+html.sf-dark [role="button"][style*="background-color: var(--storefront-primary"] *,
+html.sf-dark button[style*="background-color: var(--storefront-accent"] *,
 html.sf-dark button.bg-primary *,
 html.sf-dark a.bg-primary *,
+html.sf-dark [role="button"].bg-primary *,
 html.sf-dark button.bg-foreground *,
+html.sf-dark a.bg-foreground *,
 html.sf-dark button.bg-black *,
-html.sf-dark a.bg-black *,
-html.sf-dark .bg-primary > span,
-html.sf-dark .bg-foreground > span {
-  color: #ffffff !important;
+html.sf-dark a.bg-black * {
+  color: #0a0a0a !important;
   fill: none;
 }
 html.sf-dark button[style*="background-color: var(--storefront-primary"] svg,
 html.sf-dark a[style*="background-color: var(--storefront-primary"] svg,
+html.sf-dark button[style*="background: var(--storefront-primary"] svg,
+html.sf-dark [role="button"][style*="background-color: var(--storefront-primary"] svg,
 html.sf-dark button.bg-primary svg,
+html.sf-dark a.bg-primary svg,
 html.sf-dark button.bg-foreground svg,
 html.sf-dark button.bg-black svg,
 html.sf-dark a.bg-black svg {
-  color: #ffffff !important;
+  color: #0a0a0a !important;
   stroke: currentColor;
 }
 
@@ -468,12 +482,19 @@ html.sf-dark [data-sf-spin] textarea::placeholder {
   color: #94a3b8 !important;
 }
 
-/* Primary CTAs inside the popup keep their own brand fill instead of
-   the global "black tile" treatment. */
+/* Primary CTAs inside the popup sit on a white card, so they keep the
+   dark fill instead of the global "white tile" treatment. */
 html.sf-dark [data-sf-spin] button.bg-primary,
+html.sf-dark [data-sf-spin] a.bg-primary,
 html.sf-dark [data-sf-spin] .bg-primary {
-  background-color: hsl(var(--primary)) !important;
-  color: hsl(var(--primary-foreground)) !important;
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+}
+html.sf-dark [data-sf-spin] button.bg-primary *,
+html.sf-dark [data-sf-spin] a.bg-primary *,
+html.sf-dark [data-sf-spin] .bg-primary svg {
+  color: #ffffff !important;
 }
 
 /* Shell chrome stays as designed (dark gradient + white text). */
