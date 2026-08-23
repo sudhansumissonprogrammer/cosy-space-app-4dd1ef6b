@@ -1015,46 +1015,74 @@
       })();
     </script>
     <!-- ══════════════════════════════════════════════════════════════
-         BRANDED SPLASH SCREEN — STRICTLY SCOPED TO ONE STORE
-         Pilot: `wristlife` only. Every other store keeps the existing
-         ring spinner untouched (worker #sf-skel / inline #inline-skel).
+         BRANDED SPLASH SCREEN — ALL STORES
+         Replaces the ring spinner with a black, logo-branded splash for
+         every storefront (subdomain, custom domain, /store/:slug).
 
-         Zero cold-load cost: this runs inside the already-streamed HTML,
-         swaps the CONTENT of the loader element that is on screen anyway,
-         and adds no network request beyond the store logo (which the
-         Worker already emits as <link rel="preload" as="image">).
+         Zero cold-load cost: runs inside the already-streamed HTML and
+         swaps the CONTENT of the loader element that is on screen anyway.
+         Logo source, in order (no extra blocking request):
+           1. localStorage cache written by StorefrontShell on a prior view
+           2. the Worker-injected <link rel="icon"> (= store logo_url)
+           3. monogram fallback from the cached store name
          The splash lives exactly as long as the loader did — it is removed
          by the same storefront:content-ready kill logic below.
          ══════════════════════════════════════════════════════════════ -->
     <script>
       (function(){
-        var SPLASH = {
-          wristlife: {
-            logo: 'https://cdn.shopbanao.in/store-logos/b3896b9c-a4aa-4670-9f13-1848fb00e2b4/ab19143d-87a9-490e-90b7-837313522782/1787494955571-im8fsz-800w.webp'
-          }
-        };
-        /* ── resolve slug (same rules as the loader visibility script) ── */
-        var slug = '';
+        /* ── resolve slug / identity (same rules as the loader script) ── */
+        var slug = '', host = '';
         try{
+          host = location.hostname;
           if(window.__STORE_SLUG__) slug = String(window.__STORE_SLUG__);
           if(!slug){
             var p = location.pathname;
             if(p.indexOf('/store/')===0){ slug = p.split('/store/')[1] || ''; slug = slug.split('/')[0]; }
           }
-          if(!slug){
-            var h = location.hostname;
-            if(h.indexOf('.shopbanao.in')>-1 && h!=='shopbanao.in' && h!=='www.shopbanao.in'){
-              var sub = h.replace('.shopbanao.in','');
-              if(sub && sub.indexOf('.')===-1) slug = sub;
-            }
+          if(!slug && host.indexOf('.shopbanao.in')>-1 && host!=='shopbanao.in' && host!=='www.shopbanao.in'){
+            var sub = host.replace('.shopbanao.in','');
+            if(sub && sub.indexOf('.')===-1) slug = sub;
           }
         }catch(e){}
-        var cfg = SPLASH[slug];
-        if(!cfg) return; /* ← every other store: nothing happens at all */
+
+        /* Not a storefront (root landing / platform app) → leave loader alone */
+        var isStorefront = false;
+        try{
+          isStorefront = !!slug ||
+            (host !== 'shopbanao.in' && host !== 'www.shopbanao.in' &&
+             host.indexOf('lovable.app') === -1 && host !== 'localhost' &&
+             host.indexOf('127.0.0.1') === -1);
+        }catch(e){}
+        if(!isStorefront) return;
+
+        var identity = slug || host;
+        var cached = null;
+        try{ cached = JSON.parse(localStorage.getItem('sb_splash:'+identity) || 'null'); }catch(e){}
+
+        function workerIcon(){
+          try{
+            var links = document.querySelectorAll('link[rel="icon"],link[rel="apple-touch-icon"]');
+            for(var i=0;i<links.length;i++){
+              var href = links[i].getAttribute('href') || '';
+              if(/^https?:\/\//i.test(href) && href.indexOf('/favicon') === -1) return href;
+            }
+          }catch(e){}
+          return '';
+        }
+
+        var logo = (cached && cached.logo) || workerIcon() || '';
+        var name = (cached && cached.name) || '';
+        var mono = '';
+        try{
+          mono = (name || slug || '').replace(/[^A-Za-z0-9 ]/g,' ').trim().split(/\s+/)
+            .slice(0,2).map(function(w){return w.charAt(0).toUpperCase();}).join('');
+        }catch(e){}
+        if(!logo && !mono) return; /* nothing brandable → keep spinner */
 
         function paint(){
           var el = document.getElementById('sf-skel') || document.getElementById('inline-skel');
           if(!el || el.getAttribute('data-splash')==='1') return false;
+          if(el.getAttribute('data-app-shell')==='1') return false; /* platform app shell */
           if(el.style.display==='none') return false;
 
           if(!document.getElementById('sb-splash-css')){
@@ -1071,6 +1099,7 @@
               '[data-splash="1"] .sbsp-halo{position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.10) 0%,rgba(255,255,255,0) 68%);animation:sbsp-halo 2.6s ease-in-out infinite}'+
               '[data-splash="1"] .sbsp-logoBox{position:relative;width:168px;height:168px;padding:20px;box-sizing:border-box;background:transparent;overflow:hidden;border-radius:28px;animation:sbsp-rise .68s cubic-bezier(.22,1,.36,1) both}'+
               '[data-splash="1"] .sbsp-logoBox img{width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 4px 18px rgba(255,255,255,.18))}'+
+              '[data-splash="1"] .sbsp-mono{display:flex;align-items:center;justify-content:center;width:100%;height:100%;font:700 52px/1 Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:.06em;color:#fff;text-shadow:0 0 26px rgba(255,255,255,.28)}'+
               '[data-splash="1"] .sbsp-word{font:700 11px/1 Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;text-transform:uppercase;color:#fff;opacity:1;text-shadow:0 0 18px rgba(255,255,255,.35),0 1px 2px rgba(0,0,0,.4);animation:sbsp-word .9s ease-out .25s both}'+
               '[data-splash="1"] .sbsp-bar{width:132px;height:2px;border-radius:2px;background:rgba(255,255,255,.14);overflow:hidden}'+
               '[data-splash="1"] .sbsp-bar>i{display:block;height:100%;transform-origin:left;background:linear-gradient(90deg,rgba(255,255,255,.45),#fff);animation:sbsp-bar 2.8s cubic-bezier(.16,.84,.3,1) forwards}'+
@@ -1081,13 +1110,16 @@
 
           el.setAttribute('data-splash','1');
           el.style.background = '#000';
+          var mark = logo
+            ? '<img src="'+logo.replace(/"/g,'&quot;')+'" alt="" fetchpriority="high" decoding="async" onerror="this.parentNode.innerHTML=\'<span class=&quot;sbsp-mono&quot;>'+mono+'</span>\'">'
+            : '<span class="sbsp-mono">'+mono+'</span>';
           el.innerHTML =
             '<div class="sbsp-wrap">'+
               '<div class="sbsp-stage">'+
                 '<div class="sbsp-halo"></div>'+
-                '<div class="sbsp-logoBox"><img src="'+cfg.logo+'" alt="" fetchpriority="high" decoding="async"></div>'+
+                '<div class="sbsp-logoBox">'+mark+'</div>'+
               '</div>'+
-              '<div class="sbsp-word">Loading store</div>'+
+              '<div class="sbsp-word">'+(name ? name.replace(/[<>]/g,'') : 'Loading store')+'</div>'+
               '<div class="sbsp-bar"><i></i></div>'+
             '</div>';
 
@@ -1112,6 +1144,7 @@
         }
       })();
     </script>
+
 
     <script>
       /* Remove skeleton ONLY after real storefront content has actually
