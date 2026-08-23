@@ -524,6 +524,10 @@ interface ThemeConfig {
   mobile_nav_enabled: boolean;
   mobile_nav_style: string;
   header_style: string;
+  /** Custom header background (hex) — empty string = theme default */
+  header_bg_color?: string;
+  /** Custom header text/icon colour (hex) — empty string = auto contrast */
+  header_text_color?: string;
   bilingual_cta?: boolean;
   show_warranty_badge?: boolean;
   show_premium_header_badge?: boolean;
