@@ -1729,13 +1729,15 @@ function ImageGallery({
   })();
 
 
+  const isVideoSlide = slides[activeIndex]?.kind === "video";
+
   return (
     <>
       <div className="min-w-0 max-w-full space-y-1 sm:space-y-2 lg:sticky lg:top-4">
         <div className="relative -mx-4 sm:mx-0 p-0">
           {/* Discount badge */}
           {hasDiscount && discountPct > 0 && (
-            <div className="absolute left-3 top-3 z-10">
+            <div className="absolute left-7 sm:left-3 top-3 z-10">
               <Badge className="bg-emerald-600 text-white text-[11px] font-bold border-0 shadow-lg px-2 py-0.5">
                 -{discountPct}%
               </Badge>
@@ -1746,7 +1748,7 @@ function ImageGallery({
           {onShare && (
             <button
               onClick={(e) => { e.stopPropagation(); onShare(); }}
-              className="absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/45 backdrop-blur-sm text-white shadow-md transition-[transform,opacity,colors,box-shadow] hover:bg-black/65 active:scale-[0.96]"
+              className="absolute right-7 sm:right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/45 backdrop-blur-sm text-white shadow-md transition-[transform,opacity,colors,box-shadow] hover:bg-black/65 active:scale-[0.96]"
               aria-label="Share product"
             >
               <Share2 className="h-3.5 w-3.5" />
@@ -1757,7 +1759,7 @@ function ImageGallery({
 
           {/* Warranty badge (theme-toggle) */}
           {showWarrantyBadge && (
-            <div className="absolute right-3 top-14 z-10">
+            <div className="absolute right-7 sm:right-3 top-14 z-10">
               <WarrantyBadge size="md" />
             </div>
           )}
@@ -1828,7 +1830,7 @@ function ImageGallery({
           {slides[activeIndex]?.kind !== "video" && (
             <button
               onClick={(e) => { e.stopPropagation(); setLightboxOpen(true); }}
-              className="absolute bottom-3 left-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/45 backdrop-blur-sm text-white shadow-md transition-[transform,opacity,colors,box-shadow] hover:bg-black/65 active:scale-[0.96]"
+              className="absolute bottom-3 left-7 sm:left-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/45 backdrop-blur-sm text-white shadow-md transition-[transform,opacity,colors,box-shadow] hover:bg-black/65 active:scale-[0.96]"
               aria-label="Enlarge image"
             >
               <Maximize2 className="h-3.5 w-3.5" />
@@ -1837,15 +1839,15 @@ function ImageGallery({
 
 
           {/* Rating pill → jumps to the reviews section */}
-          <div className={`absolute right-3 z-10 ${showMultiUi ? "bottom-12 sm:bottom-3" : "bottom-3"}`}>
+          <div className={`absolute right-7 sm:right-3 z-10 ${isVideoSlide ? "hidden sm:block " : ""}${showMultiUi ? "bottom-12 sm:bottom-3" : "bottom-3"}`}>
             <PdpReviewsBadge storeId={storeId} />
           </div>
 
 
 
           {/* Counter (mobile) */}
-          {showMultiUi && (
-            <div className="absolute bottom-3 right-3 z-10 sm:hidden rounded-full bg-black/50 backdrop-blur-sm px-2.5 py-1 text-[10px] font-bold text-white tabular-nums">
+          {showMultiUi && !isVideoSlide && (
+            <div className="absolute bottom-3 right-7 z-10 sm:hidden rounded-full bg-black/50 backdrop-blur-sm px-2.5 py-1 text-[10px] font-bold text-white tabular-nums">
               {activeIndex + 1}/{len}
             </div>
           )}
@@ -1889,7 +1891,7 @@ function ImageGallery({
                 type="button"
                 onClick={(e) => { e.stopPropagation(); scrollPrev(); }}
                 aria-label="Previous image"
-                className="absolute left-2 top-1/2 z-20 -translate-y-1/2 flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full border border-white/40 bg-white/20 text-white shadow-[0_2px_10px_rgba(0,0,0,0.25)] backdrop-blur-md transition-transform active:scale-90 hover:bg-white/30"
+                className="absolute left-6 sm:left-2 top-1/2 z-20 -translate-y-1/2 flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full border border-white/40 bg-white/20 text-white shadow-[0_2px_10px_rgba(0,0,0,0.25)] backdrop-blur-md transition-transform active:scale-90 hover:bg-white/30"
               >
                 <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </button>
@@ -1897,7 +1899,7 @@ function ImageGallery({
                 type="button"
                 onClick={(e) => { e.stopPropagation(); scrollNext(); }}
                 aria-label="Next image"
-                className="absolute right-2 top-1/2 z-20 -translate-y-1/2 flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full border border-white/40 bg-white/20 text-white shadow-[0_2px_10px_rgba(0,0,0,0.25)] backdrop-blur-md transition-transform active:scale-90 hover:bg-white/30"
+                className="absolute right-6 sm:right-2 top-1/2 z-20 -translate-y-1/2 flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full border border-white/40 bg-white/20 text-white shadow-[0_2px_10px_rgba(0,0,0,0.25)] backdrop-blur-md transition-transform active:scale-90 hover:bg-white/30"
               >
                 <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </button>
