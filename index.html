@@ -1014,6 +1014,108 @@
         }
       })();
     </script>
+    <!-- ══════════════════════════════════════════════════════════════
+         BRANDED SPLASH SCREEN — STRICTLY SCOPED TO ONE STORE
+         Pilot: `wristlife` only. Every other store keeps the existing
+         ring spinner untouched (worker #sf-skel / inline #inline-skel).
+
+         Zero cold-load cost: this runs inside the already-streamed HTML,
+         swaps the CONTENT of the loader element that is on screen anyway,
+         and adds no network request beyond the store logo (which the
+         Worker already emits as <link rel="preload" as="image">).
+         The splash lives exactly as long as the loader did — it is removed
+         by the same storefront:content-ready kill logic below.
+         ══════════════════════════════════════════════════════════════ -->
+    <script>
+      (function(){
+        var SPLASH = {
+          wristlife: {
+            logo: 'https://cdn.shopbanao.in/store-logos/b3896b9c-a4aa-4670-9f13-1848fb00e2b4/ab19143d-87a9-490e-90b7-837313522782/1787494955571-im8fsz-800w.webp'
+          }
+        };
+        /* ── resolve slug (same rules as the loader visibility script) ── */
+        var slug = '';
+        try{
+          if(window.__STORE_SLUG__) slug = String(window.__STORE_SLUG__);
+          if(!slug){
+            var p = location.pathname;
+            if(p.indexOf('/store/')===0){ slug = p.split('/store/')[1] || ''; slug = slug.split('/')[0]; }
+          }
+          if(!slug){
+            var h = location.hostname;
+            if(h.indexOf('.shopbanao.in')>-1 && h!=='shopbanao.in' && h!=='www.shopbanao.in'){
+              var sub = h.replace('.shopbanao.in','');
+              if(sub && sub.indexOf('.')===-1) slug = sub;
+            }
+          }
+        }catch(e){}
+        var cfg = SPLASH[slug];
+        if(!cfg) return; /* ← every other store: nothing happens at all */
+
+        function paint(){
+          var el = document.getElementById('sf-skel') || document.getElementById('inline-skel');
+          if(!el || el.getAttribute('data-splash')==='1') return false;
+          if(el.style.display==='none') return false;
+
+          if(!document.getElementById('sb-splash-css')){
+            var st = document.createElement('style');
+            st.id = 'sb-splash-css';
+            st.textContent =
+              '@keyframes sbsp-rise{0%{opacity:0;transform:translateY(10px) scale(.9)}100%{opacity:1;transform:none}}'+
+              '@keyframes sbsp-halo{0%,100%{opacity:.22;transform:scale(1)}50%{opacity:.5;transform:scale(1.14)}}'+
+              '@keyframes sbsp-sweep{0%{transform:translateX(-160%) skewX(-14deg)}55%,100%{transform:translateX(320%) skewX(-14deg)}}'+
+              '@keyframes sbsp-bar{0%{transform:scaleX(0)}65%{transform:scaleX(.78)}100%{transform:scaleX(.97)}}'+
+              '@keyframes sbsp-word{0%{opacity:0;letter-spacing:.55em}100%{opacity:.72;letter-spacing:.34em}}'+
+              '[data-splash="1"]{background:#000 !important}'+
+              '[data-splash="1"] .sbsp-wrap{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:26px;transition:transform .45s cubic-bezier(.22,1,.36,1),opacity .3s ease}'+
+              '[data-splash="1"] .sbsp-stage{position:relative;display:flex;align-items:center;justify-content:center;width:150px;height:150px}'+
+              '[data-splash="1"] .sbsp-halo{position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.17) 0%,rgba(255,255,255,0) 68%);animation:sbsp-halo 2.6s ease-in-out infinite}'+
+              '[data-splash="1"] .sbsp-logoBox{position:relative;width:150px;height:150px;overflow:hidden;border-radius:26px;animation:sbsp-rise .68s cubic-bezier(.22,1,.36,1) both}'+
+              '[data-splash="1"] .sbsp-logoBox img{width:100%;height:100%;object-fit:contain;display:block}'+
+              '[data-splash="1"] .sbsp-shine{position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:26px}'+
+              '[data-splash="1"] .sbsp-shine:after{content:"";position:absolute;top:-20%;bottom:-20%;width:34%;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.34),rgba(255,255,255,0));animation:sbsp-sweep 2.2s ease-in-out .45s infinite}'+
+              '[data-splash="1"] .sbsp-word{font:600 10px/1 Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;text-transform:uppercase;color:#fff;opacity:.72;animation:sbsp-word .9s ease-out .25s both}'+
+              '[data-splash="1"] .sbsp-bar{width:132px;height:2px;border-radius:2px;background:rgba(255,255,255,.14);overflow:hidden}'+
+              '[data-splash="1"] .sbsp-bar>i{display:block;height:100%;transform-origin:left;background:linear-gradient(90deg,rgba(255,255,255,.35),#fff);animation:sbsp-bar 2.8s cubic-bezier(.16,.84,.3,1) forwards}'+
+              '[data-splash="1"].sbsp-exit .sbsp-wrap{transform:translate(-50%,-50%) scale(1.06);opacity:0}'+
+              '@media (prefers-reduced-motion:reduce){[data-splash="1"] *{animation:none !important}}';
+            document.head.appendChild(st);
+          }
+
+          el.setAttribute('data-splash','1');
+          el.style.background = '#000';
+          el.innerHTML =
+            '<div class="sbsp-wrap">'+
+              '<div class="sbsp-stage">'+
+                '<div class="sbsp-halo"></div>'+
+                '<div class="sbsp-logoBox"><img src="'+cfg.logo+'" alt="" fetchpriority="high" decoding="async"><span class="sbsp-shine"></span></div>'+
+              '</div>'+
+              '<div class="sbsp-word">Loading store</div>'+
+              '<div class="sbsp-bar"><i></i></div>'+
+            '</div>';
+
+          /* Graceful exit: the shared kill logic sets opacity:0 — mirror that
+             into a scale-out on the logo so the store "opens" behind it. */
+          try{
+            var mo = new MutationObserver(function(){
+              if(el.style.opacity==='0' || el.style.display==='none'){
+                el.classList.add('sbsp-exit');
+                mo.disconnect();
+              }
+            });
+            mo.observe(el,{attributes:true,attributeFilter:['style']});
+          }catch(e){}
+          return true;
+        }
+
+        if(!paint()){
+          /* Worker skeleton may stream in a tick later — retry briefly. */
+          var n=0;
+          var iv=setInterval(function(){ n++; if(paint()||n>40) clearInterval(iv); },25);
+        }
+      })();
+    </script>
+
     <script>
       /* Remove skeleton ONLY after real storefront content has actually
          painted into #root. This prevents the blank-white flash that
