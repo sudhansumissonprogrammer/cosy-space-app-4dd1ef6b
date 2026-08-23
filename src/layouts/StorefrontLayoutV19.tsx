@@ -171,7 +171,7 @@ export default function StorefrontLayoutV19({ slugOverride }: { slugOverride?: s
       showWhatsApp={false}
       defaultPrimary="#036B52"
       defaultButtonRadius="999px"
-      wrapperClassName="storefront-font min-h-screen font-sans overflow-x-hidden"
+      wrapperClassName="storefront-font min-h-screen font-sans overflow-x-clip"
       wrapperStyle={{
         // Only fallbacks — saved theme config (primary/bg/text) takes priority via themeStyle
         "--storefront-btn-text": "#ffffff",

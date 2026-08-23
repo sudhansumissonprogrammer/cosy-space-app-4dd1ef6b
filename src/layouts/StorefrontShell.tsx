@@ -113,7 +113,10 @@ export default function StorefrontShell({
   defaultPrimary = "#004643",
   defaultButtonRadius = "0.5rem",
   wrapperStyle,
-  wrapperClassName = "storefront-font min-h-screen font-sans overflow-x-hidden",
+  // `overflow-x-hidden` creates a vertical scroll container per the CSS
+  // overflow spec, which traps descendant `position: sticky` headers.
+  // `overflow-x-clip` prevents horizontal bleed without becoming a scroller.
+  wrapperClassName = "storefront-font min-h-screen font-sans overflow-x-clip",
   notFoundLabel = "Store",
   children,
 }: StorefrontShellProps) {
