@@ -224,7 +224,7 @@ export default function CheckoutAwareLayout({
       {/* Desktop nav bar — hidden on mobile, hidden during checkout */}
       {!isCheckout && (
         <Suspense fallback={null}>
-          <LazyDesktopNavBar store={store} onSearchOpen={() => setSearchOpen(true)} extra={showDarkToggle ? <Suspense fallback={<div className="h-9 w-9" aria-hidden />}><LazySfDarkToggle size={36} effect={darkToggleEffect} /></Suspense> : undefined} style={headerBg ? ({ backgroundColor: headerBg, color: headerFg || undefined, "--storefront-text": headerFg || undefined, borderBottom: `1px solid ${headerFg || '#fff'}12` } as any) : undefined} />
+          <LazyDesktopNavBar store={store} onSearchOpen={() => setSearchOpen(true)} extra={showDarkToggle ? <Suspense fallback={<div className="h-9 w-9" aria-hidden />}><LazySfDarkToggle size={30} effect={darkToggleEffect} /></Suspense> : undefined} style={headerBg ? ({ backgroundColor: headerBg, color: headerFg || undefined, "--storefront-text": headerFg || undefined, borderBottom: `1px solid ${headerFg || '#fff'}12` } as any) : undefined} />
         </Suspense>
       )}
 
