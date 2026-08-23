@@ -186,7 +186,7 @@ export default function CheckoutAwareLayout({
 
   const hideWishlistAndShare = isCentered || isWithSearch;
 
-  const iconStyle = headerIconColor ? { color: headerIconColor } : undefined;
+  const iconStyle = headerFg ? ({ color: headerFg, "--storefront-text": headerFg } as any) : undefined;
   const iconSize = headerIconColor ? "h-6 w-6" : "h-5 w-5";
 
   const ActionButtons = !isCheckout ? (
