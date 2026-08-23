@@ -1633,6 +1633,99 @@ export default function StoreThemeSettings() {
 
   const renderHeaderSection = () => (
     <div className="space-y-6">
+      <Section title="Header Color" hint="Pick a premium header background. Logo, icons and menu text flip automatically for perfect contrast.">
+        <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+          {HEADER_PRESETS.map((p) => {
+            const active = (config.header_bg_color || "") === p.bg;
+            const fg = p.bg ? (isLightColor(p.bg) ? "#141414" : "#ffffff") : "hsl(var(--muted-foreground))";
+            return (
+              <button
+                key={p.id}
+                type="button"
+                title={p.label}
+                onClick={() => {
+                  const next = { ...config, header_bg_color: p.bg, header_text_color: "" };
+                  setConfig(next);
+                  setDirty(true);
+                  sendToIframe(next);
+                }}
+                className={`relative flex h-14 flex-col items-center justify-center gap-1 rounded-xl border-2 px-1 transition-[transform,opacity,colors,box-shadow] active:scale-[0.96] ${
+                  active ? "border-primary shadow-sm" : "border-border hover:border-primary/40"
+                }`}
+                style={{ background: p.bg || "repeating-linear-gradient(45deg,hsl(var(--muted)),hsl(var(--muted)) 6px,hsl(var(--background)) 6px,hsl(var(--background)) 12px)" }}
+                aria-pressed={active}
+              >
+                {active && (
+                  <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                    <Check className="h-3 w-3" />
+                  </span>
+                )}
+                <span className="text-[9px] font-semibold leading-tight text-center" style={{ color: fg }}>
+                  {p.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">Custom background</Label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={config.header_bg_color || "#3B2A1E"}
+                onChange={(e) => updateField("header_bg_color", e.target.value)}
+                className="h-9 w-12 cursor-pointer rounded-md border border-border bg-transparent p-0.5"
+                aria-label="Header background colour"
+              />
+              <input
+                type="text"
+                value={config.header_bg_color || ""}
+                placeholder="Theme default"
+                onChange={(e) => updateField("header_bg_color", e.target.value.trim())}
+                className="h-9 flex-1 rounded-md border border-border bg-background px-2 text-xs"
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">Icon &amp; text colour</Label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={config.header_text_color || "#ffffff"}
+                onChange={(e) => updateField("header_text_color", e.target.value)}
+                className="h-9 w-12 cursor-pointer rounded-md border border-border bg-transparent p-0.5"
+                aria-label="Header icon colour"
+              />
+              <input
+                type="text"
+                value={config.header_text_color || ""}
+                placeholder="Auto (best contrast)"
+                onChange={(e) => updateField("header_text_color", e.target.value.trim())}
+                className="h-9 flex-1 rounded-md border border-border bg-background px-2 text-xs"
+              />
+            </div>
+          </div>
+        </div>
+
+        {config.header_bg_color ? (
+          <button
+            type="button"
+            onClick={() => {
+              const next = { ...config, header_bg_color: "", header_text_color: "" };
+              setConfig(next);
+              setDirty(true);
+              sendToIframe(next);
+            }}
+            className="mt-3 text-xs font-semibold text-muted-foreground underline underline-offset-2"
+          >
+            Reset to theme default
+          </button>
+        ) : null}
+      </Section>
+
+
       {currentTheme !== "theme-19" && currentTheme !== "theme-20" && (
         <Section title="Logo Alignment" hint="Where the logo sits in your desktop header.">
           <div className="grid grid-cols-3 gap-3">
