@@ -285,10 +285,10 @@ html.sf-dark button.bg-gray-800,
 html.sf-dark button.bg-neutral-900,
 html.sf-dark button.bg-zinc-900,
 html.sf-dark button.bg-slate-900 {
-  background-color: #ffffff !important;
+  background-color: #0a0a0a !important;
   background-image: none !important;
-  color: #0a0a0a !important;
-  border: 1px solid rgba(255, 255, 255, 0.9) !important;
+  color: #ffffff !important;
+  border: 1px solid #ffffff !important;
 }
 
 /* Non-interactive surfaces that use the same classes stay dark. */
