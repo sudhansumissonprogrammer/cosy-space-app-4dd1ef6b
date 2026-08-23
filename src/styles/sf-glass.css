@@ -44,7 +44,10 @@ html.sf-dark {
 /* ---------------------------------------------------------------- base --- */
 
 .sfg {
-  position: relative;
+  /* NOTE: never set `position` here — it would beat Tailwind's
+     absolute/fixed/sticky utilities (same specificity, later in the cascade)
+     and stretch floating pills to full width. Elements that need positioning
+     bring their own utility class. */
   background-color: rgba(var(--sfg-tint), var(--sfg-a));
   -webkit-backdrop-filter: blur(var(--sfg-blur)) saturate(var(--sfg-sat));
   backdrop-filter: blur(var(--sfg-blur)) saturate(var(--sfg-sat));
