@@ -1118,16 +1118,26 @@
 
           el.setAttribute('data-splash','1');
           el.style.background = '#000';
+          var safeName = (name || '').replace(/[<>&"]/g,'').trim();
+          /* No logo → the store NAME becomes the logo (big wordmark).
+             Only fall back to the 2-letter monogram if we have no name. */
+          var wordmark = '';
+          if(!logo && safeName){
+            var L = safeName.length;
+            var sizeCls = L <= 10 ? 's1' : (L <= 18 ? 's2' : 's3');
+            wordmark = '<span class="sbsp-wordmark '+sizeCls+'">'+safeName+'</span>';
+          }
           var mark = logo
             ? '<img src="'+logo.replace(/"/g,'&quot;')+'" alt="" fetchpriority="high" decoding="async" onerror="this.parentNode.innerHTML=\'<span class=&quot;sbsp-mono&quot;>'+mono+'</span>\'">'
-            : '<span class="sbsp-mono">'+mono+'</span>';
+            : (wordmark || '<span class="sbsp-mono">'+mono+'</span>');
+          var caption = (logo && safeName) ? safeName : 'Loading store';
           el.innerHTML =
             '<div class="sbsp-wrap">'+
-              '<div class="sbsp-stage">'+
+              '<div class="sbsp-stage'+(wordmark ? ' is-word' : '')+'">'+
                 '<div class="sbsp-halo"></div>'+
                 '<div class="sbsp-logoBox">'+mark+'</div>'+
               '</div>'+
-              '<div class="sbsp-word">'+(name ? name.replace(/[<>]/g,'') : 'Loading store')+'</div>'+
+              '<div class="sbsp-word">'+caption+'</div>'+
               '<div class="sbsp-bar"><i></i></div>'+
             '</div>';
 
