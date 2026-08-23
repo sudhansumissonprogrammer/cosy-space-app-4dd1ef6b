@@ -23,6 +23,9 @@ import ScrollProgressBar from "@/components/storefront/ScrollProgressBar";
 const LazyShareStoreDialog = lazy(() => import("@/components/ShareStoreDialog"));
 import { StorefrontContentSkeleton } from "@/components/ContentSkeleton";
 import { storefrontPath } from "@/lib/subdomain";
+import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
+import { resolveHeaderColors } from "@/lib/headerTheme";
+
 
 const LazySfDarkToggle = lazy(() => import("@/components/storefront/SfDarkToggle"));
 const LazySearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
