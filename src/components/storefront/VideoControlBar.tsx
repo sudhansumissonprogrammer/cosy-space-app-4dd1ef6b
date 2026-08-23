@@ -25,7 +25,7 @@ export function VideoControlBar({ playing, currentTime, duration, onToggle, onSe
 
   return (
     <div
-      className="absolute inset-x-3 bottom-3 z-20 rounded-full bg-black/65 px-2 py-1 text-white shadow-xl backdrop-blur-sm ring-1 ring-white/10"
+      className="absolute inset-x-7 sm:inset-x-3 bottom-3 z-20 rounded-full bg-black/65 px-2 py-1 text-white shadow-xl backdrop-blur-sm ring-1 ring-white/10"
       onClick={(event) => event.stopPropagation()}
     >
       <div className="flex items-center gap-2">
