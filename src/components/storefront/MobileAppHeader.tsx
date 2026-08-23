@@ -50,7 +50,7 @@ export default function MobileAppHeader({ store }: { store: StoreData }) {
                 <MenuIcon className="h-6 w-6" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} aria-hidden="true" />
               </button>
             </SheetTrigger>
-            <SheetContent side="left" className="storefront-font w-[280px] p-0">
+            <SheetContent side="left" className="storefront-font sfg sfg-strong w-[280px] p-0" style={{ backgroundColor: "color-mix(in srgb, var(--storefront-bg, hsl(var(--card))) 84%, transparent)" }}>
               <div className="flex flex-col">
                 <div className="border-b p-4" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--card)))" }}>
                   {store.logo_url ? <img src={store.logo_url} alt={store.name} className="h-14 w-auto max-w-[200px] object-contain" /> : <StoreTextLogo storeName={store.name} size="text-lg" />}
