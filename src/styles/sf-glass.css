@@ -52,36 +52,26 @@ html.sf-dark {
   isolation: isolate;
 }
 
-/* Specular top edge — the single detail that reads as "glass" not "frosted". */
-.sfg::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background: linear-gradient(
+/* Specular top edge — the single detail that reads as "glass" not "frosted".
+   Painted as a background-image (not a pseudo-element) so it never disturbs
+   stacking or absolutely-positioned children inside nav bars and sheets. */
+.sfg {
+  background-image: linear-gradient(
     180deg,
     rgba(255, 255, 255, 0.28) 0%,
     rgba(255, 255, 255, 0.06) 34%,
     rgba(255, 255, 255, 0) 68%
   );
-  z-index: 0;
 }
 
-html.sf-dark .sfg::before,
-.sfg-dark::before {
-  background: linear-gradient(
+html.sf-dark .sfg,
+.sfg-dark {
+  background-image: linear-gradient(
     180deg,
     rgba(255, 255, 255, 0.16) 0%,
     rgba(255, 255, 255, 0.03) 40%,
     rgba(255, 255, 255, 0) 72%
   );
-}
-
-/* Keep real content above the sheen. */
-.sfg > * {
-  position: relative;
-  z-index: 1;
 }
 
 /* --------------------------------------------------------------- shapes --- */
@@ -171,8 +161,8 @@ html.sf-dark .sfg::before,
   background-color: var(--sfg-solid, transparent);
   box-shadow: none;
 }
-.sfg-on-scroll:not(.is-glass)::before {
-  opacity: 0;
+.sfg-on-scroll:not(.is-glass) {
+  background-image: none;
 }
 
 /* --------------------------------------------------- fallbacks & guards --- */
@@ -190,8 +180,8 @@ html.sfg-off .sfg {
   backdrop-filter: none !important;
   background-color: rgba(var(--sfg-tint), 0.96) !important;
 }
-html.sfg-off .sfg::before {
-  display: none;
+html.sfg-off .sfg {
+  background-image: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
