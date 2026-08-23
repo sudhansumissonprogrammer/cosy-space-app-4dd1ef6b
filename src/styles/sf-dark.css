@@ -331,7 +331,7 @@ html.sf-dark a.bg-primary svg,
 html.sf-dark button.bg-foreground svg,
 html.sf-dark button.bg-black svg,
 html.sf-dark a.bg-black svg {
-  color: #0a0a0a !important;
+  color: #ffffff !important;
   stroke: currentColor;
 }
 
