@@ -52,7 +52,7 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
   if (!source || failed) {
     return (
       <div className="relative flex-[0_0_100%] min-w-0 bg-black aspect-[4/5] sm:aspect-square overflow-hidden">
-        {poster && <img src={poster} alt="" aria-hidden className="h-full w-full object-contain" />}
+        {poster && <img src={poster} alt="" aria-hidden className="h-full w-full object-cover" />}
       </div>
     );
   }
