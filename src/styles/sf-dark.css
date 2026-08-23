@@ -305,7 +305,7 @@ html.sf-dark .bg-slate-900:not(button):not(a):not([role="button"]) {
   color: #f2f2f2 !important;
 }
 
-/* Everything inside a white CTA is black — labels, prices, icons,
+/* Everything inside a dark CTA is white — labels, prices, icons,
    sub-captions that carry their own colour class. */
 html.sf-dark button[style*="background-color: var(--storefront-primary"] *,
 html.sf-dark a[style*="background-color: var(--storefront-primary"] *,
