@@ -24,19 +24,19 @@
   /* Tint the glass borrows from the page. Light theme = white haze. */
   --sfg-tint: 255, 255, 255;
   --sfg-ink: 12, 14, 20;
-  --sfg-a: 0.62;
-  --sfg-blur: 20px;
-  --sfg-sat: 180%;
-  --sfg-rim: rgba(255, 255, 255, 0.55);
+  --sfg-a: 0.48;
+  --sfg-blur: 16px;
+  --sfg-sat: 190%;
+  --sfg-rim: rgba(255, 255, 255, 0.62);
   --sfg-edge: rgba(12, 14, 20, 0.08);
-  --sfg-shadow: rgba(12, 14, 20, 0.14);
+  --sfg-shadow: rgba(12, 14, 20, 0.16);
 }
 
 html.sf-dark {
   --sfg-tint: 14, 15, 20;
   --sfg-ink: 255, 255, 255;
-  --sfg-a: 0.58;
-  --sfg-rim: rgba(255, 255, 255, 0.22);
+  --sfg-a: 0.46;
+  --sfg-rim: rgba(255, 255, 255, 0.24);
   --sfg-edge: rgba(255, 255, 255, 0.12);
   --sfg-shadow: rgba(0, 0, 0, 0.55);
 }
@@ -55,27 +55,44 @@ html.sf-dark {
   isolation: isolate;
 }
 
-/* Specular top edge — the single detail that reads as "glass" not "frosted".
+/* Specular gradient — the single detail that reads as "glass" not "frosted".
    Painted as a background-image (not a pseudo-element) so it never disturbs
-   stacking or absolutely-positioned children inside nav bars and sheets. */
+   stacking or absolutely-positioned children inside nav bars and sheets.
+   Apple's material is brightest at the top-left rim and picks up a faint
+   bounce light along the bottom edge. */
 .sfg {
-  background-image: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.28) 0%,
-    rgba(255, 255, 255, 0.06) 34%,
-    rgba(255, 255, 255, 0) 68%
-  );
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.34) 0%,
+      rgba(255, 255, 255, 0.08) 26%,
+      rgba(255, 255, 255, 0) 55%,
+      rgba(255, 255, 255, 0.07) 100%
+    ),
+    radial-gradient(
+      120% 90% at 12% -10%,
+      rgba(255, 255, 255, 0.32) 0%,
+      rgba(255, 255, 255, 0) 60%
+    );
 }
 
 html.sf-dark .sfg,
 .sfg-dark {
-  background-image: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.16) 0%,
-    rgba(255, 255, 255, 0.03) 40%,
-    rgba(255, 255, 255, 0) 72%
-  );
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.18) 0%,
+      rgba(255, 255, 255, 0.04) 30%,
+      rgba(255, 255, 255, 0) 60%,
+      rgba(255, 255, 255, 0.05) 100%
+    ),
+    radial-gradient(
+      120% 90% at 12% -10%,
+      rgba(255, 255, 255, 0.18) 0%,
+      rgba(255, 255, 255, 0) 60%
+    );
 }
+
 
 /* --------------------------------------------------------------- shapes --- */
 
