@@ -92,7 +92,7 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
   return (
     <>
       <nav
-        className={`hidden md:block relative z-30 smart-header ${headerVisible ? "" : "smart-header-hidden"} ${className}`}
+        className={`hidden md:block sticky top-0 z-30 smart-header ${headerVisible ? "" : "smart-header-hidden"} ${className}`}
         style={{
           backgroundColor: "var(--storefront-bg, hsl(var(--background)))",
           color: "var(--storefront-text, hsl(var(--foreground)))",
