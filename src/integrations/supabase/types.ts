@@ -3376,8 +3376,10 @@ export type Database = {
           created_at: string
           dark_toggle_effect: string
           font_preset: string | null
+          header_bg_color: string
           header_logo_alignment: string
           header_style: string
+          header_text_color: string
           heading_font: string
           id: string
           marquee_enabled: boolean
@@ -3408,8 +3410,10 @@ export type Database = {
           created_at?: string
           dark_toggle_effect?: string
           font_preset?: string | null
+          header_bg_color?: string
           header_logo_alignment?: string
           header_style?: string
+          header_text_color?: string
           heading_font?: string
           id?: string
           marquee_enabled?: boolean
@@ -3440,8 +3444,10 @@ export type Database = {
           created_at?: string
           dark_toggle_effect?: string
           font_preset?: string | null
+          header_bg_color?: string
           header_logo_alignment?: string
           header_style?: string
+          header_text_color?: string
           heading_font?: string
           id?: string
           marquee_enabled?: boolean
