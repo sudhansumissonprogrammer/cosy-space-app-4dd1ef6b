@@ -369,30 +369,30 @@ export default function CheckoutPhoneStep({
           <ArrowLeft className="h-5 w-5" />
         </button>
 
-        <div className="flex items-center gap-2 min-w-0 flex-1">
+        <div className="flex min-w-0 flex-1 flex-col justify-center">
           {storeLogo ? (
             <img
               src={storeLogo}
               alt={storeName || "Store logo"}
-              className="h-8 w-auto max-w-[100px] object-contain shrink-0"
+              className="h-8 w-auto max-w-[120px] self-start object-contain"
             />
-          ) : null}
-          <div className="flex flex-col justify-center min-w-0">
+          ) : (
             <div className="text-[15px] font-bold leading-tight truncate">
               {storeName || "Store"}
             </div>
-            {storePhone && (
-              <a
-                href={`tel:${String(storePhone).replace(/\s/g, "")}`}
-                className="mt-0.5 inline-flex items-center gap-1 text-[11px] leading-none text-muted-foreground hover:text-foreground transition-colors"
-                aria-label={`Customer care ${storePhone}`}
-              >
-                <Headset className="h-3 w-3" />
-                <span className="truncate">{storePhone}</span>
-              </a>
-            )}
-          </div>
+          )}
+          {storePhone && (
+            <a
+              href={`tel:${String(storePhone).replace(/\s/g, "")}`}
+              className="mt-0.5 inline-flex items-center gap-1 text-[11px] leading-none text-muted-foreground hover:text-foreground transition-colors"
+              aria-label={`Customer care ${storePhone}`}
+            >
+              <Headset className="h-3 w-3" />
+              <span className="truncate">{storePhone}</span>
+            </a>
+          )}
         </div>
+
 
         <div className="flex items-center -space-x-2">
           <img

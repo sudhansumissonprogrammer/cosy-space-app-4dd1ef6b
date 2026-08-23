@@ -21,7 +21,7 @@ import {
  * The switch animation is chosen by the merchant in Theme Settings.
  */
 export default function SfDarkToggle({
-  size = 40,
+  size = 32,
   effect,
 }: {
   size?: number;
@@ -97,7 +97,7 @@ export default function SfDarkToggle({
       }}
     >
       <span className="sf-dark-toggle-glyph" key={dark ? "sun" : "moon"}>
-        {dark ? <Sun className="h-[18px] w-[18px]" strokeWidth={2} /> : <Moon className="h-[18px] w-[18px]" strokeWidth={2} />}
+        {dark ? <Sun className="h-[15px] w-[15px]" strokeWidth={2} /> : <Moon className="h-[15px] w-[15px]" strokeWidth={2} />}
       </span>
       <style>{`
         .sf-dark-toggle { transition: background-color .2s ease, border-color .2s ease; }
