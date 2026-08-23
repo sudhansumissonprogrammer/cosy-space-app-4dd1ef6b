@@ -319,7 +319,7 @@ html.sf-dark button.bg-foreground *,
 html.sf-dark a.bg-foreground *,
 html.sf-dark button.bg-black *,
 html.sf-dark a.bg-black * {
-  color: #0a0a0a !important;
+  color: #ffffff !important;
   fill: none;
 }
 html.sf-dark button[style*="background-color: var(--storefront-primary"] svg,
