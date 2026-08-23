@@ -1612,14 +1612,14 @@ function ImageGallery({
                 return (
                   <div
                     key={`${i}-${slide.url}`}
-                    className="relative flex-[0_0_100%] min-w-0"
+                    className="relative flex-[0_0_100%] min-w-0 h-[min(133vw,78svh)] sm:aspect-[4/5] sm:h-auto overflow-hidden"
                     onClick={() => setLightboxOpen(true)}
                   >
-                    {!loaded && <Skeleton className="aspect-[4/5] sm:aspect-square w-full rounded-none" />}
+                    {!loaded && <Skeleton className="absolute inset-0 h-full w-full rounded-none" />}
                     <img
                       src={optimizeImageUrl(slide.url, 800)}
                       alt={productName}
-                      className={`w-full h-auto max-h-[80vh] object-contain bg-muted/30 transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
+                      className={`h-full w-full object-cover bg-muted/30 transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
                       decoding="async"
                       fetchPriority={realIdx === 0 ? "high" : "auto"}
                       draggable={false}

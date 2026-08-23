@@ -308,12 +308,12 @@ export default function V20ProductDetail() {
         {lightboxImages.length > 0 && <ZoomHint onClick={() => setZoomOpen(true)} />}
         <div ref={galleryRef} onScroll={onGalleryScroll} className="v20pdp-snap v20pdp-noscrollbar flex overflow-x-auto">
           {(gallerySlides.length ? gallerySlides : [null]).map((slide, i) => (
-            <div key={i} className="flex-shrink-0 w-full aspect-square bg-white flex items-center justify-center">
+            <div key={i} className="flex-shrink-0 w-full h-[min(133vw,78svh)] sm:aspect-[4/5] sm:h-auto bg-white flex items-center justify-center overflow-hidden">
               {slide?.kind === "video" ? (
                 <SnapVideoSlide url={slide.url} poster={slide.poster ? optimizeImageUrl(slide.poster, 800, 90) : undefined} />
 
               ) : slide?.kind === "image" ? (
-                <img src={optimizeImageUrl(slide.url, 800, 90)} alt={`${product.name} ${i + 1}`} className="max-h-full max-w-full object-contain p-6 cursor-zoom-in"
+                <img src={optimizeImageUrl(slide.url, 800, 90)} alt={`${product.name} ${i + 1}`} className="h-full w-full object-cover cursor-zoom-in"
                   loading={i === 0 ? "eager" : "lazy"} fetchPriority={i === 0 ? "high" : "auto"} onClick={() => setZoomOpen(true)} />
               ) : (
                 <Package className="h-16 w-16 text-gray-300" />
