@@ -1797,17 +1797,12 @@ function ImageGallery({
                     className="relative flex-[0_0_100%] min-w-0 overflow-hidden h-[min(178vw,85svh)] sm:aspect-[4/5] sm:h-auto bg-background"
                     onClick={() => setLightboxOpen(true)}
                   >
-                    {/* Blurred fill behind portrait/square images so gutters disappear */}
-                    <div
-                      aria-hidden
-                      className="absolute inset-0 bg-center bg-cover scale-110 blur-2xl opacity-60"
-                      style={{ backgroundImage: `url(${optimizedUrl})` }}
-                    />
                     {!loaded && <Skeleton className="absolute inset-0 z-[2] h-full w-full rounded-none" />}
                     <img
                       src={optimizedUrl}
                       alt={productName}
-                      className={`relative z-[1] h-full w-full object-contain transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+                      className={`relative z-[1] h-full w-full object-cover transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+
                       decoding="async"
                       fetchPriority={realIdx === 0 ? "high" : "auto"}
                       draggable={false}
