@@ -52,10 +52,9 @@ export default function MobileBottomNavModern({ store }: { store: StoreData }) {
       <div className="flex items-end justify-center gap-2 px-3 pb-1.5 pointer-events-auto">
         {/* Main floating pill */}
         <div
-          className="flex items-center justify-around rounded-[28px] px-1.5 py-1 flex-1 shadow-[0_4px_24px_rgba(0,0,0,0.12)]"
+          className="sfg sfg-pill flex items-center justify-around rounded-[28px] px-1.5 py-1 flex-1 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.28)]"
           style={{
-            backgroundColor: "var(--storefront-bg, hsl(var(--card)))",
-            border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)",
+            backgroundColor: "color-mix(in srgb, var(--storefront-bg, hsl(var(--card))) 62%, transparent)",
           }}
         >
           {navItems.map((item) => {

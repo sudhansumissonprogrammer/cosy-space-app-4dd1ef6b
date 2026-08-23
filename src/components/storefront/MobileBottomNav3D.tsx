@@ -42,12 +42,10 @@ export default function MobileBottomNav3D({ store }: { store: StoreData }) {
 
   return (
     <nav
-      className="fixed bottom-0 inset-x-0 z-40 sm:hidden"
+      className="sfg sfg-bar-bottom fixed bottom-0 inset-x-0 z-40 sm:hidden"
       style={{
-        background:
-          "linear-gradient(180deg, color-mix(in srgb, var(--storefront-bg, hsl(var(--card))) 100%, transparent) 0%, color-mix(in srgb, var(--storefront-bg, hsl(var(--card))) 92%, #000 8%) 100%)",
-        borderTop: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)",
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.4), 0 -4px 12px rgba(0,0,0,0.06)",
+        backgroundColor: "color-mix(in srgb, var(--storefront-bg, hsl(var(--card))) 74%, transparent)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.45), 0 -10px 30px -14px rgba(0,0,0,0.28)",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
       }}
     >

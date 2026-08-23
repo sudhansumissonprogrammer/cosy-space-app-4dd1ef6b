@@ -49,12 +49,9 @@ export default function MobileBottomNavGlass({ store }: { store: StoreData }) {
     >
       <div className="px-3 pb-2 pointer-events-auto">
         <div
-          className="flex items-center justify-around rounded-[26px] px-1 py-1.5 backdrop-blur-2xl backdrop-saturate-150 shadow-[0_8px_32px_rgba(0,0,0,0.18)]"
+          className="sfg sfg-pill flex items-center justify-around rounded-[26px] px-1 py-1.5"
           style={{
-            backgroundColor: "color-mix(in srgb, var(--storefront-bg, hsl(var(--card))) 65%, transparent)",
-            border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 12%, transparent)",
-            boxShadow:
-              "0 8px 32px rgba(0,0,0,0.18), inset 0 1px 0 color-mix(in srgb, white 25%, transparent)",
+            backgroundColor: "color-mix(in srgb, var(--storefront-bg, hsl(var(--card))) 48%, transparent)",
           }}
         >
           {navItems.map((item) => {

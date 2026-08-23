@@ -51,11 +51,30 @@ export default function MobileBottomNavNotch({ store }: { store: StoreData }) {
     >
       {/* SVG curved bar with notch cutout */}
       <div className="relative h-[68px]">
+        {/* Clip path for the live-glass layer — same silhouette as the bar,
+            normalised to the element box so it stretches identically. */}
+        <svg aria-hidden width="0" height="0" className="absolute" style={{ position: "absolute" }}>
+          <defs>
+            <clipPath id="sfg-notch-clip" clipPathUnits="objectBoundingBox">
+              <path d="M0,0.1176 L0.4,0.1176 C0.43,0.1176 0.4375,0.4118 0.5,0.4118 C0.5625,0.4118 0.57,0.1176 0.6,0.1176 L1,0.1176 L1,1 L0,1 Z" />
+            </clipPath>
+          </defs>
+        </svg>
+        {/* Live glass, clipped to the notch silhouette */}
+        <div
+          aria-hidden
+          className="sfg absolute inset-x-0 bottom-0 h-[68px] pointer-events-none"
+          style={{
+            clipPath: "url(#sfg-notch-clip)",
+            WebkitClipPath: "url(#sfg-notch-clip)",
+            backgroundColor: "color-mix(in srgb, var(--storefront-bg, hsl(var(--card))) 66%, transparent)",
+          }}
+        />
         <svg
           aria-hidden
           viewBox="0 0 400 68"
           preserveAspectRatio="none"
-          className="absolute inset-x-0 bottom-0 w-full h-[68px]"
+          className="absolute inset-x-0 bottom-0 w-full h-[68px] pointer-events-none"
           style={{
             filter: "drop-shadow(0 -4px 14px rgba(0,0,0,0.10))",
           }}
@@ -63,8 +82,8 @@ export default function MobileBottomNavNotch({ store }: { store: StoreData }) {
           {/* Path: left edge -> up to notch start -> arc dip down -> arc up -> right edge */}
           <path
             d="M0,8 L160,8 C172,8 175,28 200,28 C225,28 228,8 240,8 L400,8 L400,68 L0,68 Z"
-            fill="var(--storefront-bg, hsl(var(--card)))"
-            stroke="color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 8%, transparent)"
+            fill="none"
+            stroke="color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 14%, transparent)"
             strokeWidth="1"
           />
         </svg>

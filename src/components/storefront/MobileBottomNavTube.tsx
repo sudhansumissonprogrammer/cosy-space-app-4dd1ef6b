@@ -75,11 +75,9 @@ export default function MobileBottomNavTube({ store }: { store: StoreData }) {
       <div className="px-3 pb-2 pointer-events-auto">
         <div
           ref={containerRef}
-          className="relative flex items-stretch rounded-full px-1.5 py-1.5"
+          className="sfg sfg-pill relative flex items-stretch rounded-full px-1.5 py-1.5"
           style={{
-            backgroundColor: "var(--storefront-bg, hsl(var(--card)))",
-            border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)",
-            boxShadow: "0 6px 24px rgba(0,0,0,0.12)",
+            backgroundColor: "color-mix(in srgb, var(--storefront-bg, hsl(var(--card))) 60%, transparent)",
           }}
         >
           {/* Sliding tube */}

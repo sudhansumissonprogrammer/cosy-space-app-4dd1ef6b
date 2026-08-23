@@ -69,10 +69,9 @@ export default function MobileBottomNavNeon({ store }: { store: StoreData }) {
 
   return (
     <nav
-      className="fixed bottom-0 inset-x-0 z-40 border-t backdrop-blur-md sm:hidden"
+      className="sfg sfg-bar-bottom fixed bottom-0 inset-x-0 z-40 sm:hidden"
       style={{
-        backgroundColor: "color-mix(in srgb, var(--storefront-bg, hsl(var(--card))) 92%, transparent)",
-        borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)",
+        backgroundColor: "color-mix(in srgb, var(--storefront-bg, hsl(var(--card))) 70%, transparent)",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
       }}
     >

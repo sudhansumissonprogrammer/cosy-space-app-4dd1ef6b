@@ -43,10 +43,9 @@ export default function MobileBottomNavBubble({ store }: { store: StoreData }) {
 
   return (
     <nav
-      className="fixed bottom-0 inset-x-0 z-40 border-t sm:hidden"
+      className="sfg sfg-bar-bottom fixed bottom-0 inset-x-0 z-40 sm:hidden"
       style={{
-        backgroundColor: "var(--storefront-bg, hsl(var(--card)))",
-        borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 8%, transparent)",
+        backgroundColor: "color-mix(in srgb, var(--storefront-bg, hsl(var(--card))) 72%, transparent)",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
       }}
     >

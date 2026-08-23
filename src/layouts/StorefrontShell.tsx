@@ -20,6 +20,8 @@ import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 
 import { buildThemeStyle, loadGoogleFonts } from "@/lib/themeUtils";
 import StorefrontNotFound from "@/components/storefront/StorefrontNotFound";
+import { initSfGlass } from "@/lib/sfGlassRuntime";
+import "@/styles/sf-glass.css";
 
 // Lazy-load non-critical overlays
 const SideCart = lazy(() => import("@/components/storefront/SideCart"));
@@ -136,6 +138,9 @@ export default function StorefrontShell({
 
   // Theme config (reactive — updates when cache changes via live preview)
   const themeConfig = useStorefrontThemeConfig(store?.id, shellThemeConfig);
+
+  // Decide once whether this device can afford live backdrop-blur glass.
+  useEffect(() => { initSfGlass(); }, []);
 
   // Cache brand identity for the black branded splash screen (index.html reads
   // this at T+0 on the next visit so the splash shows the real logo instantly).

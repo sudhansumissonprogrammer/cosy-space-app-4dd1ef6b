@@ -44,7 +44,7 @@ export default function MobileBottomNavV15({ store }: { store: StoreData }) {
     >
       <div className="flex items-end justify-center gap-2.5 px-3 pb-2.5">
         {/* Main nav pill */}
-        <div className="flex items-center justify-around rounded-full shadow-[0_2px_20px_rgba(0,0,0,0.10)] px-2 py-1 flex-1" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--card)))", border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)" }}>
+        <div className="sfg sfg-pill flex items-center justify-around rounded-full shadow-[0_10px_28px_-12px_rgba(0,0,0,0.3)] px-2 py-1 flex-1" style={{ backgroundColor: "color-mix(in srgb, var(--storefront-bg, hsl(var(--card))) 62%, transparent)" }}>
           {navItems.map((item) => {
             const active = getActive(item.path);
             const isCart = item.key === "cart";
