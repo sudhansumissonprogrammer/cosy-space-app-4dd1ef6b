@@ -692,16 +692,17 @@ export default function V22ProductDetail() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl lg:max-w-7xl px-0 sm:px-4 pt-0 sm:pt-8 pb-3 sm:pb-8" style={isV18 ? { backgroundColor: "var(--storefront-bg, #0a0a0a)", color: "var(--storefront-text, #ffffff)" } : {}}>
-      {/* Mobile-only floating back button — preserves scroll via POP */}
+    <div className="relative mx-auto max-w-6xl lg:max-w-7xl px-0 sm:px-4 pt-0 sm:pt-8 pb-3 sm:pb-8" style={isV18 ? { backgroundColor: "var(--storefront-bg, #0a0a0a)", color: "var(--storefront-text, #ffffff)" } : {}}>
+      {/* Mobile-only floating back button — absolute so it never collides with the sticky header/hamburger */}
       <button
         type="button"
         onClick={handleBack}
         aria-label="Back"
-        className="sm:hidden fixed top-3 left-3 z-40 h-10 w-10 flex items-center justify-center rounded-full bg-white/95 backdrop-blur shadow-[0_2px_8px_rgba(0,0,0,0.18)] active:scale-95 transition-transform"
+        className="sm:hidden absolute top-2 left-2 z-20 h-8 w-8 flex items-center justify-center rounded-full bg-white/95 backdrop-blur shadow-[0_2px_8px_rgba(0,0,0,0.18)] active:scale-95 transition-transform"
       >
-        <ArrowLeft className="h-5 w-5 text-gray-900" strokeWidth={2.4} />
+        <ArrowLeft className="h-3.5 w-3.5 text-gray-900" strokeWidth={2.4} />
       </button>
+
 
 
       <div className="grid gap-2 sm:gap-6 lg:grid-cols-2 lg:gap-10">
