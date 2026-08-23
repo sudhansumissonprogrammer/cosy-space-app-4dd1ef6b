@@ -1240,7 +1240,7 @@ export default function StoreThemeSettings() {
       colors: !!selectedCombo,
       typography: config.heading_font !== d.heading_font || config.body_font !== d.body_font,
       layout: config.button_style !== d.button_style,
-      header: config.header_logo_alignment !== d.header_logo_alignment || config.header_style !== d.header_style || config.mobile_nav_style !== d.mobile_nav_style,
+      header: config.header_logo_alignment !== d.header_logo_alignment || config.header_style !== d.header_style || config.mobile_nav_style !== d.mobile_nav_style || !!config.header_bg_color,
       cards: config.product_card_style !== d.product_card_style,
       categories: config.category_style !== d.category_style,
       extras: config.marquee_text !== d.marquee_text || !!config.bilingual_cta,
