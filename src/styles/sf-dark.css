@@ -193,12 +193,12 @@ html.sf-dark body [class*="storefront-font"] {
 html.sf-dark body .storefront-font,
 html.sf-dark body [class*="storefront-font"],
 html.sf-dark body [style*="--storefront-primary"] {
-  /* button / badge surface — always black in Dark Streetwear */
-  --storefront-primary: #121212 !important;
-  --storefront-primary-light: #1f1f1f !important;
-  --storefront-primary-foreground: #ffffff !important;
-  --storefront-btn-text: #ffffff !important;
-  --storefront-accent: #161616 !important;
+  /* button / badge surface — inverted (white tile, black content) */
+  --storefront-primary: #ffffff !important;
+  --storefront-primary-light: #ededed !important;
+  --storefront-primary-foreground: #0a0a0a !important;
+  --storefront-btn-text: #0a0a0a !important;
+  --storefront-accent: #ffffff !important;
   --storefront-footer-text: #f2f2f2 !important;
   --storefront-nav-bg: #0a0a0a !important;
   --storefront-star-color: #ffc94d !important;
