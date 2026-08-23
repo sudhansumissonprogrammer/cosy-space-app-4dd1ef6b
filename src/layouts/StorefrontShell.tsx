@@ -139,8 +139,16 @@ export default function StorefrontShell({
   // Theme config (reactive — updates when cache changes via live preview)
   const themeConfig = useStorefrontThemeConfig(store?.id, shellThemeConfig);
 
-  // Decide once whether this device can afford live backdrop-blur glass.
-  useEffect(() => { initSfGlass(); }, []);
+  // Decide once whether this device can afford live backdrop-blur glass, then
+  // upgrade those surfaces to real refraction (Chromium) once idle.
+  useEffect(() => {
+    initSfGlass();
+    const run = () => import("@/lib/sfGlassRefraction").then((m) => m.initSfGlassRefraction());
+    const ric = (window as any).requestIdleCallback;
+    if (typeof ric === "function") ric(run, { timeout: 2000 });
+    else setTimeout(run, 600);
+  }, []);
+
 
   // Cache brand identity for the black branded splash screen (index.html reads
   // this at T+0 on the next visit so the splash shows the real logo instantly).
