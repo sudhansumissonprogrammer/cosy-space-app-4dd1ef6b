@@ -88,6 +88,13 @@ export default function CheckoutAwareLayout({
   const location = useLocation();
   const navigate = useNavigate();
   const isCheckout = location.pathname.includes("/checkout");
+  // Merchant-chosen header colour (Theme Settings → Header & Nav).
+  // Theme-supplied overrides (e.g. dark themes) still win.
+  const layoutThemeConfig = useStorefrontThemeConfig(store.id);
+  const customHeader = resolveHeaderColors(layoutThemeConfig);
+  const headerBg = headerBgOverride ?? customHeader.bg;
+  const headerFg = headerIconColor ?? customHeader.fg;
+
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [paymentInProgress, setPaymentInProgress] = useState(false);
