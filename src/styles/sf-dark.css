@@ -482,12 +482,19 @@ html.sf-dark [data-sf-spin] textarea::placeholder {
   color: #94a3b8 !important;
 }
 
-/* Primary CTAs inside the popup keep their own brand fill instead of
-   the global "black tile" treatment. */
+/* Primary CTAs inside the popup sit on a white card, so they keep the
+   dark fill instead of the global "white tile" treatment. */
 html.sf-dark [data-sf-spin] button.bg-primary,
+html.sf-dark [data-sf-spin] a.bg-primary,
 html.sf-dark [data-sf-spin] .bg-primary {
-  background-color: hsl(var(--primary)) !important;
-  color: hsl(var(--primary-foreground)) !important;
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+}
+html.sf-dark [data-sf-spin] button.bg-primary *,
+html.sf-dark [data-sf-spin] a.bg-primary *,
+html.sf-dark [data-sf-spin] .bg-primary svg {
+  color: #ffffff !important;
 }
 
 /* Shell chrome stays as designed (dark gradient + white text). */
