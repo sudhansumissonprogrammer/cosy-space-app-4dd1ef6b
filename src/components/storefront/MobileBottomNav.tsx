@@ -119,9 +119,10 @@ export default function MobileBottomNav({ store, swapCartWhatsApp = false }: Mob
 
   return (
     <nav
-      className="sfg sfg-bar-bottom sf-nav-floating fixed bottom-0 inset-x-0 z-40 sm:hidden safe-bottom"
+      className="fixed bottom-0 inset-x-0 z-40 border-t backdrop-blur-md sm:hidden safe-bottom"
       style={{
-        backgroundColor: "color-mix(in srgb, var(--storefront-bg, hsl(var(--card))) 72%, transparent)",
+        backgroundColor: "var(--storefront-bg, hsl(var(--card)))",
+        borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)",
       }}
     >
       <div ref={containerRef} className="relative flex items-stretch justify-around">
