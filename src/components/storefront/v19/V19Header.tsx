@@ -179,16 +179,6 @@ export default function V19Header({ store }: { store: any }) {
           </button>
         </div>
 
-        {marqueeEnabled && (
-          <div className="v19-marquee-yellow">
-            <div className="flex gap-10 animate-marquee whitespace-nowrap">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <span key={i} className="px-2">{marqueeText}</span>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Category pill row — desktop only */}
         {topCats.length > 0 && (
           <div className="hidden md:block bg-white border-t border-black/5">
@@ -232,6 +222,17 @@ export default function V19Header({ store }: { store: any }) {
           </div>
         )}
       </header>
+
+      {/* Announcement marquee — intentionally NOT sticky (scrolls away) */}
+      {marqueeEnabled && (
+        <div className="v19-marquee-yellow">
+          <div className="flex gap-10 animate-marquee whitespace-nowrap">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <span key={i} className="px-2">{marqueeText}</span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Search overlay (lazy) */}
       {searchOpen && (

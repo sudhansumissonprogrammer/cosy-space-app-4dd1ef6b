@@ -182,16 +182,6 @@ export default function V20Header({ store }: { store: any }) {
           </button>
         </div>
 
-        {marqueeEnabled && (
-          <div className="v20-marquee-yellow">
-            <div className="flex gap-10 animate-marquee whitespace-nowrap">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <span key={i} className="px-2">{marqueeText}</span>
-              ))}
-            </div>
-          </div>
-        )}
-
         {topCats.length > 0 && (
           <div className="hidden md:block bg-white border-t border-black/5">
             <div className="max-w-7xl mx-auto px-6 lg:px-8">
@@ -234,6 +224,17 @@ export default function V20Header({ store }: { store: any }) {
           </div>
         )}
       </header>
+
+      {/* Announcement marquee — intentionally NOT sticky (scrolls away) */}
+      {marqueeEnabled && (
+        <div className="v20-marquee-yellow">
+          <div className="flex gap-10 animate-marquee whitespace-nowrap">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <span key={i} className="px-2">{marqueeText}</span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {searchOpen && (
         <Suspense fallback={null}>
