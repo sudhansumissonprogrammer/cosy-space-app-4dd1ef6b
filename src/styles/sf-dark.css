@@ -240,9 +240,9 @@ html.sf-dark svg[style*="color: var(--storefront-primary"],
 html.sf-dark svg[style*="color: var(--storefront-bg"] {
   color: #f2f2f2 !important;
 }
-/* Icons that sit on a CTA surface are black (white button) */
+/* Icons that sit on a CTA surface are white (dark button) */
 html.sf-dark svg[style*="color: var(--storefront-btn-text"] {
-  color: #0a0a0a !important;
+  color: #ffffff !important;
 }
 
 /* ── Inverted strips (bg = text colour) ───────────────────────
