@@ -1891,7 +1891,7 @@ function ImageGallery({
                 type="button"
                 onClick={(e) => { e.stopPropagation(); scrollPrev(); }}
                 aria-label="Previous image"
-                className="absolute left-6 sm:left-2 top-1/2 z-20 -translate-y-1/2 flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full border border-white/40 bg-white/20 text-white shadow-[0_2px_10px_rgba(0,0,0,0.25)] backdrop-blur-md transition-transform active:scale-90 hover:bg-white/30"
+                className="absolute left-6 sm:left-2 top-1/2 z-20 -translate-y-1/2 flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full border border-white/40 bg-white/20 text-black shadow-[0_2px_10px_rgba(0,0,0,0.25)] backdrop-blur-md transition-transform active:scale-90 hover:bg-white/30"
               >
                 <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </button>
@@ -1899,7 +1899,7 @@ function ImageGallery({
                 type="button"
                 onClick={(e) => { e.stopPropagation(); scrollNext(); }}
                 aria-label="Next image"
-                className="absolute right-6 sm:right-2 top-1/2 z-20 -translate-y-1/2 flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full border border-white/40 bg-white/20 text-white shadow-[0_2px_10px_rgba(0,0,0,0.25)] backdrop-blur-md transition-transform active:scale-90 hover:bg-white/30"
+                className="absolute right-6 sm:right-2 top-1/2 z-20 -translate-y-1/2 flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full border border-white/40 bg-white/20 text-black shadow-[0_2px_10px_rgba(0,0,0,0.25)] backdrop-blur-md transition-transform active:scale-90 hover:bg-white/30"
               >
                 <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </button>
