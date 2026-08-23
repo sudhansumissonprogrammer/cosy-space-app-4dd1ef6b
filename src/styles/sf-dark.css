@@ -193,19 +193,19 @@ html.sf-dark body [class*="storefront-font"] {
 html.sf-dark body .storefront-font,
 html.sf-dark body [class*="storefront-font"],
 html.sf-dark body [style*="--storefront-primary"] {
-  /* button / badge surface — inverted (white tile, black content) */
-  --storefront-primary: #ffffff !important;
-  --storefront-primary-light: #ededed !important;
-  --storefront-primary-foreground: #0a0a0a !important;
-  --storefront-btn-text: #0a0a0a !important;
-  --storefront-accent: #ffffff !important;
+  /* button / badge surface — dark tile, white content, white outline */
+  --storefront-primary: #0a0a0a !important;
+  --storefront-primary-light: #141414 !important;
+  --storefront-primary-foreground: #ffffff !important;
+  --storefront-btn-text: #ffffff !important;
+  --storefront-accent: #0a0a0a !important;
   --storefront-footer-text: #f2f2f2 !important;
   --storefront-nav-bg: #0a0a0a !important;
   --storefront-star-color: #ffc94d !important;
   --storefront-marquee-gradient: linear-gradient(90deg, #101010, #1c1c1c, #101010) !important;
   --storefront-marquee-text-color: #f2f2f2 !important;
-  --primary: 0 0% 100% !important;
-  --primary-foreground: 0 0% 6% !important;
+  --primary: 0 0% 6% !important;
+  --primary-foreground: 0 0% 100% !important;
 }
 
 /* ── Text painted with a merchant colour ──────────────────────
