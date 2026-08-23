@@ -1828,30 +1828,13 @@ function ImageGallery({
           {slides[activeIndex]?.kind !== "video" && (
             <button
               onClick={(e) => { e.stopPropagation(); setLightboxOpen(true); }}
-              className="absolute bottom-3 left-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white shadow-lg transition-[transform,opacity,colors,box-shadow] hover:bg-black/70 active:scale-[0.96]"
+              className="absolute bottom-3 left-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/45 backdrop-blur-sm text-white shadow-md transition-[transform,opacity,colors,box-shadow] hover:bg-black/65 active:scale-[0.96]"
               aria-label="Enlarge image"
             >
-              <Maximize2 className="h-4 w-4" />
-
+              <Maximize2 className="h-3.5 w-3.5" />
             </button>
           )}
 
-          {/* Similar products — jumps to PDP carousels */}
-          {slides[activeIndex]?.kind !== "video" && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                const el = document.getElementById("pdp-carousels");
-                if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-              }}
-              className="absolute bottom-3 left-14 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 backdrop-blur-md ring-1 ring-black/10 text-black shadow-lg transition-[transform,opacity,colors,box-shadow] hover:bg-white active:scale-[0.96]"
-              aria-label="View similar products"
-              title="Similar products"
-            >
-              <PdpSimilarProductsIcon className="h-4 w-4" />
-
-            </button>
-          )}
 
           {/* Rating pill → jumps to the reviews section */}
           <div className={`absolute right-3 z-10 ${showMultiUi ? "bottom-12 sm:bottom-3" : "bottom-3"}`}>
