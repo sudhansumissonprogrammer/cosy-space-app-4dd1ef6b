@@ -1847,7 +1847,7 @@ function ImageGallery({
 
           {/* Counter (mobile) */}
           {showMultiUi && !isVideoSlide && (
-            <div className="absolute bottom-3 right-7 z-10 sm:hidden rounded-full bg-black/50 backdrop-blur-sm px-2.5 py-1 text-[10px] font-bold text-white tabular-nums">
+            <div className="sfg sfg-pill sfg-dark absolute bottom-3 right-7 z-10 sm:hidden px-2.5 py-1 text-[10px] font-bold text-white tabular-nums">
               {activeIndex + 1}/{len}
             </div>
           )}

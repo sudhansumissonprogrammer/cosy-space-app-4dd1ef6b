@@ -32,13 +32,11 @@ export default function WishlistHeartButton({
         e.stopPropagation();
         onClick(e);
       }}
-      className={`heart-burst ${bursting ? "bursting" : ""} flex items-center justify-center rounded-full transition-transform duration-200 active:scale-[0.92] ${className}`}
+      className={`heart-burst ${bursting ? "bursting" : ""} sfg sfg-pill sfg-dark flex items-center justify-center transition-transform duration-200 active:scale-[0.92] ${className}`}
       style={{
         height: size,
         width: size,
-        background: "transparent",
-        border: "none",
-        boxShadow: "none",
+        backgroundColor: "rgba(10,11,15,0.28)",
       }}
       aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
     >

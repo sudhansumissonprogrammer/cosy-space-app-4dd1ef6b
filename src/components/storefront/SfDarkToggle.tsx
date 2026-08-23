@@ -85,14 +85,11 @@ export default function SfDarkToggle({
       aria-pressed={dark}
       aria-label={dark ? "Switch to light mode" : "Switch to night mode"}
       title={dark ? "Light mode" : "Night mode"}
-      className="sf-dark-toggle relative flex items-center justify-center rounded-full"
+      className="sf-dark-toggle sfg sfg-pill sfg-tap relative flex items-center justify-center"
       style={{
         width: size,
         height: size,
-        border: "1px solid color-mix(in srgb, var(--storefront-text, #1a1a1a) 14%, transparent)",
-        backgroundColor: "color-mix(in srgb, var(--storefront-text, #1a1a1a) 6%, transparent)",
-        backdropFilter: "blur(8px)",
-        WebkitBackdropFilter: "blur(8px)",
+        backgroundColor: "color-mix(in srgb, var(--storefront-text, #1a1a1a) 8%, transparent)",
         color: "var(--storefront-text, #1a1a1a)",
       }}
     >
