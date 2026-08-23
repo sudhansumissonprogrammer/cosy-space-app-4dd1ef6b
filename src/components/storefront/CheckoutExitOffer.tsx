@@ -62,16 +62,16 @@ export default function CheckoutExitOffer({
 
   return (
     <div
-      className="fixed inset-0 z-[120] flex items-start justify-center px-4 pt-[max(12px,env(safe-area-inset-top))] bg-black/55 backdrop-blur-[2px] animate-in fade-in duration-150 overflow-y-auto overscroll-contain"
+      className="fixed inset-0 z-[120] flex items-start justify-center px-4 pt-[max(12px,env(safe-area-inset-top))] bg-black/45 backdrop-blur-md animate-in fade-in duration-150 overflow-y-auto overscroll-contain"
       role="dialog"
       aria-modal="true"
       aria-label="Before you leave"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-[330px] overflow-hidden rounded-2xl shadow-2xl animate-in slide-in-from-top-2 duration-150"
+        className="sfg sfg-panel sfg-strong relative w-full max-w-[330px] overflow-hidden animate-in slide-in-from-top-2 duration-150"
         style={{
-          background: "var(--storefront-bg, #ffffff)",
+          backgroundColor: "color-mix(in srgb, var(--storefront-bg, #ffffff) 84%, transparent)",
           color: "var(--storefront-text, inherit)",
           fontFamily: "var(--storefront-body-font, inherit)",
         }}
