@@ -17,7 +17,7 @@
 import { liquidGlass, liquidGlassSupported, type LiquidGlassHandle } from "@/lib/liquidGlass";
 import { sfGlassActive } from "@/lib/sfGlassRuntime";
 
-const MAX_LIVE = 10;
+const MAX_LIVE = 18;
 const MAX_SIDE = 900;
 
 const handles = new WeakMap<Element, LiquidGlassHandle>();
@@ -73,11 +73,15 @@ export function initSfGlassRefraction() {
 
   io = new IntersectionObserver(
     (entries) => {
-      for (const e of entries) {
-        const el = e.target as HTMLElement;
-        if (e.isIntersecting) attach(el);
-        else detach(el);
-      }
+      // Bars/sheets/panels earn the budget before decorative pills, so the
+      // cap never leaves a nav flat while ten wishlist chips refract.
+      const rank = (el: Element) =>
+        el.classList.contains("sfg-pill") || el.classList.contains("sfg-chip") ? 1 : 0;
+      for (const e of entries) if (!e.isIntersecting) detach(e.target as HTMLElement);
+      [...entries]
+        .filter((e) => e.isIntersecting)
+        .sort((a, b) => rank(a.target) - rank(b.target))
+        .forEach((e) => attach(e.target as HTMLElement));
     },
     { rootMargin: "120px" },
   );
