@@ -68,7 +68,7 @@ export default function StorefrontLayoutV11({ slugOverride }: { slugOverride?: s
         <>
           <ScrollProgressBar />
           <DesktopNavBar store={store} />
-          <div className="md:hidden"><MobileAppHeader store={store} /></div>
+          <div className="contents md:hidden"><MobileAppHeader store={store} /></div>
           <main className="pb-24 md:pb-0">
             <Suspense fallback={null}><Outlet context={store} /></Suspense>
           </main>

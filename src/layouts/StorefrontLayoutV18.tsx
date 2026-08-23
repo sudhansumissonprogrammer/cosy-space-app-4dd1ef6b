@@ -88,7 +88,7 @@ export default function StorefrontLayoutV18({ slugOverride }: { slugOverride?: s
       showWhatsApp={false}
       defaultPrimary="#ffffff"
       defaultButtonRadius="0"
-      wrapperClassName="storefront-font min-h-screen font-sans overflow-x-hidden"
+      wrapperClassName="storefront-font min-h-screen font-sans overflow-x-clip"
       wrapperStyle={{
         backgroundColor: "#0a0a0a",
         color: "#f5f5f5",

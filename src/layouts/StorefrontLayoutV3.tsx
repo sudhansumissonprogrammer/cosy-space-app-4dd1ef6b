@@ -58,13 +58,13 @@ export default function StorefrontLayoutV3({ slugOverride }: { slugOverride?: st
       defaultPrimary="#3B82F6"
       defaultButtonRadius="0.75rem"
       wrapperStyle={{ "--storefront-bottom-nav-height": "56px" } as React.CSSProperties}
-      wrapperClassName="storefront-font min-h-screen font-sans theme-v3-wa-fix overflow-x-hidden"
+      wrapperClassName="storefront-font min-h-screen font-sans theme-v3-wa-fix overflow-x-clip"
     >
       {({ store }) => (
         <>
           <ScrollProgressBar />
           <DesktopNavBar store={store} />
-          <div className="md:hidden"><MobileAppHeader store={store} /></div>
+          <div className="contents md:hidden"><MobileAppHeader store={store} /></div>
           <main className="pb-24 md:pb-0">
             <Suspense fallback={null}><Outlet context={store} /></Suspense>
           </main>
