@@ -193,19 +193,19 @@ html.sf-dark body [class*="storefront-font"] {
 html.sf-dark body .storefront-font,
 html.sf-dark body [class*="storefront-font"],
 html.sf-dark body [style*="--storefront-primary"] {
-  /* button / badge surface — inverted (white tile, black content) */
-  --storefront-primary: #ffffff !important;
-  --storefront-primary-light: #ededed !important;
-  --storefront-primary-foreground: #0a0a0a !important;
-  --storefront-btn-text: #0a0a0a !important;
-  --storefront-accent: #ffffff !important;
+  /* button / badge surface — dark tile, white content, white outline */
+  --storefront-primary: #0a0a0a !important;
+  --storefront-primary-light: #141414 !important;
+  --storefront-primary-foreground: #ffffff !important;
+  --storefront-btn-text: #ffffff !important;
+  --storefront-accent: #0a0a0a !important;
   --storefront-footer-text: #f2f2f2 !important;
   --storefront-nav-bg: #0a0a0a !important;
   --storefront-star-color: #ffc94d !important;
   --storefront-marquee-gradient: linear-gradient(90deg, #101010, #1c1c1c, #101010) !important;
   --storefront-marquee-text-color: #f2f2f2 !important;
-  --primary: 0 0% 100% !important;
-  --primary-foreground: 0 0% 6% !important;
+  --primary: 0 0% 6% !important;
+  --primary-foreground: 0 0% 100% !important;
 }
 
 /* ── Text painted with a merchant colour ──────────────────────
@@ -240,9 +240,9 @@ html.sf-dark svg[style*="color: var(--storefront-primary"],
 html.sf-dark svg[style*="color: var(--storefront-bg"] {
   color: #f2f2f2 !important;
 }
-/* Icons that sit on a CTA surface are black (white button) */
+/* Icons that sit on a CTA surface are white (dark button) */
 html.sf-dark svg[style*="color: var(--storefront-btn-text"] {
-  color: #0a0a0a !important;
+  color: #ffffff !important;
 }
 
 /* ── Inverted strips (bg = text colour) ───────────────────────
@@ -263,7 +263,7 @@ html.sf-dark [style*="background: var(--storefront-text"] * {
 }
 
 /* ══════════════════════════════════════════════════════════════
- * BUTTONS — every CTA is a WHITE tile with black content
+ * BUTTONS — every CTA is a BLACK tile with WHITE content + white outline
  * (Add to Cart, Buy Now, quantity steppers, chips, sticky bars…)
  * ══════════════════════════════════════════════════════════════ */
 html.sf-dark button[style*="background-color: var(--storefront-primary"],
@@ -285,10 +285,10 @@ html.sf-dark button.bg-gray-800,
 html.sf-dark button.bg-neutral-900,
 html.sf-dark button.bg-zinc-900,
 html.sf-dark button.bg-slate-900 {
-  background-color: #ffffff !important;
+  background-color: #0a0a0a !important;
   background-image: none !important;
-  color: #0a0a0a !important;
-  border: 1px solid rgba(255, 255, 255, 0.9) !important;
+  color: #ffffff !important;
+  border: 1px solid #ffffff !important;
 }
 
 /* Non-interactive surfaces that use the same classes stay dark. */
@@ -305,7 +305,7 @@ html.sf-dark .bg-slate-900:not(button):not(a):not([role="button"]) {
   color: #f2f2f2 !important;
 }
 
-/* Everything inside a white CTA is black — labels, prices, icons,
+/* Everything inside a dark CTA is white — labels, prices, icons,
    sub-captions that carry their own colour class. */
 html.sf-dark button[style*="background-color: var(--storefront-primary"] *,
 html.sf-dark a[style*="background-color: var(--storefront-primary"] *,
@@ -319,7 +319,7 @@ html.sf-dark button.bg-foreground *,
 html.sf-dark a.bg-foreground *,
 html.sf-dark button.bg-black *,
 html.sf-dark a.bg-black * {
-  color: #0a0a0a !important;
+  color: #ffffff !important;
   fill: none;
 }
 html.sf-dark button[style*="background-color: var(--storefront-primary"] svg,
@@ -331,7 +331,7 @@ html.sf-dark a.bg-primary svg,
 html.sf-dark button.bg-foreground svg,
 html.sf-dark button.bg-black svg,
 html.sf-dark a.bg-black svg {
-  color: #0a0a0a !important;
+  color: #ffffff !important;
   stroke: currentColor;
 }
 
