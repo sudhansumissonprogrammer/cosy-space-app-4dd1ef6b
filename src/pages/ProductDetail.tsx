@@ -1310,7 +1310,7 @@ export default function ProductDetail() {
               const saved = JSON.parse(localStorage.getItem(`express_checkout_${store.id}`) || "{}");
               if (saved.fullName && saved.phone && saved.streetAddress && saved.pincode) {
                 return (
-                  <div className="fixed bottom-0 left-0 right-0 z-50 sm:hidden bg-card/95 backdrop-blur-lg border-t border-border px-4 py-3 safe-area-bottom" style={{ fontFamily: "var(--storefront-body-font, inherit)" }}>
+                  <div className="sfg sfg-bar-bottom sfg-strong fixed bottom-0 left-0 right-0 z-50 sm:hidden px-4 py-3 safe-area-bottom" style={{ fontFamily: "var(--storefront-body-font, inherit)" }}>
                     <div className="flex items-center gap-3">
                       <div className="flex-1 min-w-0">
                         <p className="text-[11px] text-muted-foreground truncate">
