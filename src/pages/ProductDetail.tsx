@@ -1747,10 +1747,11 @@ function ImageGallery({
           {onShare && (
             <button
               onClick={(e) => { e.stopPropagation(); onShare(); }}
-              className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white shadow-lg transition-[transform,opacity,colors,box-shadow] hover:bg-black/70 active:scale-[0.96]"
+              className="absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/45 backdrop-blur-sm text-white shadow-md transition-[transform,opacity,colors,box-shadow] hover:bg-black/65 active:scale-[0.96]"
               aria-label="Share product"
             >
-              <Share2 className="h-4 w-4" />
+              <Share2 className="h-3.5 w-3.5" />
+
 
             </button>
           )}
