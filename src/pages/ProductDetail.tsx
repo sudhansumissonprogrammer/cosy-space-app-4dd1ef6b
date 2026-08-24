@@ -855,10 +855,21 @@ export default function ProductDetail() {
               <PdpTrustBadges badges={(mainThemeConfig as any).trust_badges} />
             )}
 
+          {/* Brand eyebrow (wristlife / hopknock) */}
+          {hasCustomPdpSections(store?.slug) && (
+            <p
+              className="mb-1.5 text-[11px] sm:text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground"
+              style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}
+            >
+              {(product as any)?.brand?.trim() || `${store.name} Collection`}
+            </p>
+          )}
+
           {/* Product Title — right under image */}
           <h1 className="text-xl font-semibold leading-snug sm:text-2xl lg:text-[1.7rem]" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif", ...(isV18 ? { color: "#ffffff", fontWeight: 400, letterSpacing: "0.01em" } : { color: undefined }) }}>
             {product.name}
           </h1>
+
 
           {/* Rating & Social Proof */}
           <div className="mt-2 flex items-center gap-2.5 flex-wrap">
