@@ -42,17 +42,23 @@ Deno.serve(async (req) => {
       return json({ error: "Server not configured" }, 500);
     }
 
-    // 1) Verify user JWT
-    const authHeader = req.headers.get("Authorization") || "";
-    const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
-    if (!bearer) return json({ error: "Unauthorized" }, 401);
+    // 1) Verify caller: user JWT, or internal cron secret (ops/automation).
+    const cronSecret = Deno.env.get("CRON_SECRET") || "";
+    const isCron = !!cronSecret && req.headers.get("x-cron-secret") === cronSecret;
 
-    const authClient = createClient(SUPABASE_URL, ANON_KEY, {
-      global: { headers: { Authorization: `Bearer ${bearer}` } },
-    });
-    const { data: claimsRes, error: claimsErr } = await authClient.auth.getClaims(bearer);
-    const userId = claimsRes?.claims?.sub;
-    if (claimsErr || !userId) return json({ error: "Unauthorized" }, 401);
+    let userId: string | undefined;
+    if (!isCron) {
+      const authHeader = req.headers.get("Authorization") || "";
+      const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+      if (!bearer) return json({ error: "Unauthorized" }, 401);
+
+      const authClient = createClient(SUPABASE_URL, ANON_KEY, {
+        global: { headers: { Authorization: `Bearer ${bearer}` } },
+      });
+      const { data: claimsRes, error: claimsErr } = await authClient.auth.getClaims(bearer);
+      userId = claimsRes?.claims?.sub;
+      if (claimsErr || !userId) return json({ error: "Unauthorized" }, 401);
+    }
 
     // 2) Parse + validate input
     const body = await req.json().catch(() => null);
