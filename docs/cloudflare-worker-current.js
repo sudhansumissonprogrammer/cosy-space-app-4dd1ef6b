@@ -225,7 +225,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.79.0-stale-shell-selfheal";
+const WORKER_VERSION = "8.80.0-font-swap-fast-cold-load";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -1294,11 +1294,11 @@ function buildThemeCssFromConfig(tc) {
 
 
 
-    // v8.39 — Google Fonts CSS uses display=block so non-self-hosted selected
-    // heading fonts do not flash as fallback on cold visits.
+    // v8.80 — Google Fonts CSS uses display=swap: fallback paints immediately,
+    // real face swaps in. display=block delayed first paint on cold 4G loads.
     if (remoteFonts.length > 0) {
       const families = remoteFonts.map((f) => `family=${f.replace(/ /g, "+")}:wght@400;600;700`).join("&");
-      const googleFontsHref = `https://fonts.googleapis.com/css2?${families}&display=block`;
+      const googleFontsHref = `https://fonts.googleapis.com/css2?${families}&display=swap`;
       css += `<link rel="preconnect" href="https://fonts.googleapis.com" />\n`;
       css += `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />\n`;
       css += `<link rel="preload" as="style" href="${googleFontsHref}" fetchpriority="high" data-sf-font="1" />\n`;
