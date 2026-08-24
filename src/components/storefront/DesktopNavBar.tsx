@@ -183,11 +183,11 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
                 <img
                   src={store.logo_url}
                   alt={store.name}
-                  className="h-14 w-auto max-w-[240px] object-contain origin-center"
-                  style={{ transform: "scale(2.2)" }}
+                  className="h-10 lg:h-12 w-auto max-w-[200px] object-contain origin-center"
                   loading="eager"
                   decoding="sync"
                 />
+
               ) : (
                 <StoreTextLogo storeName={store.name} size="text-xl" />
               )}
