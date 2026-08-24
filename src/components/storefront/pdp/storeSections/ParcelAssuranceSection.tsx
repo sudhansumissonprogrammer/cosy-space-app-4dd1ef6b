@@ -8,6 +8,14 @@ interface Props {
 
 const CALL_TIMING = "10 AM to 7 PM";
 
+/** True when current IST time is within 10:00–19:00. */
+function isWithinCallHoursIST(): boolean {
+  const now = new Date();
+  const istMinutes = (now.getTime() + 5.5 * 60 * 60 * 1000) / 60000;
+  const minsOfDay = Math.floor(istMinutes) % (24 * 60);
+  return minsOfDay >= 10 * 60 && minsOfDay < 19 * 60;
+}
+
 /**
  * "Before dispatch we send your parcel packaging on WhatsApp" trust block
  * plus three contact actions (Request Call / Call Now / WhatsApp Now).
@@ -19,6 +27,7 @@ export default function ParcelAssuranceSection({ product, store }: Props) {
   const [open, setOpen] = useState(false);
   const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
+  const [showTiming, setShowTiming] = useState(false);
 
   const raw = String(store?.whatsapp_number || "").replace(/[^0-9]/g, "");
   if (!raw) return null;
@@ -47,7 +56,7 @@ export default function ParcelAssuranceSection({ product, store }: Props) {
     "flex-1 min-w-[30%] inline-flex items-center justify-center gap-1.5 px-2.5 py-3 text-[11px] sm:text-xs font-bold uppercase tracking-wide border transition-colors";
 
   return (
-    <section className="mt-6">
+    <section>
       {/* Assurance strip */}
       <div
         className="flex items-start gap-3 rounded-sm border-l-4 p-3.5 sm:p-4"
@@ -85,6 +94,12 @@ export default function ParcelAssuranceSection({ product, store }: Props) {
         </button>
         <a
           href={`tel:${telPhone}`}
+          onClick={(e) => {
+            if (!isWithinCallHoursIST()) {
+              e.preventDefault();
+              setShowTiming(true);
+            }
+          }}
           className={btn}
           style={{
             borderColor: "var(--storefront-border, hsl(var(--border)))",
@@ -109,12 +124,25 @@ export default function ParcelAssuranceSection({ product, store }: Props) {
         </a>
       </div>
 
-      <p className="mt-3 text-xs sm:text-sm" style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }}>
-        Call timing: {CALL_TIMING}
-      </p>
-      <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
-        Our calling time is {CALL_TIMING}. You can request a call instead. Thank you.
-      </p>
+      {/* Shown only when someone taps Call Now outside calling hours */}
+      {showTiming && (
+        <div className="mt-3">
+          <p className="text-xs sm:text-sm font-semibold" style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }}>
+            Call timing: {CALL_TIMING}
+          </p>
+          <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
+            Our calling time is {CALL_TIMING}. You can request a call instead. Thank you.
+          </p>
+          <button
+            type="button"
+            onClick={() => { setShowTiming(false); setOpen(true); }}
+            className="mt-2 text-xs font-bold uppercase tracking-wide underline"
+            style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }}
+          >
+            Request a call back
+          </button>
+        </div>
+      )}
 
       {open && (
         <div

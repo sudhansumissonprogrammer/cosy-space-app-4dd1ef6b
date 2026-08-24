@@ -819,6 +819,14 @@ export default function ProductDetail() {
         {/* Product Info */}
         <div className="flex flex-col gap-0 px-4 sm:px-0 min-w-0">
 
+          {/* Store-scoped custom sections (wristlife/hopknock) — directly under product photo */}
+          {hasCustomPdpSections(store?.slug) && (
+            <Suspense fallback={null}>
+              <WristlifeSections slot="under-gallery" product={product} store={store} />
+            </Suspense>
+          )}
+
+
           {/* Trust badges carousel — above title (per-store, theme toggle) */}
           {(mainThemeConfig as any)?.show_trust_badges && Array.isArray((mainThemeConfig as any)?.trust_badges) && (mainThemeConfig as any).trust_badges.length > 0 && (
             <PdpTrustBadges badges={(mainThemeConfig as any).trust_badges} />
@@ -1190,14 +1198,8 @@ export default function ProductDetail() {
 
 
       <div className="px-4 sm:px-0">
-        {/* Store-scoped custom sections (wristlife only) — above reviews */}
-        {hasCustomPdpSections(store?.slug) && (
-          <DeferUntilVisible rootMargin="600px" minHeight={0}>
-            <Suspense fallback={null}>
-              <WristlifeSections slot="after-info" product={product} store={store} />
-            </Suspense>
-          </DeferUntilVisible>
-        )}
+
+
 
         {/* Customer Reviews — shown above "Complete the look" */}
         <DeferUntilVisible rootMargin="600px" minHeight={240}>
