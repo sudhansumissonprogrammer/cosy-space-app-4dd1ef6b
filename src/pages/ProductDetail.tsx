@@ -41,6 +41,7 @@ import { lazy, Suspense } from "react";
 import { fetchPdpEdge } from "@/lib/storefrontEdgeApi";
 import { pdpPrefetchCache } from "@/lib/prefetchProductDetail";
 import DeferUntilVisible from "@/components/storefront/DeferUntilVisible";
+import { hasCustomPdpSections } from "@/components/storefront/pdp/storeSections/config";
 import PartialPaymentTrustCard from "@/components/storefront/PartialPaymentTrustCard";
 import WarrantyBadge from "@/components/storefront/WarrantyBadge";
 import PdpTrustSeals from "@/components/storefront/PdpTrustSeals";
