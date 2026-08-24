@@ -510,3 +510,61 @@ html.sf-dark [data-sf-spin] .shadow-lg,
 html.sf-dark [data-sf-spin] .shadow-inner {
   box-shadow: 0 20px 45px -20px rgba(0, 0, 0, 0.55) !important;
 }
+
+/* ------------------------------------------------------------------
+   PDP trust blocks (quality-assurance grid + COD assurance strip).
+   They are painted with hardcoded cream/green brand colours, so the
+   token flip alone leaves them white-on-white in night mode.
+   ------------------------------------------------------------------ */
+html.sf-dark [data-sf-qa] .bg-\[\#FBF7EE\] {
+  background-color: #141414 !important;
+  --tw-ring-color: rgba(255, 255, 255, 0.12) !important;
+}
+html.sf-dark [data-sf-qa] .bg-white\/90 {
+  background-color: #1c1c1c !important;
+  --tw-ring-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: none !important;
+}
+html.sf-dark [data-sf-qa] .ring-\[\#E7DFC9\] {
+  --tw-ring-color: rgba(255, 255, 255, 0.12) !important;
+}
+html.sf-dark [data-sf-qa] .border-\[\#DED6C0\] {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+html.sf-dark [data-sf-qa] h3,
+html.sf-dark [data-sf-qa] .text-\[\#12372A\] {
+  color: #f2f2f2 !important;
+}
+html.sf-dark [data-sf-qa] p,
+html.sf-dark [data-sf-qa] .text-\[\#5D6B62\] {
+  color: #a8a8a8 !important;
+}
+html.sf-dark [data-sf-qa] .text-\[\#3E6B4F\] {
+  color: #e3c463 !important;
+}
+/* Icons are gold artwork on transparent — lift them slightly on black. */
+html.sf-dark [data-sf-qa] img {
+  filter: brightness(1.12);
+}
+/* The dark green trust strip already reads well; just soften the edge. */
+html.sf-dark [data-sf-qa] .text-white {
+  color: #ffffff !important;
+}
+
+/* Packaging selector: cards use tokens but the CTA-inversion rule would
+   turn the selected radio dot into a white tile — keep it accent-filled. */
+html.sf-dark [role="radiogroup"] [role="radio"] {
+  background-color: #141414 !important;
+  color: #f2f2f2 !important;
+}
+html.sf-dark [role="radiogroup"] [role="radio"] span,
+html.sf-dark [role="radiogroup"] [role="radio"] .text-foreground {
+  color: #f2f2f2 !important;
+}
+html.sf-dark [role="radiogroup"] [role="radio"] .text-muted-foreground {
+  color: #a8a8a8 !important;
+}
+html.sf-dark [role="radiogroup"] [role="radio"][aria-checked="true"] {
+  border-color: rgba(255, 255, 255, 0.55) !important;
+  background-color: #1c1c1c !important;
+}
