@@ -12,9 +12,10 @@
  */
 
 import ParcelAssuranceSection from "./ParcelAssuranceSection";
+import QualityAssuranceGrid from "./QualityAssuranceGrid";
 
 interface Props {
-  slot: "under-gallery" | "after-info" | "after-related";
+  slot: "under-gallery" | "under-price" | "after-info" | "after-related";
   product: any;
   store: any;
 }
@@ -27,6 +28,11 @@ export default function WristlifeSections({ slot, product, store }: Props) {
       </div>
     );
   }
+
+  if (slot === "under-price") {
+    return <QualityAssuranceGrid />;
+  }
+
 
   if (slot === "after-info") {
     return null;
