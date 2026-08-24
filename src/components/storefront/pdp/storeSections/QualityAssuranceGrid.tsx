@@ -29,8 +29,9 @@ const STRIP = [
 
 export default function QualityAssuranceGrid() {
   return (
-    <section className="mt-5">
+    <section className="mt-5 -mx-4 sm:mx-0">
       <div className="rounded-2xl bg-[#FBF7EE] p-2 sm:p-3">
+
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
           {ITEMS.map(({ icon, title, sub }) => (
             <div
