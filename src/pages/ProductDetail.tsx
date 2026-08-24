@@ -41,6 +41,7 @@ import { lazy, Suspense } from "react";
 import { fetchPdpEdge } from "@/lib/storefrontEdgeApi";
 import { pdpPrefetchCache } from "@/lib/prefetchProductDetail";
 import DeferUntilVisible from "@/components/storefront/DeferUntilVisible";
+import { hasCustomPdpSections } from "@/components/storefront/pdp/storeSections/config";
 import PartialPaymentTrustCard from "@/components/storefront/PartialPaymentTrustCard";
 import WarrantyBadge from "@/components/storefront/WarrantyBadge";
 import PdpTrustSeals from "@/components/storefront/PdpTrustSeals";
@@ -54,6 +55,7 @@ const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/
 const ReviewsShowcase = lazy(() => import("@/components/storefront/pdp/ReviewsShowcase"));
 import PdpReviewsBadge from "@/components/storefront/pdp/PdpReviewsBadge";
 const PdpCarousels = lazy(() => import("@/components/storefront/pdp/PdpCarousels"));
+const WristlifeSections = lazy(() => import("@/components/storefront/pdp/storeSections/WristlifeSections"));
 // A stale/partial chunk after a deploy can resolve to an undefined module
 // namespace — reading `m.VideoSlide` then throws and kills the whole PDP.
 // Retry once, and if it still fails render nothing instead of crashing.
@@ -1188,6 +1190,15 @@ export default function ProductDetail() {
 
 
       <div className="px-4 sm:px-0">
+        {/* Store-scoped custom sections (wristlife only) — above reviews */}
+        {hasCustomPdpSections(store?.slug) && (
+          <DeferUntilVisible rootMargin="600px" minHeight={0}>
+            <Suspense fallback={null}>
+              <WristlifeSections slot="after-info" product={product} store={store} />
+            </Suspense>
+          </DeferUntilVisible>
+        )}
+
         {/* Customer Reviews — shown above "Complete the look" */}
         <DeferUntilVisible rootMargin="600px" minHeight={240}>
           <Suspense fallback={null}>
@@ -1207,7 +1218,18 @@ export default function ProductDetail() {
             />
           </Suspense>
         </DeferUntilVisible>
+
+        {/* Store-scoped custom sections (wristlife only) — bottom of page */}
+        {hasCustomPdpSections(store?.slug) && (
+          <DeferUntilVisible rootMargin="600px" minHeight={0}>
+            <Suspense fallback={null}>
+              <WristlifeSections slot="after-related" product={product} store={store} />
+            </Suspense>
+          </DeferUntilVisible>
+        )}
       </div>
+
+
 
 
       {/* Portal: render fixed elements outside PageTransition animation container */}
