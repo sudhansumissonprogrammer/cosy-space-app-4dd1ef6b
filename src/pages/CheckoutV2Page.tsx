@@ -1902,13 +1902,22 @@ export default function CheckoutV2Page() {
       },
     });
     if (error) throw new Error(error.message);
-    const result = data as { order_id?: string; order_number?: string; error?: string; token_consumed?: boolean; already_paid?: boolean } | null;
+    const result = data as { order_id?: string; order_number?: string; error?: string; token_consumed?: boolean; token_stale?: boolean; already_paid?: boolean } | null;
+    // The token in localStorage points at an abandoned attempt from an earlier
+    // visit (>2h old, e.g. shopper came back the next day). Always rotate and
+    // retry so today's payment creates TODAY's order instead of reviving the
+    // old row with its old timestamp.
+    if (result?.token_stale && attempt === 0) {
+      rotateCheckoutToken();
+      return placeOrderRow(paymentMethodHint, paymentTypeOverride, 1, userInitiated);
+    }
     // Server backstop: this shopper already has a paid order from this session
     // and the request was an automatic re-mint. Do not surface an error, and do
     // not treat it as a new order — just stop.
     if (result?.already_paid && !userInitiated) {
       throw new Error("checkout_already_completed");
     }
+
     // The token this tab is holding already belongs to a PAID/confirmed order.
     // Two very different situations produce this:
     //  (a) the shopper genuinely started a SECOND checkout in the same tab
