@@ -542,10 +542,17 @@ html.sf-dark [data-sf-qa] .text-\[\#5D6B62\] {
 html.sf-dark [data-sf-qa] .text-\[\#3E6B4F\] {
   color: #e3c463 !important;
 }
-/* Icons are gold artwork on transparent — lift them slightly on black. */
+/* The six medallion icons are cut from cream artwork, so a pale square edge
+   shows once the card goes black. Clip them into a circular cream chip with a
+   gold hairline so the baked-in background reads as an intentional coin. */
 html.sf-dark [data-sf-qa] img {
-  filter: brightness(1.12);
+  background-color: #fbf7ee;
+  border-radius: 9999px;
+  box-shadow: 0 0 0 1px rgba(227, 196, 99, 0.45), 0 2px 8px rgba(0, 0, 0, 0.45);
+  object-fit: cover;
+  filter: saturate(1.05) contrast(1.02);
 }
+
 /* The dark green trust strip already reads well; just soften the edge. */
 html.sf-dark [data-sf-qa] .text-white {
   color: #ffffff !important;
