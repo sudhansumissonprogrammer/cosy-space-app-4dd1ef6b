@@ -11,12 +11,6 @@ const DEFAULT_IMAGES: Partial<Record<PackagingKey, string>> = {
   signature: signatureImg.url,
 };
 
-const ICONS: Record<PackagingKey, typeof Gift> = {
-  complimentary: Gift,
-  signature: Package,
-  brandkit: Sparkles,
-};
-
 interface Props {
   /** Unit price of the product BEFORE any packaging surcharge. */
   basePrice: number;
@@ -28,6 +22,8 @@ interface Props {
 }
 
 export default function PackagingSelector({ basePrice, currency, value, onChange, images }: Props) {
+  const [preview, setPreview] = useState<{ src: string; label: string } | null>(null);
+
   return (
     <div className="mt-5" role="radiogroup" aria-label="Choose packaging">
       <p className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -37,16 +33,21 @@ export default function PackagingSelector({ basePrice, currency, value, onChange
       <div className="space-y-2">
         {PACKAGING_OPTIONS.map((opt) => {
           const selected = value === opt.key;
-          const Icon = ICONS[opt.key];
           const img = images?.[opt.key] ?? DEFAULT_IMAGES[opt.key];
           return (
-            <button
+            <div
               key={opt.key}
-              type="button"
               role="radio"
+              tabIndex={0}
               aria-checked={selected}
               onClick={() => onChange(opt.key)}
-              className={`flex w-full items-center gap-3 rounded-xl border-2 p-2.5 text-left transition-all duration-200 active:scale-[0.99] ${
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onChange(opt.key);
+                }
+              }}
+              className={`flex w-full cursor-pointer items-center gap-3 rounded-xl border-2 p-2.5 text-left transition-all duration-200 active:scale-[0.99] ${
                 selected
                   ? "border-primary bg-primary/5 shadow-sm"
                   : "border-border bg-card hover:border-primary/40"
@@ -61,14 +62,31 @@ export default function PackagingSelector({ basePrice, currency, value, onChange
                 {selected && <Check className="h-3 w-3 text-primary-foreground" strokeWidth={3} />}
               </span>
 
-              {/* thumbnail */}
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted ring-1 ring-border">
-                {img ? (
+              {/* thumbnail (square, tap to zoom) */}
+              {img && (
+                <span
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`View ${opt.label} photo`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPreview({ src: img, label: opt.label });
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setPreview({ src: img, label: opt.label });
+                    }
+                  }}
+                  className="relative block h-12 w-12 shrink-0 overflow-hidden bg-muted ring-1 ring-border"
+                >
                   <img src={img} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
-                ) : (
-                  <Icon className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
-                )}
-              </span>
+                  <span className="absolute bottom-0 right-0 flex h-4 w-4 items-center justify-center bg-background/85">
+                    <Expand className="h-2.5 w-2.5 text-foreground" strokeWidth={2.5} />
+                  </span>
+                </span>
+              )}
 
               {/* label */}
               <span className="min-w-0 flex-1">
@@ -91,10 +109,34 @@ export default function PackagingSelector({ basePrice, currency, value, onChange
                   </span>
                 )}
               </span>
-            </button>
+            </div>
           );
         })}
       </div>
+
+      {/* lightbox */}
+      {preview && (
+        <div
+          className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setPreview(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label={preview.label}
+        >
+          <div className="relative max-h-full w-full max-w-md overflow-hidden bg-card" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => setPreview(null)}
+              aria-label="Close"
+              className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-background/90 text-foreground shadow"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <img src={preview.src} alt={preview.label} className="max-h-[70vh] w-full object-contain" />
+            <p className="px-3 py-2 text-sm font-bold text-foreground">{preview.label}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
