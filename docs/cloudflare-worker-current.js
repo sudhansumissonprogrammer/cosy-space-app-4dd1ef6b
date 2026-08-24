@@ -1258,20 +1258,19 @@ function buildThemeCssFromConfig(tc) {
     const localFonts = fonts.filter((f) => SELF_HOSTED[f]);
     const remoteFonts = fonts.filter((f) => !SELF_HOSTED[f]);
 
-    // Emit local @font-face for self-hosted families
-    // v8.76 — BOTH selected theme families (heading AND body) must actually
-    // render on a cold visit. Previously only the heading family got
-    // display:block while the body family stayed `optional`, so on a first
-    // (uncached) load the body font was silently dropped for that page load
-    // and only appeared after a refresh (font then in HTTP cache). Body now
-    // uses `swap` (paints fallback immediately, swaps the real face in) and
-    // is preloaded alongside the heading face. Families that are neither
-    // heading nor body stay `optional`.
+    // v8.80 — SPEED-SAFE font policy. Both selected theme families (heading
+    // AND body) must render on a cold visit, but neither may block paint.
+    //   * heading + body -> `swap` (paints instantly with fallback, real face
+    //     swaps in as soon as the preloaded woff2 lands — no invisible text,
+    //     no FCP/LCP delay). `block` was hiding text for up to 3s on slow 4G.
+    //   * every other family -> `optional` (zero cost, never blocks).
+    // Preload is limited to 400 + 700 of those two families (max 4 files) so
+    // font bytes never compete with the LCP hero image.
     if (localFonts.length > 0) {
       let faceCss = "<style data-sf-font-local>";
       for (const fam of localFonts) {
         const display =
-          fam === headingFont ? "block" : fam === bodyFont ? "swap" : "optional";
+          fam === headingFont || fam === bodyFont ? "swap" : "optional";
         for (const f of SELF_HOSTED[fam]) {
           faceCss += `@font-face{font-family:'${fam}';font-style:normal;font-weight:${f.weight};font-display:${display};src:url('${f.url}') format('woff2')}`;
         }
@@ -1279,14 +1278,12 @@ function buildThemeCssFromConfig(tc) {
       faceCss += "</style>\n";
       css += faceCss;
 
-      // v8.76 — Preload heading + body faces (regular/semibold/bold) so both
-      // selected families are ready before, or immediately after, first paint.
       const preloadFams = [...new Set([headingFont, bodyFont].filter((f) => f && SELF_HOSTED[f]))];
       const fams = preloadFams.length ? preloadFams : [localFonts[0]];
       const seen = new Set();
       for (const fam of fams) {
         if (!SELF_HOSTED[fam]) continue;
-        const picks = SELF_HOSTED[fam].filter((f) => f.weight === 400 || f.weight === 700 || f.weight === 600);
+        const picks = SELF_HOSTED[fam].filter((f) => f.weight === 400 || f.weight === 700);
         for (const f of (picks.length ? picks : [SELF_HOSTED[fam][0]])) {
           if (seen.has(f.url)) continue;
           seen.add(f.url);
@@ -1294,6 +1291,7 @@ function buildThemeCssFromConfig(tc) {
         }
       }
     }
+
 
 
     // v8.39 — Google Fonts CSS uses display=block so non-self-hosted selected
