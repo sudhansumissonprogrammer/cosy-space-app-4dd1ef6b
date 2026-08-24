@@ -1017,6 +1017,11 @@ export default function ProductDetail() {
           {/* Packaging upgrade (wristlife / hopknock) */}
           {showPackaging && !isOutOfStock && (
             <Suspense fallback={null}>
+              <CodAssuranceStrip />
+            </Suspense>
+          )}
+          {showPackaging && !isOutOfStock && (
+            <Suspense fallback={null}>
               <PackagingSelector
                 basePrice={variantPrice}
                 currency={currency}
