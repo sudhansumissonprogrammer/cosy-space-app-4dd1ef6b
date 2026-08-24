@@ -401,14 +401,19 @@ function ensureSelfHostedFontFaces(fonts: string[]) {
   const requestedFonts = fonts.map(normalizeGoogleFontName).filter((font) => SELF_HOSTED_FONT_FACES[font]);
   if (!requestedFonts.length) return;
 
+  // These families ARE the store's selected theme fonts, so they must always
+  // render — `optional` silently dropped them on the first (uncached) visit
+  // and they only appeared after a refresh. `swap` paints a fallback instantly
+  // and swaps the real face in as soon as it arrives.
   const css = [...new Set(requestedFonts)]
     .flatMap((family) =>
       SELF_HOSTED_FONT_FACES[family].map(
-        ({ weight, url, display = "optional" }) =>
-          `@font-face{font-family:'${family}';font-style:normal;font-weight:${weight};font-display:${display};src:url('${url}') format('woff2')}`
+        ({ weight, url }) =>
+          `@font-face{font-family:'${family}';font-style:normal;font-weight:${weight};font-display:swap;src:url('${url}') format('woff2')}`
       )
     )
     .join("");
+
 
   if (!css) return;
   let style = document.querySelector("style[data-sf-font-client]") as HTMLStyleElement | null;
