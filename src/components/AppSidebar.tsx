@@ -15,7 +15,6 @@ import { useMyStore } from "@/hooks/useMyStore";
 import { useAdminStoreView } from "@/hooks/useAdminStoreView";
 import { supabase } from "@/integrations/supabase/client";
 import { useMenuConfig } from "@/hooks/useMenuConfig";
-import { useFirstRechargeDone } from "@/hooks/useFirstRechargeDone";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
@@ -47,7 +46,6 @@ export function AppSidebar() {
   const store = routeNeedsAdminStore ? adminStore : ownStore;
 
   const storeId = store?.id;
-  const { hasRecharged } = useFirstRechargeDone(storeId);
   const storeSlug = store?.slug ?? (routeNeedsAdminStore ? routeStoreSlug : ownStore?.slug);
   const isWhatsAppOnly = false;
   const { isVisible, isComingSoon } = useMenuConfig();
@@ -124,7 +122,7 @@ export function AppSidebar() {
     ? [
         ...(!isWhatsAppOnly ? [{ title: "WhatsApp Marketing", url: `/dashboard/stores/${storeSlug}/whatsapp`, icon: MessageSquare, menuKey: "whatsapp_marketing" }] : []),
         { title: "Sales Funnel", url: `/dashboard/stores/${storeSlug}/funnel`, icon: TrendingDown, menuKey: "sales_funnel" },
-        { title: "Tracking & Analytics", url: `/dashboard/stores/${storeSlug}/tracking`, icon: hasRecharged ? BarChart3 : Lock, menuKey: "tracking_analytics" },
+        { title: "Tracking & Analytics", url: `/dashboard/stores/${storeSlug}/tracking`, icon: BarChart3, menuKey: "tracking_analytics" },
       ].filter((i) => isVisible(i.menuKey))
     : [];
 
