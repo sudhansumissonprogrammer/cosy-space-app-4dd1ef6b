@@ -32,3 +32,14 @@ export function hasCustomPdpSections(store?: StoreLike): boolean {
   if (store.id && PDP_CUSTOM_SECTION_STORE_IDS.has(store.id)) return true;
   return !!store.slug && PDP_CUSTOM_SECTION_STORES.has(store.slug);
 }
+
+/**
+ * These stores hide BOTH filter strips on a category page:
+ *  - the horizontal category quick-jump row above the grid, and
+ *  - the sort / filter bar under it.
+ * Gated by the same immutable store IDs so nothing renders (and no category
+ * query fires) for them — zero load cost, zero layout shift.
+ */
+export function hidesCategoryFilters(store?: StoreLike): boolean {
+  return hasCustomPdpSections(store);
+}

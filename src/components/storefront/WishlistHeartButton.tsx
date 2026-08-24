@@ -2,7 +2,7 @@ import { Heart } from "lucide-react";
 
 /**
  * One wishlist heart for every product card style.
- * Clean minimal glassmorphic chip + cross-fade heart (no fill toggling).
+ * Bare outline heart — no glass chip / backdrop (merchant request).
  */
 interface Props {
   wishlisted: boolean;
@@ -32,11 +32,10 @@ export default function WishlistHeartButton({
         e.stopPropagation();
         onClick(e);
       }}
-      className={`heart-burst ${bursting ? "bursting" : ""} rounded-full flex items-center justify-center transition-transform duration-200 active:scale-[0.92] ${className}`}
+      className={`heart-burst ${bursting ? "bursting" : ""} rounded-full flex items-center justify-center bg-transparent transition-transform duration-200 active:scale-[0.92] ${className}`}
       style={{
         height: size,
         width: size,
-        backgroundColor: "rgba(10,11,15,0.35)",
       }}
       aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
     >
