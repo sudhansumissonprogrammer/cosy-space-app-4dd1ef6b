@@ -409,6 +409,15 @@ export default function StoreOrders() {
       toast.error("This order is already paid online — it can't be cancelled. Refund at the payment gateway first.");
       return;
     }
+    // Reverse guard: confirming a prepaid order the gateway never captured makes
+    // an unpaid order look paid (it then ships for free). Ask first.
+    const isPrepaid = order.payment_method && order.payment_method !== "cod";
+    if ((v === "confirmed" || v === "partially_paid") && isPrepaid && !order.payment_verified) {
+      const ok = window.confirm(
+        "No online payment was captured for this order. Confirm it anyway only if you collected the money another way (UPI to you, COD agreed, etc.).",
+      );
+      if (!ok) return;
+    }
     updateWebStatus.mutate({ orderId: order.id, status: v });
   };
 
