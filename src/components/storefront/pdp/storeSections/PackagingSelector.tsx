@@ -37,7 +37,7 @@ export default function PackagingSelector({ basePrice, currency, value, onChange
         {PACKAGING_OPTIONS.map((opt) => {
           const selected = value === opt.key;
           const Icon = ICONS[opt.key];
-          const img = images?.[opt.key];
+          const img = images?.[opt.key] ?? DEFAULT_IMAGES[opt.key];
           return (
             <button
               key={opt.key}
