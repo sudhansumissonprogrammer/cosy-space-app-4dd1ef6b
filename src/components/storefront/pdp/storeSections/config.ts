@@ -6,7 +6,7 @@
  *
  * To enable for another store later, add its slug here.
  */
-export const PDP_CUSTOM_SECTION_STORES = new Set<string>(["wristlife"]);
+export const PDP_CUSTOM_SECTION_STORES = new Set<string>(["wristlife", "hopknock"]);
 
 export function hasCustomPdpSections(slug?: string | null): boolean {
   return !!slug && PDP_CUSTOM_SECTION_STORES.has(slug);
