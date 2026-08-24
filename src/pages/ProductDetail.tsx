@@ -1189,6 +1189,15 @@ export default function ProductDetail() {
 
 
       <div className="px-4 sm:px-0">
+        {/* Store-scoped custom sections (wristlife only) — above reviews */}
+        {hasCustomPdpSections(store?.slug) && (
+          <DeferUntilVisible rootMargin="600px" minHeight={0}>
+            <Suspense fallback={null}>
+              <WristlifeSections slot="after-info" product={product} store={store} />
+            </Suspense>
+          </DeferUntilVisible>
+        )}
+
         {/* Customer Reviews — shown above "Complete the look" */}
         <DeferUntilVisible rootMargin="600px" minHeight={240}>
           <Suspense fallback={null}>
@@ -1208,7 +1217,18 @@ export default function ProductDetail() {
             />
           </Suspense>
         </DeferUntilVisible>
+
+        {/* Store-scoped custom sections (wristlife only) — bottom of page */}
+        {hasCustomPdpSections(store?.slug) && (
+          <DeferUntilVisible rootMargin="600px" minHeight={0}>
+            <Suspense fallback={null}>
+              <WristlifeSections slot="after-related" product={product} store={store} />
+            </Suspense>
+          </DeferUntilVisible>
+        )}
       </div>
+
+
 
 
       {/* Portal: render fixed elements outside PageTransition animation container */}
