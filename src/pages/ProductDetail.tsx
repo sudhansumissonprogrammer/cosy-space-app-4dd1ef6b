@@ -44,6 +44,7 @@ import DeferUntilVisible from "@/components/storefront/DeferUntilVisible";
 import { hasCustomPdpSections } from "@/components/storefront/pdp/storeSections/config";
 import PartialPaymentTrustCard from "@/components/storefront/PartialPaymentTrustCard";
 const PackagingSelector = lazy(() => import("@/components/storefront/pdp/storeSections/PackagingSelector"));
+const CodAssuranceStrip = lazy(() => import("@/components/storefront/pdp/storeSections/CodAssuranceStrip"));
 import { DEFAULT_PACKAGING, packagingSurcharge, getPackagingOption, type PackagingKey } from "@/lib/packagingOptions";
 import WarrantyBadge from "@/components/storefront/WarrantyBadge";
 import PdpTrustSeals from "@/components/storefront/PdpTrustSeals";
@@ -1015,6 +1016,11 @@ export default function ProductDetail() {
           )}
 
           {/* Packaging upgrade (wristlife / hopknock) */}
+          {showPackaging && !isOutOfStock && (
+            <Suspense fallback={null}>
+              <CodAssuranceStrip />
+            </Suspense>
+          )}
           {showPackaging && !isOutOfStock && (
             <Suspense fallback={null}>
               <PackagingSelector
