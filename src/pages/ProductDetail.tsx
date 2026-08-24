@@ -43,6 +43,8 @@ import { pdpPrefetchCache } from "@/lib/prefetchProductDetail";
 import DeferUntilVisible from "@/components/storefront/DeferUntilVisible";
 import { hasCustomPdpSections } from "@/components/storefront/pdp/storeSections/config";
 import PartialPaymentTrustCard from "@/components/storefront/PartialPaymentTrustCard";
+const PackagingSelector = lazy(() => import("@/components/storefront/pdp/storeSections/PackagingSelector"));
+import { DEFAULT_PACKAGING, packagingSurcharge, getPackagingOption, type PackagingKey } from "@/lib/packagingOptions";
 import WarrantyBadge from "@/components/storefront/WarrantyBadge";
 import PdpTrustSeals from "@/components/storefront/PdpTrustSeals";
 import PdpTrustBadges from "@/components/storefront/PdpTrustBadges";
@@ -167,6 +169,7 @@ export default function ProductDetail() {
   const [cartBounce, setCartBounce] = useState(false);
   const [openAccordion, setOpenAccordion] = useState<string | null>("description");
   const [variantPromptOpen, setVariantPromptOpen] = useState(false);
+  const [packaging, setPackaging] = useState<PackagingKey>(DEFAULT_PACKAGING);
   const [stickyBarVisible, setStickyBarVisible] = useState(false);
   // buyNowModalOpen removed — phone capture is now Step 1 of CheckoutPage.
   const inlineCtaRef = useRef<HTMLDivElement>(null);
@@ -178,6 +181,7 @@ export default function ProductDetail() {
   useEffect(() => {
     setSelectedVariant(null);
     setQuantity(1);
+    setPackaging(DEFAULT_PACKAGING);
     setJustAdded(false);
     setCartBounce(false);
     setOpenAccordion("description");
@@ -652,6 +656,15 @@ export default function ProductDetail() {
   const currency = product.currency || "USD";
   const basePrice = hasDiscount ? product.sale_price! : product.price;
   const variantPrice = basePrice; // variants no longer override price
+  // Packaging add-on (store-scoped). Surcharge is re-derived server-side in
+  // `place-order`, so this is display + cart metadata only.
+  const showPackaging = hasCustomPdpSections(store?.slug);
+  const pkgOption = getPackagingOption(showPackaging ? packaging : DEFAULT_PACKAGING);
+  const pkgSurcharge = showPackaging ? packagingSurcharge(packaging) : 0;
+  const unitPrice = variantPrice + pkgSurcharge;
+  const packagingMeta = showPackaging && pkgSurcharge > 0
+    ? { kind: "packaging" as const, packaging: pkgOption.key, packaging_label: pkgOption.label, packaging_surcharge: pkgSurcharge }
+    : undefined;
   // Commission-only model: checkout is always enabled and direct WhatsApp
   // ordering is disabled to prevent commission bypass.
   const showWhatsApp = false;
@@ -675,9 +688,10 @@ export default function ProductDetail() {
       variantId: selectedVariant?.id,
       name: product.name,
       variantName: selectedVariant?.name,
-      price: variantPrice,
+      price: unitPrice,
       image: product.image_url || undefined,
       quantity,
+      meta: packagingMeta,
     }, { silent: true });
 
     // Fly-to-cart animation only — do not auto-open the SideCart.
@@ -705,7 +719,7 @@ export default function ProductDetail() {
       storeId: store.id,
       eventName: "buy_now_click",
       productId: product.id,
-      value: variantPrice,
+      value: unitPrice,
       currency: "INR",
       metadata: { quantity, variant_id: selectedVariant?.id || null },
     });
@@ -720,9 +734,10 @@ export default function ProductDetail() {
       variantId: selectedVariant?.id,
       name: product.name,
       variantName: selectedVariant?.name,
-      price: variantPrice,
+      price: unitPrice,
       image: product.image_url || undefined,
       quantity,
+      meta: packagingMeta,
     });
     closeCart();
 
@@ -743,6 +758,7 @@ export default function ProductDetail() {
     qs.set("product", product.id);
     if (selectedVariant?.id) qs.set("variant", selectedVariant.id);
     if (quantity > 1) qs.set("qty", String(quantity));
+    if (pkgSurcharge > 0) qs.set("pkg", pkgOption.key);
     navigate(storefrontPath(store.slug, `checkout?${qs.toString()}`));
   };
 
@@ -998,6 +1014,18 @@ export default function ProductDetail() {
             </div>
           )}
 
+          {/* Packaging upgrade (wristlife / hopknock) */}
+          {showPackaging && !isOutOfStock && (
+            <Suspense fallback={null}>
+              <PackagingSelector
+                basePrice={variantPrice}
+                currency={currency}
+                value={packaging}
+                onChange={setPackaging}
+              />
+            </Suspense>
+          )}
+
           {/* Quantity Selector */}
           {!isOutOfStock && (
             <div className="mt-5 flex items-center gap-3">
@@ -1118,7 +1146,7 @@ export default function ProductDetail() {
                     const phone = store.whatsapp_number!.replace(/[^0-9+]/g, "");
                     const variantInfo = selectedVariant ? ` (${selectedVariant.name})` : "";
                     const productUrl = `${window.location.origin}${window.location.pathname}`;
-                    const text = `Hi ${store.name}! 👋\n\nI want to buy *${product.name}${variantInfo}* x${quantity}\n\n💰 Price: ${formatPrice((variantPrice * quantity), currency)}\n\n🔗 ${productUrl}\n\nPlease share availability, delivery time & payment options.`;
+                    const text = `Hi ${store.name}! 👋\n\nI want to buy *${product.name}${variantInfo}* x${quantity}\n\n💰 Price: ${formatPrice((unitPrice * quantity), currency)}\n\n🔗 ${productUrl}\n\nPlease share availability, delivery time & payment options.`;
                     window.open(`https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(text)}`, "_blank");
                   }}
                 >
@@ -1279,7 +1307,7 @@ export default function ProductDetail() {
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-foreground truncate" style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}>{product.name}</p>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-extrabold text-foreground" style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}>{formatPrice((variantPrice * quantity), currency)}</span>
+                        <span className="text-sm font-extrabold text-foreground" style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}>{formatPrice((unitPrice * quantity), currency)}</span>
                         {hasDiscount && (
                           <span className="text-[10px] text-emerald-600 font-semibold">{discountPct}% OFF</span>
                         )}
@@ -1289,7 +1317,7 @@ export default function ProductDetail() {
                   {/* Mobile price */}
                   <div className="flex sm:hidden flex-col items-start shrink-0 min-w-0 leading-tight">
                     <p className="text-sm font-extrabold text-foreground whitespace-nowrap" style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}>
-                      {formatPrice((variantPrice * quantity), currency)}
+                      {formatPrice((unitPrice * quantity), currency)}
                     </p>
                     {hasDiscount && discountPct > 0 && (
                       <div className="flex items-center gap-1 -mt-0.5">
@@ -1359,7 +1387,7 @@ export default function ProductDetail() {
                           // Display-only: WhatsApp arrivals see the post-coupon
                           // price here too. Cart/order pricing is untouched —
                           // the real discount is applied by the coupon at checkout.
-                          const lineTotal = variantPrice * quantity;
+                          const lineTotal = unitPrice * quantity;
                           if (waPreview.active && lineTotal > waPreview.discount) {
                             return (
                               <p className="flex items-baseline gap-1.5">

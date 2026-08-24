@@ -63,6 +63,14 @@ function isBotUA(ua: string | null | undefined): boolean {
   return BOT_UA_RX.test(ua);
 }
 
+// PDP packaging add-ons (mirrors src/lib/packagingOptions.ts). Server is the
+// single source of truth for the surcharge amount.
+const PACKAGING_SURCHARGE: Record<string, number> = { complimentary: 0, signature: 300, brandkit: 600 };
+const PACKAGING_LABEL: Record<string, string> = {
+  signature: "Utkal Signature Box",
+  brandkit: "OG Brand Kit",
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -570,7 +578,17 @@ Deno.serve(async (req) => {
         });
       }
       const variantPrice = variant?.price != null ? Number(variant.price) : null;
-      const cp = variantPrice != null && variantPrice >= 0 ? variantPrice : canonicalPrice.get(item.productId)!;
+      let cp = variantPrice != null && variantPrice >= 0 ? variantPrice : canonicalPrice.get(item.productId)!;
+      // Packaging upgrade add-on: the client only sends the option key, the
+      // surcharge is re-derived here so the price can't be tampered with.
+      const pkgKey = String((item as any).meta?.packaging || "");
+      const pkgSurcharge = PACKAGING_SURCHARGE[pkgKey] ?? 0;
+      if (pkgSurcharge > 0) {
+        cp += pkgSurcharge;
+        (item as any).meta = { ...((item as any).meta || {}), packaging: pkgKey, packaging_surcharge: pkgSurcharge };
+        const label = PACKAGING_LABEL[pkgKey];
+        if (label && !String(item.name || "").includes(label)) item.name = `${item.name} + ${label}`;
+      }
       item.price = cp;
       item.quantity = qty;
       serverSubtotal += cp * qty;

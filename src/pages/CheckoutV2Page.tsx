@@ -16,6 +16,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseStorefront } from "@/integrations/supabase/storefrontClient";
 import { useCart } from "@/contexts/CartContext";
+import { getPackagingOption } from "@/lib/packagingOptions";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import { formatPrice } from "@/lib/productUtils";
 import { normalizePhone, isValidIndianPhone, toCanonicalIndianPhone } from "@/lib/phoneUtils";
@@ -343,6 +344,9 @@ export default function CheckoutV2Page() {
   const variantId = searchParams.get("variant");
   const isRecoveryRetry = searchParams.get("recover") === "order";
   const isSingleMode = !!productId;
+  // Packaging add-on carried over from the PDP buy-now link (?pkg=).
+  const pkgOption = getPackagingOption(searchParams.get("pkg"));
+  const pkgSurcharge = pkgOption.surcharge;
 
   // Anonymous shoppers have no direct SELECT grant on `products` /
   // `product_variants` (PostgREST returns 401). A cold buy-now checkout URL —
@@ -382,10 +386,12 @@ export default function CheckoutV2Page() {
         productId: buyNowProduct.id as string,
         variantId: (buyNowVariant?.id as string | undefined),
         name: buyNowVariant ? `${buyNowProduct.name} (${buyNowVariant.name})` : buyNowProduct.name,
-        price: (buyNowVariant?.price ?? (buyNowProduct.sale_price && buyNowProduct.sale_price < buyNowProduct.price ? buyNowProduct.sale_price : buyNowProduct.price)) as number,
+        price: ((buyNowVariant?.price ?? (buyNowProduct.sale_price && buyNowProduct.sale_price < buyNowProduct.price ? buyNowProduct.sale_price : buyNowProduct.price)) as number) + pkgSurcharge,
         quantity: buyNowQty,
         image: buyNowProduct.image_url as string | null,
-        meta: null as any,
+        meta: (pkgSurcharge > 0
+          ? { kind: "packaging", packaging: pkgOption.key, packaging_label: pkgOption.label, packaging_surcharge: pkgSurcharge }
+          : null) as any,
       }];
     }
     return cartItems.map((i) => ({
@@ -397,7 +403,7 @@ export default function CheckoutV2Page() {
       image: (i as any).image || null,
       meta: (i as any).meta || null,
     }));
-  }, [isSingleMode, buyNowProduct, buyNowVariant, buyNowQty, cartItems]);
+  }, [isSingleMode, buyNowProduct, buyNowVariant, buyNowQty, cartItems, pkgSurcharge, pkgOption.key, pkgOption.label]);
 
   // Stable fingerprint of WHAT is being bought. Used by the recent-order guard
   // so it only blocks a re-mint of the *same* basket, never a genuinely new
