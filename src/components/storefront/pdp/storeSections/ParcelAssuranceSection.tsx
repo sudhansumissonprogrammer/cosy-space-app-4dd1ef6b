@@ -53,7 +53,7 @@ export default function ParcelAssuranceSection({ product, store }: Props) {
   };
 
   const btn =
-    "flex-1 min-w-[30%] inline-flex items-center justify-center gap-1.5 px-2.5 py-3 text-[11px] sm:text-xs font-bold uppercase tracking-wide border transition-colors";
+    "flex-1 min-w-0 inline-flex items-center justify-center gap-1 px-1.5 py-2.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-wide border transition-colors whitespace-nowrap";
 
   return (
     <section>
@@ -78,8 +78,8 @@ export default function ParcelAssuranceSection({ product, store }: Props) {
         </p>
       </div>
 
-      {/* Actions */}
-      <div className="mt-3 flex flex-wrap gap-2">
+      {/* Actions — single row, never wrap */}
+      <div className="mt-3 flex flex-nowrap gap-2">
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -89,7 +89,7 @@ export default function ParcelAssuranceSection({ product, store }: Props) {
             color: "var(--storefront-text, hsl(var(--foreground)))",
           }}
         >
-          <PhoneCall className="h-3.5 w-3.5" aria-hidden="true" />
+          <PhoneCall className="h-3 w-3 shrink-0" aria-hidden="true" />
           Request Call
         </button>
         <a
@@ -106,7 +106,7 @@ export default function ParcelAssuranceSection({ product, store }: Props) {
             color: "var(--storefront-text, hsl(var(--foreground)))",
           }}
         >
-          <Phone className="h-3.5 w-3.5" aria-hidden="true" />
+          <Phone className="h-3 w-3 shrink-0" aria-hidden="true" />
           Call Now
         </a>
         <a
@@ -119,7 +119,7 @@ export default function ParcelAssuranceSection({ product, store }: Props) {
             color: "var(--storefront-text, hsl(var(--foreground)))",
           }}
         >
-          <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" />
+          <MessageCircle className="h-3 w-3 shrink-0" aria-hidden="true" />
           WhatsApp Now
         </a>
       </div>
