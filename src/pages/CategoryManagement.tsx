@@ -16,7 +16,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Upload, Loader2, FolderOpen, Image as ImageIcon, GripVertical, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, Loader2, FolderOpen, Image as ImageIcon, GripVertical, ArrowUp, ArrowDown, Eye, EyeOff } from "lucide-react";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -222,6 +222,26 @@ export default function CategoryManagement() {
     }
   };
 
+  /** Hide / unhide a whole category — its products disappear from the storefront
+   *  (listings, search, direct links) without being deleted. New products that
+   *  land in a hidden category (e.g. from catalog sync) are hidden automatically. */
+  const toggleHidden = useMutation({
+    mutationFn: async (cat: any) => {
+      const { error } = await (supabase as any)
+        .from("categories")
+        .update({ is_hidden: !cat.is_hidden })
+        .eq("id", cat.id);
+      if (error) throw error;
+      return !cat.is_hidden;
+    },
+    onSuccess: (nowHidden) => {
+      queryClient.invalidateQueries({ queryKey: ["categories", storeId] });
+      toast.success(nowHidden ? "Category hidden from store" : "Category visible again");
+      purgeStore({ shell: true, force: true });
+    },
+    onError: (err: any) => toast.error(err.message || "Failed to update visibility"),
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (catId: string) => {
       const { error } = await supabase.from("categories").delete().eq("id", catId);
@@ -277,11 +297,16 @@ export default function CategoryManagement() {
             <Card key={cat.id} className="group overflow-hidden cursor-pointer" onClick={() => setProductsDialogCat(cat.name)}>
               <div className="relative aspect-square bg-muted">
                 {cat.image_url ? (
-                  <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" />
+                  <img src={cat.image_url} alt={cat.name} className={`h-full w-full object-cover ${(cat as any).is_hidden ? "opacity-40 grayscale" : ""}`} />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center">
                     <ImageIcon className="h-10 w-10 text-muted-foreground/30" />
                   </div>
+                )}
+                {(cat as any).is_hidden && (
+                  <span className="absolute left-2 top-2 z-10 flex items-center gap-1 rounded-full bg-foreground/85 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-background">
+                    <EyeOff className="h-3 w-3" /> Hidden
+                  </span>
                 )}
                 <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 to-transparent opacity-0 transition-opacity group-hover:opacity-100">
                   <div className="flex w-full justify-between gap-1 p-2" onClick={(e) => e.stopPropagation()}>
@@ -339,6 +364,19 @@ export default function CategoryManagement() {
               </div>
               <CardContent className="p-3">
                 <p className="truncate text-sm font-medium text-foreground">{cat.name}</p>
+                <Button
+                  size="sm"
+                  variant={(cat as any).is_hidden ? "default" : "outline"}
+                  className="mt-2 h-8 w-full text-xs"
+                  disabled={toggleHidden.isPending}
+                  onClick={(e) => { e.stopPropagation(); toggleHidden.mutate(cat); }}
+                >
+                  {(cat as any).is_hidden ? (
+                    <><Eye className="mr-1.5 h-3.5 w-3.5" /> Show in store</>
+                  ) : (
+                    <><EyeOff className="mr-1.5 h-3.5 w-3.5" /> Hide from store</>
+                  )}
+                </Button>
               </CardContent>
             </Card>
           ))}

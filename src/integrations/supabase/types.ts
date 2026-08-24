@@ -176,6 +176,7 @@ export type Database = {
           display_order: number
           id: string
           image_url: string | null
+          is_hidden: boolean
           meta_description: string | null
           meta_title: string | null
           name: string
@@ -189,6 +190,7 @@ export type Database = {
           display_order?: number
           id?: string
           image_url?: string | null
+          is_hidden?: boolean
           meta_description?: string | null
           meta_title?: string | null
           name: string
@@ -202,6 +204,7 @@ export type Database = {
           display_order?: number
           id?: string
           image_url?: string | null
+          is_hidden?: boolean
           meta_description?: string | null
           meta_title?: string | null
           name?: string
@@ -2463,6 +2466,7 @@ export type Database = {
           description: string | null
           display_order: number
           has_variants: boolean
+          hidden_by_category: boolean
           id: string
           image_alt: string | null
           image_url: string | null
@@ -2500,6 +2504,7 @@ export type Database = {
           description?: string | null
           display_order?: number
           has_variants?: boolean
+          hidden_by_category?: boolean
           id?: string
           image_alt?: string | null
           image_url?: string | null
@@ -2537,6 +2542,7 @@ export type Database = {
           description?: string | null
           display_order?: number
           has_variants?: boolean
+          hidden_by_category?: boolean
           id?: string
           image_alt?: string | null
           image_url?: string | null
@@ -5364,6 +5370,10 @@ export type Database = {
         Returns: number
       }
       attribute_wa_recovery: { Args: never; Returns: number }
+      calc_hidden_by_category: {
+        Args: { _category: string; _product_id: string; _store_id: string }
+        Returns: boolean
+      }
       can_create_website_order: {
         Args: { _store_id: string }
         Returns: boolean
