@@ -136,7 +136,7 @@ export default function StoreOrders() {
         .select(
           // Slim list payload: only product names are shown in the list; full
           // line-items are fetched on demand when a detail/invoice view opens.
-          "id, order_number, created_at, status, total, currency, customer_name, customer_phone, payment_method, tracking_number, tracking_url, street_address, city, state, pincode, notes, storefront_customer_id, payment_type, advance_paid, balance_due, order_items(product_name, quantity)",
+          "id, order_number, created_at, status, total, currency, customer_name, customer_phone, payment_method, tracking_number, tracking_url, street_address, city, state, pincode, notes, storefront_customer_id, payment_type, advance_paid, balance_due, payment_verified, order_items(product_name, quantity)",
           { count: "estimated" }
 
         )
@@ -249,7 +249,11 @@ export default function StoreOrders() {
       if (ctx?.snapshots) {
         for (const [key, data] of ctx.snapshots) queryClient.setQueryData(key as any, data);
       }
-      toast.error(err.message);
+      toast.error(
+        /cannot_cancel_paid_order/.test(String(err?.message || ""))
+          ? "This order is already paid online — it can't be cancelled. Refund at the payment gateway first."
+          : err.message,
+      );
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["website-orders-all", storeId] });
@@ -376,6 +380,14 @@ export default function StoreOrders() {
       setTrackingNumber(order.tracking_number || "");
       setTrackingUrl(order.tracking_url || "");
       setPendingStatus(v);
+      return;
+    }
+    // Money guard: this dropdown sits inside the table row, so a single misclick
+    // used to cancel an order the shopper had already paid for online — the
+    // merchant then saw "Cancelled / ₹0 paid" on real money. The database now
+    // rejects that update; warn before we even try.
+    if (v === "cancelled" && order.payment_verified) {
+      toast.error("This order is already paid online — it can't be cancelled. Refund at the payment gateway first.");
       return;
     }
     updateWebStatus.mutate({ orderId: order.id, status: v });
