@@ -29,7 +29,7 @@ import { loadCashfree } from "@/lib/loadCashfree";
 import { getVisitorId, getOrCreateSessionId } from "@/lib/visitorSession";
 import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 import { pixelPayloadFromItems } from "@/lib/expandBundleForPixel";
-import { getOrCreateCheckoutToken, writeCheckoutTokenCookie, clearCheckoutTokenCookie } from "@/lib/checkoutTokenStore";
+import { getOrCreateCheckoutToken, mintCheckoutToken, writeCheckoutTokenCookie, clearCheckoutTokenCookie } from "@/lib/checkoutTokenStore";
 import { purchaseEventIdFor } from "@/lib/pixelOutbox";
 
 const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
@@ -214,6 +214,9 @@ function V22CheckoutPageInner() {
   // in-app-browser remount (UPI app hand-off) reuses the same token instead of
   // spawning a second pending order.
   const [checkoutToken] = useState(() => getOrCreateCheckoutToken());
+  // Mutable copy so a stale token (abandoned attempt from an earlier visit) can
+  // be rotated in place without remounting the page.
+  const checkoutTokenRef = useRef<string>(checkoutToken);
   useEffect(() => { writeCheckoutTokenCookie(checkoutToken); }, [checkoutToken]);
   // Payment retry state: store created order for retry
   const [pendingOrder, setPendingOrder] = useState<{ id: string; number: string | null; profit: number | null } | null>(null);
@@ -929,7 +932,7 @@ function V22CheckoutPageInner() {
     );
   }
 
-  const createOrder = async () => {
+  const createOrder = async (attempt = 0): Promise<{ id: string; number: string | null; profit: number | null }> => {
     const orderNotes = appliedCoupon
       ? `Coupon: ${appliedCoupon.code} (-${formatPrice(couponDiscount, currency)})`
       : undefined;
@@ -937,7 +940,7 @@ function V22CheckoutPageInner() {
     const { data, error } = await supabase.functions.invoke("place-order", {
       body: {
         store_id: store.id,
-        checkout_token: checkoutToken,
+        checkout_token: checkoutTokenRef.current,
         order: {
           total,
           currency,
@@ -1023,7 +1026,17 @@ function V22CheckoutPageInner() {
       throw new Error(error.message || "Failed to place order");
     }
 
-    const result = data as { order_id?: string; order_number?: string; profit?: number | null; error?: string } | null;
+    const result = data as { order_id?: string; order_number?: string; profit?: number | null; error?: string; token_stale?: boolean } | null;
+    // The stored token belongs to an abandoned attempt older than 2h (shopper
+    // returned on a later day). Rotate to a fresh key so the payment creates a
+    // NEW order dated today instead of reviving the old row.
+    if (result?.token_stale && attempt === 0) {
+      const fresh = mintCheckoutToken();
+      checkoutTokenRef.current = fresh;
+      purchaseEventIdRef.current = purchaseEventIdFor(fresh);
+      writeCheckoutTokenCookie(fresh);
+      return createOrder(1);
+    }
     if (!result?.order_id) {
       throw new Error(result?.error || "Failed to place order");
     }
