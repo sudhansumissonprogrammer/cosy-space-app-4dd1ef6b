@@ -827,10 +827,16 @@ export default function ProductDetail() {
           )}
 
 
-          {/* Trust badges carousel — above title (per-store, theme toggle) */}
-          {(mainThemeConfig as any)?.show_trust_badges && Array.isArray((mainThemeConfig as any)?.trust_badges) && (mainThemeConfig as any).trust_badges.length > 0 && (
-            <PdpTrustBadges badges={(mainThemeConfig as any).trust_badges} />
-          )}
+          {/* Trust badges carousel — above title (per-store, theme toggle).
+              Hidden on stores that already show the custom PDP sections
+              (wristlife/hopknock) so the pill row doesn't clash with the
+              new parcel-assurance / quality-assurance blocks. */}
+          {!hasCustomPdpSections(store?.slug) &&
+            (mainThemeConfig as any)?.show_trust_badges &&
+            Array.isArray((mainThemeConfig as any)?.trust_badges) &&
+            (mainThemeConfig as any).trust_badges.length > 0 && (
+              <PdpTrustBadges badges={(mainThemeConfig as any).trust_badges} />
+            )}
 
           {/* Product Title — right under image */}
           <h1 className="text-xl font-semibold leading-snug sm:text-2xl lg:text-[1.7rem]" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif", ...(isV18 ? { color: "#ffffff", fontWeight: 400, letterSpacing: "0.01em" } : { color: undefined }) }}>
