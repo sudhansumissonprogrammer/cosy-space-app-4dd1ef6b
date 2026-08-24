@@ -1,4 +1,5 @@
-import { Gift, Package, Sparkles, Check } from "lucide-react";
+import { useState } from "react";
+import { Check, Expand, X } from "lucide-react";
 import { PACKAGING_OPTIONS, type PackagingKey } from "@/lib/packagingOptions";
 import { formatPrice } from "@/lib/productUtils";
 import complimentaryImg from "@/assets/packaging/complimentary.webp.asset.json";
