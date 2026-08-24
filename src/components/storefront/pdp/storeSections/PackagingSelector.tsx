@@ -1,6 +1,14 @@
 import { Gift, Package, Sparkles, Check } from "lucide-react";
 import { PACKAGING_OPTIONS, type PackagingKey } from "@/lib/packagingOptions";
 import { formatPrice } from "@/lib/productUtils";
+import complimentaryImg from "@/assets/packaging/complimentary.webp.asset.json";
+import signatureImg from "@/assets/packaging/signature.webp.asset.json";
+
+/** Default photos shipped with the app (merchant `images` prop overrides these). */
+const DEFAULT_IMAGES: Partial<Record<PackagingKey, string>> = {
+  complimentary: complimentaryImg.url,
+  signature: signatureImg.url,
+};
 
 const ICONS: Record<PackagingKey, typeof Gift> = {
   complimentary: Gift,
