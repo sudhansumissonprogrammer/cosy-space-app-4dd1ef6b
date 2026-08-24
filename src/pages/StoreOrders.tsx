@@ -316,18 +316,37 @@ export default function StoreOrders() {
 
   const bulkUpdateStatus = useMutation({
     mutationFn: async ({ orderIds, status }: { orderIds: string[]; status: string }) => {
-      // Single atomic round-trip via `.in('id', ids)` — no partial-failure state.
-      const { error } = await (supabase as any)
-        .from("orders")
-        .update({ status })
-        .in("id", orderIds)
-        .eq("store_id", storeId!);
-      if (error) throw error;
+      // Never bulk-cancel orders that are already paid online — the DB rejects
+      // those rows, which would fail the whole batch. Skip them instead.
+      let ids = orderIds;
+      let skipped = 0;
+      if (status === "cancelled") {
+        const paid = new Set(
+          (allOrders || [])
+            .filter((o: any) => o?.payment_verified)
+            .map((o: any) => o.id as string),
+        );
+        ids = orderIds.filter((id) => !paid.has(id));
+        skipped = orderIds.length - ids.length;
+      }
+      if (ids.length) {
+        // Single atomic round-trip via `.in('id', ids)` — no partial-failure state.
+        const { error } = await (supabase as any)
+          .from("orders")
+          .update({ status })
+          .in("id", ids)
+          .eq("store_id", storeId!);
+        if (error) throw error;
+      }
+      return { updated: ids.length, skipped };
     },
-    onSuccess: (_, vars) => {
+    onSuccess: (res, vars) => {
       queryClient.invalidateQueries({ queryKey: ["website-orders-all", storeId] });
       queryClient.invalidateQueries({ queryKey: ["website-orders-count", storeId] });
-      toast.success(`${vars.orderIds.length} orders updated to ${vars.status}`);
+      toast.success(`${res.updated} orders updated to ${vars.status}`);
+      if (res.skipped > 0) {
+        toast.error(`${res.skipped} paid order(s) skipped — refund at the gateway before cancelling.`);
+      }
       setSelectedOrders(new Set());
       setBulkStatus("");
     },
