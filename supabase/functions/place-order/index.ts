@@ -1004,6 +1004,13 @@ Deno.serve(async (req) => {
           payment_verified_at: null,
           razorpay_order_id: null,
           meta_purchase_fired_at: null,
+          // A remint is a new payment attempt: stamp the order with the time it
+          // is actually being attempted. Without this, an attempt that starts
+          // just before midnight (or a reload minutes later) would keep the
+          // original timestamp and the paid order would land in the previous
+          // day's order list after the owner already packed that day.
+          created_at: new Date().toISOString(),
+
         })
         .eq("id", reusableOrder.id)
         .eq("store_id", store_id)
