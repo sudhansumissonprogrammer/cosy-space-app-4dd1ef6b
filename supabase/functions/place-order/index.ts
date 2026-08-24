@@ -342,7 +342,7 @@ Deno.serve(async (req) => {
     if (checkout_token) {
       const { data: existingOrder } = await supabase
         .from("orders")
-        .select("id, order_number, status, applied_coupon_id, payment_verified")
+        .select("id, order_number, status, applied_coupon_id, payment_verified, created_at")
         .eq("store_id", store_id)
         .eq("checkout_token", checkout_token)
         .maybeSingle();
@@ -352,6 +352,19 @@ Deno.serve(async (req) => {
         // then cancelled). Rewriting that row into a fresh pending attempt
         // would carry `payment_verified = true` onto an unpaid order.
         const reusableStatuses = new Set(["pending", "cancelled", "failed"]);
+        // AGE GUARD — checkout_token lives in localStorage, so a shopper who
+        // abandons today and returns tomorrow posts the SAME token. Rewriting
+        // that old row would keep yesterday's created_at and the paid order
+        // would silently appear in yesterday's list (already-packed day).
+        // Anything older than 2 hours is a different shopping visit: tell the
+        // client to rotate the token so a brand-new order is created today.
+        const createdMs = new Date(String((existingOrder as any).created_at || 0)).getTime();
+        const isStaleAttempt = Number.isFinite(createdMs) && Date.now() - createdMs > 2 * 60 * 60 * 1000;
+        if (reusableStatuses.has(String(existingOrder.status || "")) && !existingOrder.payment_verified && isStaleAttempt) {
+          return new Response(JSON.stringify({ success: true, token_stale: true }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
         if (reusableStatuses.has(String(existingOrder.status || "")) && !existingOrder.payment_verified) {
           reusableOrder = existingOrder as typeof reusableOrder;
         } else {
@@ -369,6 +382,7 @@ Deno.serve(async (req) => {
         }
       }
     }
+
 
     try {
       const phoneDigits = String(order?.customer_phone || "").replace(/\D/g, "").slice(-10);
@@ -990,6 +1004,13 @@ Deno.serve(async (req) => {
           payment_verified_at: null,
           razorpay_order_id: null,
           meta_purchase_fired_at: null,
+          // A remint is a new payment attempt: stamp the order with the time it
+          // is actually being attempted. Without this, an attempt that starts
+          // just before midnight (or a reload minutes later) would keep the
+          // original timestamp and the paid order would land in the previous
+          // day's order list after the owner already packed that day.
+          created_at: new Date().toISOString(),
+
         })
         .eq("id", reusableOrder.id)
         .eq("store_id", store_id)
