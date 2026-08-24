@@ -6,7 +6,8 @@ import { ShieldCheck, Droplets, Sparkles, CalendarCheck, PackageCheck, Camera, G
  * and a dark trust strip at the bottom.
  */
 
-const GOLD = "linear-gradient(145deg,#F3E3A6 0%,#D9B softly)";
+
+
 
 const ITEMS = [
   { Icon: ShieldCheck, title: "Premium Stainless Steel Build", sub: "High quality steel that's made to last" },
