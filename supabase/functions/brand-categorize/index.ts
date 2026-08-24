@@ -31,7 +31,7 @@ const corsHeaders = {
 };
 
 /** Stores that get automatic brand categorisation. */
-const DEFAULT_STORES = ["hopknock", "wristlife"];
+const DEFAULT_STORES = ["hopknock", "utkalwatch"];
 /** A brand/type bucket needs at least this many products to become a category. */
 const MIN_GROUP = 3;
 
