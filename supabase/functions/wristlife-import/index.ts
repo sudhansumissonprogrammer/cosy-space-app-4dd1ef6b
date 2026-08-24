@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
     );
 
     const body = await req.json().catch(() => ({}));
-    const storeSlug = body.store_slug || "wristlife";
+    const storeSlug = body.store_slug || "utkalwatch";
     const wipe = body.wipe !== false;
 
     const { data: store, error: storeErr } = await supabase

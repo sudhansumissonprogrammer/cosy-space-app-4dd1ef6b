@@ -42,17 +42,32 @@ Deno.serve(async (req) => {
       return json({ error: "Server not configured" }, 500);
     }
 
-    // 1) Verify user JWT
-    const authHeader = req.headers.get("Authorization") || "";
-    const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
-    if (!bearer) return json({ error: "Unauthorized" }, 401);
+    // 1) Verify caller: user JWT, or internal cron secret (ops/automation).
+    const adminEarly = createClient(SUPABASE_URL, SERVICE_ROLE);
+    const providedCron = req.headers.get("x-cron-secret") || "";
+    let isCron = false;
+    if (providedCron) {
+      if (providedCron === (Deno.env.get("CRON_SECRET") || "\u0000")) {
+        isCron = true;
+      } else {
+        const { data: row } = await adminEarly.from("cron_auth").select("secret").maybeSingle();
+        isCron = !!row?.secret && row.secret === providedCron;
+      }
+    }
 
-    const authClient = createClient(SUPABASE_URL, ANON_KEY, {
-      global: { headers: { Authorization: `Bearer ${bearer}` } },
-    });
-    const { data: claimsRes, error: claimsErr } = await authClient.auth.getClaims(bearer);
-    const userId = claimsRes?.claims?.sub;
-    if (claimsErr || !userId) return json({ error: "Unauthorized" }, 401);
+    let userId: string | undefined;
+    if (!isCron) {
+      const authHeader = req.headers.get("Authorization") || "";
+      const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+      if (!bearer) return json({ error: "Unauthorized" }, 401);
+
+      const authClient = createClient(SUPABASE_URL, ANON_KEY, {
+        global: { headers: { Authorization: `Bearer ${bearer}` } },
+      });
+      const { data: claimsRes, error: claimsErr } = await authClient.auth.getClaims(bearer);
+      userId = claimsRes?.claims?.sub;
+      if (claimsErr || !userId) return json({ error: "Unauthorized" }, 401);
+    }
 
     // 2) Parse + validate input
     const body = await req.json().catch(() => null);
@@ -75,8 +90,8 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (!store) return json({ error: "Store not found" }, 404);
 
-    let owns = store.owner_id === userId;
-    if (!owns) {
+    let owns = isCron || store.owner_id === userId;
+    if (!owns && userId) {
       const { data: adminRow } = await admin
         .from("user_roles")
         .select("role")

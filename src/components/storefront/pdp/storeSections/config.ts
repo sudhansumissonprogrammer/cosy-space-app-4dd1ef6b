@@ -11,12 +11,16 @@
 
 /** Immutable store UUIDs — the source of truth. */
 export const PDP_CUSTOM_SECTION_STORE_IDS = new Set<string>([
-  "ab19143d-87a9-490e-90b7-837313522782", // wristlife
+  "ab19143d-87a9-490e-90b7-837313522782", // utkalwatch (formerly wristlife)
   "d07b0784-4103-494e-b243-8fcbdf5fd473", // hopknock
 ]);
 
 /** Slugs kept as a fallback for paths where only the slug is known. */
-export const PDP_CUSTOM_SECTION_STORES = new Set<string>(["wristlife", "hopknock"]);
+export const PDP_CUSTOM_SECTION_STORES = new Set<string>([
+  "utkalwatch",
+  "wristlife", // legacy slug — kept so old cached HTML/links keep the sections
+  "hopknock",
+]);
 
 type StoreLike = { id?: string | null; slug?: string | null } | string | null | undefined;
 
