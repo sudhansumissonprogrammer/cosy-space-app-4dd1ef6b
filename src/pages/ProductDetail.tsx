@@ -913,6 +913,14 @@ export default function ProductDetail() {
             ))}
           </div>
 
+          {/* Store-scoped quality assurance grid (wristlife/hopknock) — under price */}
+          {hasCustomPdpSections(store?.slug) && (
+            <Suspense fallback={null}>
+              <WristlifeSections slot="under-price" product={product} store={store} />
+            </Suspense>
+          )}
+
+
 
 
 
