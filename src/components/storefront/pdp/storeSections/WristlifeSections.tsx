@@ -13,6 +13,8 @@
  *   "after-related" — bottom of the page, below the product carousels
  */
 
+import ParcelAssuranceSection from "./ParcelAssuranceSection";
+
 interface Props {
   slot: "after-info" | "after-related";
   product: any;
@@ -22,8 +24,8 @@ interface Props {
 export default function WristlifeSections({ slot, product, store }: Props) {
   if (slot === "after-info") {
     return (
-      <div className="mt-6 space-y-6">
-        {/* Sections you upload that belong near the product info go here. */}
+      <div className="space-y-6">
+        <ParcelAssuranceSection product={product} store={store} />
       </div>
     );
   }
