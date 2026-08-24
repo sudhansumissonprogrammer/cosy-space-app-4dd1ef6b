@@ -130,29 +130,39 @@ export default function PackagingSelector({ basePrice, currency, value, onChange
         })}
       </div>
 
-      {/* lightbox */}
-      {preview && (
-        <div
-          className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 p-4"
-          onClick={() => setPreview(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-label={preview.label}
-        >
-          <div className="relative max-h-full w-full max-w-md overflow-hidden bg-card" onClick={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              onClick={() => setPreview(null)}
-              aria-label="Close"
-              className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-background/90 text-foreground shadow"
+      {/* lightbox — portaled to <body> so it centers in the viewport on mobile */}
+      {preview &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[2147483000] flex items-center justify-center bg-black/85 p-4"
+            style={{ height: "100dvh" }}
+            onClick={() => setPreview(null)}
+            role="dialog"
+            aria-modal="true"
+            aria-label={preview.label}
+          >
+            <div
+              className="relative w-full max-w-md overflow-hidden bg-card"
+              onClick={(e) => e.stopPropagation()}
             >
-              <X className="h-4 w-4" />
-            </button>
-            <img src={preview.src} alt={preview.label} className="max-h-[70vh] w-full object-contain" />
-            <p className="px-3 py-2 text-sm font-bold text-foreground">{preview.label}</p>
-          </div>
-        </div>
-      )}
+              <button
+                type="button"
+                onClick={() => setPreview(null)}
+                aria-label="Close"
+                className="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-background/90 text-foreground shadow"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <img
+                src={preview.src}
+                alt={preview.label}
+                className="max-h-[72dvh] w-full object-contain"
+              />
+              <p className="px-3 py-2 text-sm font-bold text-foreground">{preview.label}</p>
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
