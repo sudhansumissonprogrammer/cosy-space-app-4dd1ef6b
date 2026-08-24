@@ -13,6 +13,7 @@
 
 import ParcelAssuranceSection from "./ParcelAssuranceSection";
 import QualityAssuranceGrid from "./QualityAssuranceGrid";
+import PdpFaqSection from "./PdpFaqSection";
 
 interface Props {
   slot: "under-gallery" | "under-price" | "after-info" | "after-related";
@@ -40,7 +41,7 @@ export default function WristlifeSections({ slot, product, store }: Props) {
 
   return (
     <div className="mt-8 space-y-8">
-      {/* Sections that belong at the bottom of the page go here. */}
+      <PdpFaqSection />
     </div>
   );
 }
