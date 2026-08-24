@@ -43,8 +43,17 @@ Deno.serve(async (req) => {
     }
 
     // 1) Verify caller: user JWT, or internal cron secret (ops/automation).
-    const cronSecret = Deno.env.get("CRON_SECRET") || "";
-    const isCron = !!cronSecret && req.headers.get("x-cron-secret") === cronSecret;
+    const adminEarly = createClient(SUPABASE_URL, SERVICE_ROLE);
+    const providedCron = req.headers.get("x-cron-secret") || "";
+    let isCron = false;
+    if (providedCron) {
+      if (providedCron === (Deno.env.get("CRON_SECRET") || "\u0000")) {
+        isCron = true;
+      } else {
+        const { data: row } = await adminEarly.from("cron_auth").select("secret").maybeSingle();
+        isCron = !!row?.secret && row.secret === providedCron;
+      }
+    }
 
     let userId: string | undefined;
     if (!isCron) {
