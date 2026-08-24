@@ -4,10 +4,27 @@
  * Only stores listed here load ANY of this code — the container is lazy +
  * deferred, so every other storefront pays exactly zero JS / paint cost.
  *
- * To enable for another store later, add its slug here.
+ * GATING IS BY STORE ID FIRST (immutable), slug second (legacy / convenience).
+ * A merchant renaming their store or changing its slug must NEVER lose the
+ * custom PDP sections, packaging add-ons, brand eyebrow, FAQ, etc.
  */
+
+/** Immutable store UUIDs — the source of truth. */
+export const PDP_CUSTOM_SECTION_STORE_IDS = new Set<string>([
+  "ab19143d-87a9-490e-90b7-837313522782", // wristlife
+  "d07b0784-4103-494e-b243-8fcbdf5fd473", // hopknock
+]);
+
+/** Slugs kept as a fallback for paths where only the slug is known. */
 export const PDP_CUSTOM_SECTION_STORES = new Set<string>(["wristlife", "hopknock"]);
 
-export function hasCustomPdpSections(slug?: string | null): boolean {
-  return !!slug && PDP_CUSTOM_SECTION_STORES.has(slug);
+type StoreLike = { id?: string | null; slug?: string | null } | string | null | undefined;
+
+export function hasCustomPdpSections(store?: StoreLike): boolean {
+  if (!store) return false;
+  if (typeof store === "string") {
+    return PDP_CUSTOM_SECTION_STORE_IDS.has(store) || PDP_CUSTOM_SECTION_STORES.has(store);
+  }
+  if (store.id && PDP_CUSTOM_SECTION_STORE_IDS.has(store.id)) return true;
+  return !!store.slug && PDP_CUSTOM_SECTION_STORES.has(store.slug);
 }
