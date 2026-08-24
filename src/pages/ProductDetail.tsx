@@ -659,7 +659,7 @@ export default function ProductDetail() {
   const variantPrice = basePrice; // variants no longer override price
   // Packaging add-on (store-scoped). Surcharge is re-derived server-side in
   // `place-order`, so this is display + cart metadata only.
-  const showPackaging = hasCustomPdpSections(store?.slug);
+  const showPackaging = hasCustomPdpSections(store);
   const pkgOption = getPackagingOption(showPackaging ? packaging : DEFAULT_PACKAGING);
   const pkgSurcharge = showPackaging ? packagingSurcharge(packaging) : 0;
   const unitPrice = variantPrice + pkgSurcharge;
@@ -837,7 +837,7 @@ export default function ProductDetail() {
         <div className="flex flex-col gap-0 px-4 sm:px-0 min-w-0">
 
           {/* Store-scoped custom sections (wristlife/hopknock) — directly under product photo */}
-          {hasCustomPdpSections(store?.slug) && (
+          {hasCustomPdpSections(store) && (
             <Suspense fallback={null}>
               <WristlifeSections slot="under-gallery" product={product} store={store} />
             </Suspense>
@@ -848,7 +848,7 @@ export default function ProductDetail() {
               Hidden on stores that already show the custom PDP sections
               (wristlife/hopknock) so the pill row doesn't clash with the
               new parcel-assurance / quality-assurance blocks. */}
-          {!hasCustomPdpSections(store?.slug) &&
+          {!hasCustomPdpSections(store) &&
             (mainThemeConfig as any)?.show_trust_badges &&
             Array.isArray((mainThemeConfig as any)?.trust_badges) &&
             (mainThemeConfig as any).trust_badges.length > 0 && (
@@ -856,7 +856,7 @@ export default function ProductDetail() {
             )}
 
           {/* Brand eyebrow (wristlife / hopknock) */}
-          {hasCustomPdpSections(store?.slug) && (
+          {hasCustomPdpSections(store) && (
             <p
               className="mb-1.5 text-[11px] sm:text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground"
               style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}
@@ -948,7 +948,7 @@ export default function ProductDetail() {
           </div>
 
           {/* Store-scoped quality assurance grid (wristlife/hopknock) — under price */}
-          {hasCustomPdpSections(store?.slug) && (
+          {hasCustomPdpSections(store) && (
             <Suspense fallback={null}>
               <WristlifeSections slot="under-price" product={product} store={store} />
             </Suspense>
@@ -1281,7 +1281,7 @@ export default function ProductDetail() {
         </DeferUntilVisible>
 
         {/* Store-scoped custom sections (wristlife only) — bottom of page */}
-        {hasCustomPdpSections(store?.slug) && (
+        {hasCustomPdpSections(store) && (
           <DeferUntilVisible rootMargin="600px" minHeight={0}>
             <Suspense fallback={null}>
               <WristlifeSections slot="after-related" product={product} store={store} />
