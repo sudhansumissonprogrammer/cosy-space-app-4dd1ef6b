@@ -81,8 +81,8 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (!store) return json({ error: "Store not found" }, 404);
 
-    let owns = store.owner_id === userId;
-    if (!owns) {
+    let owns = isCron || store.owner_id === userId;
+    if (!owns && userId) {
       const { data: adminRow } = await admin
         .from("user_roles")
         .select("role")
