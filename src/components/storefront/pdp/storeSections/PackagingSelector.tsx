@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Check, Expand, X } from "lucide-react";
 import { PACKAGING_OPTIONS, type PackagingKey } from "@/lib/packagingOptions";
 import { formatPrice } from "@/lib/productUtils";
