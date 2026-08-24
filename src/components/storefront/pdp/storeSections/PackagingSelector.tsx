@@ -25,6 +25,21 @@ interface Props {
 export default function PackagingSelector({ basePrice, currency, value, onChange, images }: Props) {
   const [preview, setPreview] = useState<{ src: string; label: string } | null>(null);
 
+  // Lock body scroll + close on Escape while the lightbox is open.
+  useEffect(() => {
+    if (!preview) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPreview(null);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [preview]);
+
   return (
     <div className="mt-5" role="radiogroup" aria-label="Choose packaging">
       <p className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
