@@ -24,8 +24,19 @@ export function isProductionHost(): boolean {
 
 export async function fetchPdpEdge(productSlug: string): Promise<any | null> {
   if (!isProductionHost()) return null;
+  // index.html fires this exact request at byte 0 for /product/* cold loads
+  // (see "PDP boot fetch"). Reuse that in-flight promise so the app does not
+  // pay a second round trip ~4s later, after the route chunk has booted.
+  try {
+    const w = window as any;
+    if (w.__PDP_BOOT__ && w.__PDP_BOOT_SLUG__ === productSlug) {
+      const booted = await w.__PDP_BOOT__;
+      if (booted?.product) return booted;
+    }
+  } catch { /* ignore */ }
   try {
     const url = `${window.location.origin}/api/pdp?slug=${encodeURIComponent(productSlug)}`;
+
     const res = await fetch(url, { headers: { Accept: "application/json" } });
     if (!res.ok) return null;
     const data = await res.json();
