@@ -106,5 +106,17 @@ export function useStorefrontThemeConfig(
   }
 
   const effective = (themeConfig ?? shellThemeConfig ?? stickyConfig ?? lsThemeConfig ?? edgeThemeConfig) as Record<string, any> | null | undefined;
+
+  // PERF: start fetching the selected product-card chunk the moment the theme
+  // is known (module-level import(), de-duped) so the first grid paint never
+  // waits on a lazy chunk + skeleton flash.
+  const cardStyle = effective?.product_card_style;
+  if (typeof window !== "undefined" && cardStyle) {
+    import("@/components/storefront/UniversalProductCard")
+      .then((m) => m.preloadCardStyle(cardStyle))
+      .catch(() => {});
+  }
+
   return (effective ?? null) as Record<string, any> | null;
+
 }
