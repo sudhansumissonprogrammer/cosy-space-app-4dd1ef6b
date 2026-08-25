@@ -16,6 +16,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
  * + serif + missing mobile nav" bug that appears mid-navigation.
  */
 const lastGoodThemeConfig = new Map<string, Record<string, any>>();
+const preloadedCardStyles = new Set<string>();
 
 function getEdgeThemeConfig(): Record<string, any> | undefined {
   if (typeof window === "undefined") return undefined;
