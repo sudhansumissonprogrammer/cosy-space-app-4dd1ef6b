@@ -220,7 +220,7 @@ function CategorySection({
       {isLoading ? (
         <div style={{ minHeight: 320 }} />
       ) : (
-        <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+        <div className={`grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 ${cardStyle === "style-6" ? "-mx-3 sm:mx-0 gap-x-1" : ""}`}>
           {displayProducts.map((product: any, idx: number) => (
             <UniversalProductCard key={product.id} product={product} slug={slug} store={store} priority={idx < 2} cardStyle={cardStyle} />
           ))}
