@@ -1889,7 +1889,10 @@ function ImageGallery({
                     {!loaded && <Skeleton className="absolute inset-0 z-[2] h-full w-full rounded-none" />}
                     <img
                       src={optimizedUrl}
+                      srcSet={gallerySrcSet || undefined}
+                      sizes={gallerySrcSet ? "(max-width: 640px) 100vw, 50vw" : undefined}
                       alt={productName}
+
                       className={`relative z-[1] h-full w-full object-cover transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`}
 
                       decoding="async"
