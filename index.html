@@ -1315,8 +1315,15 @@
         var K = 'sb_boot_heal';
         function attempts() { try { return parseInt(sessionStorage.getItem(K) || '0', 10) || 0; } catch (e) { return 99; } }
         var healing = false;
+        // Dev/preview sandboxes (Vite HMR on lovableproject.com) cold-start
+        // slowly and legitimately take >12s — the timeout heal there is a
+        // false positive that reloads a perfectly healthy page. Asset-404
+        // healing still applies everywhere.
+        var isDevPreview = /(^|\.)lovableproject\.com$/.test(location.hostname) || location.hostname === 'localhost';
         function heal(reason) {
           if (healing || window.__APP_BOOTED__) return;
+          if (reason === 'timeout' && isDevPreview) return;
+
           var n = attempts();
           if (n >= 2) return;
           healing = true;
