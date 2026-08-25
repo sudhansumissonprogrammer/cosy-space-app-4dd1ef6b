@@ -137,7 +137,12 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
         }}
         onPause={() => setVideoPlaying(false)}
         onEnded={() => setVideoPlaying(false)}
-        onError={() => {
+        onError={(event) => {
+          // Ignore the transient MEDIA_ERR_ABORTED emitted when React/browser
+          // replaces an in-flight media request during carousel activation.
+          // Treating it as a permanent failure removed the player immediately
+          // after a successful 206 response, leaving only the poster visible.
+          if (event.currentTarget.error?.code === MediaError.MEDIA_ERR_ABORTED) return;
           setVideoPlaying(false);
           setFailed(true);
         }}
