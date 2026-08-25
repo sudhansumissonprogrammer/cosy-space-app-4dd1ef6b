@@ -302,7 +302,29 @@ export default defineConfig(({ mode }) => ({
             return "forms";
           }
 
+          // === PDP critical path (v8.82) ===
+          // The product route chunk used to spawn 4-5 extra micro-chunk
+          // requests AFTER it parsed (PackagingSelector, CodAssuranceStrip,
+          // VideoSlide, pdpPreload, productSelectors) — each an extra serial
+          // round trip before the hero gallery could paint on cold mobile.
+          // Fold them into ONE `pdp-core` chunk with the route itself.
+          // Below-fold sections (Reviews, FBT, Carousels, WristlifeSections)
+          // stay lazy on purpose — they are deliberately deferred.
+          if (
+            id.includes("/src/pages/ProductDetail.tsx") ||
+            id.includes("/src/components/storefront/VideoSlide") ||
+            id.includes("/src/components/storefront/pdp/storeSections/PackagingSelector") ||
+            id.includes("/src/components/storefront/pdp/storeSections/CodAssuranceStrip") ||
+            id.includes("/src/components/storefront/pdp/storeSections/config") ||
+            id.includes("/src/lib/pdpPreload") ||
+            id.includes("/src/lib/packagingOptions") ||
+            id.includes("/src/lib/productSelectors")
+          ) {
+            return "pdp-core";
+          }
+
           // === App-level shared infra (v8) ===
+
           // Group tiny shared modules that show up on EVERY storefront page
           // into one stable chunk. v8 expands the set to absorb more micro-
           // chunks (imageOptimize, productUtils, useMetaTags, useJsonLd,
