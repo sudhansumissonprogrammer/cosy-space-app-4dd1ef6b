@@ -4339,11 +4339,26 @@ async function serveStreamedHtml(
           }
         } catch {}
       }
+      /* v8.82.0 — On /product/* the homepage carousel images are the WRONG
+         LCP source. Preload the PDP's own hero (+ first gallery frame) so the
+         preload scanner starts it at byte 0 instead of ~6.6s. */
+      if (pdpCategoryInline?.kind === "product" && pdpCategoryInline?.json) {
+        try {
+          const _pp = JSON.parse(pdpCategoryInline.json);
+          const heroList = [];
+          if (_pp?.product?.image_url) heroList.push({ image_url: _pp.product.image_url });
+          if (Array.isArray(_pp?.images)) {
+            for (const im of _pp.images.slice(0, 2)) if (im?.image_url) heroList.push({ image_url: im.image_url });
+          }
+          if (heroList.length) categoryProductsJsonForPreload = JSON.stringify(heroList);
+        } catch {}
+      }
       const productImagePreloads = categoryProductsJsonForPreload
         ? _buildProductImagePreloads(categoryProductsJsonForPreload, 2)
         : inlineProducts
           ? _buildProductImagePreloads(inlineProducts, 2)
           : _buildImagePreloadsFromUrls(topImages, 2);
+
 
 
       let perRouteSeoHead = "";
