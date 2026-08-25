@@ -41,6 +41,11 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
 
   // Find the image container of whichever card style rendered. Lazy card
   // styles arrive behind Suspense, so keep watching until the <img> exists.
+  //
+  // PERF: every measurement below (getBoundingClientRect / getComputedStyle)
+  // forces layout. On a 60-card grid that used to run on mount for every card,
+  // which is exactly what makes scrolling stutter. So we (a) wait until the
+  // card is near the viewport, and (b) batch the reads into a rAF.
   useEffect(() => {
     if (!eligible) return;
     const host = hostRef.current;
@@ -48,7 +53,9 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
 
     let done = false;
     let retryTimer: number | undefined;
-    const attach = () => {
+    let rafId = 0;
+
+    const measure = () => {
       if (done) return true;
       const preferredStage = host.querySelector<HTMLElement>("[class*='card-img-zoom']");
       // Some themes render a badge <img> before the product photo — pick the
@@ -77,22 +84,58 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
       return true;
     };
 
-    if (attach()) return;
-    const mo = new MutationObserver(() => {
-      if (attach()) mo.disconnect();
-    });
-    mo.observe(host, { childList: true, subtree: true });
-    const retry = () => {
-      if (done || attach()) return;
-      retryTimer = window.setTimeout(retry, 200);
+    // Reads always happen off the current task, inside an animation frame.
+    const attach = () => {
+      if (done || rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        if (done) return;
+        if (!measure()) {
+          retryTimer = window.setTimeout(attach, 250);
+        }
+      });
     };
-    retryTimer = window.setTimeout(retry, 100);
+
+    // Only start once the card is within a screen of the viewport.
+    let io: IntersectionObserver | null = null;
+    let mo: MutationObserver | null = null;
+    const begin = () => {
+      attach();
+      mo = new MutationObserver(() => {
+        if (done) {
+          mo?.disconnect();
+          return;
+        }
+        attach();
+      });
+      mo.observe(host, { childList: true, subtree: true });
+    };
+
+    if (typeof IntersectionObserver !== "undefined") {
+      io = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((e) => e.isIntersecting)) {
+            io?.disconnect();
+            io = null;
+            begin();
+          }
+        },
+        { rootMargin: "300px 0px" },
+      );
+      io.observe(host);
+    } else {
+      begin();
+    }
+
     return () => {
       done = true;
-      mo.disconnect();
+      io?.disconnect();
+      mo?.disconnect();
+      if (rafId) cancelAnimationFrame(rafId);
       if (retryTimer !== undefined) window.clearTimeout(retryTimer);
     };
   }, [eligible, hostRef]);
+
 
   const stop = useCallback(() => {
     const video = ref.current;
