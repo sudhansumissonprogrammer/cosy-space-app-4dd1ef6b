@@ -9,13 +9,15 @@ export function useStoreSourceConfig(storeId?: string) {
     enabled: !!storeId,
     staleTime: 10 * 60 * 1000,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("stores")
-        .select("source_platform, source_base_url")
-        .eq("id", storeId!)
-        .maybeSingle();
+      // `stores` is not readable through the Data API for merchants (no table
+      // grant — everything goes through RPCs), so use the ownership-checked
+      // security-definer function instead of a direct select.
+      const { data, error } = await (supabase as any).rpc("get_store_source_config", {
+        p_store_id: storeId!,
+      });
       if (error) throw error;
-      return (data || null) as { source_platform: string | null; source_base_url: string | null } | null;
+      const row = Array.isArray(data) ? data[0] : data;
+      return (row || null) as { source_platform: string | null; source_base_url: string | null } | null;
     },
   });
 }
