@@ -12,25 +12,48 @@ interface StorefrontFooterProps {
   store: StoreData;
 }
 
-function PaymentIcons({ store }: { store: StoreData }) {
-  // Read actual configured methods so we never show payment logos that don't work at checkout.
-  const { data: cfg } = useQuery({
-    queryKey: ["store-payment-config-footer", store.id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("store_payment_config")
-        .select("payment_methods")
-        .eq("store_id", store.id)
-        .maybeSingle();
-      return data as { payment_methods?: string[] | null } | null;
-    },
+/**
+ * Footer store info (public email + configured payment methods) in ONE
+ * request instead of two, and only after the browser goes idle — the footer
+ * is always below the fold, so these must never compete with the LCP image.
+ */
+function useFooterInfo(storeId?: string) {
+  const [idle, setIdle] = useState(false);
+  useEffect(() => {
+    const ric = (window as any).requestIdleCallback as
+      | ((cb: () => void, opts?: { timeout: number }) => number)
+      | undefined;
+    const run = () => setIdle(true);
+    const handle = ric ? ric(run, { timeout: 3000 }) : window.setTimeout(run, 1800);
+    return () => {
+      if (ric && typeof handle === "number") (window as any).cancelIdleCallback?.(handle);
+      else window.clearTimeout(handle as number);
+    };
+  }, []);
+
+  return useQuery({
+    queryKey: ["store-footer-info", storeId],
+    enabled: !!storeId && idle,
     staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    queryFn: async () => {
+      const { data } = await (supabase as any).rpc("get_store_footer_info", { _store_id: storeId });
+      const payload = (Array.isArray(data) ? data[0] : data) || {};
+      return {
+        publicEmail: ((payload.public_email as string) || "").trim(),
+        paymentMethods: (payload.payment_methods || []) as string[],
+      };
+    },
   });
-  const methods = new Set((cfg?.payment_methods || []).map((m) => String(m).toLowerCase()));
+}
+
+function PaymentIcons({ methods: list }: { methods: string[] }) {
+  const methods = new Set((list || []).map((m) => String(m).toLowerCase()));
   const hasCard = methods.has("razorpay") || methods.has("cashfree") || methods.has("payu");
   const hasUpi = hasCard || methods.has("upi");
   const hasCod = methods.has("cod");
   if (!hasCard && !hasUpi && !hasCod) return null;
+
 
   return (
     <div className="flex items-center gap-3 flex-wrap">
