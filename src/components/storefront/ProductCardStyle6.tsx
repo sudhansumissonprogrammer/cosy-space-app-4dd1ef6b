@@ -139,9 +139,11 @@ function ProductCardStyle6Impl({ product, slug, store, priority = false, onVaria
             style={{
               height: 26,
               width: 26,
-              backgroundColor: "color-mix(in srgb, var(--storefront-bg, #fff) 78%, transparent)",
-              backdropFilter: "blur(8px)",
-              WebkitBackdropFilter: "blur(8px)",
+              // Solid (not translucent+blur): backdrop-filter forces a
+              // re-rasterize of everything behind the chip on every scroll
+              // frame. Visually identical here, far cheaper.
+              backgroundColor: "color-mix(in srgb, var(--storefront-bg, #fff) 94%, var(--storefront-text, #000))",
+
               border: "1px solid color-mix(in srgb, var(--storefront-text, #000) 8%, transparent)",
               boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
               color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 70%, transparent)",
