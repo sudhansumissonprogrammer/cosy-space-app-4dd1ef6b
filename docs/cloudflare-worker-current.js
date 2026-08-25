@@ -6261,18 +6261,25 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
     if (explicitDomain) domainStoreIdCache.delete(explicitDomain);
   }
 
+  const _prevShellKeys = shellKeysForEpoch(_memShellEpoch || "0");
   const purgeOps = [
     cache.delete(new Request("https://cache/spa-shell")).catch(() => {}),
+    cache.delete(_prevShellKeys.cacheKey).catch(() => {}),
     cache.delete(new Request("https://cache/prebuilt-head")).catch(() => {}),
+    // v8.84.0: global epoch bump — see invalidateShellCaches().
+    bumpShellEpoch(env),
   ];
 
   // v8.1.0: clear write-dedup so the next save can re-write KV
   _kvWriteRecent.delete(SPA_SHELL_KV_KEY);
+  _kvWriteRecent.delete(_prevShellKeys.kvKey);
   _kvWriteRecent.delete(PREBUILT_HEAD_KV_KEY);
   if (env?.STORE_KV) {
     purgeOps.push(kvDeleteForce(env, SPA_SHELL_KV_KEY));
+    purgeOps.push(kvDeleteForce(env, _prevShellKeys.kvKey));
     purgeOps.push(kvDeleteForce(env, PREBUILT_HEAD_KV_KEY));
   }
+
 
   if (purgeSlug) {
     _kvWriteRecent.delete(`storefront:${purgeSlug}`);
