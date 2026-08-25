@@ -1984,6 +1984,60 @@ const SPA_SHELL_KV_KEY = "spa-shell:v1";
 const SPA_SHELL_KV_TTL = 3600;
 const SPA_SHELL_CACHE_TTL = 60; // v8.7.0: short safety net only; human navigations use fresh origin shell.
 
+/* --- v8.84.0: GLOBAL shell epoch ------------------------------------------
+   invalidateShellCaches() used to delete the Cache API entry of ONLY the
+   isolate handling the request. KV deletes are global, but every OTHER colo
+   kept serving its own local Cache API copy of the stale shell until TTL.
+   Real-world symptom (2026-08-25, serdiya.com): POSTing /api/shell-broken
+   repeatedly healed one colo at a time — the same host alternated between a
+   dead build hash and the live one depending on which colo answered.
+
+   Fix: a monotonic epoch stored in KV is folded into BOTH the Cache API key
+   and the KV key. Bumping it orphans every colo's copy at once. The epoch is
+   memoised for 20s so the hot path costs no extra KV read. */
+const SHELL_EPOCH_KV_KEY = "spa-shell-epoch";
+const SHELL_EPOCH_MEM_TTL = 20_000;
+let _memShellEpoch = null;
+let _memShellEpochTs = 0;
+let _memShellEpochUsed = null;
+
+async function getShellEpoch(env) {
+  const now = Date.now();
+  if (_memShellEpoch !== null && now < _memShellEpochTs) return _memShellEpoch;
+  let epoch = "0";
+  if (env?.STORE_KV) {
+    try {
+      epoch = (await env.STORE_KV.get(SHELL_EPOCH_KV_KEY)) || "0";
+    } catch {}
+  }
+  _memShellEpoch = epoch;
+  _memShellEpochTs = now + SHELL_EPOCH_MEM_TTL;
+  return epoch;
+}
+
+function shellKeysForEpoch(epoch) {
+  const suffix = epoch && epoch !== "0" ? `:${epoch}` : "";
+  return {
+    cacheKey: new Request(`https://cache/spa-shell${suffix}`),
+    kvKey: `${SPA_SHELL_KV_KEY}${suffix}`,
+  };
+}
+
+// Bump the epoch globally. Every colo picks it up within SHELL_EPOCH_MEM_TTL
+// and immediately misses its stale local copy.
+async function bumpShellEpoch(env) {
+  const next = String(Date.now());
+  _memShellEpoch = next;
+  _memShellEpochTs = Date.now() + SHELL_EPOCH_MEM_TTL;
+  _memShellEpochUsed = null;
+  if (!env?.STORE_KV) return next;
+  try {
+    await env.STORE_KV.put(SHELL_EPOCH_KV_KEY, next, { expirationTtl: 86400 * 30 });
+  } catch {}
+  return next;
+}
+
+
 function setNoStoreHtmlHeaders(headers) {
   // v8.24.0: was `public, max-age=0, must-revalidate, swr=300` which CF
   // refuses to edge-cache (cf-cache-status stuck at MISS forever).
