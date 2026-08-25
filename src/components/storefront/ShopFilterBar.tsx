@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
 import { ArrowDownAZ, ArrowUpAZ, IndianRupee, BadgePercent, PackageCheck, Filter, Clock } from "lucide-react";
+
 
 export type SortKey = "default" | "recent" | "price-asc" | "price-desc" | "discount" | "in-stock";
 
@@ -23,21 +23,18 @@ const PILLS: { key: SortKey; label: string; icon: any }[] = [
   { key: "in-stock", label: "In Stock", icon: PackageCheck },
 ];
 
-/** Sticky filter/sort pill bar with result count. Zero new network calls. */
-export default function ShopFilterBar({ total, showing, sort, onSortChange, topOffset = 0, leading }: ShopFilterBarProps) {
-  const [stuck, setStuck] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setStuck(window.scrollY > 80);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
+/**
+ * Filter/sort pill bar with result count. Scrolls away with the page — it is
+ * intentionally NOT sticky, so only the store header pins to the top.
+ * `topOffset` is accepted for backwards compatibility and ignored.
+ */
+export default function ShopFilterBar({ total, showing, sort, onSortChange, topOffset: _topOffset = 0, leading }: ShopFilterBarProps) {
   return (
+
     <div
-      className={`sticky z-30 -mx-3 sm:-mx-4 lg:-mx-6 px-3 sm:px-4 lg:px-6 py-2 transition-shadow ${stuck ? "shadow-sm" : ""}`}
-      style={{ top: topOffset, background: "var(--storefront-bg, hsl(var(--background)))" }}
+      className="relative z-30 -mx-3 sm:-mx-4 lg:-mx-6 px-3 sm:px-4 lg:px-6 py-2"
+      style={{ background: "var(--storefront-bg, hsl(var(--background)))" }}
+
     >
       <div className="flex items-center gap-2">
         {leading}

@@ -543,15 +543,18 @@ html.sf-dark [data-sf-qa] .text-\[\#3E6B4F\] {
   color: #e3c463 !important;
 }
 /* The six medallion icons are cut from cream artwork, so a pale square edge
-   shows once the card goes black. Clip them into a circular cream chip with a
-   gold hairline so the baked-in background reads as an intentional coin. */
+   shows once the card goes black. Keep them SQUARE (rounded corners only) with
+   `contain` + inner padding — a circular `cover` chip was cropping the corners
+   of the artwork and hiding part of each sticker. */
 html.sf-dark [data-sf-qa] img {
   background-color: #fbf7ee;
-  border-radius: 9999px;
+  border-radius: 10px;
+  padding: 3px;
   box-shadow: 0 0 0 1px rgba(227, 196, 99, 0.45), 0 2px 8px rgba(0, 0, 0, 0.45);
-  object-fit: cover;
+  object-fit: contain;
   filter: saturate(1.05) contrast(1.02);
 }
+
 
 /* The dark green trust strip already reads well; just soften the edge. */
 html.sf-dark [data-sf-qa] .text-white {
