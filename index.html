@@ -615,6 +615,49 @@
           }
         }catch(e){}
 
+        /* ─── PDP boot fetch (byte 0) ────────────────────────────────────
+           Same problem the category boot fetch solved, but for /product/*.
+           On a cold edge (no __PRODUCT_INLINE__) React had to download +
+           parse the ProductDetail route chunk before it issued /api/pdp —
+           measured at ~4.3s on throttled mobile, with the hero image not
+           requested until ~6.6s. Firing the identical request here starts
+           it at ~T+20ms, in parallel with the JS bundle, and injects the
+           hero <link rel=preload as=image> the moment the JSON lands.
+           fetchPdpEdge() reuses this in-flight promise (storefrontEdgeApi). */
+        try{
+          if(!window.__PRODUCT_INLINE__){
+            var _pm=location.pathname.match(/^\/(?:store\/[^/]+\/)?products?\/([^/?#]+)/);
+            if(_pm&&_pm[1]){
+              var _ph=location.hostname;
+              var _pprod=!(_ph==='localhost'||/^\d+\.\d+\.\d+\.\d+$/.test(_ph)||_ph.indexOf('.lovable.app')>-1||_ph.indexOf('.lovableproject.com')>-1);
+              if(_pprod){
+                var _ps=decodeURIComponent(_pm[1]);
+                window.__PDP_BOOT_SLUG__=_ps;
+                window.__PDP_BOOT__=fetch('/api/pdp?slug='+encodeURIComponent(_ps),{headers:{Accept:'application/json'}})
+                  .then(function(r){return r.ok?r.json():null})
+                  .then(function(d){
+                    if(d&&d.product){
+                      try{
+                        var _imgs=[d.product];
+                        if(Array.isArray(d.images)){
+                          for(var _ii=0;_ii<d.images.length&&_ii<3;_ii++){
+                            var _im=d.images[_ii];
+                            if(_im&&_im.image_url)_imgs.push({image_url:_im.image_url});
+                          }
+                        }
+                        window.__sfInjectImgPreloads__(_imgs);
+                      }catch(e){}
+                      return d;
+                    }
+                    return null;
+                  }).catch(function(){return null});
+              }
+            }
+          }
+        }catch(e){}
+
+
+
 
 
 
