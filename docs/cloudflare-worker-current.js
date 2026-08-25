@@ -4624,9 +4624,17 @@ async function serveStreamedHtml(
           storefrontResult.data &&
           storefrontResult.data.store &&
           storefrontResult.data.store.name) ||
+          (themeLite && (themeLite.name || themeLite.store_name)) ||
+          slug ||
           "",
         textColor,
         (themeLite && (themeLite.pc || themeLite.primary_color)) || "#004643",
+        (storefrontResult &&
+          storefrontResult.data &&
+          storefrontResult.data.store &&
+          storefrontResult.data.store.logo_url) ||
+          (themeLite && (themeLite.logo_url || themeLite.logo)) ||
+          "",
       );
 
       let preloaderProductsJson = inlineProducts || "";
