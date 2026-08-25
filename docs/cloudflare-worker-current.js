@@ -225,7 +225,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.83.0-asset-heal";
+const WORKER_VERSION = "8.84.0-global-shell-epoch";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -1984,6 +1984,60 @@ const SPA_SHELL_KV_KEY = "spa-shell:v1";
 const SPA_SHELL_KV_TTL = 3600;
 const SPA_SHELL_CACHE_TTL = 60; // v8.7.0: short safety net only; human navigations use fresh origin shell.
 
+/* --- v8.84.0: GLOBAL shell epoch ------------------------------------------
+   invalidateShellCaches() used to delete the Cache API entry of ONLY the
+   isolate handling the request. KV deletes are global, but every OTHER colo
+   kept serving its own local Cache API copy of the stale shell until TTL.
+   Real-world symptom (2026-08-25, serdiya.com): POSTing /api/shell-broken
+   repeatedly healed one colo at a time — the same host alternated between a
+   dead build hash and the live one depending on which colo answered.
+
+   Fix: a monotonic epoch stored in KV is folded into BOTH the Cache API key
+   and the KV key. Bumping it orphans every colo's copy at once. The epoch is
+   memoised for 20s so the hot path costs no extra KV read. */
+const SHELL_EPOCH_KV_KEY = "spa-shell-epoch";
+const SHELL_EPOCH_MEM_TTL = 20_000;
+let _memShellEpoch = null;
+let _memShellEpochTs = 0;
+let _memShellEpochUsed = null;
+
+async function getShellEpoch(env) {
+  const now = Date.now();
+  if (_memShellEpoch !== null && now < _memShellEpochTs) return _memShellEpoch;
+  let epoch = "0";
+  if (env?.STORE_KV) {
+    try {
+      epoch = (await env.STORE_KV.get(SHELL_EPOCH_KV_KEY)) || "0";
+    } catch {}
+  }
+  _memShellEpoch = epoch;
+  _memShellEpochTs = now + SHELL_EPOCH_MEM_TTL;
+  return epoch;
+}
+
+function shellKeysForEpoch(epoch) {
+  const suffix = epoch && epoch !== "0" ? `:${epoch}` : "";
+  return {
+    cacheKey: new Request(`https://cache/spa-shell${suffix}`),
+    kvKey: `${SPA_SHELL_KV_KEY}${suffix}`,
+  };
+}
+
+// Bump the epoch globally. Every colo picks it up within SHELL_EPOCH_MEM_TTL
+// and immediately misses its stale local copy.
+async function bumpShellEpoch(env) {
+  const next = String(Date.now());
+  _memShellEpoch = next;
+  _memShellEpochTs = Date.now() + SHELL_EPOCH_MEM_TTL;
+  _memShellEpochUsed = null;
+  if (!env?.STORE_KV) return next;
+  try {
+    await env.STORE_KV.put(SHELL_EPOCH_KV_KEY, next, { expirationTtl: 86400 * 30 });
+  } catch {}
+  return next;
+}
+
+
 function setNoStoreHtmlHeaders(headers) {
   // v8.24.0: was `public, max-age=0, must-revalidate, swr=300` which CF
   // refuses to edge-cache (cf-cache-status stuck at MISS forever).
@@ -2157,12 +2211,24 @@ function kvPutProducts(env, key, value, opts, filters) {
 }
 
 async function getSpaShell(request, ctx, env) {
+  // v8.84.0: the in-memory copy is only valid for the epoch it was stored
+  // under. A heal in another colo bumps the epoch → this isolate drops its
+  // warm shell on the next request instead of serving a dead build for
+  // MEM_SHELL_TTL.
+  const epoch = await getShellEpoch(env);
+  if (_memShellEpochUsed !== null && _memShellEpochUsed !== epoch) {
+    _memShell = null;
+    _memShellTs = 0;
+    _memPrebuiltHead = null;
+  }
+  _memShellEpochUsed = epoch;
+
   // FIX #1 + #6: In-memory first — zero I/O on warm isolates
   if (_memShell && Date.now() < _memShellTs) {
     return { html: _memShell, source: "mem" };
   }
 
-  const shellCacheKey = new Request("https://cache/spa-shell");
+  const { cacheKey: shellCacheKey, kvKey: shellKvKey } = shellKeysForEpoch(epoch);
   try {
     const cached = await cache.match(shellCacheKey);
     if (cached) {
@@ -2175,7 +2241,7 @@ async function getSpaShell(request, ctx, env) {
 
   if (env?.STORE_KV) {
     try {
-      const kvHtml = await env.STORE_KV.get(SPA_SHELL_KV_KEY);
+      const kvHtml = await env.STORE_KV.get(shellKvKey);
       if (kvHtml) {
         _memShell = kvHtml;
         _memShellTs = Date.now() + MEM_SHELL_TTL;
@@ -2199,6 +2265,7 @@ async function getSpaShell(request, ctx, env) {
     } catch {}
   }
 
+
   if (inflightShellFetch) {
     try {
       const html = await inflightShellFetch;
@@ -2208,7 +2275,7 @@ async function getSpaShell(request, ctx, env) {
     }
   }
 
-  const fetchPromise = _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey);
+  const fetchPromise = _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey, shellKvKey);
   inflightShellFetch = fetchPromise;
 
   try {
@@ -2221,7 +2288,7 @@ async function getSpaShell(request, ctx, env) {
   }
 }
 
-async function _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey) {
+async function _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey, shellKvKey) {
   // v8.6.6: Fetch the deployment shell fresh from origin. Do NOT use
   // `cf.cacheEverything` here: Cloudflare's implicit fetch cache is not
   // addressable by our `/api/purge-shell` handler, so it can keep returning
@@ -2260,11 +2327,12 @@ async function _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey) {
   _memShellTs = Date.now() + MEM_SHELL_TTL;
 
   if (ctx) {
+    const kvKey = shellKvKey || SPA_SHELL_KV_KEY;
     ctx.waitUntil(
       Promise.all([
         // v8.13.1: dedup-wrapped — collapses multi-isolate write bursts in same colo.
         env?.STORE_KV
-          ? kvPutDedup(env, SPA_SHELL_KV_KEY, html, { expirationTtl: SPA_SHELL_KV_TTL })
+          ? kvPutDedup(env, kvKey, html, { expirationTtl: SPA_SHELL_KV_TTL })
           : Promise.resolve(),
         cache.put(
           shellCacheKey,
@@ -2283,10 +2351,12 @@ async function _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey) {
 }
 
 async function getFreshSpaShell(request, ctx, env) {
-  const shellCacheKey = new Request("https://cache/spa-shell");
-  const html = await _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey);
+  const epoch = await getShellEpoch(env);
+  const { cacheKey, kvKey } = shellKeysForEpoch(epoch);
+  const html = await _fetchSpaShellFromOrigin(request, ctx, env, cacheKey, kvKey);
   return html ? { html, source: "origin-fresh" } : null;
 }
+
 
 async function getNavigationSpaShell(request, ctx, env) {
   const cached = await getSpaShell(request, ctx, env);
@@ -3509,20 +3579,30 @@ async function invalidateShellCaches(env, ctx) {
   _memShell = null;
   _memShellTs = 0;
   _memPrebuiltHead = null;
+  const prevEpoch = _memShellEpoch;
+  const prevKeys = shellKeysForEpoch(prevEpoch || "0");
   const ops = [
     cache.delete(new Request("https://cache/spa-shell")).catch(() => {}),
+    cache.delete(prevKeys.cacheKey).catch(() => {}),
     cache.delete(new Request("https://cache/prebuilt-head")).catch(() => {}),
+    // v8.84.0: the only GLOBAL part of the flush. Local cache.delete() clears
+    // this colo only; bumping the epoch changes the cache/KV key everywhere,
+    // so every other colo misses its stale copy on the next request.
+    bumpShellEpoch(env),
   ];
   _kvWriteRecent.delete(SPA_SHELL_KV_KEY);
+  _kvWriteRecent.delete(prevKeys.kvKey);
   _kvWriteRecent.delete(PREBUILT_HEAD_KV_KEY);
   if (env?.STORE_KV) {
     ops.push(kvDeleteForce(env, SPA_SHELL_KV_KEY));
+    ops.push(kvDeleteForce(env, prevKeys.kvKey));
     ops.push(kvDeleteForce(env, PREBUILT_HEAD_KV_KEY));
   }
   const done = Promise.allSettled(ops);
   if (ctx?.waitUntil) ctx.waitUntil(done);
   return done;
 }
+
 
 // Only self-heal once per isolate per minute — a burst of stale chunk requests
 // must not turn into a KV delete storm.
@@ -6181,18 +6261,25 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
     if (explicitDomain) domainStoreIdCache.delete(explicitDomain);
   }
 
+  const _prevShellKeys = shellKeysForEpoch(_memShellEpoch || "0");
   const purgeOps = [
     cache.delete(new Request("https://cache/spa-shell")).catch(() => {}),
+    cache.delete(_prevShellKeys.cacheKey).catch(() => {}),
     cache.delete(new Request("https://cache/prebuilt-head")).catch(() => {}),
+    // v8.84.0: global epoch bump — see invalidateShellCaches().
+    bumpShellEpoch(env),
   ];
 
   // v8.1.0: clear write-dedup so the next save can re-write KV
   _kvWriteRecent.delete(SPA_SHELL_KV_KEY);
+  _kvWriteRecent.delete(_prevShellKeys.kvKey);
   _kvWriteRecent.delete(PREBUILT_HEAD_KV_KEY);
   if (env?.STORE_KV) {
     purgeOps.push(kvDeleteForce(env, SPA_SHELL_KV_KEY));
+    purgeOps.push(kvDeleteForce(env, _prevShellKeys.kvKey));
     purgeOps.push(kvDeleteForce(env, PREBUILT_HEAD_KV_KEY));
   }
+
 
   if (purgeSlug) {
     _kvWriteRecent.delete(`storefront:${purgeSlug}`);
