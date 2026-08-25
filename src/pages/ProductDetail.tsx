@@ -1874,6 +1874,10 @@ function ImageGallery({
                 }
                 const loaded = imageLoaded[realIdx];
                 const optimizedUrl = optimizeImageUrl(slide.url, 800);
+                // Responsive gallery: on resizable sources this ships a
+                // ~400-600px file to phones instead of the 800/original.
+                const gallerySrcSet = getImageSrcSet(slide.url, [400, 600, 800, 1200], 80);
+
                 return (
                   <div
                     key={`${i}-${slide.url}`}
