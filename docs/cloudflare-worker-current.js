@@ -5096,9 +5096,59 @@ async function _getInlinePdpCategoryOrNull(hostname, route, env, ctx) {
         return kvVal;
       }
     }
+
+    /* v8.82.0 — COLD-MISS INLINE (kills the client round trip).
+       Previously a cache+KV miss returned null, so the browser had to boot
+       the whole JS bundle, mount the shell, lazy-load the route chunk and
+       only THEN call /api/pdp — measured at ~4.3s on throttled mobile.
+       This function is already awaited inside the same Promise.all as the
+       storefront shell fetch, so pulling the row from the DB here overlaps
+       with work we're doing anyway and costs ~0 extra TTFB in the common
+       case (shell is the slower leg). Bounded by INLINE_DB_TIMEOUT_MS so a
+       slow DB can never hold the HTML hostage — on timeout we fall back to
+       the old behaviour (client fetches /api/pdp, which index.html now
+       fires at byte 0 anyway). Result is written to cache + KV so the next
+       visitor gets the pure-cache path. */
+    const storeSlug = await _resolveStoreSlugForDomain(hostname, env);
+    if (!storeSlug) return null;
+    const coalesceKey = `inline:${hostname}:${route.kind}:${route.slug}`;
+    const inflight = route.kind === "product" ? inflightPdpRequests : inflightCategoryRequests;
+    let promise = inflight.get(coalesceKey);
+    if (!promise) {
+      promise = (
+        route.kind === "product"
+          ? _fetchPdpFromDb(storeSlug, route.slug, INLINE_DB_TIMEOUT_MS)
+          : _fetchCategoryFromDb(storeSlug, route.slug, 50, INLINE_DB_TIMEOUT_MS)
+      ).catch(() => null);
+      inflight.set(coalesceKey, promise);
+      ctx.waitUntil(promise.then(() => inflight.delete(coalesceKey)).catch(() => inflight.delete(coalesceKey)));
+    }
+    const data = await promise;
+    const ok = route.kind === "product" ? data?.product : data?.category;
+    if (!ok) return null;
+    const body = JSON.stringify(data);
+    const ttl = route.kind === "product" ? PDP_KV_TTL : CATEGORY_KV_TTL;
+    ctx.waitUntil(
+      Promise.all([
+        cache
+          .put(
+            cacheKey,
+            new Response(body, {
+              headers: {
+                "Content-Type": "application/json",
+                "Cache-Control": `public, max-age=${route.kind === "product" ? PDP_CACHE_TTL : CATEGORY_CACHE_TTL}`,
+              },
+            }),
+          )
+          .catch(() => {}),
+        kvPutDedup(env, kvKey, body, { expirationTtl: ttl }).catch(() => {}),
+      ]).catch(() => {}),
+    );
+    return body;
   } catch {}
   return null;
 }
+
 
 async function handlePdpApi(request, url, ctx, env) {
   const domain = (request.headers.get("host") || url.hostname).toLowerCase().trim();
