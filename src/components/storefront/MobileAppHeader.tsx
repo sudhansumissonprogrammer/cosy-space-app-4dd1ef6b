@@ -15,6 +15,7 @@ import { useCart } from "@/contexts/CartContext";
 const StorefrontSearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
 import { storefrontPath } from "@/lib/subdomain";
 import type { Tables } from "@/integrations/supabase/types";
+import { optimizeImageUrl } from "@/lib/imageOptimize";
 
 type StoreData = Tables<"stores">;
 
@@ -53,7 +54,7 @@ export default function MobileAppHeader({ store }: { store: StoreData }) {
             <SheetContent side="left" className="storefront-font sfg sfg-strong w-[280px] p-0" style={{ backgroundColor: "color-mix(in srgb, var(--storefront-bg, hsl(var(--card))) 84%, transparent)" }}>
               <div className="flex flex-col">
                 <div className="border-b p-4" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--card)))" }}>
-                  {store.logo_url ? <img src={store.logo_url} alt={store.name} className="h-14 w-auto max-w-[200px] object-contain" /> : <StoreTextLogo storeName={store.name} size="text-lg" />}
+                  {store.logo_url ? <img src={optimizeImageUrl(store.logo_url, 320, 85)} alt={store.name} className="h-14 w-auto max-w-[200px] object-contain" /> : <StoreTextLogo storeName={store.name} size="text-lg" />}
                 </div>
                 <nav className="flex flex-col gap-1.5 p-4">
                   {[{ to: storefrontPath(store.slug), label: "Home" }, { to: storefrontPath(store.slug, "shop"), label: "Shop All" }, { to: storefrontPath(store.slug, "about"), label: "About Us" }, { to: storefrontPath(store.slug, "contact"), label: "Contact Us" }, ...customPages.map((cp: any) => ({ to: storefrontPath(store.slug, `page/${cp.slug}`), label: cp.title })), { to: storefrontPath(store.slug, "wishlist"), label: "Wishlist" }, { to: storefrontPath(store.slug, "account"), label: "My Account" }].map((link) => (
@@ -65,7 +66,7 @@ export default function MobileAppHeader({ store }: { store: StoreData }) {
           </Sheet>
 
           <Link to={storefrontPath(store.slug)} className="logo-shrink flex items-center shrink-0 overflow-visible">
-            {store.logo_url ? <img src={store.logo_url} alt={store.name} className="h-12 w-auto max-w-[180px] object-contain origin-left" style={{ transform: "scale(2.2)" }} /> : <StoreTextLogo storeName={store.name} size="text-base" color="var(--storefront-text, hsl(var(--foreground)))" />}
+            {store.logo_url ? <img src={optimizeImageUrl(store.logo_url, 320, 85)} alt={store.name} className="h-12 w-auto max-w-[180px] object-contain origin-left" style={{ transform: "scale(2.2)" }} /> : <StoreTextLogo storeName={store.name} size="text-base" color="var(--storefront-text, hsl(var(--foreground)))" />}
           </Link>
 
           <button onClick={() => setSearchOpen(true)} className="flex flex-1 items-center gap-2 rounded-full px-3.5 py-2 text-sm transition-[transform,opacity,colors,box-shadow] active:scale-[0.98]" style={{ backgroundColor: "var(--storefront-text, hsl(var(--foreground)))08", border: "1px solid var(--storefront-text, hsl(var(--foreground)))12" }} aria-label="Search products">

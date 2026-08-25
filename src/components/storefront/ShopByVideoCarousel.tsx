@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { fetchStoreEnabledApps } from "@/hooks/useStoreEnabledApps";
 import { storefrontPath, getSubdomainSlug } from "@/lib/subdomain";
 import { cn } from "@/lib/utils";
+import { optimizeImageUrl } from "@/lib/imageOptimize";
 
 interface AppConfig {
   enabled?: boolean;
@@ -292,7 +293,7 @@ function VideoTile({ product, slug, active, muted, onToggleMute, aspectClass, sh
         <div className={cn("relative w-full", aspectClass)}>
           {product.video_poster_url && (
             <img
-              src={product.video_poster_url}
+              src={optimizeImageUrl(product.video_poster_url, 400, 80)}
               alt=""
               aria-hidden
               className="absolute inset-0 h-full w-full object-cover"
@@ -303,7 +304,7 @@ function VideoTile({ product, slug, active, muted, onToggleMute, aspectClass, sh
           <video
             ref={videoRef}
             src={product.video_url}
-            poster={product.video_poster_url || undefined}
+            poster={optimizeImageUrl(product.video_poster_url, 400, 80) || undefined}
             className="relative z-[1] h-full w-full object-cover"
             muted
             playsInline
@@ -317,7 +318,7 @@ function VideoTile({ product, slug, active, muted, onToggleMute, aspectClass, sh
               <div className="h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-white/10 ring-1 ring-white/20">
                 {product.image_url ? (
                   <img
-                    src={product.image_url}
+                    src={optimizeImageUrl(product.image_url, 96, 80)}
                     alt=""
                     className="h-full w-full object-cover"
                     loading="lazy"
