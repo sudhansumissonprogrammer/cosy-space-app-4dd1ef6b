@@ -23,8 +23,21 @@ function extractPicks(themeConfig: any): NavIconsMap {
   return {};
 }
 
+// Getters are cached by the resolved picks signature so that every consumer
+// (headers, bottom navs, and *every product card in a grid*) shares one stable
+// function identity. Without this, each card produced its own getter and broke
+// downstream memo() equality on theme-config cache ticks.
+const GETTER_CACHE = new Map<string, (slot: NavSlot) => LucideIcon>();
+
 function buildGetter(picks: NavIconsMap) {
-  return (slot: NavSlot): LucideIcon => resolveNavIcon(slot, picks[slot]);
+  let key = "{}";
+  try { key = JSON.stringify(picks ?? {}); } catch {}
+  const hit = GETTER_CACHE.get(key);
+  if (hit) return hit;
+  const getter = (slot: NavSlot): LucideIcon => resolveNavIcon(slot, picks[slot]);
+  if (GETTER_CACHE.size > 50) GETTER_CACHE.clear();
+  GETTER_CACHE.set(key, getter);
+  return getter;
 }
 
 /** Reactive — re-renders when the theme config cache updates (live preview). */
