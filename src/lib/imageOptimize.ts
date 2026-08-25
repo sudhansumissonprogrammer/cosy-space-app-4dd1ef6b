@@ -28,37 +28,15 @@ const ENABLE_EDGE_IMAGE_PROXY = import.meta.env.VITE_ENABLE_EDGE_IMAGE_PROXY ===
 const PIPELINE_WIDTHS: number[] = [400, 800];
 
 /**
- * Supplier catalog CDNs whose originals are multi-thousand-pixel files.
- * These are proxied through the Worker `/cf-img` resize route. Strict
- * allow-list — never proxy arbitrary URLs (SSRF).
+ * v8.88 — `/cf-img` removed entirely.
+ * Supplier catalog CDNs (JD / Cartpe / …) are now requested DIRECTLY.
+ * Rationale: the Worker resize hop added a full extra RTT + cold-transform
+ * latency (300-900ms) on the LCP image and burned a paid Worker event per
+ * image, while the origins already sit behind their own CDN with
+ * cache-friendly, immutable URLs. Direct = fewer hops, preload-scanner
+ * friendly, and byte-identical to what the edge can preload.
  */
-const EDGE_RESIZE_HOSTS = new Set([
-  "assets.jdwebnship.in",
-  "assets.jdwebnship.com",
-  "cdn.cartpe.in",
-  "assets.mycatalog.io",
-  "watchtrade.in",
-  "www.watchtrade.in",
-  "overlaysnow.com",
-  "www.overlaysnow.com",
-]);
 
-function isEdgeResizableHost(url: string): boolean {
-  try {
-    return EDGE_RESIZE_HOSTS.has(new URL(url).hostname);
-  } catch {
-    return false;
-  }
-}
-
-/** True on hosts where the Cloudflare Worker (and thus /cf-img) is in front. */
-function isWorkerHost(): boolean {
-  if (typeof window === "undefined") return false;
-  const h = window.location.hostname;
-  if (h === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(h)) return false;
-  if (h.endsWith(".lovable.app") || h.endsWith(".lovableproject.com")) return false;
-  return true;
-}
 
 
 /**
