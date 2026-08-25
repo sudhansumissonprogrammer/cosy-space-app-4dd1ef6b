@@ -1869,7 +1869,7 @@ function ImageGallery({
                   return (
                     <Suspense
                       key={`${i}-vid-${slide.url}`}
-                      fallback={<div className="flex-[0_0_100%] min-w-0 h-[min(150vw,80svh)] sm:aspect-[4/5] sm:h-auto bg-muted" />}
+                      fallback={<div className="flex-[0_0_100%] min-w-0 h-[min(118vw,62svh)] sm:aspect-[4/5] sm:h-auto bg-muted" />}
                     >
                       <VideoSlide
                         url={slide.url}
