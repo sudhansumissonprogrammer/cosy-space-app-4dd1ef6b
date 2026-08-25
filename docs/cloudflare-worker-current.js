@@ -225,7 +225,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.82.0-pdp-cold-inline";
+const WORKER_VERSION = "8.83.0-asset-heal";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -3579,9 +3579,17 @@ async function proxyToOriginCached(request, ctx, env) {
     clearTimeout(timeout);
     if (!res.ok) {
       // Stale hashed chunk → the cached SPA shell is out of date. Flush it.
-      if (res.status === 404 && /^\/assets\/.*\.(?:js|mjs|css)$/i.test(new URL(request.url).pathname)) {
+      // v8.83.0: the origin does NOT always answer 404 for a deleted build
+      // hash — it can answer 302 (SPA redirect) or 5xx. The old 404-only
+      // check meant a shell pinned to an evicted build never healed: the
+      // entry bundle stayed warm in edge cache while its lazy children
+      // 503'd forever → "Cannot read properties of undefined (reading
+      // 'default')" → __r= reload loop → dead storefront. Heal on any
+      // non-ok status for a content-hashed asset.
+      if (/^\/assets\/.*\.(?:js|mjs|css)$/i.test(new URL(request.url).pathname)) {
         maybeSelfHealShell(env, ctx);
       }
+
       return new Response("Upstream asset unavailable", {
         status: 503,
         headers: {
