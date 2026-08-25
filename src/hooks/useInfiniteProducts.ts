@@ -21,9 +21,12 @@ function isProductionHost(): boolean {
 interface FetchOpts {
   storeId: string;
   category?: string;
+  /** URL slug of the category — lets us skip the name lookup round trip. */
+  categorySlug?: string;
   page: number;
   sort?: string;
 }
+
 
 async function fetchPageFromSupabase({ storeId, category, page, sort: _sort }: FetchOpts): Promise<any[]> {
   const from = page * PAGE_SIZE;
