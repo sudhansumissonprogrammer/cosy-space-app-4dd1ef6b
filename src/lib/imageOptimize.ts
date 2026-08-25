@@ -210,11 +210,15 @@ export function getImageSrcSet(
     }
   }
 
-  // For external CDNs and legacy Supabase render: real responsive sizes
-  return sizes
-    .map((w) => `${optimizeImageUrl(firstUrl, w, quality)} ${w}w`)
-    .join(", ");
+  // For external CDNs and legacy Supabase render: real responsive sizes.
+  // v8.88: if the transform is a no-op (plain supplier URL served direct),
+  // every entry would be the same URL — skip srcset entirely.
+  const entries = sizes.map((w) => ({ w, u: optimizeImageUrl(firstUrl, w, quality) }));
+  if (entries.length === 0) return "";
+  if (entries.every((e) => e.u === entries[0].u)) return "";
+  return entries.map((e) => `${e.u} ${e.w}w`).join(", ");
 }
+
 
 /**
  * Standard `sizes` attribute for product cards in a responsive grid.
