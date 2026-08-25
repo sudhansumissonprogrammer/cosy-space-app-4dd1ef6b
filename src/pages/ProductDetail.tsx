@@ -28,7 +28,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
-import { optimizeImageUrl, splitImageUrls } from "@/lib/imageOptimize";
+import { optimizeImageUrl, splitImageUrls, getImageSrcSet } from "@/lib/imageOptimize";
 import { normalizeProductVideoUrl } from "@/lib/productVideoUrl";
 // UniversalProductCard removed from PDP critical path — reached via lazy RelatedProducts
 import { VariantCountProvider } from "@/hooks/useVariantCounts";
