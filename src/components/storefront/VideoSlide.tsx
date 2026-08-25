@@ -52,7 +52,7 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
   if (!source || failed) {
     return (
       <div className="relative flex-[0_0_100%] min-w-0 bg-black h-[min(118vw,62svh)] sm:aspect-[4/5] sm:h-auto overflow-hidden">
-        {poster && <img src={poster} alt="" aria-hidden className="h-full w-full object-cover" />}
+        {poster && <img src={poster} alt="" aria-hidden className="h-full w-full object-contain" />}
       </div>
     );
   }
@@ -120,7 +120,7 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
         muted
         playsInline
         disablePictureInPicture
-        className="relative z-[1] w-full h-full object-cover bg-black"
+        className="relative z-[1] w-full h-full object-contain bg-black"
         onClick={(e) => {
           e.stopPropagation();
           handleToggle();
