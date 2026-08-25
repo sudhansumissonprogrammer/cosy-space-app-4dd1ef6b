@@ -7439,12 +7439,16 @@ async function _handleFetch(request, env, ctx) {
 
 
 
-  // ─── /cf-img — legacy compat shim ───
-  // BAN-FIX A8: Old bot-render cache entries reference /cf-img?url=<encoded>.
-  // Returning 410 broke every Meta re-crawl of pre-v8.48 cached OG images →
-  // "landing page mismatch" ad-quality flag. Now we decode the URL and 302
-  // to it directly. Works for R2 (cdn.shopbanao.in) and Supabase render URLs
-  // that were baked into cached HTML. Malformed requests still 410.
+  // ─── /cf-img — supplier-image resize + legacy compat shim (v8.81.0) ───
+  // Catalog images synced from JD / Cartpe are 3000-4300px originals (500KB+)
+  // rendered into 180-420px card slots — a category page shipped ~6.7MB.
+  // This route resizes + re-encodes them at the edge (Cloudflare Image
+  // Resizing via `cf.image`), then caches the result for a year.
+  //
+  // SSRF-safe: only the allow-listed supplier hosts below are fetched with
+  // resizing. Anything else (old bot-render cache entries referencing R2 /
+  // Supabase render URLs) keeps the pre-existing 302 passthrough behaviour so
+  // Meta re-crawls of cached OG images never break. Malformed requests 410.
   if (url.pathname === "/cf-img") {
     try {
       const target = url.searchParams.get("url");
@@ -7452,15 +7456,48 @@ async function _handleFetch(request, env, ctx) {
         const decoded = decodeURIComponent(target);
         const t = new URL(decoded);
         if (t.protocol === "https:") {
+          if (CF_IMG_HOSTS.has(t.hostname)) {
+            const w = Math.min(Math.max(parseInt(url.searchParams.get("w") || "800", 10) || 800, 32), 2000);
+            const q = Math.min(Math.max(parseInt(url.searchParams.get("q") || "80", 10) || 80, 30), 95);
+            const cache = caches.default;
+            const cacheKey = new Request(`${url.origin}/cf-img?u=${encodeURIComponent(decoded)}&w=${w}&q=${q}`, { method: "GET" });
+            const hit = await cache.match(cacheKey);
+            if (hit) return hit;
+
+            const accept = request.headers.get("accept") || "";
+            const fmt = accept.includes("image/avif") ? "avif" : "webp";
+            let upstream;
+            try {
+              upstream = await fetch(decoded, {
+                cf: { image: { width: w, quality: q, fit: "scale-down", format: fmt }, cacheEverything: true, cacheTtl: 31536000 },
+              });
+            } catch {
+              upstream = null;
+            }
+            // Resizing is unavailable on some plans/zones — fall back to the
+            // original bytes rather than serving a broken image.
+            if (!upstream || !upstream.ok) {
+              try { upstream = await fetch(decoded, { cf: { cacheEverything: true, cacheTtl: 86400 } }); } catch { upstream = null; }
+              if (!upstream || !upstream.ok) return Response.redirect(decoded, 302);
+            }
+            const out = new Response(upstream.body, upstream);
+            out.headers.set("Cache-Control", "public, max-age=31536000, immutable");
+            out.headers.set("Access-Control-Allow-Origin", "*");
+            out.headers.set("X-SF-Img", "cf-img");
+            out.headers.delete("set-cookie");
+            ctx.waitUntil(cache.put(cacheKey, out.clone()));
+            return out;
+          }
           return Response.redirect(decoded, 302);
         }
       }
     } catch { /* fall through */ }
-    return new Response("Gone: /cf-img removed in worker v8.48.0", {
+    return new Response("Gone: /cf-img requires a valid https url", {
       status: 410,
       headers: { "Cache-Control": "public, max-age=86400" },
     });
   }
+
 
 
   // ─── API ROUTES (rate-limited) ───
