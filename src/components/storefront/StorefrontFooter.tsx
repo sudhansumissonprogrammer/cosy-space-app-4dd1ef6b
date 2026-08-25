@@ -71,20 +71,14 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
   const address = [store.location, store.city, store.state].filter(Boolean).join(", ");
   
 
-  // Phase 3: owner_email is bundled in the storefront shell. Skip the RPC entirely
-  // when the field is present (null or a string). Only fall back to the RPC for
-  // legacy cached shells that predate the inlining (shellEmail === undefined).
+  // owner_email is bundled in the storefront shell; the idle footer-info RPC
+  // only fills in for legacy cached shells that predate the inlining.
   const shellEmail = (store as any).owner_email as string | null | undefined;
-  const { data: ownerEmail } = useQuery({
-    queryKey: ["store-public-email", store.id],
-    queryFn: async () => {
-      const { data } = await supabase.rpc("get_store_public_email", { _store_id: store.id });
-      return ((data as string) || "").trim();
-    },
-    enabled: !!store.id && shellEmail === undefined,
-    staleTime: 10 * 60 * 1000,
-    initialData: shellEmail === undefined ? undefined : (shellEmail || "").trim(),
-  });
+  const { data: footerInfo } = useFooterInfo(store.id);
+  const ownerEmail =
+    shellEmail === undefined ? footerInfo?.publicEmail || "" : (shellEmail || "").trim();
+  const paymentMethods = footerInfo?.paymentMethods || [];
+
 
   return (
     <footer
