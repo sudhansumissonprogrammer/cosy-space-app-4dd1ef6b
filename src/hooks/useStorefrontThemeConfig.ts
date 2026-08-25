@@ -111,11 +111,13 @@ export function useStorefrontThemeConfig(
   // is known (module-level import(), de-duped) so the first grid paint never
   // waits on a lazy chunk + skeleton flash.
   const cardStyle = effective?.product_card_style;
-  if (typeof window !== "undefined" && cardStyle) {
+  if (typeof window !== "undefined" && cardStyle && !preloadedCardStyles.has(cardStyle)) {
+    preloadedCardStyles.add(cardStyle);
     import("@/components/storefront/UniversalProductCard")
       .then((m) => m.preloadCardStyle(cardStyle))
-      .catch(() => {});
+      .catch(() => preloadedCardStyles.delete(cardStyle));
   }
+
 
   return (effective ?? null) as Record<string, any> | null;
 
