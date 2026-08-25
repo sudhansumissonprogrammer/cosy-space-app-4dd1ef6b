@@ -36,8 +36,9 @@ export default function ShopFilterBar({ total, showing, sort, onSortChange, topO
 
   return (
     <div
-      className={`sticky z-30 -mx-3 sm:-mx-4 lg:-mx-6 px-3 sm:px-4 lg:px-6 py-2 transition-shadow ${stuck ? "shadow-sm" : ""}`}
-      style={{ top: topOffset, background: "var(--storefront-bg, hsl(var(--background)))" }}
+      className="relative z-30 -mx-3 sm:-mx-4 lg:-mx-6 px-3 sm:px-4 lg:px-6 py-2"
+      style={{ background: "var(--storefront-bg, hsl(var(--background)))" }}
+
     >
       <div className="flex items-center gap-2">
         {leading}

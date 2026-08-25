@@ -70,12 +70,19 @@ export default function ParcelAssuranceSection({ product, store }: Props) {
           style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }}
           aria-hidden="true"
         />
-        <p
-          className="text-sm sm:text-base font-semibold leading-snug"
-          style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}
-        >
-          Before dispatch, we send your parcel packaging on WhatsApp.
-        </p>
+        <div className="min-w-0">
+          <p
+            className="text-sm sm:text-base font-semibold leading-snug"
+            style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}
+          >
+            After dispatch, track your order live on our website.
+          </p>
+          <p className="mt-1 text-xs sm:text-sm leading-snug text-muted-foreground">
+            You also get regular WhatsApp updates — packing, dispatch, in-transit and
+            out-for-delivery — till the parcel reaches your door.
+          </p>
+        </div>
+
       </div>
 
       {/* Actions — single row, never wrap */}

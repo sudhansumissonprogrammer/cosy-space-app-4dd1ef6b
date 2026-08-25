@@ -50,7 +50,7 @@ export default function QualityAssuranceGrid() {
                 height={44}
                 loading="lazy"
                 decoding="async"
-                className="h-9 w-9 object-contain sm:h-11 sm:w-11"
+                className="h-12 w-12 object-contain sm:h-14 sm:w-14"
               />
 
               {/* Gold divider with diamond */}
