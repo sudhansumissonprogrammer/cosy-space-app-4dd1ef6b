@@ -76,7 +76,14 @@ function ProductCardStyle6Impl({ product, slug, store, priority = false, onVaria
   return (
     <div
       className="group relative cursor-pointer"
-      style={{ contain: priority ? undefined : "layout style", contentVisibility: priority ? undefined : "auto" }}
+      style={{
+        contain: priority ? undefined : "layout style",
+        contentVisibility: priority ? undefined : "auto",
+        // Reserve a realistic size for skipped cards so the scrollbar and the
+        // grid don't jump as offscreen cards render on approach.
+        containIntrinsicSize: priority ? undefined : "auto 380px",
+      }}
+
       onMouseEnter={() => { primePdp(); setHoverLoaded(true); }}
       onTouchStart={primePdp}
       onPointerDown={primePdp}
