@@ -62,6 +62,10 @@ function usePool(
     gcTime: 15 * 60 * 1000,
     // Seed page 0 from the combined RPC so no extra request fires for it.
     initialData: seed ? { pages: [seed], pageParams: [0] } : undefined,
+    // Mark the seeded page as fresh, otherwise React Query treats injected
+    // initialData as stale-at-epoch and immediately refetches page 0 — which
+    // would re-add the exact REST calls this RPC was meant to remove.
+    initialDataUpdatedAt: () => Date.now(),
     getNextPageParam: (last: any[], _all, lastParam: number) =>
       last.length === PDP_POOL_PAGE_SIZE ? lastParam + 1 : undefined,
     queryFn: async ({ pageParam }) => {
