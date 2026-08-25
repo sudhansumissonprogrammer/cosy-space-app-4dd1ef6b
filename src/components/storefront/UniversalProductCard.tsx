@@ -178,11 +178,22 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
     } catch {}
   }, [product, store]);
 
+  // Offscreen skip-work ("poor man's windowing"): cards below the first two
+  // rows opt into content-visibility so the browser skips their layout/paint
+  // while far offscreen. contain-intrinsic-size reserves the real height so
+  // the scrollbar never jumps. The first rows are excluded to protect LCP.
+  const deferPaint = !priority && index >= 8;
+
   return (
     <div
       ref={hostRef}
       className="stagger-card relative"
-      style={{ "--i": index } as React.CSSProperties}
+      style={{
+        "--i": index,
+        ...(deferPaint
+          ? { contentVisibility: "auto", containIntrinsicSize: "auto 380px" }
+          : null),
+      } as React.CSSProperties}
       onMouseEnter={prime}
       onTouchStart={prime}
       onPointerDown={prime}
