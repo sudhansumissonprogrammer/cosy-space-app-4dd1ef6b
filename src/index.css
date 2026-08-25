@@ -260,7 +260,14 @@
   .sf-trust-preview::-webkit-media-controls,
   .sf-trust-preview::-webkit-media-controls-panel,
   .sf-trust-preview::-webkit-media-controls-play-button,
-  .sf-trust-preview::-webkit-media-controls-start-playback-button {
+  .sf-trust-preview::-webkit-media-controls-start-playback-button,
+  .sf-video-nocontrols::-webkit-media-controls,
+  .sf-video-nocontrols::-webkit-media-controls-panel,
+  .sf-video-nocontrols::-webkit-media-controls-enclosure,
+  .sf-video-nocontrols::-webkit-media-controls-overlay-play-button,
+  .sf-video-nocontrols::-webkit-media-controls-play-button,
+  .sf-video-nocontrols::-webkit-media-controls-start-playback-button {
+
     display: none !important;
     -webkit-appearance: none !important;
     opacity: 0 !important;
