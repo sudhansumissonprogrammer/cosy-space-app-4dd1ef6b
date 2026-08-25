@@ -19,6 +19,8 @@ import CardRatingBadge from "./CardRatingBadge";
 
 import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
 import { setPdpPreload } from "@/lib/pdpPreload";
+import { memo } from "react";
+import { productCardPropsEqual } from "./cardMemo";
 
 interface Props {
   product: Tables<"products">;
@@ -28,7 +30,7 @@ interface Props {
   onVariantRequired?: () => void;
 }
 
-export default function ProductCardStyle6({ product, slug, store, priority = false, onVariantRequired }: Props) {
+function ProductCardStyle6Impl({ product, slug, store, priority = false, onVariantRequired }: Props) {
   const { wishlisted, handleToggleWishlist, handleAddToCart, heartBursting } = useProductCardActions(product);
   const [hoverLoaded, setHoverLoaded] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -187,3 +189,6 @@ export default function ProductCardStyle6({ product, slug, store, priority = fal
     </div>
   );
 }
+
+const ProductCardStyle6 = memo(ProductCardStyle6Impl, productCardPropsEqual);
+export default ProductCardStyle6;
