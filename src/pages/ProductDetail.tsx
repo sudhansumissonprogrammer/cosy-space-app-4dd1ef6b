@@ -1859,7 +1859,7 @@ function ImageGallery({
           {/* Embla viewport */}
           <div
             ref={emblaRef}
-            className={`overflow-hidden rounded-none sm:rounded-2xl cursor-zoom-in select-none ${isVideoSlide ? "h-[min(128vw,66svh)]" : "h-[min(132vw,70svh)]"} sm:h-auto sm:aspect-[4/5]`}
+            className={`overflow-hidden rounded-none sm:rounded-2xl cursor-zoom-in select-none ${isVideoSlide ? "h-[min(168vw,86svh)]" : "h-[min(132vw,70svh)]"} sm:h-auto sm:aspect-[4/5]`}
             style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }}
           >
             <div className="flex touch-pan-y items-stretch">
@@ -1891,9 +1891,9 @@ function ImageGallery({
                 return (
                   <div
                     key={`${i}-${slide.url}`}
-                    // Shorter frame on mobile (was 150vw — too tall) and the image
-                    // is contained, so the product's full width is always visible.
-                    className="relative flex-[0_0_100%] min-w-0 overflow-hidden h-[min(132vw,70svh)] sm:aspect-[4/5] sm:h-auto"
+                    // Slides fill the viewport height (which grows on video
+                    // slides) so nothing is ever clipped; media is contained.
+                    className="relative flex-[0_0_100%] min-w-0 overflow-hidden h-full sm:aspect-[4/5] sm:h-auto"
                     style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }}
                     onClick={() => setLightboxOpen(true)}
                   >
