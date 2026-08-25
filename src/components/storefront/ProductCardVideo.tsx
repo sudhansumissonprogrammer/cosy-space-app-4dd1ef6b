@@ -258,7 +258,7 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
           type="button"
           onClick={open ? (e) => { e.preventDefault(); e.stopPropagation(); stop(); } : start}
           aria-label={open ? "Stop video" : "Play product video"}
-          className="grid h-7 w-7 place-items-center rounded-full border border-white/40 bg-white/20 text-white shadow-[0_2px_8px_rgba(0,0,0,0.25)] backdrop-blur-md transition-transform active:scale-90"
+          className="grid h-7 w-7 place-items-center rounded-full border border-white/40 bg-black/45 text-white shadow-[0_2px_8px_rgba(0,0,0,0.25)] transition-transform active:scale-90"
         >
           {open ? <X className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5 translate-x-[1px] fill-current" />}
         </button>
@@ -267,7 +267,7 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
             type="button"
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMuted((m) => !m); }}
             aria-label={muted ? "Unmute video" : "Mute video"}
-            className="grid h-7 w-7 place-items-center rounded-full border border-white/40 bg-white/20 text-white shadow-[0_2px_8px_rgba(0,0,0,0.25)] backdrop-blur-md transition-transform active:scale-90"
+            className="grid h-7 w-7 place-items-center rounded-full border border-white/40 bg-black/45 text-white shadow-[0_2px_8px_rgba(0,0,0,0.25)] transition-transform active:scale-90"
           >
             {muted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
           </button>
