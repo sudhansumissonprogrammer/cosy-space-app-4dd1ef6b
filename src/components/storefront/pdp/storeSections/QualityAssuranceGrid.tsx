@@ -29,7 +29,11 @@ const STRIP = [
 
 export default function QualityAssuranceGrid() {
   return (
-    <section className="mt-5 -mx-4 sm:mx-0" data-sf-qa>
+    <section
+      className="mt-5 -mx-4 sm:mx-0"
+      data-sf-qa
+      style={{ contentVisibility: "auto", containIntrinsicSize: "auto 420px" } as React.CSSProperties}
+    >
       <div className="rounded-2xl bg-[#FBF7EE] p-2 sm:p-3">
 
 

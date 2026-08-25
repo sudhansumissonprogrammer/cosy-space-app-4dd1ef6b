@@ -36,7 +36,11 @@ export default function PdpFaqSection() {
   const [open, setOpen] = useState<number | null>(null);
 
   return (
-    <section data-sf-qa="faq" className="mt-8 rounded-2xl border border-border bg-card px-4 py-7 sm:px-8 sm:py-10">
+    <section
+      data-sf-qa="faq"
+      className="mt-8 rounded-2xl border border-border bg-card px-4 py-7 sm:px-8 sm:py-10"
+      style={{ contentVisibility: "auto", containIntrinsicSize: "auto 640px" } as React.CSSProperties}
+    >
       <p className="text-center text-[10px] font-bold uppercase tracking-[0.22em] text-primary/70">
         Need to know
       </p>

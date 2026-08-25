@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { MapPin, Clock, MessageCircle, Instagram, Facebook, Mail } from "lucide-react";
@@ -12,25 +13,48 @@ interface StorefrontFooterProps {
   store: StoreData;
 }
 
-function PaymentIcons({ store }: { store: StoreData }) {
-  // Read actual configured methods so we never show payment logos that don't work at checkout.
-  const { data: cfg } = useQuery({
-    queryKey: ["store-payment-config-footer", store.id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("store_payment_config")
-        .select("payment_methods")
-        .eq("store_id", store.id)
-        .maybeSingle();
-      return data as { payment_methods?: string[] | null } | null;
-    },
+/**
+ * Footer store info (public email + configured payment methods) in ONE
+ * request instead of two, and only after the browser goes idle — the footer
+ * is always below the fold, so these must never compete with the LCP image.
+ */
+function useFooterInfo(storeId?: string) {
+  const [idle, setIdle] = useState(false);
+  useEffect(() => {
+    const ric = (window as any).requestIdleCallback as
+      | ((cb: () => void, opts?: { timeout: number }) => number)
+      | undefined;
+    const run = () => setIdle(true);
+    const handle = ric ? ric(run, { timeout: 3000 }) : window.setTimeout(run, 1800);
+    return () => {
+      if (ric && typeof handle === "number") (window as any).cancelIdleCallback?.(handle);
+      else window.clearTimeout(handle as number);
+    };
+  }, []);
+
+  return useQuery({
+    queryKey: ["store-footer-info", storeId],
+    enabled: !!storeId && idle,
     staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    queryFn: async () => {
+      const { data } = await (supabase as any).rpc("get_store_footer_info", { _store_id: storeId });
+      const payload = (Array.isArray(data) ? data[0] : data) || {};
+      return {
+        publicEmail: ((payload.public_email as string) || "").trim(),
+        paymentMethods: (payload.payment_methods || []) as string[],
+      };
+    },
   });
-  const methods = new Set((cfg?.payment_methods || []).map((m) => String(m).toLowerCase()));
+}
+
+function PaymentIcons({ methods: list }: { methods: string[] }) {
+  const methods = new Set((list || []).map((m) => String(m).toLowerCase()));
   const hasCard = methods.has("razorpay") || methods.has("cashfree") || methods.has("payu");
   const hasUpi = hasCard || methods.has("upi");
   const hasCod = methods.has("cod");
   if (!hasCard && !hasUpi && !hasCod) return null;
+
 
   return (
     <div className="flex items-center gap-3 flex-wrap">
@@ -48,20 +72,14 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
   const address = [store.location, store.city, store.state].filter(Boolean).join(", ");
   
 
-  // Phase 3: owner_email is bundled in the storefront shell. Skip the RPC entirely
-  // when the field is present (null or a string). Only fall back to the RPC for
-  // legacy cached shells that predate the inlining (shellEmail === undefined).
+  // owner_email is bundled in the storefront shell; the idle footer-info RPC
+  // only fills in for legacy cached shells that predate the inlining.
   const shellEmail = (store as any).owner_email as string | null | undefined;
-  const { data: ownerEmail } = useQuery({
-    queryKey: ["store-public-email", store.id],
-    queryFn: async () => {
-      const { data } = await supabase.rpc("get_store_public_email", { _store_id: store.id });
-      return ((data as string) || "").trim();
-    },
-    enabled: !!store.id && shellEmail === undefined,
-    staleTime: 10 * 60 * 1000,
-    initialData: shellEmail === undefined ? undefined : (shellEmail || "").trim(),
-  });
+  const { data: footerInfo } = useFooterInfo(store.id);
+  const ownerEmail =
+    shellEmail === undefined ? footerInfo?.publicEmail || "" : (shellEmail || "").trim();
+  const paymentMethods = footerInfo?.paymentMethods || [];
+
 
   return (
     <footer
@@ -225,7 +243,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
             <p className="text-xs opacity-60">
               © {year} {store.name}. All rights reserved.
             </p>
-            <PaymentIcons store={store} />
+            <PaymentIcons methods={paymentMethods} />
           </div>
           {!isCustomDomainHost() && (
             <p className="text-xs opacity-50 flex items-center justify-center gap-1">

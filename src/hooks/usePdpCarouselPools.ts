@@ -14,34 +14,58 @@ interface Args {
   currentCategory: string | null;
 }
 
-/** Store categories, ordered the way the merchant arranged them. */
-function useStoreCategories(storeId: string) {
+/**
+ * Perf: page 0 of ALL THREE pools + the store category list arrive in a single
+ * `get_pdp_carousel_pools` RPC (was 4 separate REST round-trips). Pages 2+ of
+ * a pool still use the paginated product query below, so "load more" inside a
+ * carousel behaves exactly as before.
+ */
+function useCarouselSeed(args: Args) {
   return useQuery({
-    queryKey: ["pdp-store-categories", storeId],
-    enabled: !!storeId,
-    staleTime: 10 * 60 * 1000,
+    queryKey: ["pdp-pools-seed", args.storeId, args.currentProductId, args.currentCategory ?? "-"],
+    enabled: !!args.storeId && !!args.currentProductId,
+    staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
     queryFn: async () => {
       const { supabase } = await import("@/integrations/supabase/client");
-      const { data, error } = await (supabase as any)
-        .from("categories")
-        .select("id,name,slug,display_order")
-        .eq("store_id", storeId)
-        .order("display_order", { ascending: true })
-        .order("name", { ascending: true });
+      const { data, error } = await (supabase as any).rpc("get_pdp_carousel_pools", {
+        _store_id: args.storeId,
+        _product_id: args.currentProductId,
+        _category: args.currentCategory,
+        _limit: PDP_POOL_PAGE_SIZE,
+      });
       if (error) throw error;
-      return (data || []) as { id: string; name: string; slug: string; display_order: number | null }[];
+      const payload = (Array.isArray(data) ? data[0] : data) || {};
+      return {
+        categories: (payload.categories || []) as { id: string; name: string; slug: string; display_order: number | null }[],
+        otherCategory: (payload.other_category ?? null) as string | null,
+        same: (payload.same || []) as any[],
+        best: (payload.best || []) as any[],
+        other: (payload.other || []) as any[],
+      };
     },
   });
 }
 
-function usePool(pool: Pool, args: Args, category: string | null, enabled: boolean) {
+function usePool(
+  pool: Pool,
+  args: Args,
+  category: string | null,
+  enabled: boolean,
+  seed: any[] | undefined,
+) {
   return useInfiniteQuery({
     queryKey: ["pdp-pool", pool, args.storeId, category ?? "-", args.currentProductId],
-    enabled: enabled && !!args.storeId && !!args.currentProductId,
+    enabled: enabled && !!args.storeId && !!args.currentProductId && !!seed,
     initialPageParam: 0,
     staleTime: 5 * 60 * 1000,
     gcTime: 15 * 60 * 1000,
+    // Seed page 0 from the combined RPC so no extra request fires for it.
+    initialData: seed ? { pages: [seed], pageParams: [0] } : undefined,
+    // Mark the seeded page as fresh, otherwise React Query treats injected
+    // initialData as stale-at-epoch and immediately refetches page 0 — which
+    // would re-add the exact REST calls this RPC was meant to remove.
+    initialDataUpdatedAt: () => Date.now(),
     getNextPageParam: (last: any[], _all, lastParam: number) =>
       last.length === PDP_POOL_PAGE_SIZE ? lastParam + 1 : undefined,
     queryFn: async ({ pageParam }) => {
@@ -68,22 +92,13 @@ function usePool(pool: Pool, args: Args, category: string | null, enabled: boole
 }
 
 export function usePdpCarouselPools({ storeId, currentProductId, currentCategory }: Args) {
-  const { data: categories } = useStoreCategories(storeId);
+  const { data: seed } = useCarouselSeed({ storeId, currentProductId, currentCategory });
 
-  // "Other category" = the next category after the current one (wrapping).
-  const otherCategory = useMemo(() => {
-    const list = (categories || []).map((c) => c.name).filter(Boolean);
-    if (list.length === 0) return null;
-    if (!currentCategory) return list[0] ?? null;
-    const idx = list.findIndex((n) => n?.toLowerCase() === currentCategory.toLowerCase());
-    if (idx === -1) return list.find((n) => n?.toLowerCase() !== currentCategory.toLowerCase()) ?? null;
-    const next = list[(idx + 1) % list.length];
-    return next && next.toLowerCase() !== currentCategory.toLowerCase() ? next : null;
-  }, [categories, currentCategory]);
+  const otherCategory = seed?.otherCategory ?? null;
 
-  const same = usePool("same", { storeId, currentProductId, currentCategory }, currentCategory, !!currentCategory);
-  const best = usePool("best", { storeId, currentProductId, currentCategory }, null, true);
-  const other = usePool("other", { storeId, currentProductId, currentCategory }, otherCategory, !!otherCategory);
+  const same = usePool("same", { storeId, currentProductId, currentCategory }, currentCategory, !!currentCategory, seed?.same);
+  const best = usePool("best", { storeId, currentProductId, currentCategory }, null, true, seed?.best);
+  const other = usePool("other", { storeId, currentProductId, currentCategory }, otherCategory, !!otherCategory, seed?.other);
 
   const flat = (q: any) => (q.data?.pages ?? []).flat() as any[];
 

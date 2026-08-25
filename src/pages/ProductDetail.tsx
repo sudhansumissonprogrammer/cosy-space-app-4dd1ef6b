@@ -598,9 +598,12 @@ export default function ProductDetail() {
 
   // Product-card caches and older Worker payloads can omit media columns. A
   // tiny media-only lookup repairs the PDP without delaying its initial paint.
+  // Perf: fire ONLY when the column is genuinely absent from the payload —
+  // a present-but-null `video_url` means "this product has no video", so the
+  // old `!product.video_url` gate wasted a round trip on every non-video PDP.
   const { data: freshProductMedia } = useQuery({
     queryKey: ["product-media", product?.id],
-    enabled: !!product?.id && !(product as any)?.video_url,
+    enabled: !!product?.id && !("video_url" in ((product as any) || {})),
     queryFn: async () => {
       const { data } = await supabase
         .from("products")
@@ -611,6 +614,7 @@ export default function ProductDetail() {
     },
     staleTime: 30 * 60 * 1000,
   });
+
   const resolvedProductVideo = productVideo || (() => {
     const url = normalizeProductVideoUrl(freshProductMedia?.video_url);
     return url ? { url, poster: freshProductMedia?.video_poster_url || allImages[0] || "" } : null;

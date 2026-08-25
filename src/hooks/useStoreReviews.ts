@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  REVIEW_SELECT,
   normalizeReview,
   ratingBreakdown,
   type StoreReview,
@@ -10,33 +9,37 @@ import {
 
 /**
  * Shared store-review fetch used by the PDP showcase AND the gallery rating
- * badge. The display list is capped at `limit` for the carousel, but the
- * summary (total, average, star counts) is computed off a full-store fetch
- * of just id+rating so the "Based on X reviews" copy reflects reality.
+ * badge.
+ *
+ * Perf: this used to run TWO queries — the display list plus a `limit=5000`
+ * download of every rating in the store just to compute the average. On a
+ * 15k-product store that was the single heaviest payload on the PDP. It is
+ * now ONE `get_store_review_summary` RPC that returns the capped display list
+ * and the aggregate (total / average / star counts) computed in Postgres.
  */
 export function useStoreReviews(storeId?: string, limit = 20) {
   const query = useQuery({
     queryKey: ["store-pdp-reviews", storeId, limit],
     queryFn: async () => {
-      const [displayRes, summaryRes] = await Promise.all([
-        supabase
-          .from("product_reviews")
-          .select(REVIEW_SELECT)
-          .eq("store_id", storeId!)
-          .eq("is_hidden", false)
-          .order("pinned_rank", { ascending: true, nullsFirst: false })
-          .order("created_at", { ascending: false })
-          .limit(limit),
-        supabase
-          .from("product_reviews")
-          .select("rating")
-          .eq("store_id", storeId!)
-          .eq("is_hidden", false)
-          .limit(5000),
-      ]);
+      const { data } = await (supabase as any).rpc("get_store_review_summary", {
+        _store_id: storeId!,
+        _limit: limit,
+      });
+      const payload = (Array.isArray(data) ? data[0] : data) || {};
+      const counts = payload.counts || {};
       return {
-        reviews: (displayRes.data || []).map(normalizeReview) as StoreReview[],
-        allRatings: (summaryRes.data || []).map((r: any) => ({ rating: r.rating })),
+        reviews: (payload.reviews || []).map(normalizeReview) as StoreReview[],
+        summary: {
+          counts: {
+            5: Number(counts["5"] || 0),
+            4: Number(counts["4"] || 0),
+            3: Number(counts["3"] || 0),
+            2: Number(counts["2"] || 0),
+            1: Number(counts["1"] || 0),
+          } as Record<number, number>,
+          total: Number(payload.total || 0),
+          average: Number(payload.average || 0),
+        },
       };
     },
     enabled: !!storeId,
@@ -46,8 +49,10 @@ export function useStoreReviews(storeId?: string, limit = 20) {
   });
 
   const reviews = query.data?.reviews || [];
-  const allRatings = query.data?.allRatings || [];
-  const summary = useMemo(() => ratingBreakdown(allRatings), [allRatings]);
+  const summary = useMemo(
+    () => query.data?.summary || ratingBreakdown([]),
+    [query.data?.summary],
+  );
 
   return { ...query, reviews, ...summary };
 }

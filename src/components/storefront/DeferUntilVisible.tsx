@@ -40,13 +40,21 @@ export function DeferUntilVisible({
       { rootMargin }
     );
     io.observe(el);
-    // Safety fallback in case observer never fires (e.g. zero-height parent)
-    const t = setTimeout(() => setShow(true), fallbackDelay);
+    // Safety net: ONLY mount blind if the placeholder has no measurable box
+    // (zero-height parent → the observer can never fire). Previously this
+    // timer mounted every deferred section ~2.5s after load even when the
+    // shopper never scrolled, so below-fold carousels/reviews still fired
+    // their queries on every PDP.
+    const t = setTimeout(() => {
+      const box = ref.current?.getBoundingClientRect();
+      if (!box || (box.height === 0 && box.width === 0)) setShow(true);
+    }, fallbackDelay);
     return () => {
       io.disconnect();
       clearTimeout(t);
     };
   }, [show, rootMargin, fallbackDelay]);
+
 
   if (show) return <>{children}</>;
   return <div ref={ref} style={{ minHeight }} aria-hidden="true" />;
