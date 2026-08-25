@@ -2211,12 +2211,24 @@ function kvPutProducts(env, key, value, opts, filters) {
 }
 
 async function getSpaShell(request, ctx, env) {
+  // v8.84.0: the in-memory copy is only valid for the epoch it was stored
+  // under. A heal in another colo bumps the epoch → this isolate drops its
+  // warm shell on the next request instead of serving a dead build for
+  // MEM_SHELL_TTL.
+  const epoch = await getShellEpoch(env);
+  if (_memShellEpochUsed !== null && _memShellEpochUsed !== epoch) {
+    _memShell = null;
+    _memShellTs = 0;
+    _memPrebuiltHead = null;
+  }
+  _memShellEpochUsed = epoch;
+
   // FIX #1 + #6: In-memory first — zero I/O on warm isolates
   if (_memShell && Date.now() < _memShellTs) {
     return { html: _memShell, source: "mem" };
   }
 
-  const shellCacheKey = new Request("https://cache/spa-shell");
+  const { cacheKey: shellCacheKey, kvKey: shellKvKey } = shellKeysForEpoch(epoch);
   try {
     const cached = await cache.match(shellCacheKey);
     if (cached) {
@@ -2229,7 +2241,7 @@ async function getSpaShell(request, ctx, env) {
 
   if (env?.STORE_KV) {
     try {
-      const kvHtml = await env.STORE_KV.get(SPA_SHELL_KV_KEY);
+      const kvHtml = await env.STORE_KV.get(shellKvKey);
       if (kvHtml) {
         _memShell = kvHtml;
         _memShellTs = Date.now() + MEM_SHELL_TTL;
@@ -2252,6 +2264,7 @@ async function getSpaShell(request, ctx, env) {
       }
     } catch {}
   }
+
 
   if (inflightShellFetch) {
     try {
