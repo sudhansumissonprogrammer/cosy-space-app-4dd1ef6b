@@ -450,8 +450,13 @@ export default function ProductDetail() {
       return data as Variant[];
     },
     initialData: getCachedVariants,
-    enabled: !!productId,
+    // PERF: `product_variants` was a ~565ms straggler fired on every PDP even
+    // though the vast majority of catalog products have zero variants. The
+    // product row already carries `has_variants`; only spend the round trip
+    // when it is true (or when the flag is missing from the payload).
+    enabled: !!productId && (product as any)?.has_variants !== false,
     staleTime: 5 * 60 * 1000,
+
   });
 
   useMetaTags({
