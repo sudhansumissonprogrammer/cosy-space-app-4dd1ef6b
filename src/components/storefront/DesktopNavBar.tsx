@@ -13,6 +13,7 @@ import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import { useSmartHeader } from "@/hooks/useSmartHeader";
 import HeaderWhatsAppButton from "@/components/storefront/HeaderWhatsAppButton";
 import { useStorefrontCategories } from "@/hooks/useStorefrontCategories";
+import { optimizeImageUrl } from "@/lib/imageOptimize";
 
 
 const LazySearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
@@ -181,7 +182,7 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
             <Link to={storefrontPath(store.slug)} aria-label={`${store.name} home`}>
               {store.logo_url ? (
                 <img
-                  src={store.logo_url}
+                  src={optimizeImageUrl(store.logo_url, 320, 85)}
                   alt={store.name}
                   className="h-10 lg:h-12 w-auto max-w-[200px] object-contain origin-center"
                   loading="eager"

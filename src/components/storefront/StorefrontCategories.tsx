@@ -3,6 +3,7 @@ import SectionHeading from "@/components/storefront/SectionHeading";
 import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
+import { optimizeImageUrl } from "@/lib/imageOptimize";
 
 interface Category {
   id: string;
@@ -45,7 +46,7 @@ export default function StorefrontCategories({ categories, storeSlug, isLoading 
               >
                 <div className="h-20 w-20 rounded-full border-2 overflow-hidden transition-[transform,opacity,colors,box-shadow] sm:h-20 sm:w-20 border-border" style={{ "--tw-border-opacity": 1 } as any} onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--storefront-primary, hsl(var(--primary)))"} onMouseLeave={(e) => e.currentTarget.style.borderColor = ""}>
                   {cat.image_url ? (
-                    <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" loading="lazy" />
+                    <img src={optimizeImageUrl(cat.image_url, 200, 80)} alt={cat.name} className="h-full w-full object-cover" loading="lazy" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--accent)))" }}>
                       <Tag className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: "var(--storefront-text, hsl(var(--muted-foreground)))", opacity: 0.5 }} />
