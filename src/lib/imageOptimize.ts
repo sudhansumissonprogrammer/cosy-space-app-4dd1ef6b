@@ -28,37 +28,15 @@ const ENABLE_EDGE_IMAGE_PROXY = import.meta.env.VITE_ENABLE_EDGE_IMAGE_PROXY ===
 const PIPELINE_WIDTHS: number[] = [400, 800];
 
 /**
- * Supplier catalog CDNs whose originals are multi-thousand-pixel files.
- * These are proxied through the Worker `/cf-img` resize route. Strict
- * allow-list — never proxy arbitrary URLs (SSRF).
+ * v8.88 — `/cf-img` removed entirely.
+ * Supplier catalog CDNs (JD / Cartpe / …) are now requested DIRECTLY.
+ * Rationale: the Worker resize hop added a full extra RTT + cold-transform
+ * latency (300-900ms) on the LCP image and burned a paid Worker event per
+ * image, while the origins already sit behind their own CDN with
+ * cache-friendly, immutable URLs. Direct = fewer hops, preload-scanner
+ * friendly, and byte-identical to what the edge can preload.
  */
-const EDGE_RESIZE_HOSTS = new Set([
-  "assets.jdwebnship.in",
-  "assets.jdwebnship.com",
-  "cdn.cartpe.in",
-  "assets.mycatalog.io",
-  "watchtrade.in",
-  "www.watchtrade.in",
-  "overlaysnow.com",
-  "www.overlaysnow.com",
-]);
 
-function isEdgeResizableHost(url: string): boolean {
-  try {
-    return EDGE_RESIZE_HOSTS.has(new URL(url).hostname);
-  } catch {
-    return false;
-  }
-}
-
-/** True on hosts where the Cloudflare Worker (and thus /cf-img) is in front. */
-function isWorkerHost(): boolean {
-  if (typeof window === "undefined") return false;
-  const h = window.location.hostname;
-  if (h === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(h)) return false;
-  if (h.endsWith(".lovable.app") || h.endsWith(".lovableproject.com")) return false;
-  return true;
-}
 
 
 /**
@@ -151,20 +129,15 @@ export function optimizeImageUrl(
     }
   }
 
-  // ── 5. Supplier catalog CDNs: resize at the edge via the Worker ──
-  // Stores synced from JD / Cartpe serve 3000-4300px originals (500KB+ each)
-  // straight into 180-420px slots. The Worker `/cf-img` route resizes and
-  // edge-caches them. Allow-listed hosts only (SSRF-safe) and only on
-  // production hosts where the Worker actually runs; previews serve direct.
+  // ── 5. Any other external URL: serve DIRECTLY (no Worker /cf-img hop) ──
+  // v8.88: supplier CDNs (JD / Cartpe / …) are fetched straight from origin.
   if (url.startsWith("https://") || url.startsWith("http://")) {
-    if (isEdgeResizableHost(url) && isWorkerHost()) {
-      return `/cf-img?url=${encodeURIComponent(url)}&w=${width}&q=${quality}`;
-    }
     if (ENABLE_EDGE_IMAGE_PROXY && SUPABASE_PROJECT_ID) {
       return `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/image-ops?action=resize&url=${encodeURIComponent(url)}&w=${width}&q=${quality}`;
     }
     return url;
   }
+
 
 
   return url;
@@ -237,11 +210,15 @@ export function getImageSrcSet(
     }
   }
 
-  // For external CDNs and legacy Supabase render: real responsive sizes
-  return sizes
-    .map((w) => `${optimizeImageUrl(firstUrl, w, quality)} ${w}w`)
-    .join(", ");
+  // For external CDNs and legacy Supabase render: real responsive sizes.
+  // v8.88: if the transform is a no-op (plain supplier URL served direct),
+  // every entry would be the same URL — skip srcset entirely.
+  const entries = sizes.map((w) => ({ w, u: optimizeImageUrl(firstUrl, w, quality) }));
+  if (entries.length === 0) return "";
+  if (entries.every((e) => e.u === entries[0].u)) return "";
+  return entries.map((e) => `${e.u} ${e.w}w`).join(", ");
 }
+
 
 /**
  * Standard `sizes` attribute for product cards in a responsive grid.

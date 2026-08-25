@@ -225,7 +225,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.87.0-preload-url-parity";
+const WORKER_VERSION = "8.88.0-no-cf-img";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -3135,13 +3135,15 @@ function _toRenderUrl(rawUrl, width, quality) {
  * This helper mirrors the client transform exactly so the preload is a hit.
  */
 function _toGalleryUrl(rawUrl, width, quality) {
-  try {
-    const u = new URL(rawUrl);
-    if (CF_IMG_HOSTS.has(u.hostname)) {
-      return `/cf-img?url=${encodeURIComponent(rawUrl)}&w=${width}&q=${quality}`;
-    }
-  } catch {}
+  // v8.88.0 — /cf-img removed. Supplier CDNs are requested directly by the
+  // client (imageOptimize.ts), so the preload must emit the RAW url to stay
+  // byte-identical. Supabase storage still goes through the free render API.
   return _toRenderUrl(rawUrl, width, quality);
+}
+
+/** True when _toGalleryUrl is a no-op for this url (raw passthrough). */
+function _isRawPassthrough(rawUrl) {
+  return _toGalleryUrl(rawUrl, 400, 75) === rawUrl;
 }
 
 function _buildProductImagePreloads(inlineProductsStr, count = 2, opts) {
@@ -3154,6 +3156,12 @@ function _buildProductImagePreloads(inlineProductsStr, count = 2, opts) {
     if (pdp) {
       // Hero gallery slide: full-bleed on mobile, half on desktop.
       const main = _toGalleryUrl(raw, 800, 80);
+      if (_isRawPassthrough(raw)) {
+        // Single immutable origin file — no responsive variants exist.
+        out +=
+          `<link rel="preload" as="image" href="${escapeHtml(main)}" fetchpriority="high" />\n`;
+        continue;
+      }
       const srcset = [400, 600, 800, 1200]
         .map((w) => `${escapeHtml(_toGalleryUrl(raw, w, 80))} ${w}w`)
         .join(", ");
@@ -3163,12 +3171,16 @@ function _buildProductImagePreloads(inlineProductsStr, count = 2, opts) {
       continue;
     }
     const main = _toGalleryUrl(raw, 400, 75);
+    const fp = i === 0 ? ` fetchpriority="high"` : "";
+    if (_isRawPassthrough(raw)) {
+      out += `<link rel="preload" as="image" href="${escapeHtml(main)}"${fp} />\n`;
+      continue;
+    }
     const srcset =
       `${escapeHtml(_toGalleryUrl(raw, 200, 75))} 200w, ` +
       `${escapeHtml(_toGalleryUrl(raw, 400, 75))} 400w, ` +
       `${escapeHtml(_toGalleryUrl(raw, 600, 75))} 600w, ` +
       `${escapeHtml(_toGalleryUrl(raw, 800, 75))} 800w`;
-    const fp = i === 0 ? ` fetchpriority="high"` : "";
     out +=
       `<link rel="preload" as="image" href="${escapeHtml(main)}" ` +
       `imagesrcset="${srcset}" imagesizes="(max-width:640px) 45vw, 25vw"${fp} />\n`;
@@ -3191,13 +3203,8 @@ function _buildProductPreloaderGrid(inlineProductsStr, count = 8) {
   if (!items.length) return "";
   let imgs = "";
   for (let i = 0; i < items.length; i++) {
-    // v8.87.0 — supplier-CDN originals (jdwebnship/cartpe/…) are 3000-4300px
-    // JPEGs. The client never requests them directly (it goes through
-    // /cf-img), so warming the raw URL burned 60-80KB each for nothing and
-    // stole bandwidth from the real LCP image. Skip them.
-    try {
-      if (CF_IMG_HOSTS.has(new URL(items[i].url).hostname)) continue;
-    } catch {}
+    // v8.88.0 — /cf-img removed: the client now requests supplier originals
+    // directly, so warming them here IS the real request (cache hit later).
     const u = escapeHtml(items[i].url);
     const eager = i < 4 ? ' loading="eager"' : ' loading="lazy"';
     const fp = i < 2 ? ' fetchpriority="high"' : "";
