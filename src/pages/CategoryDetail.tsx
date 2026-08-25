@@ -293,7 +293,7 @@ export default function CategoryDetail() {
 
   const gridClass = isMenuStyle
     ? "flex flex-col gap-2.5"
-    : "grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-5 xl:grid-cols-5";
+    : `grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-5 xl:grid-cols-5${cardStyle === "style-6" ? " -mx-3 sm:mx-0 gap-x-1" : ""}`;
 
   return (
     <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 py-5">

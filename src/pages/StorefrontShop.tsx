@@ -45,7 +45,7 @@ export default function StorefrontShop() {
   // Tighter mobile gutters → more card width
   const gridClass = isMenuStyle
     ? "flex flex-col gap-2.5"
-    : "grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-5 xl:grid-cols-5";
+    : `grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-5 xl:grid-cols-5${cardStyle === "style-6" ? " -mx-3 sm:mx-0 gap-x-1" : ""}`;
 
   const [sort, setSort] = useState<SortKey>("default");
 
