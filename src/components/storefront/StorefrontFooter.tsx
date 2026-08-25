@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { MapPin, Clock, MessageCircle, Instagram, Facebook, Mail } from "lucide-react";
@@ -242,7 +243,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
             <p className="text-xs opacity-60">
               © {year} {store.name}. All rights reserved.
             </p>
-            <PaymentIcons store={store} />
+            <PaymentIcons methods={paymentMethods} />
           </div>
           {!isCustomDomainHost() && (
             <p className="text-xs opacity-50 flex items-center justify-center gap-1">
