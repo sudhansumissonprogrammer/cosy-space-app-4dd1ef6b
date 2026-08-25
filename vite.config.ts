@@ -302,26 +302,16 @@ export default defineConfig(({ mode }) => ({
             return "forms";
           }
 
-          // === PDP critical path (v8.82) ===
-          // The product route chunk used to spawn 4-5 extra micro-chunk
-          // requests AFTER it parsed (PackagingSelector, CodAssuranceStrip,
-          // VideoSlide, pdpPreload, productSelectors) — each an extra serial
-          // round trip before the hero gallery could paint on cold mobile.
-          // Fold them into ONE `pdp-core` chunk with the route itself.
-          // Below-fold sections (Reviews, FBT, Carousels, WristlifeSections)
-          // stay lazy on purpose — they are deliberately deferred.
-          if (
-            id.includes("/src/pages/ProductDetail.tsx") ||
-            id.includes("/src/components/storefront/VideoSlide") ||
-            id.includes("/src/components/storefront/pdp/storeSections/PackagingSelector") ||
-            id.includes("/src/components/storefront/pdp/storeSections/CodAssuranceStrip") ||
-            id.includes("/src/components/storefront/pdp/storeSections/config") ||
-            id.includes("/src/lib/pdpPreload") ||
-            id.includes("/src/lib/packagingOptions") ||
-            id.includes("/src/lib/productSelectors")
-          ) {
-            return "pdp-core";
-          }
+          // === PDP critical path (v8.84) ===
+          // NOTE: a `pdp-core` manual chunk used to live here (v8.82) folding
+          // ProductDetail.tsx + VideoSlide + PackagingSelector + helpers into
+          // one file. It created a CIRCULAR chunk dependency with
+          // `storefront-shell` (shell imports pdp helpers, pdp-core imports
+          // shell), which crashed every product page at module-eval time with
+          // "Cannot access 'mn' before initialization" (TDZ) — a white screen
+          // on 100% of PDP loads. Do NOT reintroduce a manual chunk that
+          // contains a route component; let Rollup derive the route chunk.
+
 
           // === App-level shared infra (v8) ===
 
