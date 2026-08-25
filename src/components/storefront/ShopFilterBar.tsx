@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { ArrowDownAZ, ArrowUpAZ, IndianRupee, BadgePercent, PackageCheck, Filter, Clock } from "lucide-react";
 import { ArrowDownAZ, ArrowUpAZ, IndianRupee, BadgePercent, PackageCheck, Filter, Clock } from "lucide-react";
 
 export type SortKey = "default" | "recent" | "price-asc" | "price-desc" | "discount" | "in-stock";
