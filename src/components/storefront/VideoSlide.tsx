@@ -121,8 +121,12 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
         autoPlay={isActive}
         muted
         playsInline
+        controls={false}
         disablePictureInPicture
-        className="relative z-[1] w-full h-full object-cover"
+        disableRemotePlayback
+        controlsList="nodownload noplaybackrate nofullscreen noremoteplayback"
+        className="sf-video-nocontrols relative z-[1] w-full h-full object-cover"
+
         onClick={(e) => {
           e.stopPropagation();
           handleToggle();
