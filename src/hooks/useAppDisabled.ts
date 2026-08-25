@@ -3,27 +3,20 @@
  * explicitly switched OFF for this storefront.
  *
  * Needed for add-ons that are ON by default for every store (so they cannot be
- * gated by `get_store_enabled_apps`, which only ever returns enabled rows).
- * The query is opt-in via `active` so storefronts that never touch the feature
- * pay zero extra round trips.
+ * gated by the enabled-only list).
+ *
+ * PERF: this used to run its own `get_store_disabled_apps` RPC, doubling the
+ * add-on round trips on every storefront page. It now reads the shared
+ * `get_store_apps_state` query (one request for enabled + disabled).
  */
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useStoreAppsState } from "@/hooks/useStoreEnabledApps";
 
 export function useStoreDisabledApps(storeSlug: string | undefined, active = true) {
-  return useQuery({
-    queryKey: ["store-disabled-apps", storeSlug],
-    enabled: !!storeSlug && active,
-    staleTime: 10 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
-    queryFn: async () => {
-      const { data, error } = await (supabase as any).rpc("get_store_disabled_apps", {
-        _store_slug: storeSlug,
-      });
-      if (error) throw error;
-      return ((data ?? []) as Array<{ app_id: string }>).map((r) => r.app_id);
-    },
-  });
+  const q = useStoreAppsState(active ? storeSlug : undefined);
+  const data = q.data
+    ? q.data.filter((r) => !r.enabled).map((r) => r.app_id)
+    : undefined;
+  return { ...q, data } as typeof q & { data: string[] | undefined };
 }
 
 /** Default-on add-ons: returns true only once we know it was turned off. */
