@@ -1405,6 +1405,7 @@ function _buildInstantSkeletonPage(slug, bgColor, themeLite, hostname, inlinePro
     (themeLite && (themeLite.name || themeLite.store_name)) || slug || "",
     (themeLite && (themeLite.tc || themeLite.text_color)) || "#1a1a1a",
     (themeLite && (themeLite.pc || themeLite.primary_color)) || "#004643",
+    (themeLite && (themeLite.logo_url || themeLite.logo)) || "",
   );
   const safeSlug = (slug || "").replace(/[<>"'&]/g, "");
 
