@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, lazy, Suspense } from "react";
+import { useMemo, useState, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import { storefrontPath } from "@/lib/subdomain";
 import { PenLine, ChevronRight, ArrowRight } from "lucide-react";
