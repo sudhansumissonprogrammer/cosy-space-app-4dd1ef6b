@@ -225,7 +225,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.84.0-global-shell-epoch";
+const WORKER_VERSION = "8.85.0-pdp-hero-preload-parity";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -3060,12 +3060,47 @@ function _toRenderUrl(rawUrl, width, quality) {
     return rawUrl;
   }
 }
-function _buildProductImagePreloads(inlineProductsStr, count = 2) {
-  const items = _extractTopProductImages(inlineProductsStr, count);
+/**
+ * v8.85.0 — PDP hero preload URL parity.
+ * The gallery in ProductDetail.tsx renders
+ *   src      = optimizeImageUrl(url, 800)
+ *   srcSet   = getImageSrcSet(url, [400,600,800,1200], 80)
+ *   sizes    = "(max-width: 640px) 100vw, 50vw"
+ * and for supplier CDNs (CF_IMG_HOSTS) optimizeImageUrl routes through
+ * `/cf-img?url=…&w=…&q=…`. The edge preload used to emit the RAW supplier URL
+ * with card sizes (45vw/25vw) — a completely different URL from the one React
+ * requests, so the preload was wasted and the hero image only started
+ * downloading after hydration (~3s measured on utkalwatch.in mobile cold load).
+ * This helper mirrors the client transform exactly so the preload is a hit.
+ */
+function _toGalleryUrl(rawUrl, width, quality) {
+  try {
+    const u = new URL(rawUrl);
+    if (CF_IMG_HOSTS.has(u.hostname)) {
+      return `/cf-img?url=${encodeURIComponent(rawUrl)}&w=${width}&q=${quality}`;
+    }
+  } catch {}
+  return _toRenderUrl(rawUrl, width, quality);
+}
+
+function _buildProductImagePreloads(inlineProductsStr, count = 2, opts) {
+  const pdp = !!(opts && opts.pdp);
+  const items = _extractTopProductImages(inlineProductsStr, pdp ? 1 : count);
   if (!items.length) return "";
   let out = "";
   for (let i = 0; i < items.length; i++) {
     const raw = items[i].url;
+    if (pdp) {
+      // Hero gallery slide: full-bleed on mobile, half on desktop.
+      const main = _toGalleryUrl(raw, 800, 80);
+      const srcset = [400, 600, 800, 1200]
+        .map((w) => `${escapeHtml(_toGalleryUrl(raw, w, 80))} ${w}w`)
+        .join(", ");
+      out +=
+        `<link rel="preload" as="image" href="${escapeHtml(main)}" ` +
+        `imagesrcset="${srcset}" imagesizes="(max-width: 640px) 100vw, 50vw" fetchpriority="high" />\n`;
+      continue;
+    }
     const main = _toRenderUrl(raw, 400, 72);
     const srcset =
       `${escapeHtml(_toRenderUrl(raw, 200, 72))} 200w, ` +
@@ -4441,8 +4476,9 @@ async function serveStreamedHtml(
           if (heroList.length) categoryProductsJsonForPreload = JSON.stringify(heroList);
         } catch {}
       }
+      const _isPdpPreload = pdpCategoryInline?.kind === "product" && !!pdpCategoryInline?.json;
       const productImagePreloads = categoryProductsJsonForPreload
-        ? _buildProductImagePreloads(categoryProductsJsonForPreload, 2)
+        ? _buildProductImagePreloads(categoryProductsJsonForPreload, 2, { pdp: _isPdpPreload })
         : inlineProducts
           ? _buildProductImagePreloads(inlineProducts, 2)
           : _buildImagePreloadsFromUrls(topImages, 2);
