@@ -225,7 +225,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.85.0-pdp-hero-preload-parity";
+const WORKER_VERSION = "8.86.0-edge-branded-splash";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -1172,12 +1172,67 @@ function buildSkeleton(
   storeName = "",
   textColor = "#1a1a1a",
   primaryColor = "#004643",
+  logoUrl = "",
 ) {
   // Custom loader (uiverse "mean-puma-17") — nested rotating rings using
   // the store's brand primary color. Shown ONLY on initial store load;
   // all in-app skeletons (PDP, category, etc.) remain untouched.
   const skelBg = bgColor || "#ffffff";
   const ringColor = primaryColor || "#004643";
+
+  // v8.86.0 — BRANDED SPLASH AT THE EDGE.
+  // The black splash used to be painted by an inline script that lives ~16KB
+  // AFTER #sf-skel in the streamed HTML, so on cold loads the browser painted
+  // the white ring skeleton first and only flipped to black one network chunk
+  // later (measured ~250-600ms of white). Rendering the splash markup here —
+  // in the same chunk as #sf-skel — makes the very first paint the black
+  // branded screen. `data-splash="1"` makes the index.html script skip it.
+  const safeName = String(storeName || "").replace(/[<>&"]/g, "").trim();
+  const safeLogo = String(logoUrl || "").replace(/["<>]/g, "");
+  if (safeName || safeLogo) {
+    const mono = safeName
+      .replace(/[^A-Za-z0-9 ]/g, " ")
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((w) => w.charAt(0).toUpperCase())
+      .join("");
+    const wordCls = safeName.length <= 10 ? "s1" : safeName.length <= 18 ? "s2" : "s3";
+    const mark = safeLogo
+      ? `<img src="${safeLogo}" alt="" fetchpriority="high" decoding="async">`
+      : `<span class="sbsp-wordmark ${wordCls}">${safeName || mono}</span>`;
+    const caption = safeLogo && safeName ? safeName : "Loading store";
+    const css =
+      `<style id="sb-splash-css">` +
+      `@keyframes sbsp-rise{0%{opacity:0;transform:translateY(10px) scale(.92)}100%{opacity:1;transform:none}}` +
+      `@keyframes sbsp-halo{0%,100%{transform:scale(.9);opacity:.5}50%{transform:scale(1.06);opacity:1}}` +
+      `@keyframes sbsp-word{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}` +
+      `@keyframes sbsp-bar{0%{transform:scaleX(0)}100%{transform:scaleX(1)}}` +
+      `[data-splash="1"]{background:#000 !important;transition:opacity .24s ease-out}` +
+      `[data-splash="1"] .sbsp-wrap{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:28px;transition:transform .45s cubic-bezier(.22,1,.36,1),opacity .3s ease}` +
+      `[data-splash="1"] .sbsp-stage{position:relative;display:flex;align-items:center;justify-content:center;width:168px;height:168px}` +
+      `[data-splash="1"] .sbsp-halo{position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.10) 0%,rgba(255,255,255,0) 68%);animation:sbsp-halo 2.6s ease-in-out infinite}` +
+      `[data-splash="1"] .sbsp-logoBox{position:relative;width:168px;height:168px;padding:20px;box-sizing:border-box;overflow:hidden;border-radius:28px;animation:sbsp-rise .68s cubic-bezier(.22,1,.36,1) both}` +
+      `[data-splash="1"] .sbsp-logoBox img{width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 4px 18px rgba(255,255,255,.18))}` +
+      `[data-splash="1"] .sbsp-mono{display:flex;align-items:center;justify-content:center;width:100%;height:100%;font:700 52px/1 Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:.06em;color:#fff;text-shadow:0 0 26px rgba(255,255,255,.28)}` +
+      `[data-splash="1"] .sbsp-stage.is-word{width:auto;height:auto;max-width:min(86vw,460px)}` +
+      `[data-splash="1"] .sbsp-stage.is-word .sbsp-logoBox{width:auto;height:auto;padding:10px 6px}` +
+      `[data-splash="1"] .sbsp-wordmark{display:block;text-align:center;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-weight:800;color:#fff;line-height:1.06;letter-spacing:.02em;text-shadow:0 0 30px rgba(255,255,255,.30),0 2px 10px rgba(0,0,0,.5);word-break:break-word}` +
+      `[data-splash="1"] .sbsp-wordmark.s1{font-size:clamp(34px,11vw,64px)}` +
+      `[data-splash="1"] .sbsp-wordmark.s2{font-size:clamp(28px,8.5vw,50px)}` +
+      `[data-splash="1"] .sbsp-wordmark.s3{font-size:clamp(22px,6.5vw,38px);letter-spacing:.04em}` +
+      `[data-splash="1"] .sbsp-word{font:700 11px/1 Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;text-transform:uppercase;color:#fff;text-shadow:0 0 18px rgba(255,255,255,.35),0 1px 2px rgba(0,0,0,.4);animation:sbsp-word .9s ease-out .25s both}` +
+      `[data-splash="1"] .sbsp-bar{width:132px;height:2px;border-radius:2px;background:rgba(255,255,255,.14);overflow:hidden}` +
+      `[data-splash="1"] .sbsp-bar>i{display:block;height:100%;transform-origin:left;background:linear-gradient(90deg,rgba(255,255,255,.45),#fff);animation:sbsp-bar 2.8s cubic-bezier(.16,.84,.3,1) forwards}` +
+      `@media (prefers-reduced-motion:reduce){[data-splash="1"] *{animation:none !important}}` +
+      `</style>`;
+    let sp = `<script>window.__SF_WORKER__=true;</script>${css}`;
+    sp += `<div id="sf-skel" data-splash="1" aria-hidden="true" style="position:fixed;inset:0;min-height:100vh;background:#000;z-index:2147483000;pointer-events:none;overflow:hidden">`;
+    sp += `<div class="sbsp-wrap"><div class="sbsp-stage${safeLogo ? "" : " is-word"}"><div class="sbsp-halo"></div><div class="sbsp-logoBox">${mark}</div></div>`;
+    sp += `<div class="sbsp-word">${caption}</div><div class="sbsp-bar"><i></i></div></div></div>`;
+    if (includeCleanup) sp += getSkeletonCleanupScript();
+    return sp;
+  }
 
   const spinnerCss = `<style id="sf-skel-anim">@keyframes sf-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}#sf-skel .sf-spin-wrap{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:150px;height:150px}#sf-skel .sf-ring{position:absolute;inset:0;border:5px solid transparent;border-radius:50%;border-top-color:${ringColor};animation:sf-spin 5s cubic-bezier(0.17,0.49,0.96,0.79) infinite}#sf-skel .sf-ring>.sf-ring{inset:4.95px}</style>`;
 
@@ -1189,6 +1244,7 @@ function buildSkeleton(
   if (includeCleanup) s += getSkeletonCleanupScript();
   return s;
 }
+
 
 function buildThemeCssFromConfig(tc) {
   const primaryColor = tc.primary_color || tc.pc || "#004643";
@@ -1349,6 +1405,7 @@ function _buildInstantSkeletonPage(slug, bgColor, themeLite, hostname, inlinePro
     (themeLite && (themeLite.name || themeLite.store_name)) || slug || "",
     (themeLite && (themeLite.tc || themeLite.text_color)) || "#1a1a1a",
     (themeLite && (themeLite.pc || themeLite.primary_color)) || "#004643",
+    (themeLite && (themeLite.logo_url || themeLite.logo)) || "",
   );
   const safeSlug = (slug || "").replace(/[<>"'&]/g, "");
 
@@ -4281,6 +4338,7 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
     (storefrontData && storefrontData.store && storefrontData.store.name) || "",
     textColor,
     primaryColor,
+    (storefrontData && storefrontData.store && storefrontData.store.logo_url) || "",
   );
 
   // LCP preload: hero image (mobile_hero > banner > logo)
@@ -4566,9 +4624,17 @@ async function serveStreamedHtml(
           storefrontResult.data &&
           storefrontResult.data.store &&
           storefrontResult.data.store.name) ||
+          (themeLite && (themeLite.name || themeLite.store_name)) ||
+          slug ||
           "",
         textColor,
         (themeLite && (themeLite.pc || themeLite.primary_color)) || "#004643",
+        (storefrontResult &&
+          storefrontResult.data &&
+          storefrontResult.data.store &&
+          storefrontResult.data.store.logo_url) ||
+          (themeLite && (themeLite.logo_url || themeLite.logo)) ||
+          "",
       );
 
       let preloaderProductsJson = inlineProducts || "";
