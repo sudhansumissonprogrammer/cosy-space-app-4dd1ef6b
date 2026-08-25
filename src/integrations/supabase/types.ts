@@ -5526,6 +5526,15 @@ export type Database = {
         Returns: Json
       }
       get_own_whatsapp_token: { Args: { _store_id: string }; Returns: string }
+      get_pdp_carousel_pools: {
+        Args: {
+          _category?: string
+          _limit?: number
+          _product_id: string
+          _store_id: string
+        }
+        Returns: Json
+      }
       get_platform_config_public: {
         Args: never
         Returns: {
@@ -5622,6 +5631,7 @@ export type Database = {
           config: Json
         }[]
       }
+      get_store_footer_info: { Args: { _store_id: string }; Returns: Json }
       get_store_monthly_sales: {
         Args: { _months?: number; _store_id: string }
         Returns: {
@@ -5645,6 +5655,10 @@ export type Database = {
           discount_value: number
           min_order_amount: number
         }[]
+      }
+      get_store_review_summary: {
+        Args: { _limit?: number; _store_id: string }
+        Returns: Json
       }
       get_store_sales_analytics: {
         Args: {
