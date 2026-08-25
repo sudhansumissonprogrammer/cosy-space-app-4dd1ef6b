@@ -225,7 +225,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.86.0-edge-branded-splash";
+const WORKER_VERSION = "8.87.0-preload-url-parity";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -2540,7 +2540,11 @@ function _buildImagePreloadsFromUrls(urls, count = 2) {
   let out = "";
   const n = Math.min(count, urls.length);
   for (let i = 0; i < n; i++) {
-    const href = escapeHtml(_toRenderUrl(urls[i], 400, 72));
+    // v8.87.0 — parity with the client: OptimizedImage cards request
+    // optimizeImageUrl(url, 400, 75) (→ /cf-img for supplier CDNs).
+    // Emitting the raw supplier URL here downloaded a 3000px original that
+    // the browser then never used.
+    const href = escapeHtml(_toGalleryUrl(urls[i], 400, 75));
     const fp = i === 0 ? ` fetchpriority="high"` : "";
     out +=
       `<link rel="preload" as="image" href="${href}" ` +
@@ -2557,7 +2561,7 @@ function _buildImagePreloadsFromUrls(urls, count = 2) {
 function _withImageLinkPreload(linkHeader, urls) {
   if (!Array.isArray(urls) || urls.length === 0) return linkHeader;
   try {
-    const first = _toRenderUrl(urls[0], 400, 72);
+    const first = _toGalleryUrl(urls[0], 400, 75);
     if (!first) return linkHeader;
     const imgLink = `<${first}>; rel=preload; as=image; fetchpriority=high`;
     return linkHeader ? `${imgLink}, ${linkHeader}` : imgLink;
@@ -3158,11 +3162,12 @@ function _buildProductImagePreloads(inlineProductsStr, count = 2, opts) {
         `imagesrcset="${srcset}" imagesizes="(max-width: 640px) 100vw, 50vw" fetchpriority="high" />\n`;
       continue;
     }
-    const main = _toRenderUrl(raw, 400, 72);
+    const main = _toGalleryUrl(raw, 400, 75);
     const srcset =
-      `${escapeHtml(_toRenderUrl(raw, 200, 72))} 200w, ` +
-      `${escapeHtml(_toRenderUrl(raw, 400, 72))} 400w, ` +
-      `${escapeHtml(_toRenderUrl(raw, 800, 72))} 800w`;
+      `${escapeHtml(_toGalleryUrl(raw, 200, 75))} 200w, ` +
+      `${escapeHtml(_toGalleryUrl(raw, 400, 75))} 400w, ` +
+      `${escapeHtml(_toGalleryUrl(raw, 600, 75))} 600w, ` +
+      `${escapeHtml(_toGalleryUrl(raw, 800, 75))} 800w`;
     const fp = i === 0 ? ` fetchpriority="high"` : "";
     out +=
       `<link rel="preload" as="image" href="${escapeHtml(main)}" ` +
@@ -3186,6 +3191,13 @@ function _buildProductPreloaderGrid(inlineProductsStr, count = 8) {
   if (!items.length) return "";
   let imgs = "";
   for (let i = 0; i < items.length; i++) {
+    // v8.87.0 — supplier-CDN originals (jdwebnship/cartpe/…) are 3000-4300px
+    // JPEGs. The client never requests them directly (it goes through
+    // /cf-img), so warming the raw URL burned 60-80KB each for nothing and
+    // stole bandwidth from the real LCP image. Skip them.
+    try {
+      if (CF_IMG_HOSTS.has(new URL(items[i].url).hostname)) continue;
+    } catch {}
     const u = escapeHtml(items[i].url);
     const eager = i < 4 ? ' loading="eager"' : ' loading="lazy"';
     const fp = i < 2 ? ' fetchpriority="high"' : "";
@@ -4641,7 +4653,11 @@ async function serveStreamedHtml(
       if (Array.isArray(storefrontResult?.data?.products) && storefrontResult.data.products.length > 0) {
         preloaderProductsJson = JSON.stringify(storefrontResult.data.products);
       }
-      const productPreloaderGrid = preloaderProductsJson ? _buildProductPreloaderGrid(preloaderProductsJson, 2) : "";
+      // v8.87.0 — on a PDP the grid warms *category* thumbnails that are far
+      // below the fold, competing with the hero. The dedicated hero preload
+      // above is the only image worth warming at byte 0.
+      const productPreloaderGrid =
+        !_isPdpPreload && preloaderProductsJson ? _buildProductPreloaderGrid(preloaderProductsJson, 2) : "";
 
       let bodyChunk = html.slice(headEnd + 7);
 
@@ -4808,7 +4824,9 @@ async function fetchAndInjectSlug(
   // v8.74.0: prepend the LCP product image so it is discovered from the
   // response HEADERS — earlier than any tag in the streamed body.
   const topImages = kvBatch.imgs;
-  const linkHeader = _withImageLinkPreload(_buildLinkPreloadHeader(shellResult.html), topImages);
+  const linkHeader = _isPdpPath(new URL(request.url).pathname)
+    ? _buildLinkPreloadHeader(shellResult.html)
+    : _withImageLinkPreload(_buildLinkPreloadHeader(shellResult.html), topImages);
 
   const newHeaders = new Headers();
   newHeaders.set("Content-Type", "text/html; charset=utf-8");
@@ -8188,7 +8206,9 @@ async function _handleFetch(request, env, ctx) {
     // v8.75.0 — per-category images win over store-wide images when on a
     // /category/* route, so cold category loads preload the RIGHT LCP image.
     const topImages = (kvBatch.catImgs && kvBatch.catImgs.length ? kvBatch.catImgs : kvBatch.imgs) || null;
-    const linkHeader = _withImageLinkPreload(_buildLinkPreloadHeader(shellResult.html), topImages);
+    const linkHeader = _isPdpPath(new URL(request.url).pathname)
+    ? _buildLinkPreloadHeader(shellResult.html)
+    : _withImageLinkPreload(_buildLinkPreloadHeader(shellResult.html), topImages);
 
     const responseHeaders = new Headers();
     responseHeaders.set("Content-Type", "text/html; charset=utf-8");
@@ -8401,7 +8421,9 @@ async function _handleFetch(request, env, ctx) {
     // FIX #3
     // v8.75.0 — per-category images take priority on /category/*.
     const topImagesCD = (kvBatchCD.catImgs && kvBatchCD.catImgs.length ? kvBatchCD.catImgs : kvBatchCD.imgs) || null;
-    const linkHeaderCD = _withImageLinkPreload(_buildLinkPreloadHeader(shellResultCD.html), topImagesCD);
+    const linkHeaderCD = _isPdpPath(new URL(request.url).pathname)
+      ? _buildLinkPreloadHeader(shellResultCD.html)
+      : _withImageLinkPreload(_buildLinkPreloadHeader(shellResultCD.html), topImagesCD);
 
     const responseHeadersCD = new Headers();
     responseHeadersCD.set("Content-Type", "text/html; charset=utf-8");
