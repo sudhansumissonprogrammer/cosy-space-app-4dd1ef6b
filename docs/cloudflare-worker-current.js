@@ -2327,11 +2327,12 @@ async function _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey, shellK
   _memShellTs = Date.now() + MEM_SHELL_TTL;
 
   if (ctx) {
+    const kvKey = shellKvKey || SPA_SHELL_KV_KEY;
     ctx.waitUntil(
       Promise.all([
         // v8.13.1: dedup-wrapped — collapses multi-isolate write bursts in same colo.
         env?.STORE_KV
-          ? kvPutDedup(env, SPA_SHELL_KV_KEY, html, { expirationTtl: SPA_SHELL_KV_TTL })
+          ? kvPutDedup(env, kvKey, html, { expirationTtl: SPA_SHELL_KV_TTL })
           : Promise.resolve(),
         cache.put(
           shellCacheKey,
@@ -2350,10 +2351,12 @@ async function _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey, shellK
 }
 
 async function getFreshSpaShell(request, ctx, env) {
-  const shellCacheKey = new Request("https://cache/spa-shell");
-  const html = await _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey);
+  const epoch = await getShellEpoch(env);
+  const { cacheKey, kvKey } = shellKeysForEpoch(epoch);
+  const html = await _fetchSpaShellFromOrigin(request, ctx, env, cacheKey, kvKey);
   return html ? { html, source: "origin-fresh" } : null;
 }
+
 
 async function getNavigationSpaShell(request, ctx, env) {
   const cached = await getSpaShell(request, ctx, env);
