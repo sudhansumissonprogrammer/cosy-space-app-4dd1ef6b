@@ -15,7 +15,6 @@ import { useProductCardActions } from "@/hooks/useProductCardActions";
 import { useNavIcons } from "@/hooks/useNavIcons";
 import ProductCardTitle from "./ProductCardTitle";
 import WishlistHeartButton from "./WishlistHeartButton";
-import CardRatingBadge from "./CardRatingBadge";
 
 import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
 import { setPdpPreload } from "@/lib/pdpPreload";
