@@ -4476,8 +4476,9 @@ async function serveStreamedHtml(
           if (heroList.length) categoryProductsJsonForPreload = JSON.stringify(heroList);
         } catch {}
       }
+      const _isPdpPreload = pdpCategoryInline?.kind === "product" && !!pdpCategoryInline?.json;
       const productImagePreloads = categoryProductsJsonForPreload
-        ? _buildProductImagePreloads(categoryProductsJsonForPreload, 2)
+        ? _buildProductImagePreloads(categoryProductsJsonForPreload, 2, { pdp: _isPdpPreload })
         : inlineProducts
           ? _buildProductImagePreloads(inlineProducts, 2)
           : _buildImagePreloadsFromUrls(topImages, 2);
