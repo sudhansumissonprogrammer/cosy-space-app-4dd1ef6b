@@ -134,24 +134,34 @@ async function fetchPage({ storeId, category, categorySlug, page, sort }: FetchO
 export function useInfiniteProducts(opts: {
   storeId: string | undefined;
   category?: string;
+  /** Category URL slug — when set, products load without waiting for the name. */
+  categorySlug?: string;
   sort?: string;
   queryKeyPrefix: string;
   /** Extra enabled guard — e.g. wait for category name to resolve */
   ready?: boolean;
 }) {
-  const { storeId, category, sort, queryKeyPrefix, ready = true } = opts;
+  const { storeId, category, categorySlug, sort, queryKeyPrefix, ready = true } = opts;
 
   return useInfiniteQuery({
-    queryKey: [queryKeyPrefix, storeId, category || "__all__", sort || "default", PAGE_SIZE],
+    queryKey: [
+      queryKeyPrefix,
+      storeId,
+      categorySlug || category || "__all__",
+      sort || "default",
+      PAGE_SIZE,
+    ],
     queryFn: async ({ pageParam = 0 }) => {
       const products = await fetchPage({
         storeId: storeId!,
         category,
+        categorySlug,
         page: pageParam,
         sort,
       });
       return { products, page: pageParam };
     },
+
     initialPageParam: 0,
     getNextPageParam: (lastPage) =>
       lastPage.products.length === PAGE_SIZE ? lastPage.page + 1 : undefined,
