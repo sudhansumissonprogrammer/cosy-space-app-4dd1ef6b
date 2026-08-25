@@ -2275,7 +2275,7 @@ async function getSpaShell(request, ctx, env) {
     }
   }
 
-  const fetchPromise = _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey);
+  const fetchPromise = _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey, shellKvKey);
   inflightShellFetch = fetchPromise;
 
   try {
@@ -2288,7 +2288,7 @@ async function getSpaShell(request, ctx, env) {
   }
 }
 
-async function _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey) {
+async function _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey, shellKvKey) {
   // v8.6.6: Fetch the deployment shell fresh from origin. Do NOT use
   // `cf.cacheEverything` here: Cloudflare's implicit fetch cache is not
   // addressable by our `/api/purge-shell` handler, so it can keep returning
