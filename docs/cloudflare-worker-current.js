@@ -225,7 +225,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.84.0-global-shell-epoch";
+const WORKER_VERSION = "8.85.0-pdp-hero-preload-parity";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
