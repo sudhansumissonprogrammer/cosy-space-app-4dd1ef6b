@@ -4954,6 +4954,10 @@ const PDP_KV_TTL = 86400; // 24h KV / s-maxage
 const CATEGORY_CACHE_TTL = 300;
 const CATEGORY_KV_TTL = 86400;
 const PDP_DB_TIMEOUT_MS = 1500;
+// v8.82.0 — tighter budget for the HTML-inlining path: this one blocks TTFB,
+// so it must give up fast and let the client's byte-0 /api/pdp fetch win.
+const INLINE_DB_TIMEOUT_MS = 600;
+
 
 const inflightPdpRequests = new Map();
 const inflightCategoryRequests = new Map();
