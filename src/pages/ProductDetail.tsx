@@ -1890,9 +1890,9 @@ function ImageGallery({
                 return (
                   <div
                     key={`${i}-${slide.url}`}
-                    // Supplier media is commonly 9:16. Match that shape on mobile
-                    // and preserve the full product instead of cropping its ends.
-                    className="relative flex-[0_0_100%] min-w-0 overflow-hidden h-[min(150vw,80svh)] sm:aspect-[4/5] sm:h-auto bg-background"
+                    // Shorter frame on mobile (was 150vw — too tall) and the image
+                    // is contained, so the product's full width is always visible.
+                    className="relative flex-[0_0_100%] min-w-0 overflow-hidden h-[min(118vw,62svh)] sm:aspect-[4/5] sm:h-auto bg-background"
                     onClick={() => setLightboxOpen(true)}
                   >
                     {!loaded && <Skeleton className="absolute inset-0 z-[2] h-full w-full rounded-none" />}
@@ -1902,7 +1902,8 @@ function ImageGallery({
                       sizes={gallerySrcSet ? "(max-width: 640px) 100vw, 50vw" : undefined}
                       alt={productName}
 
-                      className={`relative z-[1] h-full w-full object-cover transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+                      className={`relative z-[1] h-full w-full object-contain transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+
 
                       decoding="async"
                       fetchPriority={realIdx === 0 ? "high" : "auto"}
