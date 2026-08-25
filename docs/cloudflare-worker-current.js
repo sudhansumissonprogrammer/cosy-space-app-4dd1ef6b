@@ -3579,20 +3579,30 @@ async function invalidateShellCaches(env, ctx) {
   _memShell = null;
   _memShellTs = 0;
   _memPrebuiltHead = null;
+  const prevEpoch = _memShellEpoch;
+  const prevKeys = shellKeysForEpoch(prevEpoch || "0");
   const ops = [
     cache.delete(new Request("https://cache/spa-shell")).catch(() => {}),
+    cache.delete(prevKeys.cacheKey).catch(() => {}),
     cache.delete(new Request("https://cache/prebuilt-head")).catch(() => {}),
+    // v8.84.0: the only GLOBAL part of the flush. Local cache.delete() clears
+    // this colo only; bumping the epoch changes the cache/KV key everywhere,
+    // so every other colo misses its stale copy on the next request.
+    bumpShellEpoch(env),
   ];
   _kvWriteRecent.delete(SPA_SHELL_KV_KEY);
+  _kvWriteRecent.delete(prevKeys.kvKey);
   _kvWriteRecent.delete(PREBUILT_HEAD_KV_KEY);
   if (env?.STORE_KV) {
     ops.push(kvDeleteForce(env, SPA_SHELL_KV_KEY));
+    ops.push(kvDeleteForce(env, prevKeys.kvKey));
     ops.push(kvDeleteForce(env, PREBUILT_HEAD_KV_KEY));
   }
   const done = Promise.allSettled(ops);
   if (ctx?.waitUntil) ctx.waitUntil(done);
   return done;
 }
+
 
 // Only self-heal once per isolate per minute — a burst of stale chunk requests
 // must not turn into a KV delete storm.
