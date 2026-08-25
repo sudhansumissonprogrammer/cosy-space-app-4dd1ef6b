@@ -20,17 +20,11 @@ interface Props {
 export default function ReviewsShowcase({ productId, storeId, storeSlug, productName }: Props) {
   const [writing, setWriting] = useState(false);
 
-  // Warm the dialog chunk when the browser is idle so tapping "Write a review"
-  // opens instantly instead of waiting on a cold network fetch.
-  useEffect(() => {
-    const warm = () => { importWriteReviewDialog().catch(() => {}); };
-    const ric = (window as any).requestIdleCallback;
-    const id = ric ? ric(warm, { timeout: 4000 }) : window.setTimeout(warm, 2500);
-    return () => {
-      if (ric && (window as any).cancelIdleCallback) (window as any).cancelIdleCallback(id);
-      else clearTimeout(id as number);
-    };
-  }, []);
+  // NOTE: the dialog chunk is intentionally NOT warmed on idle. It drags in
+  // uploadReviewMedia + textarea + radio-group + alert-dialog (~1.6s of
+  // network time in the GTmetrix waterfall) for a control that <1% of
+  // shoppers ever tap. It is warmed on pointerenter/touchstart instead —
+  // see the "Write a review" button below.
 
 
   // Store-wide reviews — shared cache with the gallery rating badge, so this
