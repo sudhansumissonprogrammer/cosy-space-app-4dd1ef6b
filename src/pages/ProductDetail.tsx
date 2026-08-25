@@ -1859,7 +1859,7 @@ function ImageGallery({
           {/* Embla viewport */}
           <div
             ref={emblaRef}
-            className="overflow-hidden rounded-none sm:rounded-2xl cursor-zoom-in select-none"
+            className={`overflow-hidden rounded-none sm:rounded-2xl cursor-zoom-in select-none ${isVideoSlide ? "h-[min(150vw,80svh)]" : "h-[min(132vw,70svh)]"} sm:h-auto sm:aspect-[4/5]`}
             style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }}
           >
             <div className="flex touch-pan-y items-stretch">
@@ -1870,7 +1870,7 @@ function ImageGallery({
                   return (
                     <Suspense
                       key={`${i}-vid-${slide.url}`}
-                      fallback={<div className="flex-[0_0_100%] min-w-0 h-[min(132vw,70svh)] sm:aspect-[4/5] sm:h-auto" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }} />}
+                      fallback={<div className="flex-[0_0_100%] min-w-0 h-full sm:aspect-[4/5] sm:h-auto" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }} />}
                     >
                       <VideoSlide
                         url={slide.url}
