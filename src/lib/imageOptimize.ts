@@ -117,13 +117,21 @@ export function optimizeImageUrl(
     }
   }
 
-  // ── 5. External URL: serve direct (browser handles caching) ──
+  // ── 5. Supplier catalog CDNs: resize at the edge via the Worker ──
+  // Stores synced from JD / Cartpe serve 3000-4300px originals (500KB+ each)
+  // straight into 180-420px slots. The Worker `/cf-img` route resizes and
+  // edge-caches them. Allow-listed hosts only (SSRF-safe) and only on
+  // production hosts where the Worker actually runs; previews serve direct.
   if (url.startsWith("https://") || url.startsWith("http://")) {
+    if (isEdgeResizableHost(url) && isWorkerHost()) {
+      return `/cf-img?url=${encodeURIComponent(url)}&w=${width}&q=${quality}`;
+    }
     if (ENABLE_EDGE_IMAGE_PROXY && SUPABASE_PROJECT_ID) {
       return `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/image-ops?action=resize&url=${encodeURIComponent(url)}&w=${width}&q=${quality}`;
     }
     return url;
   }
+
 
   return url;
 }
