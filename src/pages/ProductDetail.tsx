@@ -1862,7 +1862,7 @@ function ImageGallery({
             className={`overflow-hidden rounded-none sm:rounded-2xl cursor-zoom-in select-none ${isVideoSlide ? "h-[min(168vw,86svh)]" : "h-[min(132vw,70svh)]"} sm:h-auto sm:aspect-[4/5]`}
             style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }}
           >
-            <div className="flex touch-pan-y items-stretch">
+            <div className="flex h-full touch-pan-y items-stretch">
               {renderSlides.map((slide, i) => {
                 const realIdx = len === 1 ? 0 : i;
                 if (slide.kind === "video") {
@@ -1891,9 +1891,10 @@ function ImageGallery({
                 return (
                   <div
                     key={`${i}-${slide.url}`}
-                    // Slides fill the viewport height (which grows on video
-                    // slides) so nothing is ever clipped; media is contained.
-                    className="relative flex-[0_0_100%] min-w-0 overflow-hidden h-full sm:aspect-[4/5] sm:h-auto"
+                    // Keep every slide tied to the measured carousel viewport.
+                    // Absolute centering avoids Safari flexbox stretching/cropping
+                    // tall source images at the bottom.
+                    className="relative h-full min-w-0 flex-[0_0_100%] overflow-hidden sm:h-auto sm:aspect-[4/5]"
                     style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }}
                     onClick={() => setLightboxOpen(true)}
                   >
@@ -1904,7 +1905,7 @@ function ImageGallery({
                       sizes={gallerySrcSet ? "(max-width: 640px) 100vw, 50vw" : undefined}
                       alt={productName}
 
-                      className={`relative z-[1] h-full w-full object-contain transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+                      className={`absolute inset-0 z-[1] m-auto h-auto max-h-full w-auto max-w-full object-contain transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`}
 
 
                       decoding="async"

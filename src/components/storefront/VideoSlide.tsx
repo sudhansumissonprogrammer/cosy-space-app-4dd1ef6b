@@ -97,7 +97,7 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
 
   return (
     <div
-      className="relative flex-[0_0_100%] min-w-0 h-full sm:aspect-[4/5] sm:h-auto overflow-hidden"
+      className="relative h-full min-w-0 flex-[0_0_100%] overflow-hidden sm:h-auto sm:aspect-[4/5]"
       style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }}
       onClick={(e) => e.stopPropagation()}
     >
@@ -109,7 +109,7 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
           src={poster}
           alt=""
           aria-hidden
-          className="absolute inset-0 w-full h-full object-contain"
+          className="absolute inset-0 m-auto h-auto max-h-full w-auto max-w-full object-contain"
           draggable={false}
         />
       )}
@@ -125,7 +125,7 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
         disablePictureInPicture
         disableRemotePlayback
         controlsList="nodownload noplaybackrate nofullscreen noremoteplayback"
-        className="sf-video-nocontrols relative z-[1] w-full h-full object-contain"
+        className="sf-video-nocontrols absolute inset-0 z-[1] m-auto h-auto max-h-full w-auto max-w-full object-contain"
 
         onClick={(e) => {
           e.stopPropagation();
@@ -165,7 +165,7 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
         </button>
       )}
 
-      {hasStarted && (
+      {isActive && (
         <VideoControlBar
           playing={videoPlaying}
           currentTime={currentTime}
