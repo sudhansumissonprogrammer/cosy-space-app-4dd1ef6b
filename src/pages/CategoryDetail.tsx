@@ -168,9 +168,13 @@ export default function CategoryDetail() {
   } = useInfiniteProducts({
     storeId: store.id,
     category: category?.name,
+    // Cold-load fast path: the slug is in the URL from byte 0, so products no
+    // longer wait behind the category-name lookup round trip.
+    categorySlug,
     queryKeyPrefix: "cat-detail-v3",
-    ready: !!category?.name,
+    ready: true,
   });
+
 
   const rawProducts = data?.pages.flatMap((p) => p.products) || [];
   const products = useMemo(() => applySort(rawProducts, sort), [rawProducts, sort]);

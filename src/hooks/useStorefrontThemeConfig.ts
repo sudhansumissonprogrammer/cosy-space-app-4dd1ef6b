@@ -16,6 +16,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
  * + serif + missing mobile nav" bug that appears mid-navigation.
  */
 const lastGoodThemeConfig = new Map<string, Record<string, any>>();
+const preloadedCardStyles = new Set<string>();
 
 function getEdgeThemeConfig(): Record<string, any> | undefined {
   if (typeof window === "undefined") return undefined;
@@ -106,5 +107,19 @@ export function useStorefrontThemeConfig(
   }
 
   const effective = (themeConfig ?? shellThemeConfig ?? stickyConfig ?? lsThemeConfig ?? edgeThemeConfig) as Record<string, any> | null | undefined;
+
+  // PERF: start fetching the selected product-card chunk the moment the theme
+  // is known (module-level import(), de-duped) so the first grid paint never
+  // waits on a lazy chunk + skeleton flash.
+  const cardStyle = effective?.product_card_style;
+  if (typeof window !== "undefined" && cardStyle && !preloadedCardStyles.has(cardStyle)) {
+    preloadedCardStyles.add(cardStyle);
+    import("@/components/storefront/UniversalProductCard")
+      .then((m) => m.preloadCardStyle(cardStyle))
+      .catch(() => preloadedCardStyles.delete(cardStyle));
+  }
+
+
   return (effective ?? null) as Record<string, any> | null;
+
 }
