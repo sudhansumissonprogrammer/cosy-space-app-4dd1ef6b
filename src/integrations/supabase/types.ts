@@ -5670,6 +5670,13 @@ export type Database = {
         }
         Returns: Json
       }
+      get_store_source_config: {
+        Args: { p_store_id: string }
+        Returns: {
+          source_base_url: string
+          source_platform: string
+        }[]
+      }
       get_store_usage_stats: { Args: never; Returns: Json }
       get_store_views: {
         Args: { _store_ids: string[] }
