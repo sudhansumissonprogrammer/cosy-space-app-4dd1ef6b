@@ -21,9 +21,12 @@ function isProductionHost(): boolean {
 interface FetchOpts {
   storeId: string;
   category?: string;
+  /** URL slug of the category — lets us skip the name lookup round trip. */
+  categorySlug?: string;
   page: number;
   sort?: string;
 }
+
 
 async function fetchPageFromSupabase({ storeId, category, page, sort: _sort }: FetchOpts): Promise<any[]> {
   const from = page * PAGE_SIZE;
@@ -62,7 +65,19 @@ async function fetchPageFromSupabase({ storeId, category, page, sort: _sort }: F
  * Worker /api/products path can only filter on the single `category` column,
  * so it is skipped whenever a category filter is active.
  */
-async function fetchCategoryPageRpc({ storeId, category, page }: FetchOpts): Promise<any[]> {
+async function fetchCategoryPageRpc({ storeId, category, categorySlug, page }: FetchOpts): Promise<any[]> {
+  // Cold-load fast path: the slug is known from the URL immediately, so we do
+  // NOT have to wait for the category-name lookup before requesting products.
+  if (categorySlug) {
+    const { data, error } = await (supabase as any).rpc("get_category_products_page_by_slug", {
+      _store_id: storeId,
+      _category_slug: categorySlug,
+      _offset: page * PAGE_SIZE,
+      _limit: PAGE_SIZE,
+    });
+    if (!error) return (data as any[]) || [];
+    if (!category) throw error;
+  }
   const { data, error } = await (supabase as any).rpc("get_category_products_page", {
     _store_id: storeId,
     _category_name: category,
@@ -73,16 +88,17 @@ async function fetchCategoryPageRpc({ storeId, category, page }: FetchOpts): Pro
   return (data as any[]) || [];
 }
 
-async function fetchPage({ storeId, category, page, sort }: FetchOpts): Promise<any[]> {
-  if (category && storeId) {
+async function fetchPage({ storeId, category, categorySlug, page, sort }: FetchOpts): Promise<any[]> {
+  if ((category || categorySlug) && storeId) {
     try {
-      return await fetchCategoryPageRpc({ storeId, category, page });
+      return await fetchCategoryPageRpc({ storeId, category, categorySlug, page });
     } catch {
       return await fetchPageFromSupabase({ storeId, category, page, sort });
     }
   }
 
   if (isProductionHost()) {
+
     // ── Production: use Worker /api/products (cached, KV-backed) ──
     const params = new URLSearchParams();
     if (category) params.set("category", category);

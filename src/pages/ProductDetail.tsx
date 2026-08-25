@@ -28,7 +28,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
-import { optimizeImageUrl, splitImageUrls } from "@/lib/imageOptimize";
+import { optimizeImageUrl, splitImageUrls, getImageSrcSet } from "@/lib/imageOptimize";
 import { normalizeProductVideoUrl } from "@/lib/productVideoUrl";
 // UniversalProductCard removed from PDP critical path — reached via lazy RelatedProducts
 import { VariantCountProvider } from "@/hooks/useVariantCounts";
@@ -450,8 +450,13 @@ export default function ProductDetail() {
       return data as Variant[];
     },
     initialData: getCachedVariants,
-    enabled: !!productId,
+    // PERF: `product_variants` was a ~565ms straggler fired on every PDP even
+    // though the vast majority of catalog products have zero variants. The
+    // product row already carries `has_variants`; only spend the round trip
+    // when it is true (or when the flag is missing from the payload).
+    enabled: !!productId && (product as any)?.has_variants !== false,
     staleTime: 5 * 60 * 1000,
+
   });
 
   useMetaTags({
@@ -1874,6 +1879,10 @@ function ImageGallery({
                 }
                 const loaded = imageLoaded[realIdx];
                 const optimizedUrl = optimizeImageUrl(slide.url, 800);
+                // Responsive gallery: on resizable sources this ships a
+                // ~400-600px file to phones instead of the 800/original.
+                const gallerySrcSet = getImageSrcSet(slide.url, [400, 600, 800, 1200], 80);
+
                 return (
                   <div
                     key={`${i}-${slide.url}`}
@@ -1885,7 +1894,10 @@ function ImageGallery({
                     {!loaded && <Skeleton className="absolute inset-0 z-[2] h-full w-full rounded-none" />}
                     <img
                       src={optimizedUrl}
+                      srcSet={gallerySrcSet || undefined}
+                      sizes={gallerySrcSet ? "(max-width: 640px) 100vw, 50vw" : undefined}
                       alt={productName}
+
                       className={`relative z-[1] h-full w-full object-cover transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`}
 
                       decoding="async"
