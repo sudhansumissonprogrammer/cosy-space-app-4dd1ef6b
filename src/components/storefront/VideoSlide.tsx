@@ -51,7 +51,8 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
 
   if (!source || failed) {
     return (
-      <div className="relative flex-[0_0_100%] min-w-0 bg-black h-[min(118vw,62svh)] sm:aspect-[4/5] sm:h-auto overflow-hidden">
+      <div className="relative flex-[0_0_100%] min-w-0 h-[min(118vw,62svh)] sm:aspect-[4/5] sm:h-auto overflow-hidden"
+      style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }}>
         {poster && <img src={poster} alt="" aria-hidden className="h-full w-full object-contain" />}
       </div>
     );
@@ -96,7 +97,8 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
 
   return (
     <div
-      className="relative flex-[0_0_100%] min-w-0 bg-black h-[min(118vw,62svh)] sm:aspect-[4/5] sm:h-auto overflow-hidden"
+      className="relative flex-[0_0_100%] min-w-0 h-[min(118vw,62svh)] sm:aspect-[4/5] sm:h-auto overflow-hidden"
+      style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }}
       onClick={(e) => e.stopPropagation()}
     >
       {/* Poster fallback — guarantees the slide is never blank even if the
@@ -120,7 +122,7 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
         muted
         playsInline
         disablePictureInPicture
-        className="relative z-[1] w-full h-full object-contain bg-black"
+        className="relative z-[1] w-full h-full object-contain"
         onClick={(e) => {
           e.stopPropagation();
           handleToggle();
