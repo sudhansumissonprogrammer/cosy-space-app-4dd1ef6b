@@ -16,6 +16,8 @@ import ProductCardTitle from "./ProductCardTitle";
 import WishlistHeartButton from "./WishlistHeartButton";
 import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
 import { setPdpPreload } from "@/lib/pdpPreload";
+import { memo } from "react";
+import { productCardPropsEqual } from "./cardMemo";
 
 interface Props {
   product: Tables<"products">;
@@ -25,7 +27,7 @@ interface Props {
   onVariantRequired?: () => void;
 }
 
-export default function ProductCardStyle9({ product, slug, store, priority = false, onVariantRequired }: Props) {
+function ProductCardStyle9Impl({ product, slug, store, priority = false, onVariantRequired }: Props) {
   const { wishlisted, cartQty, handleAddToCart, handleToggleWishlist, heartBursting, updateQuantity } = useProductCardActions(product);
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
@@ -168,3 +170,6 @@ export default function ProductCardStyle9({ product, slug, store, priority = fal
     </div>
   );
 }
+
+const ProductCardStyle9 = memo(ProductCardStyle9Impl, productCardPropsEqual);
+export default ProductCardStyle9;

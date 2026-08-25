@@ -10,6 +10,8 @@ import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, getImageSrcSet, resolveProductImages } from "@/lib/imageOptimize";
 import { getEffectivePrice, currencySymbol } from "@/lib/productUtils";
 import ProductCardTitle from "./ProductCardTitle";
+import { memo } from "react";
+import { productCardPropsEqual } from "./cardMemo";
 
 
 interface Props {
@@ -21,7 +23,7 @@ interface Props {
   
 }
 
-export default function ProductCardStyle5({ product, slug, store, priority = false }: Props) {
+function ProductCardStyle5Impl({ product, slug, store, priority = false }: Props) {
   const images = resolveProductImages(product);
   const mainImg = images[0] || "/placeholder.svg";
   const optimized = optimizeImageUrl(mainImg, 600);
@@ -97,3 +99,6 @@ export default function ProductCardStyle5({ product, slug, store, priority = fal
     </Link>
   );
 }
+
+const ProductCardStyle5 = memo(ProductCardStyle5Impl, productCardPropsEqual);
+export default ProductCardStyle5;

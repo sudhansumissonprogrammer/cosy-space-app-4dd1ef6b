@@ -5,6 +5,8 @@ import type { Tables } from "@/integrations/supabase/types";
 import { optimizeImageUrl, getImageSrcSet, resolveProductImages } from "@/lib/imageOptimize";
 import { currencySymbol } from "@/lib/productUtils";
 import ProductCardTitle from "./ProductCardTitle";
+import { memo } from "react";
+import { productCardPropsEqual } from "./cardMemo";
 
 
 /* ── Veg / Non-Veg indicator ── */
@@ -37,7 +39,7 @@ interface Props {
   
 }
 
-export default function ProductCardStyle4({ product, slug, store, priority = false, onVariantRequired }: Props) {
+function ProductCardStyle4Impl({ product, slug, store, priority = false, onVariantRequired }: Props) {
   const [hoverLoaded, setHoverLoaded] = useState(false);
   const { items, addToCart, updateQuantity } = useCart();
   const existing = items.find(
@@ -196,3 +198,6 @@ export default function ProductCardStyle4({ product, slug, store, priority = fal
     </div>
   );
 }
+
+const ProductCardStyle4 = memo(ProductCardStyle4Impl, productCardPropsEqual);
+export default ProductCardStyle4;

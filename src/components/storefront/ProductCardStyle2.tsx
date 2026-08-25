@@ -9,6 +9,8 @@ import { useProductCardActions } from "@/hooks/useProductCardActions";
 import StarRating from "./StarRating";
 import ProductCardTitle from "./ProductCardTitle";
 import WishlistHeartButton from "./WishlistHeartButton";
+import { memo } from "react";
+import { productCardPropsEqual } from "./cardMemo";
 
 
 
@@ -21,7 +23,7 @@ interface Props {
   
 }
 
-export default function ProductCardStyle2({ product, slug, store, priority = false, onVariantRequired }: Props) {
+function ProductCardStyle2Impl({ product, slug, store, priority = false, onVariantRequired }: Props) {
   const [hoverLoaded, setHoverLoaded] = useState(false);
   const { wishlisted, effectivePrice, handleAddToCart, handleToggleWishlist } = useProductCardActions(product);
   const discount = getDiscountPercent(product.price, product.sale_price);
@@ -97,3 +99,6 @@ export default function ProductCardStyle2({ product, slug, store, priority = fal
     </div>
   );
 }
+
+const ProductCardStyle2 = memo(ProductCardStyle2Impl, productCardPropsEqual);
+export default ProductCardStyle2;
