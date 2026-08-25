@@ -59,28 +59,7 @@ const ReviewsShowcase = lazy(() => import("@/components/storefront/pdp/ReviewsSh
 import PdpReviewsBadge from "@/components/storefront/pdp/PdpReviewsBadge";
 const PdpCarousels = lazy(() => import("@/components/storefront/pdp/PdpCarousels"));
 const WristlifeSections = lazy(() => import("@/components/storefront/pdp/storeSections/WristlifeSections"));
-// A stale/partial chunk after a deploy can resolve to an undefined module
-// namespace — reading `m.VideoSlide` then throws and kills the whole PDP.
-// Retry once, and if it still fails render nothing instead of crashing.
-type VideoSlideModule = typeof import("@/components/storefront/VideoSlide");
-const VideoSlide = lazy(async () => {
-  const load = () => import("@/components/storefront/VideoSlide");
-  let mod: VideoSlideModule | undefined;
-  try {
-    mod = await load();
-  } catch {
-    mod = undefined;
-  }
-  if (!mod?.VideoSlide) {
-    try {
-      mod = await load();
-    } catch {
-      mod = undefined;
-    }
-  }
-  const Fallback: VideoSlideModule["VideoSlide"] = () => null;
-  return { default: mod?.VideoSlide ?? Fallback };
-});
+import { VideoSlide } from "@/components/storefront/VideoSlide";
 
 
 
@@ -1868,18 +1847,14 @@ function ImageGallery({
                 if (slide.kind === "video") {
                   const isActive = realIdx === activeIndex;
                   return (
-                    <Suspense
+                    <VideoSlide
                       key={`${i}-vid-${slide.url}`}
-                      fallback={<div className="flex-[0_0_100%] min-w-0 h-full sm:aspect-[4/5] sm:h-auto" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }} />}
-                    >
-                      <VideoSlide
-                        url={slide.url}
-                        poster={slide.poster ? optimizeImageUrl(slide.poster, 800) : undefined}
-                        isActive={isActive}
-                        videoPlaying={videoPlaying}
-                        setVideoPlaying={setVideoPlaying}
-                      />
-                    </Suspense>
+                      url={slide.url}
+                      poster={slide.poster ? optimizeImageUrl(slide.poster, 800) : undefined}
+                      isActive={isActive}
+                      videoPlaying={videoPlaying}
+                      setVideoPlaying={setVideoPlaying}
+                    />
                   );
                 }
                 const loaded = imageLoaded[realIdx];
