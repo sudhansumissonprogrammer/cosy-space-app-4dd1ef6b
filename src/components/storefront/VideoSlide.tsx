@@ -18,7 +18,6 @@ interface VideoSlideProps {
 export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlaying }: VideoSlideProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const source = normalizeProductVideoUrl(url);
-  const [failed, setFailed] = useState(!source);
   const [hasStarted, setHasStarted] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -49,7 +48,7 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
   }, [isActive, source]);
 
 
-  if (!source || failed) {
+  if (!source) {
     return (
       <div className="relative flex-[0_0_100%] min-w-0 h-full sm:aspect-[4/5] sm:h-auto overflow-hidden"
       style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }}>
@@ -137,14 +136,11 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
         }}
         onPause={() => setVideoPlaying(false)}
         onEnded={() => setVideoPlaying(false)}
-        onError={(event) => {
-          // Ignore the transient MEDIA_ERR_ABORTED emitted when React/browser
-          // replaces an in-flight media request during carousel activation.
-          // Treating it as a permanent failure removed the player immediately
-          // after a successful 206 response, leaving only the poster visible.
-          if (event.currentTarget.error?.code === MediaError.MEDIA_ERR_ABORTED) return;
+        onError={() => {
+          // Keep the video element, poster, and custom controls mounted. Mobile
+          // WebViews can emit recoverable media errors while switching slides;
+          // unmounting here made retry impossible and looked like no player.
           setVideoPlaying(false);
-          setFailed(true);
         }}
         onLoadedMetadata={() => setDuration(videoRef.current?.duration || 0)}
         onDurationChange={() => setDuration(videoRef.current?.duration || 0)}
