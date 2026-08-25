@@ -15,7 +15,6 @@ import { useProductCardActions } from "@/hooks/useProductCardActions";
 import { useNavIcons } from "@/hooks/useNavIcons";
 import ProductCardTitle from "./ProductCardTitle";
 import WishlistHeartButton from "./WishlistHeartButton";
-import CardRatingBadge from "./CardRatingBadge";
 
 import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
 import { setPdpPreload } from "@/lib/pdpPreload";
@@ -162,9 +161,7 @@ function ProductCardStyle6Impl({ product, slug, store, priority = false, onVaria
           <ProductCardTitle
             name={product.name}
             className="italic transition-[transform,opacity,colors,box-shadow] duration-300 group-hover:underline underline-offset-4"
-            baseSize={12}
-            minSize={12}
-            lines={2}
+            baseSize={13}
             lineHeight={1.35}
             style={{
               fontFamily: "'Cormorant Garamond', 'Playfair Display', Georgia, serif",
@@ -173,25 +170,27 @@ function ProductCardStyle6Impl({ product, slug, store, priority = false, onVaria
             }}
           />
 
-          <CardRatingBadge productId={product.id} />
-
-          <div className="mt-1.5 flex items-baseline gap-2">
+          <div
+            className="mt-0.5 flex items-baseline gap-2"
+            style={{ paddingLeft: "1ch", fontFamily: "'Cormorant Garamond', 'Playfair Display', Georgia, serif" }}
+          >
             {product.sale_price ? (
               <>
-                <span className="text-[17px] font-bold tracking-[0.01em]" style={{ color: "#D0021B" }}>
+                <span className="text-[14px] font-bold tracking-[0.01em]" style={{ color: "#D0021B" }}>
                   {currency}{Number(product.sale_price).toLocaleString("en-IN")}
                 </span>
-                <span className="text-[12px] line-through" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 45%, transparent)" }}>
+                <span className="text-[11px] line-through" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 45%, transparent)" }}>
                   {currency}{Number(product.price).toLocaleString("en-IN")}
                 </span>
               </>
             ) : (
-              <span className="text-[17px] font-bold tracking-[0.01em]" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
+              <span className="text-[14px] font-bold tracking-[0.01em]" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
                 {currency}{Number(product.price).toLocaleString("en-IN")}
               </span>
             )}
           </div>
         </div>
+
 
 
       </Link>
