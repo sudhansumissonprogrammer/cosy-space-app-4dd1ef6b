@@ -30,7 +30,7 @@ export interface AppStateRow extends EnabledAppRow {
 const inflight = new Map<string, Promise<AppStateRow[]>>();
 
 export function storeAppsStateKey(storeSlug: string | undefined) {
-  return ["store-apps-state", storeSlug] as const;
+  return ["store-enabled-apps", storeSlug] as const;
 }
 
 /** @deprecated kept for callers that still reference the old key name */
