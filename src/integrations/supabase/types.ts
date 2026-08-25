@@ -5496,6 +5496,15 @@ export type Database = {
         }
         Returns: Json
       }
+      get_category_products_page_by_slug: {
+        Args: {
+          _category_slug: string
+          _limit?: number
+          _offset?: number
+          _store_id: string
+        }
+        Returns: Json
+      }
       get_checkout_line_item: {
         Args: { _product_id: string; _variant_id?: string }
         Returns: Json
@@ -5543,6 +5552,14 @@ export type Database = {
         Returns: Json
       }
       get_shipment_tracking: { Args: { _order_id: string }; Returns: Json }
+      get_store_apps_state: {
+        Args: { _store_slug: string }
+        Returns: {
+          app_id: string
+          config: Json
+          enabled: boolean
+        }[]
+      }
       get_store_as_admin: { Args: { _slug: string }; Returns: Json }
       get_store_auto_apply_coupon: {
         Args: { _store_id: string }
