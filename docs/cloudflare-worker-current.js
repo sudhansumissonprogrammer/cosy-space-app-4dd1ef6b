@@ -225,7 +225,26 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.80.0-font-swap-fast-cold-load";
+const WORKER_VERSION = "8.81.0-cf-img-supplier-resize";
+
+/**
+ * v8.81.0 — /cf-img resize allow-list.
+ * Supplier catalog CDNs that serve multi-thousand-pixel originals into small
+ * card/gallery slots. ONLY these hosts are fetched by the resize route
+ * (SSRF guard); everything else keeps the legacy 302 passthrough.
+ * Must stay in sync with EDGE_RESIZE_HOSTS in src/lib/imageOptimize.ts.
+ */
+const CF_IMG_HOSTS = new Set([
+  "assets.jdwebnship.in",
+  "assets.jdwebnship.com",
+  "cdn.cartpe.in",
+  "assets.mycatalog.io",
+  "watchtrade.in",
+  "www.watchtrade.in",
+  "overlaysnow.com",
+  "www.overlaysnow.com",
+]);
+
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
