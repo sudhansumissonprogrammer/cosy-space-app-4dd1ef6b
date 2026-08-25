@@ -4338,6 +4338,7 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
     (storefrontData && storefrontData.store && storefrontData.store.name) || "",
     textColor,
     primaryColor,
+    (storefrontData && storefrontData.store && storefrontData.store.logo_url) || "",
   );
 
   // LCP preload: hero image (mobile_hero > banner > logo)
