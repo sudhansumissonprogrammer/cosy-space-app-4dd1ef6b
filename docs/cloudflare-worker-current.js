@@ -1779,7 +1779,8 @@ async function enrichHeadWithThemeChunkPreloads(head, origin, env, themeName) {
     .filter((p) => !head.includes(`href="${p}"`))
     .map((p) => `<link rel="modulepreload" href="${p}" />`)
     .join("");
-  return tags ? head.replace("</head>", `${tags}</head>`) : head;
+  return _appendToHeadFragment(head, tags);
+
 }
 
 /* v8.64.0 — PDP modulepreload enricher.
