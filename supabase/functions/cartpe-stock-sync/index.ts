@@ -175,6 +175,11 @@ Deno.serve(async (req) => {
 
     let checked = 0, failed = 0, changed = 0, nowOos = 0, backInStock = 0, priceChanged = 0;
     const touchedIds: string[] = [];
+    // Supplier paths seen this run, split by availability. Mirror rows in OTHER
+    // stores (products imported from this store) get only an informational flag
+    // — their stock is never modified.
+    const oosPaths: string[] = [];
+    const inStockPaths: string[] = [];
     const nowIso = new Date().toISOString();
 
     for (const { p, src } of results) {
@@ -183,6 +188,7 @@ Deno.serve(async (req) => {
       // Network failures must stay old so the next run retries them quickly.
       touchedIds.push(p.id);
       checked++;
+      if (p.source_path) (src.inStock ? inStockPaths : oosPaths).push(p.source_path);
 
       const nextStock = src.inStock ? IN_STOCK_QTY : 0;
       const nextPrice = src.price ?? p.price;
@@ -213,6 +219,22 @@ Deno.serve(async (req) => {
     for (let i = 0; i < touchedIds.length; i += 200) {
       await admin.from("products").update({ source_synced_at: nowIso }).in("id", touchedIds.slice(i, i + 200));
     }
+
+    // Mirror stores: same supplier product imported into another of our stores
+    // keeps the full supplier URL in source_path. Flag only — no stock writes.
+    const mirrorFlag = async (paths: string[], oos: boolean) => {
+      const urls = [...new Set(paths)].map((p) => `${base}/${p}`);
+      for (let i = 0; i < urls.length; i += 100) {
+        await admin
+          .from("products")
+          .update({ supplier_out_of_stock: oos, supplier_stock_checked_at: nowIso })
+          .neq("store_id", store.id)
+          .in("source_path", urls.slice(i, i + 100));
+      }
+    };
+    await mirrorFlag(oosPaths, true);
+    await mirrorFlag(inStockPaths, false);
+
 
     let purged = false;
     if (changed > 0) {
