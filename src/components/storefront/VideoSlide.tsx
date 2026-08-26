@@ -145,7 +145,7 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
         disablePictureInPicture
         disableRemotePlayback
         controlsList="nodownload noplaybackrate nofullscreen noremoteplayback"
-        className="sf-video-nocontrols absolute inset-0 z-[1] m-auto h-auto max-h-full w-auto max-w-full object-contain"
+        className="sf-video-nocontrols absolute inset-0 z-[1] m-auto h-auto max-h-full w-auto max-w-full object-contain [transform:translateZ(0)] [backface-visibility:hidden]"
 
         onClick={(e) => {
           e.stopPropagation();
