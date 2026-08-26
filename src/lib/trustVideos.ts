@@ -13,6 +13,14 @@ export interface TrustSlide {
   to?: string;
   /** external absolute URL */
   href?: string;
+  /** Product-tagged slides carry a shoppable card (Shop-by-Video style). */
+  product?: {
+    name: string;
+    imageUrl?: string | null;
+    price?: number | null;
+    salePrice?: number | null;
+    currency?: string | null;
+  };
 }
 
 interface TrustVideoRow {
@@ -69,7 +77,7 @@ export async function fetchTrustReel(storeId: string, slug: string): Promise<Tru
     if (enabled) {
       const { data: products } = await supabase
         .from("products")
-        .select("id,slug,name,video_url,video_poster_url")
+        .select("id,slug,name,price,sale_price,currency,image_url,video_url,video_poster_url")
         .eq("store_id", storeId)
         .eq("is_active", true)
         .not("video_url", "is", null)
@@ -84,6 +92,13 @@ export async function fetchTrustReel(storeId: string, slug: string): Promise<Tru
           title: p.name,
           ctaLabel: "See more details",
           to: storefrontPath(slug, `product/${p.slug}`),
+          product: {
+            name: p.name,
+            imageUrl: p.image_url ?? p.video_poster_url ?? null,
+            price: p.price ?? null,
+            salePrice: p.sale_price ?? null,
+            currency: p.currency ?? null,
+          },
         });
       }
     }

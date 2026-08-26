@@ -13,6 +13,8 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, ChevronUp, Volume2, VolumeX, X } from "lucide-react";
 import type { TrustSlide } from "@/lib/trustVideos";
+import { formatPrice } from "@/lib/productUtils";
+import { optimizeImageUrl } from "@/lib/imageOptimize";
 
 interface Props {
   slides: TrustSlide[];
@@ -159,10 +161,51 @@ export default function TrustVideoReel({ slides, onClose }: Props) {
             )}
 
 
-            {/* Glassmorphic CTA */}
+            {/* Glassmorphic CTA — product-tagged slides get a shoppable card */}
             <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 p-4 pb-8">
               <div className="mx-auto flex max-w-sm flex-col gap-2">
-                {s.ctaLabel && (s.to || s.href) && (
+                {s.product && (s.to || s.href) && (
+                  <button
+                    onClick={() => handleCta(s)}
+                    className="pointer-events-auto flex w-full items-center gap-2.5 rounded-2xl border border-white/25 bg-white/15 p-2.5 text-left shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-2xl transition-transform active:scale-[0.98]"
+                  >
+                    <span className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-white/10 ring-1 ring-white/20">
+                      {s.product.imageUrl && (
+                        <img
+                          src={optimizeImageUrl(s.product.imageUrl, 96, 80)}
+                          alt=""
+                          className="h-full w-full object-cover"
+                          loading="lazy"
+                          draggable={false}
+                        />
+                      )}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[13px] font-semibold text-white">
+                        {s.product.name}
+                      </span>
+                      {(s.product.salePrice ?? s.product.price) != null && (
+                        <span className="mt-0.5 block text-[12.5px] font-semibold text-white/95">
+                          {formatPrice(
+                            Number(s.product.salePrice ?? s.product.price),
+                            s.product.currency || "INR",
+                          )}
+                          {s.product.salePrice != null &&
+                            s.product.price != null &&
+                            s.product.salePrice < s.product.price && (
+                              <span className="ml-1.5 text-[10.5px] font-normal text-white/60 line-through">
+                                {formatPrice(Number(s.product.price), s.product.currency || "INR")}
+                              </span>
+                            )}
+                        </span>
+                      )}
+                    </span>
+                    <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-white/95 px-2.5 py-1.5 text-[11.5px] font-semibold text-black">
+                      See more details <ArrowRight className="h-3.5 w-3.5" />
+                    </span>
+                  </button>
+                )}
+                {!s.product && s.ctaLabel && (s.to || s.href) && (
                   <button
                     onClick={() => handleCta(s)}
                     className="pointer-events-auto flex w-full items-center justify-center gap-2 rounded-2xl border border-white/25 bg-white/15 px-5 py-3.5 text-[15px] font-semibold text-white shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-2xl transition-transform active:scale-[0.97]"
@@ -171,6 +214,7 @@ export default function TrustVideoReel({ slides, onClose }: Props) {
                     <ArrowRight className="h-4 w-4" />
                   </button>
                 )}
+
                 {i < slides.length - 1 && (
                   <button
                     onClick={() => goNext(i)}
