@@ -15,6 +15,8 @@ import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Play, X, Volume2, VolumeX } from "lucide-react";
 import { normalizeProductVideoUrl } from "@/lib/productVideoUrl";
+import VideoBufferDots from "./VideoBufferDots";
+
 
 interface Props {
   /** Wrapper element that contains the rendered product card. */
