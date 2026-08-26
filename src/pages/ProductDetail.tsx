@@ -1846,8 +1846,14 @@ function ImageGallery({
           {/* Embla viewport */}
           <div
             ref={emblaRef}
-            className={`overflow-hidden rounded-none sm:rounded-2xl cursor-zoom-in select-none ${isVideoSlide ? "h-[min(168vw,86svh)]" : "h-[min(132vw,70svh)]"} sm:h-auto sm:aspect-[4/5]`}
-            style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }}
+            className={`overflow-hidden rounded-none sm:rounded-2xl cursor-zoom-in select-none ${viewportHeightClass} sm:h-auto sm:aspect-[4/5]`}
+            style={{
+              backgroundColor: "var(--storefront-bg, hsl(var(--background)))",
+              // Isolate the gallery from the rest of the PDP so slide changes
+              // never trigger a document-wide layout pass.
+              contain: "layout paint",
+            }}
+
           >
             <div className="flex h-full touch-pan-y items-stretch">
               {renderSlides.map((slide, i) => {
