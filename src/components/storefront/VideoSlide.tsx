@@ -22,8 +22,12 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [muted, setMuted] = useState(true);
+  // True from the moment playback is requested until the decoder actually
+  // renders frames (`playing`), and again whenever the buffer runs dry.
+  const [buffering, setBuffering] = useState(false);
 
-  const showOverlay = !hasStarted || !videoPlaying;
+  const showOverlay = (!hasStarted || !videoPlaying) && !buffering;
+
 
   // Warm the video *before* the shopper swipes to it. `preload="none"` meant
   // the first frame had to be fetched + decoded during the swipe, which showed
