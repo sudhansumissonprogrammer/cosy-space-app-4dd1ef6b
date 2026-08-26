@@ -178,7 +178,9 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
       event.stopPropagation();
       if (activeStop) activeStop();
       activeStop = stop;
+      setBuffering(true);
       setOpen(true);
+
     },
     [stop],
   );
