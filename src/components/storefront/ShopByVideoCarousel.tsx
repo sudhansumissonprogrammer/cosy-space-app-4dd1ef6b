@@ -7,7 +7,7 @@
  * active product that has `video_url` set will appear. Sequence is controlled
  * from the dashboard config (`order` array).
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
@@ -17,6 +17,8 @@ import { fetchStoreEnabledApps } from "@/hooks/useStoreEnabledApps";
 import { storefrontPath, getSubdomainSlug } from "@/lib/subdomain";
 import { cn } from "@/lib/utils";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
+import VideoBufferDots from "./VideoBufferDots";
+
 
 interface AppConfig {
   enabled?: boolean;
