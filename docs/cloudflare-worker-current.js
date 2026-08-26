@@ -225,7 +225,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.88.0-no-cf-img";
+const WORKER_VERSION = "8.89.0-pdp-lcp";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -4677,8 +4677,9 @@ async function serveStreamedHtml(
       headChunk = headChunk.slice(0, headChunk.indexOf("</head>"));
       headChunk = headChunk.replace(
         "<head>",
-        `<head>${themeCss}${productImagePreloads}${perRouteSeoHead}${prebuiltHead || ""}${slugScript}`,
+        `<head>${pdpImgPreconnect}${themeCss}${productImagePreloads}${perRouteSeoHead}${prebuiltHead || ""}${slugScript}`,
       );
+
       // v8.66.0: guard against legacy/prebuilt shells carrying an empty
       // `<link rel="preload" as="image">`; it wastes a preload slot and can
       // slow the real first product image on mobile cold loads.
@@ -4743,7 +4744,7 @@ async function serveStreamedHtml(
         homepageSeoBody = _buildSeoBodyBlock(_s, _cats, _prods);
         homepageJsonLdScripts = _buildHomepageJsonLd(_s, _canonBase, _cats, _prods);
       }
-      bodyChunk = bodyChunk.replace('<div id="root">', `${skeleton}${productPreloaderGrid}${homepageSeoBody}${homepageJsonLdScripts}<div id="root">`);
+      bodyChunk = bodyChunk.replace('<div id="root">', `${skeleton}${pdpEdgeHero}${productPreloaderGrid}${homepageSeoBody}${homepageJsonLdScripts}<div id="root">`);
 
       // v8.36.0: place __STOREFRONT_DATA__ BEFORE the first <script type="module">
       // so React modules can read it on first render. Previously we injected it
@@ -4751,7 +4752,18 @@ async function serveStreamedHtml(
       // race left consumers (TrustStrip, Footer email, etc.) doing a redundant
       // REST call on cold loads. Pre-module placement removes that risk entirely.
       if (storefrontResult?.data) {
-        const jsonStr = JSON.stringify(storefrontResult.data).replace(/<\/script/gi, "<\\/script");
+        /* v8.89.0 — On /product/* strip ONLY the home carousel product arrays.
+           A PDP never renders them (useStorefrontProducts /
+           useBestSellingProducts are home-only), yet they are the bulk of the
+           ~137KB inline blob the browser must parse before React boots. The
+           object itself stays, so React still skips its shell RPC — deleting
+           the whole thing would trade parse time for a fresh round-trip. */
+        let _sfData = storefrontResult.data;
+        if (pdpCategoryInline?.kind === "product" && _sfData && typeof _sfData === "object") {
+          const { products: _dropA, products_preview: _dropB, ..._rest } = _sfData;
+          _sfData = _rest;
+        }
+        const jsonStr = JSON.stringify(_sfData).replace(/<\/script/gi, "<\\/script");
         const dataScript = `<script>window.__STOREFRONT_DATA__=${jsonStr};</script>`;
         const moduleIdx = bodyChunk.search(/<script\b[^>]*\btype=["']module["']/i);
         if (moduleIdx !== -1) {
@@ -4760,6 +4772,7 @@ async function serveStreamedHtml(
           bodyChunk = bodyChunk.replace("</body>", `${dataScript}</body>`);
         }
       }
+
 
       // v8.47.0: title/canonical/og:url/icon are now injected as REAL HTML
       // by _buildHomepageSeoHead above, so the previous client-side
