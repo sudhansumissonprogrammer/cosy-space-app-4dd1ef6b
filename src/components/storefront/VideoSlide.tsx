@@ -71,10 +71,13 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
     if (!isActive || !source || !video) return;
     video.muted = true;
     setMuted(true);
+    if (video.readyState < 3) setBuffering(true);
     video.play().then(() => setHasStarted(true)).catch(() => {
       // The visible play button remains available if a browser blocks autoplay.
+      setBuffering(false);
     });
   }, [isActive, source]);
+
 
 
   if (!source) {
