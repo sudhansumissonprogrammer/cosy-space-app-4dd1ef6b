@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Play } from "lucide-react";
 import { VideoControlBar } from "./VideoControlBar";
+import VideoBufferDots from "./VideoBufferDots";
+
 import { normalizeProductVideoUrl } from "@/lib/productVideoUrl";
 
 interface VideoSlideProps {
