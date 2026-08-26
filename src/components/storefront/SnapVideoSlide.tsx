@@ -23,6 +23,8 @@ export function SnapVideoSlide({ url, poster, className = "h-full w-full object-
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [muted, setMuted] = useState(true);
+  const [buffering, setBuffering] = useState(false);
+
 
   useEffect(() => {
     const video = ref.current;
