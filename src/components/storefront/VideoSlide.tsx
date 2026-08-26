@@ -168,18 +168,27 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
           setHasStarted(true);
           setVideoPlaying(true);
         }}
-        onPause={() => setVideoPlaying(false)}
-        onEnded={() => setVideoPlaying(false)}
+        onWaiting={() => setBuffering(true)}
+        onStalled={() => setBuffering(true)}
+        onSeeking={() => setBuffering(true)}
+        onPlaying={() => setBuffering(false)}
+        onCanPlay={() => setBuffering(false)}
+        onPause={() => { setVideoPlaying(false); setBuffering(false); }}
+        onEnded={() => { setVideoPlaying(false); setBuffering(false); }}
         onError={() => {
           // Keep the video element, poster, and custom controls mounted. Mobile
           // WebViews can emit recoverable media errors while switching slides;
           // unmounting here made retry impossible and looked like no player.
           setVideoPlaying(false);
+          setBuffering(false);
         }}
         onLoadedMetadata={() => setDuration(videoRef.current?.duration || 0)}
         onDurationChange={() => setDuration(videoRef.current?.duration || 0)}
         onTimeUpdate={() => setCurrentTime(videoRef.current?.currentTime || 0)}
       />
+
+      {buffering && <VideoBufferDots />}
+
 
 
 
