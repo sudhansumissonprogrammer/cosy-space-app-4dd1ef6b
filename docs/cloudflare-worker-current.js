@@ -4557,6 +4557,8 @@ async function serveStreamedHtml(
       /* v8.82.0 — On /product/* the homepage carousel images are the WRONG
          LCP source. Preload the PDP's own hero (+ first gallery frame) so the
          preload scanner starts it at byte 0 instead of ~6.6s. */
+      let _pdpHeroRaw = "";
+      let _pdpHasVideo = false;
       if (pdpCategoryInline?.kind === "product" && pdpCategoryInline?.json) {
         try {
           const _pp = JSON.parse(pdpCategoryInline.json);
@@ -4566,6 +4568,9 @@ async function serveStreamedHtml(
             for (const im of _pp.images.slice(0, 2)) if (im?.image_url) heroList.push({ image_url: im.image_url });
           }
           if (heroList.length) categoryProductsJsonForPreload = JSON.stringify(heroList);
+          // v8.89.0 — remembered for the edge-rendered hero <img> below.
+          _pdpHeroRaw = heroList[0]?.image_url || "";
+          _pdpHasVideo = !!(_pp?.product?.video_url);
         } catch {}
       }
       const _isPdpPreload = pdpCategoryInline?.kind === "product" && !!pdpCategoryInline?.json;
@@ -4574,6 +4579,46 @@ async function serveStreamedHtml(
         : inlineProducts
           ? _buildProductImagePreloads(inlineProducts, 2)
           : _buildImagePreloadsFromUrls(topImages, 2);
+
+      /* v8.89.0 — (a) PRECONNECT to the image host and (b) EDGE-RENDERED HERO.
+         (a) The hero preload above is often the first request to a supplier CDN
+             (assets.jdwebnship.in / …); one <link rel=preconnect> derived from
+             that same URL saves the TLS+TCP handshake. No behaviour change.
+         (b) A preloaded-but-unpainted image can never become LCP — only a
+             painted element can. React creates the gallery <img> ~3s after the
+             bytes have landed. So we emit a real <img> with the byte-identical
+             src/srcset/sizes the React gallery requests, in a `position:fixed`
+             box UNDER the splash overlay (z-index 1 vs 2147483000). Fixed =>
+             cannot shift any layout; identical URL => no second download; the
+             box self-removes on storefront:content-ready, and Chrome keeps the
+             LCP entry it already recorded. */
+      let pdpImgPreconnect = "";
+      let pdpEdgeHero = "";
+      if (_isPdpPreload && _pdpHeroRaw) {
+        try {
+          const _main = _toGalleryUrl(_pdpHeroRaw, 800, 80);
+          const _origin = new URL(_main).origin;
+          pdpImgPreconnect =
+            `<link rel="preconnect" href="${escapeHtml(_origin)}" crossorigin />` +
+            `<link rel="dns-prefetch" href="${escapeHtml(_origin)}" />`;
+          const _srcsetAttr = _isRawPassthrough(_pdpHeroRaw)
+            ? ""
+            : ` srcset="${[400, 600, 800, 1200]
+                .map((w) => `${escapeHtml(_toGalleryUrl(_pdpHeroRaw, w, 80))} ${w}w`)
+                .join(", ")}" sizes="(max-width: 640px) 100vw, 50vw"`;
+          // Same viewport box the gallery reserves (see ProductDetail.tsx
+          // viewportHeightClass) so the frame the browser paints matches.
+          const _h = _pdpHasVideo ? "min(168vw,86svh)" : "min(132vw,70svh)";
+          pdpEdgeHero =
+            `<div id="sf-hero-edge" aria-hidden="true" style="position:fixed;top:0;left:0;width:100vw;height:${_h};z-index:1;overflow:hidden;pointer-events:none;contain:layout paint">` +
+            `<img src="${escapeHtml(_main)}"${_srcsetAttr} alt="" fetchpriority="high" decoding="async" ` +
+            `style="position:absolute;inset:0;margin:auto;width:auto;height:auto;max-width:100%;max-height:100%;object-fit:contain" />` +
+            `</div>` +
+            `<script>(function(){function d(){var e=document.getElementById('sf-hero-edge');if(e&&e.parentNode)e.parentNode.removeChild(e);}` +
+            `window.addEventListener('storefront:content-ready',d,{once:true});setTimeout(d,12000);})()</script>`;
+        } catch {}
+      }
+
 
 
 
