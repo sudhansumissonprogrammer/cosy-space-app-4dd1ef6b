@@ -4219,6 +4219,8 @@ export default function CheckoutV2Page() {
 
   // ─── COD (goes through checkout-v2-cod edge fn to enforce partial rules) ─
   const [placingCod, setPlacingCod] = useState(false);
+  // Confirm-before-place popup, standalone COD only (never the partial flow).
+  const [codConfirmOpen, setCodConfirmOpen] = useState(false);
   const placeCod = async () => {
     if (placingCod || creatingOrder || couponLoading || paymentAmountSyncing) return;
     // Partial-payment stores collect the configured advance online and only
