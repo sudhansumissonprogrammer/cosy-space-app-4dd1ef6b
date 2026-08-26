@@ -13,6 +13,14 @@ export interface TrustSlide {
   to?: string;
   /** external absolute URL */
   href?: string;
+  /** Product-tagged slides carry a shoppable card (Shop-by-Video style). */
+  product?: {
+    name: string;
+    imageUrl?: string | null;
+    price?: number | null;
+    salePrice?: number | null;
+    currency?: string | null;
+  };
 }
 
 interface TrustVideoRow {
