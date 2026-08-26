@@ -1756,6 +1756,20 @@ async function _hubChunkRefs(head, origin) {
   return { key: hubs.join("|"), refs: all };
 }
 
+/* v8.89.0 — PRELOAD-ENRICHER APPEND FIX (root cause of the dead PDP wave).
+   On the streaming paths `prebuiltHead` is a head FRAGMENT: it has no
+   "</head>" (serveStreamedHtml appends that itself). Both the theme and PDP
+   enrichers appended via head.replace("</head>", …), which was a silent
+   no-op — so live PDP HTML never carried the ProductDetail/productSelectors
+   modulepreloads even though the enricher ran. Append to the fragment when
+   the closing tag is absent. */
+function _appendToHeadFragment(head, tags) {
+  if (!tags) return head;
+  if (head.includes("</head>")) return head.replace("</head>", `${tags}</head>`);
+  return head + tags;
+}
+
+
 const _memThemeChunkPreloads = new Map();
 async function enrichHeadWithThemeChunkPreloads(head, origin, env, themeName) {
   if (!head || !themeName) return head;
