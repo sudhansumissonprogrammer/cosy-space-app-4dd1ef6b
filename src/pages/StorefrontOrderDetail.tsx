@@ -434,49 +434,11 @@ export default function StorefrontOrderDetail() {
                 <RotateCcw className="h-4 w-4 mr-2" /> Return Order
               </Button>
             )}
-            {canCancel && (
-              <Button
-                variant="outline"
-                className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/5"
-                onClick={() => setCancelOpen(true)}
-              >
-                <XCircle className="h-4 w-4 mr-2" /> Cancel Order
-              </Button>
-            )}
           </section>
         </div>
       </div>
 
-      {/* Cancel dialog */}
-      <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Cancel this order?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tell us why you're cancelling. The store will be notified.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <RadioGroup value={cancelReason} onValueChange={setCancelReason} className="space-y-2 py-2">
-            {CANCEL_REASONS.map((r) => (
-              <div key={r} className="flex items-center space-x-2">
-                <RadioGroupItem value={r} id={`c-${r}`} />
-                <Label htmlFor={`c-${r}`} className="text-sm font-normal cursor-pointer">{r}</Label>
-              </div>
-            ))}
-          </RadioGroup>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Keep Order</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={(e) => { e.preventDefault(); cancelMutation.mutate(); }}
-              disabled={cancelMutation.isPending}
-            >
-              {cancelMutation.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-              Confirm Cancel
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+
 
       {/* Return dialog */}
       <Dialog open={returnOpen} onOpenChange={setReturnOpen}>
