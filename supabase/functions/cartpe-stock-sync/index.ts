@@ -178,8 +178,10 @@ Deno.serve(async (req) => {
     const nowIso = new Date().toISOString();
 
     for (const { p, src } of results) {
-      touchedIds.push(p.id);
       if (!src) { failed++; continue; }
+      // Only advance the sync timestamp after a trustworthy supplier parse.
+      // Network failures must stay old so the next run retries them quickly.
+      touchedIds.push(p.id);
       checked++;
 
       const nextStock = src.inStock ? IN_STOCK_QTY : 0;
