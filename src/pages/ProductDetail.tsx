@@ -1801,6 +1801,14 @@ function ImageGallery({
 
 
   const isVideoSlide = slides[activeIndex]?.kind === "video";
+  // The carousel viewport height must NOT depend on which slide is active.
+  // Switching height on `select` forced Embla to re-measure + the page to
+  // reflow in the middle of the swipe, which is exactly the lag/jump shoppers
+  // felt when sliding onto the video. Products that have a video reserve the
+  // taller box for every slide instead (images letterbox with object-contain).
+  const hasVideoSlide = slides.some((s) => s.kind === "video");
+  const viewportHeightClass = hasVideoSlide ? "h-[min(168vw,86svh)]" : "h-[min(132vw,70svh)]";
+
 
   return (
     <>
@@ -1838,8 +1846,14 @@ function ImageGallery({
           {/* Embla viewport */}
           <div
             ref={emblaRef}
-            className={`overflow-hidden rounded-none sm:rounded-2xl cursor-zoom-in select-none ${isVideoSlide ? "h-[min(168vw,86svh)]" : "h-[min(132vw,70svh)]"} sm:h-auto sm:aspect-[4/5]`}
-            style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }}
+            className={`overflow-hidden rounded-none sm:rounded-2xl cursor-zoom-in select-none ${viewportHeightClass} sm:h-auto sm:aspect-[4/5]`}
+            style={{
+              backgroundColor: "var(--storefront-bg, hsl(var(--background)))",
+              // Isolate the gallery from the rest of the PDP so slide changes
+              // never trigger a document-wide layout pass.
+              contain: "layout paint",
+            }}
+
           >
             <div className="flex h-full touch-pan-y items-stretch">
               {renderSlides.map((slide, i) => {

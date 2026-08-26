@@ -25,9 +25,30 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
 
   const showOverlay = !hasStarted || !videoPlaying;
 
+  // Warm the video *before* the shopper swipes to it. `preload="none"` meant
+  // the first frame had to be fetched + decoded during the swipe, which showed
+  // up as a stutter/black flash on the transition. Metadata (a few KB range
+  // request) is fetched only once the browser is idle, so the LCP image on the
+  // first slide is never delayed.
+  const [warm, setWarm] = useState(false);
+  useEffect(() => {
+    if (warm || !source) return;
+    let cancelled = false;
+    const arm = () => !cancelled && setWarm(true);
+    const idle = (window as any).requestIdleCallback;
+    const id = typeof idle === "function" ? idle(arm, { timeout: 2500 }) : window.setTimeout(arm, 1200);
+    return () => {
+      cancelled = true;
+      const cancel = (window as any).cancelIdleCallback;
+      if (typeof idle === "function" && typeof cancel === "function") cancel(id);
+      else window.clearTimeout(id as number);
+    };
+  }, [warm, source]);
+
   useEffect(() => {
     if (!isActive && videoRef.current) videoRef.current.pause();
   }, [isActive]);
+
 
   // Keep the element in sync when the shopper toggles sound.
   useEffect(() => {
