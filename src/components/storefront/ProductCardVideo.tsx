@@ -150,8 +150,10 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
         video.load();
       } catch {}
     }
+    setBuffering(false);
     setOpen(false);
   }, []);
+
 
   const stopRef = useRef(stop);
   stopRef.current = stop;
