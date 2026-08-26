@@ -13,6 +13,8 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, ChevronUp, Volume2, VolumeX, X } from "lucide-react";
 import type { TrustSlide } from "@/lib/trustVideos";
+import { formatPrice } from "@/lib/productUtils";
+import { optimizeImageUrl } from "@/lib/imageOptimize";
 
 interface Props {
   slides: TrustSlide[];
