@@ -137,7 +137,7 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
         ref={videoRef}
         src={source}
         poster={poster}
-        preload={isActive ? "metadata" : "none"}
+        preload={isActive || warm ? "metadata" : "none"}
         autoPlay={isActive}
         muted
         playsInline
@@ -145,7 +145,7 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
         disablePictureInPicture
         disableRemotePlayback
         controlsList="nodownload noplaybackrate nofullscreen noremoteplayback"
-        className="sf-video-nocontrols absolute inset-0 z-[1] m-auto h-auto max-h-full w-auto max-w-full object-contain"
+        className="sf-video-nocontrols absolute inset-0 z-[1] m-auto h-auto max-h-full w-auto max-w-full object-contain [transform:translateZ(0)] [backface-visibility:hidden]"
 
         onClick={(e) => {
           e.stopPropagation();
@@ -180,7 +180,7 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
           aria-label="Play video"
           className="absolute inset-0 z-10 flex items-center justify-center bg-black/20 transition-opacity duration-200 hover:bg-black/30 active:scale-[0.98]"
         >
-          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/90 shadow-xl backdrop-blur-sm ring-1 ring-black/10 transition-transform duration-200 group-hover:scale-105">
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/90 shadow-xl ring-1 ring-black/10 transition-transform duration-200 group-hover:scale-105">
             {/* Optical alignment: triangle is visually centered with a ~2px nudge right */}
             <Play className="h-7 w-7 text-black translate-x-[2px]" fill="currentColor" strokeWidth={0} />
           </span>
