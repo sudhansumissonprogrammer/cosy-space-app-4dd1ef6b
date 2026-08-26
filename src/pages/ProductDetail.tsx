@@ -1801,6 +1801,14 @@ function ImageGallery({
 
 
   const isVideoSlide = slides[activeIndex]?.kind === "video";
+  // The carousel viewport height must NOT depend on which slide is active.
+  // Switching height on `select` forced Embla to re-measure + the page to
+  // reflow in the middle of the swipe, which is exactly the lag/jump shoppers
+  // felt when sliding onto the video. Products that have a video reserve the
+  // taller box for every slide instead (images letterbox with object-contain).
+  const hasVideoSlide = slides.some((s) => s.kind === "video");
+  const viewportHeightClass = hasVideoSlide ? "h-[min(168vw,86svh)]" : "h-[min(132vw,70svh)]";
+
 
   return (
     <>
