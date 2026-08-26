@@ -37,6 +37,10 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
   const [open, setOpen] = useState(false);
   const [failed, setFailed] = useState(false);
   const [muted, setMuted] = useState(false);
+  // Shown from tap until the first frame renders (and on buffer under-runs), so
+  // a slow network reads as "loading", not as a frozen card.
+  const [buffering, setBuffering] = useState(false);
+
   const eligible = enabled && !!videoUrl && !failed;
 
   // Find the image container of whichever card style rendered. Lazy card
