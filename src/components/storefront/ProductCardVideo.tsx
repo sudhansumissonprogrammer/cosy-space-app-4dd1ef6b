@@ -230,6 +230,10 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
           controls={false}
           aria-hidden="true"
           tabIndex={-1}
+          onWaiting={() => setBuffering(true)}
+          onStalled={() => setBuffering(true)}
+          onPlaying={() => setBuffering(false)}
+          onCanPlay={() => setBuffering(false)}
           onError={(event) => {
             const current = event.currentTarget;
             if (!current.getAttribute("src") || current.error?.code === MediaError.MEDIA_ERR_ABORTED) return;
@@ -249,6 +253,7 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
               }, 400);
               return;
             }
+            setBuffering(false);
             setFailed(true);
             setOpen(false);
           }}
@@ -261,6 +266,8 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
           className="pointer-events-none absolute inset-0 z-[2] h-full w-full"
         />
       )}
+      {open && buffering && <VideoBufferDots size="sm" />}
+
       <div className="absolute bottom-1.5 left-1.5 z-[3] flex items-center gap-1">
         <button
           type="button"
