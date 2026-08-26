@@ -728,7 +728,7 @@ const SECURITY_HEADERS = {
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Content-Security-Policy":
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' https://connect.facebook.net https://www.googletagmanager.com https://checkout.razorpay.com https://cdn.razorpay.com https://*.razorpay.com https://sdk.cashfree.com https://*.cashfree.com https://jssdk.payu.in https://jssdk-uat.payu.in https://www.google-analytics.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://embed.tawk.to https://client.crisp.chat https://cdn.jsdelivr.net; " +
+    "script-src 'self' 'unsafe-inline' https://cdn.gpteng.co https://connect.facebook.net https://www.googletagmanager.com https://checkout.razorpay.com https://cdn.razorpay.com https://*.razorpay.com https://sdk.cashfree.com https://*.cashfree.com https://jssdk.payu.in https://jssdk-uat.payu.in https://www.google-analytics.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://embed.tawk.to https://client.crisp.chat https://cdn.jsdelivr.net; " +
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://client.crisp.chat; " +
     "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:; " +
     "img-src 'self' data: blob: https://*.supabase.co https://*.r2.dev https://*.cloudinary.com https://*.unsplash.com https://*.shopify.com https://*.myshopify.com https://www.google-analytics.com https://www.googletagmanager.com https://www.facebook.com https://cx.atdmt.com https:; " +
@@ -2030,7 +2030,7 @@ function _buildLinkPreloadHeader(html) {
   const links = [];
 
   const cssMatch = html.match(/href="(\/assets\/[^"]+\.css)"/);
-  if (cssMatch) links.push(`<${cssMatch[1]}>; rel=preload; as=style`);
+  if (cssMatch) links.push(`<${cssMatch[1]}>; rel=preload; as=style; crossorigin`);
 
   const seen = new Set();
   for (const m of [...html.matchAll(/src="(\/assets\/[^"]+\.js)"/g)]) {
@@ -4611,7 +4611,7 @@ async function serveStreamedHtml(
           const _h = _pdpHasVideo ? "min(168vw,86svh)" : "min(132vw,70svh)";
           pdpEdgeHero =
             `<div id="sf-hero-edge" aria-hidden="true" style="position:fixed;top:0;left:0;width:100vw;height:${_h};z-index:1;overflow:hidden;pointer-events:none;contain:layout paint">` +
-            `<img src="${escapeHtml(_main)}"${_srcsetAttr} alt="" fetchpriority="high" decoding="async" ` +
+            `<img class="sf-hero-img" src="${escapeHtml(_main)}"${_srcsetAttr} alt="" fetchpriority="high" decoding="async" ` +
             `style="position:absolute;inset:0;margin:auto;width:auto;height:auto;max-width:100%;max-height:100%;object-fit:contain" />` +
             `</div>` +
             `<script>(function(){function d(){var e=document.getElementById('sf-hero-edge');if(e&&e.parentNode)e.parentNode.removeChild(e);}` +
