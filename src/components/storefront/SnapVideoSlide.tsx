@@ -57,6 +57,7 @@ export function SnapVideoSlide({ url, poster, className = "h-full w-full object-
     v.muted = false;
     setMuted(false);
     setStarted(true);
+    if (v.readyState < 3) setBuffering(true);
     const attempt = v.play();
     if (attempt && typeof attempt.catch === "function") {
       attempt.catch(() => {
@@ -84,7 +85,8 @@ export function SnapVideoSlide({ url, poster, className = "h-full w-full object-
     playWithSound();
   };
 
-  const showOverlay = !started || !playing;
+  const showOverlay = (!started || !playing) && !buffering;
+
 
   const handleSeek = (value: number) => {
     const v = ref.current;
