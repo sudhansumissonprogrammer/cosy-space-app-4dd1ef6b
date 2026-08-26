@@ -22,6 +22,7 @@ const PRIMARY_CHUNK_ERROR_PATTERNS = [
   // → React tries to render and reads `.default` of undefined. Treat as
   // recoverable so the user sees a fresh reload, not a white error screen.
   /Cannot read propert(y|ies) of undefined \(reading ['"]default['"]\)/i,
+  /Cannot destructure property ['"][^'"]+['"] of ['"]undefined['"] as it is undefined/i,
   /undefined is not an object \(evaluating .*['"]default['"]\)/i,
   // Same root cause, but for lazy imports that read a *named* export off the
   // module namespace (e.g. `m.VideoSlide`) — the namespace is undefined.
@@ -49,7 +50,29 @@ function getRecoverySignature() {
   const url = new URL(window.location.href);
   url.hash = "";
   url.searchParams.delete("__r");
+  url.searchParams.delete("__sb_heal");
+  url.searchParams.delete("__sh");
   return `${url.origin}${url.pathname}?${url.searchParams.toString()}`;
+}
+
+function notifyShellBroken(reason: string, onDone: () => void) {
+  let finished = false;
+  const done = () => {
+    if (finished) return;
+    finished = true;
+    onDone();
+  };
+
+  try {
+    fetch(`/api/shell-broken?r=${encodeURIComponent(reason)}`, {
+      method: "POST",
+      cache: "no-store",
+      keepalive: true,
+    }).then(done, done);
+    window.setTimeout(done, 1200);
+  } catch {
+    done();
+  }
 }
 
 function readRecoveryState(): RecoveryState | null {
@@ -153,12 +176,14 @@ export function recoverFromChunkLoadError(error: unknown): boolean {
     recoveryNavigationStarted = true;
 
     const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.delete("__sb_heal");
+    nextUrl.searchParams.delete("__sh");
     nextUrl.searchParams.set("__r", `${now.toString(36)}-${attempts}`);
-    window.location.replace(nextUrl.toString());
+    notifyShellBroken("chunk", () => window.location.replace(nextUrl.toString()));
     return true;
   } catch {
     recoveryNavigationStarted = true;
-    window.location.reload();
+    notifyShellBroken("chunk-fallback", () => window.location.reload());
     return true;
   }
 }
