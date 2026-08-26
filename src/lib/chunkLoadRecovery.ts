@@ -22,6 +22,7 @@ const PRIMARY_CHUNK_ERROR_PATTERNS = [
   // → React tries to render and reads `.default` of undefined. Treat as
   // recoverable so the user sees a fresh reload, not a white error screen.
   /Cannot read propert(y|ies) of undefined \(reading ['"]default['"]\)/i,
+  /Cannot destructure property ['"][^'"]+['"] of ['"]undefined['"] as it is undefined/i,
   /undefined is not an object \(evaluating .*['"]default['"]\)/i,
   // Same root cause, but for lazy imports that read a *named* export off the
   // module namespace (e.g. `m.VideoSlide`) — the namespace is undefined.
