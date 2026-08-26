@@ -49,7 +49,29 @@ function getRecoverySignature() {
   const url = new URL(window.location.href);
   url.hash = "";
   url.searchParams.delete("__r");
+  url.searchParams.delete("__sb_heal");
+  url.searchParams.delete("__sh");
   return `${url.origin}${url.pathname}?${url.searchParams.toString()}`;
+}
+
+function notifyShellBroken(reason: string, onDone: () => void) {
+  let finished = false;
+  const done = () => {
+    if (finished) return;
+    finished = true;
+    onDone();
+  };
+
+  try {
+    fetch(`/api/shell-broken?r=${encodeURIComponent(reason)}`, {
+      method: "POST",
+      cache: "no-store",
+      keepalive: true,
+    }).then(done, done);
+    window.setTimeout(done, 1200);
+  } catch {
+    done();
+  }
 }
 
 function readRecoveryState(): RecoveryState | null {
@@ -153,12 +175,14 @@ export function recoverFromChunkLoadError(error: unknown): boolean {
     recoveryNavigationStarted = true;
 
     const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.delete("__sb_heal");
+    nextUrl.searchParams.delete("__sh");
     nextUrl.searchParams.set("__r", `${now.toString(36)}-${attempts}`);
-    window.location.replace(nextUrl.toString());
+    notifyShellBroken("chunk", () => window.location.replace(nextUrl.toString()));
     return true;
   } catch {
     recoveryNavigationStarted = true;
-    window.location.reload();
+    notifyShellBroken("chunk-fallback", () => window.location.reload());
     return true;
   }
 }

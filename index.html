@@ -44,9 +44,9 @@
          no longer exists at origin (404/503). React never mounts → blank
          "loading" screen (the exact serdiyajewellers.shop incident).
          This guard catches the failed <script> for the main entry chunk,
-         calls /api/purge-shell for the current host (open endpoint), then
-         hard-reloads ONCE. A sessionStorage flag prevents infinite loops if
-         the asset really is gone for an unrelated reason. -->
+         calls the browser-safe shell-heal endpoint, then hard-reloads ONCE.
+         A sessionStorage flag prevents infinite loops if the asset really is
+         gone for an unrelated reason. -->
     <script>
       (function(){
         try{
@@ -63,7 +63,7 @@
               location.replace(location.pathname + (location.search ? location.search + '&' : '?') + '__sh=' + Date.now() + location.hash);
             };
             try {
-              fetch('/api/purge-shell?domain=' + encodeURIComponent(host), { method:'POST', cache:'no-store', keepalive:true })
+              fetch('/api/shell-broken?r=entry-asset&domain=' + encodeURIComponent(host), { method:'POST', cache:'no-store', keepalive:true })
                 .then(done, done);
             } catch(_) { done(); }
           }, true);
