@@ -117,16 +117,26 @@ export function SnapVideoSlide({ url, poster, className = "h-full w-full object-
         preload="metadata"
         onClick={handleToggle}
         onPlay={() => { setStarted(true); setPlaying(true); }}
-        onPause={() => setPlaying(false)}
-        onEnded={() => setPlaying(false)}
+        onWaiting={() => setBuffering(true)}
+        onStalled={() => setBuffering(true)}
+        onSeeking={() => setBuffering(true)}
+        onPlaying={() => setBuffering(false)}
+        onCanPlay={() => setBuffering(false)}
+        onPause={() => { setPlaying(false); setBuffering(false); }}
+        onEnded={() => { setPlaying(false); setBuffering(false); }}
         onLoadedMetadata={() => setDuration(ref.current?.duration || 0)}
         onDurationChange={() => setDuration(ref.current?.duration || 0)}
         onTimeUpdate={() => setCurrentTime(ref.current?.currentTime || 0)}
         onError={() => {
           setPlaying(false);
+          setBuffering(false);
           setFailed(true);
         }}
       />
+
+      {buffering && <VideoBufferDots />}
+
+
 
 
       {showOverlay && (
