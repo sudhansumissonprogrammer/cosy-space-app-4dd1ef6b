@@ -1,13 +1,14 @@
 /**
  * ShopByVideoCarousel — Shop by Video storefront section.
  *
- * Renders as an Instagram-Reels-style autoplay muted carousel right below
- * Best Sellers on the storefront home. Only shows when the store owner has
- * enabled the "shop-by-video" App Store add-on. Products auto-qualify: any
- * active product that has `video_url` set will appear. Sequence is controlled
- * from the dashboard config (`order` array).
+ * Renders as an Instagram-Reels-style carousel right below Best Sellers on the
+ * storefront home. Videos are tap-to-play so the section adds zero cold-load
+ * video bytes; the carousel shell itself still auto-scrolls. Only shows when the
+ * store owner has enabled the "shop-by-video" App Store add-on. Products
+ * auto-qualify: any active product that has `video_url` set will appear.
+ * Sequence is controlled from the dashboard config (`order` array).
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
@@ -17,6 +18,8 @@ import { fetchStoreEnabledApps } from "@/hooks/useStoreEnabledApps";
 import { storefrontPath, getSubdomainSlug } from "@/lib/subdomain";
 import { cn } from "@/lib/utils";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
+import VideoBufferDots from "./VideoBufferDots";
+
 
 interface AppConfig {
   enabled?: boolean;
@@ -250,37 +253,77 @@ interface TileProps {
   showCta: boolean;
 }
 
+/** Only one Shop-by-Video tile may play at a time. */
+let activeStop: (() => void) | null = null;
+
 function VideoTile({ product, slug, active, muted, onToggleMute, aspectClass, showPrice, showCta }: TileProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [inView, setInView] = useState(false);
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const [buffering, setBuffering] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const retries = useRef(0);
 
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => setInView(entry.intersectionRatio > 0.5),
-      { threshold: [0, 0.5, 1] },
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
+  const stop = useCallback(() => {
+    const v = videoRef.current;
+    if (v) {
+      try { v.pause(); } catch {}
+    }
+    setPlaying(false);
+    setBuffering(false);
   }, []);
 
+  const stopRef = useRef(stop);
+  stopRef.current = stop;
+
+  useEffect(() => () => {
+    if (activeStop === stopRef.current) activeStop = null;
+    const v = videoRef.current;
+    if (v) {
+      try { v.pause(); } catch {}
+    }
+  }, []);
+
+  // Pause when this slide is no longer the active one.
+  useEffect(() => {
+    if (!active && playing) stop();
+  }, [active, playing, stop]);
+
+  // Keep muted state in sync without restarting playback.
   useEffect(() => {
     const v = videoRef.current;
-    if (!v) return;
-    if (active && inView) {
-      v.play().catch(() => {});
-    } else {
-      v.pause();
-    }
-  }, [active, inView]);
+    if (v) v.muted = muted;
+  }, [muted]);
+
+  const start = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (activeStop) activeStop();
+    activeStop = stop;
+    if (failed) setFailed(false);
+    retries.current = 0;
+    setBuffering(true);
+    setPlaying(true);
+  }, [stop, failed]);
 
   useEffect(() => {
+    if (!playing) return;
     const v = videoRef.current;
     if (!v) return;
+    retries.current = 0;
     v.muted = muted;
-  }, [muted]);
+    v.playsInline = true;
+    v.load();
+    const attempt = v.play();
+    if (attempt && typeof attempt.catch === "function") {
+      attempt.catch(() => {
+        v.muted = true;
+        onToggleMute();
+        const retry = v.play();
+        if (retry && typeof retry.catch === "function") retry.catch(() => {});
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing, muted, onToggleMute]);
 
   const currency = product.currency || "INR";
   const displayPrice = product.sale_price ?? product.price;
@@ -288,7 +331,7 @@ function VideoTile({ product, slug, active, muted, onToggleMute, aspectClass, sh
   const productHref = storefrontPath(slug, `product/${product.slug}`);
 
   return (
-    <div ref={containerRef} className="group relative overflow-hidden rounded-2xl bg-black">
+    <div className="group relative overflow-hidden rounded-2xl bg-black">
       <Link to={productHref} aria-label={product.name} className="block">
         <div className={cn("relative w-full", aspectClass)}>
           {product.video_poster_url && (
@@ -311,6 +354,32 @@ function VideoTile({ product, slug, active, muted, onToggleMute, aspectClass, sh
             loop
             preload="none"
             disablePictureInPicture
+            onWaiting={() => setBuffering(true)}
+            onStalled={() => setBuffering(true)}
+            onPlaying={() => setBuffering(false)}
+            onCanPlay={() => setBuffering(false)}
+            onPause={() => setPlaying(false)}
+            onEnded={() => setPlaying(false)}
+            onError={(event) => {
+              const current = event.currentTarget;
+              if (!current.getAttribute("src") || current.error?.code === MediaError.MEDIA_ERR_ABORTED) return;
+              if (retries.current < 1) {
+                retries.current += 1;
+                const url = product.video_url;
+                window.setTimeout(() => {
+                  const v = videoRef.current;
+                  if (!v) return;
+                  v.src = url;
+                  v.load();
+                  const attempt = v.play();
+                  if (attempt && typeof attempt.catch === "function") attempt.catch(() => {});
+                }, 400);
+                return;
+              }
+              setBuffering(false);
+              setFailed(true);
+              setPlaying(false);
+            }}
           />
 
           <div className="absolute inset-x-0 bottom-0 z-10 pointer-events-none bg-gradient-to-t from-black/85 via-black/40 to-transparent pt-10 pb-3 px-3">
@@ -352,6 +421,25 @@ function VideoTile({ product, slug, active, muted, onToggleMute, aspectClass, sh
           </div>
         </div>
       </Link>
+
+      {!playing && !failed && (
+        <button
+          type="button"
+          onClick={start}
+          aria-label="Play video"
+          className="absolute inset-0 z-20 flex items-center justify-center bg-black/20 transition-colors hover:bg-black/30"
+        >
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/90 text-black shadow-lg backdrop-blur-sm transition-transform active:scale-90">
+            <Play className="h-5 w-5 translate-x-[1px] fill-current" />
+          </span>
+        </button>
+      )}
+
+      {playing && buffering && (
+        <div className="absolute inset-0 z-[30] flex items-center justify-center bg-black/30">
+          <VideoBufferDots size="md" scrim={false} />
+        </div>
+      )}
 
       <button
         type="button"
