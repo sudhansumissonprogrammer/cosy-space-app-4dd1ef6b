@@ -4219,6 +4219,8 @@ export default function CheckoutV2Page() {
 
   // ─── COD (goes through checkout-v2-cod edge fn to enforce partial rules) ─
   const [placingCod, setPlacingCod] = useState(false);
+  // Confirm-before-place popup, standalone COD only (never the partial flow).
+  const [codConfirmOpen, setCodConfirmOpen] = useState(false);
   const placeCod = async () => {
     if (placingCod || creatingOrder || couponLoading || paymentAmountSyncing) return;
     // Partial-payment stores collect the configured advance online and only
@@ -5913,7 +5915,7 @@ export default function CheckoutV2Page() {
               order and must always be offered. */}
           {codAvailable && (!partialConfigured || !hasOnline) && (
             <button
-              onClick={placeCod}
+              onClick={() => setCodConfirmOpen(true)}
               disabled={placingCod || confirmingPayment || creatingOrder || couponLoading || paymentAmountSyncing}
               className="relative w-full bg-white rounded-xl border border-[#ECECEC] p-3.5 flex items-center justify-between active:scale-[0.99] transition-all disabled:opacity-40"
             >
@@ -5921,10 +5923,10 @@ export default function CheckoutV2Page() {
               <div className="flex items-center gap-3">
                 <Banknote className="h-5 w-5" />
                 <div className="text-left">
-                  <div className="text-[14px] font-bold">{tCritical("Cash on Delivery", "डिलीवरी पर कैश")}</div>
+                  <div className="text-[14px] font-bold">Cash on Delivery</div>
                   {partialEnabled && (
                     <div className="text-[11px] text-muted-foreground mt-0.5">
-                      {tCritical("Pay full amount on delivery", "पूरी राशि डिलीवरी पर दें")}
+                      Pay full amount on delivery
                     </div>
                   )}
                 </div>
@@ -5935,6 +5937,43 @@ export default function CheckoutV2Page() {
               </div>
             </button>
           )}
+
+          {/* COD confirm popup — bottom sheet, standalone COD only. */}
+          {codConfirmOpen && typeof document !== "undefined" && createPortal(
+            <div className="fixed inset-0 z-[120] flex flex-col justify-end" role="dialog" aria-modal="true" aria-label="Confirm your order">
+              <div className="absolute inset-0 bg-black/60" onClick={() => { if (!placingCod) setCodConfirmOpen(false); }} aria-hidden />
+              <button
+                type="button"
+                aria-label="Close"
+                onClick={() => { if (!placingCod) setCodConfirmOpen(false); }}
+                className="relative mx-auto mb-3 h-9 w-9 rounded-full bg-neutral-800 text-white flex items-center justify-center shadow-lg"
+              >
+                <X className="h-5 w-5" />
+              </button>
+              <div className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl p-4 pb-6">
+                <div className="text-[17px] font-bold">Confirm Your Order</div>
+                <div className="mt-4 rounded-xl border border-[#ECECEC] p-4">
+                  <div className="text-[15px] font-semibold">
+                    Total amount: {formatPrice(total, currency)}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setCodConfirmOpen(false); void placeCod(); }}
+                    disabled={placingCod}
+                    className="mt-4 w-full h-12 rounded-lg bg-blue-600 text-white text-[15px] font-bold flex items-center justify-center gap-2 active:scale-[0.99] transition-transform disabled:opacity-60"
+                  >
+                    {placingCod && <Loader2 className="h-4 w-4 animate-spin" />}
+                    Yes
+                  </button>
+                </div>
+                <div className="mt-3 text-center text-[11px] text-muted-foreground">
+                  You will pay {formatPrice(total, currency)} in cash when the order is delivered.
+                </div>
+              </div>
+            </div>,
+            document.body
+          )}
+
 
           {!hasOnline && !codAvailable && paymentConfigLoaded && (
             <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
