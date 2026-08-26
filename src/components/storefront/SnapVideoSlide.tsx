@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Play } from "lucide-react";
 import { VideoControlBar } from "./VideoControlBar";
 import { normalizeProductVideoUrl } from "@/lib/productVideoUrl";
+import VideoBufferDots from "./VideoBufferDots";
+
 
 interface Props {
   url: string;
@@ -23,6 +25,8 @@ export function SnapVideoSlide({ url, poster, className = "h-full w-full object-
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [muted, setMuted] = useState(true);
+  const [buffering, setBuffering] = useState(false);
+
 
   useEffect(() => {
     const video = ref.current;
@@ -53,6 +57,7 @@ export function SnapVideoSlide({ url, poster, className = "h-full w-full object-
     v.muted = false;
     setMuted(false);
     setStarted(true);
+    if (v.readyState < 3) setBuffering(true);
     const attempt = v.play();
     if (attempt && typeof attempt.catch === "function") {
       attempt.catch(() => {
@@ -80,7 +85,8 @@ export function SnapVideoSlide({ url, poster, className = "h-full w-full object-
     playWithSound();
   };
 
-  const showOverlay = !started || !playing;
+  const showOverlay = (!started || !playing) && !buffering;
+
 
   const handleSeek = (value: number) => {
     const v = ref.current;
@@ -111,16 +117,26 @@ export function SnapVideoSlide({ url, poster, className = "h-full w-full object-
         preload="metadata"
         onClick={handleToggle}
         onPlay={() => { setStarted(true); setPlaying(true); }}
-        onPause={() => setPlaying(false)}
-        onEnded={() => setPlaying(false)}
+        onWaiting={() => setBuffering(true)}
+        onStalled={() => setBuffering(true)}
+        onSeeking={() => setBuffering(true)}
+        onPlaying={() => setBuffering(false)}
+        onCanPlay={() => setBuffering(false)}
+        onPause={() => { setPlaying(false); setBuffering(false); }}
+        onEnded={() => { setPlaying(false); setBuffering(false); }}
         onLoadedMetadata={() => setDuration(ref.current?.duration || 0)}
         onDurationChange={() => setDuration(ref.current?.duration || 0)}
         onTimeUpdate={() => setCurrentTime(ref.current?.currentTime || 0)}
         onError={() => {
           setPlaying(false);
+          setBuffering(false);
           setFailed(true);
         }}
       />
+
+      {buffering && <VideoBufferDots />}
+
+
 
 
       {showOverlay && (

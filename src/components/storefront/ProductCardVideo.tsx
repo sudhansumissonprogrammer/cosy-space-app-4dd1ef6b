@@ -15,6 +15,8 @@ import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Play, X, Volume2, VolumeX } from "lucide-react";
 import { normalizeProductVideoUrl } from "@/lib/productVideoUrl";
+import VideoBufferDots from "./VideoBufferDots";
+
 
 interface Props {
   /** Wrapper element that contains the rendered product card. */
@@ -37,6 +39,10 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
   const [open, setOpen] = useState(false);
   const [failed, setFailed] = useState(false);
   const [muted, setMuted] = useState(false);
+  // Shown from tap until the first frame renders (and on buffer under-runs), so
+  // a slow network reads as "loading", not as a frozen card.
+  const [buffering, setBuffering] = useState(false);
+
   const eligible = enabled && !!videoUrl && !failed;
 
   // Find the image container of whichever card style rendered. Lazy card
@@ -146,8 +152,10 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
         video.load();
       } catch {}
     }
+    setBuffering(false);
     setOpen(false);
   }, []);
+
 
   const stopRef = useRef(stop);
   stopRef.current = stop;
@@ -172,7 +180,9 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
       event.stopPropagation();
       if (activeStop) activeStop();
       activeStop = stop;
+      setBuffering(true);
       setOpen(true);
+
     },
     [stop],
   );
@@ -222,6 +232,10 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
           controls={false}
           aria-hidden="true"
           tabIndex={-1}
+          onWaiting={() => setBuffering(true)}
+          onStalled={() => setBuffering(true)}
+          onPlaying={() => setBuffering(false)}
+          onCanPlay={() => setBuffering(false)}
           onError={(event) => {
             const current = event.currentTarget;
             if (!current.getAttribute("src") || current.error?.code === MediaError.MEDIA_ERR_ABORTED) return;
@@ -241,6 +255,7 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
               }, 400);
               return;
             }
+            setBuffering(false);
             setFailed(true);
             setOpen(false);
           }}
@@ -253,6 +268,8 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
           className="pointer-events-none absolute inset-0 z-[2] h-full w-full"
         />
       )}
+      {open && buffering && <VideoBufferDots size="sm" />}
+
       <div className="absolute bottom-1.5 left-1.5 z-[3] flex items-center gap-1">
         <button
           type="button"

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Play } from "lucide-react";
 import { VideoControlBar } from "./VideoControlBar";
+import VideoBufferDots from "./VideoBufferDots";
+
 import { normalizeProductVideoUrl } from "@/lib/productVideoUrl";
 
 interface VideoSlideProps {
@@ -22,8 +24,12 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [muted, setMuted] = useState(true);
+  // True from the moment playback is requested until the decoder actually
+  // renders frames (`playing`), and again whenever the buffer runs dry.
+  const [buffering, setBuffering] = useState(false);
 
-  const showOverlay = !hasStarted || !videoPlaying;
+  const showOverlay = (!hasStarted || !videoPlaying) && !buffering;
+
 
   // Warm the video *before* the shopper swipes to it. `preload="none"` meant
   // the first frame had to be fetched + decoded during the swipe, which showed
@@ -46,8 +52,12 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
   }, [warm, source]);
 
   useEffect(() => {
-    if (!isActive && videoRef.current) videoRef.current.pause();
+    if (!isActive && videoRef.current) {
+      videoRef.current.pause();
+      setBuffering(false);
+    }
   }, [isActive]);
+
 
 
   // Keep the element in sync when the shopper toggles sound.
@@ -63,10 +73,13 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
     if (!isActive || !source || !video) return;
     video.muted = true;
     setMuted(true);
+    if (video.readyState < 3) setBuffering(true);
     video.play().then(() => setHasStarted(true)).catch(() => {
       // The visible play button remains available if a browser blocks autoplay.
+      setBuffering(false);
     });
   }, [isActive, source]);
+
 
 
   if (!source) {
@@ -86,7 +99,9 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
     v.muted = false;
     setMuted(false);
     setHasStarted(true);
+    if (v.readyState < 3) setBuffering(true);
     const attempt = v.play();
+
     if (attempt && typeof attempt.catch === "function") {
       attempt.catch(() => {
         v.muted = true;
@@ -155,18 +170,27 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
           setHasStarted(true);
           setVideoPlaying(true);
         }}
-        onPause={() => setVideoPlaying(false)}
-        onEnded={() => setVideoPlaying(false)}
+        onWaiting={() => setBuffering(true)}
+        onStalled={() => setBuffering(true)}
+        onSeeking={() => setBuffering(true)}
+        onPlaying={() => setBuffering(false)}
+        onCanPlay={() => setBuffering(false)}
+        onPause={() => { setVideoPlaying(false); setBuffering(false); }}
+        onEnded={() => { setVideoPlaying(false); setBuffering(false); }}
         onError={() => {
           // Keep the video element, poster, and custom controls mounted. Mobile
           // WebViews can emit recoverable media errors while switching slides;
           // unmounting here made retry impossible and looked like no player.
           setVideoPlaying(false);
+          setBuffering(false);
         }}
         onLoadedMetadata={() => setDuration(videoRef.current?.duration || 0)}
         onDurationChange={() => setDuration(videoRef.current?.duration || 0)}
         onTimeUpdate={() => setCurrentTime(videoRef.current?.currentTime || 0)}
       />
+
+      {buffering && <VideoBufferDots />}
+
 
 
 
