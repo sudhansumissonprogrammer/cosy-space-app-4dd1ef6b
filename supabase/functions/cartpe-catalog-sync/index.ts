@@ -390,13 +390,26 @@ Deno.serve(async (req) => {
         .eq("store_id", store.id).in("source_id", ids.slice(i, i + 200));
       for (const r of data || []) if (r.source_id) knownIds.add(String(r.source_id));
     }
-    const { data: allNames } = await admin
-      .from("products").select("name, slug").eq("store_id", store.id).limit(20000);
-    const knownName = new Set((allNames || []).map((r) => norm(r.name)));
-    const knownSlug = new Set((allNames || []).map((r) => r.slug));
+    // PostgREST caps each response (commonly at 1,000 rows), even when a
+    // larger limit is requested. Page the full catalog so products beyond the
+    // first response are not mistaken for new and retried on every cron run.
+    const allNames: { name: string; slug: string }[] = [];
+    for (let from = 0; ; from += 1000) {
+      const { data, error } = await admin
+        .from("products")
+        .select("name, slug")
+        .eq("store_id", store.id)
+        .range(from, from + 999);
+      if (error) break;
+      allNames.push(...((data || []) as { name: string; slug: string }[]));
+      if (!data || data.length < 1000) break;
+    }
+    const knownName = new Set(allNames.map((r) => norm(r.name)));
+    const knownSlug = new Set(allNames.map((r) => r.slug));
 
     const candidates = [...found.values()]
       .filter((c) => !knownIds.has(c.sourceId))
+      .filter((c) => !knownName.has(norm(c.name)))
       .slice(0, importBudget);
 
 
