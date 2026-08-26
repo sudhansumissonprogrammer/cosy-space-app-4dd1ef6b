@@ -225,7 +225,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.88.0-no-cf-img";
+const WORKER_VERSION = "8.89.0-pdp-lcp";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
