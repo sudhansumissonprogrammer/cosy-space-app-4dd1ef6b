@@ -97,7 +97,9 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
     v.muted = false;
     setMuted(false);
     setHasStarted(true);
+    if (v.readyState < 3) setBuffering(true);
     const attempt = v.play();
+
     if (attempt && typeof attempt.catch === "function") {
       attempt.catch(() => {
         v.muted = true;
