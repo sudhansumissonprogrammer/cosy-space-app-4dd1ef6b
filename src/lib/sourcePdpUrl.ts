@@ -30,10 +30,16 @@ export function buildSourcePdpUrl(store: SourceStore, product: SourceProduct): s
   const platform = product.source_platform || store?.source_platform || null;
   if (!platform) return null;
 
+  // Mirrored products (imported from another of our stores) carry the FULL
+  // supplier URL in source_path, because their own store has no matching
+  // source_base_url. Use it verbatim.
+  if (product.source_path && /^https?:\/\//i.test(product.source_path)) return product.source_path;
+
   const base = trimEnd(store?.source_base_url || DEFAULT_SOURCE_BASE[platform] || "");
   if (!base) return null;
 
   if (product.source_path) return `${base}/${trimStart(product.source_path)}`;
+
 
   if (platform === "jdwebship" && product.slug) {
     return `${base}/products/${product.slug}`;
