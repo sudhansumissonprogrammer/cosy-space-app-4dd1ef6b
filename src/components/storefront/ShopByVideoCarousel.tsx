@@ -1,11 +1,12 @@
 /**
  * ShopByVideoCarousel — Shop by Video storefront section.
  *
- * Renders as an Instagram-Reels-style autoplay muted carousel right below
- * Best Sellers on the storefront home. Only shows when the store owner has
- * enabled the "shop-by-video" App Store add-on. Products auto-qualify: any
- * active product that has `video_url` set will appear. Sequence is controlled
- * from the dashboard config (`order` array).
+ * Renders as an Instagram-Reels-style carousel right below Best Sellers on the
+ * storefront home. Videos are tap-to-play so the section adds zero cold-load
+ * video bytes; the carousel shell itself still auto-scrolls. Only shows when the
+ * store owner has enabled the "shop-by-video" App Store add-on. Products
+ * auto-qualify: any active product that has `video_url` set will appear.
+ * Sequence is controlled from the dashboard config (`order` array).
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
