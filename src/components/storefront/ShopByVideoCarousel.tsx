@@ -12,7 +12,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
-import { Volume2, VolumeX, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { Play, Volume2, VolumeX, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchStoreEnabledApps } from "@/hooks/useStoreEnabledApps";
 import { storefrontPath, getSubdomainSlug } from "@/lib/subdomain";
