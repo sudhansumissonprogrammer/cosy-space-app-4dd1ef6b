@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Play } from "lucide-react";
 import { VideoControlBar } from "./VideoControlBar";
 import { normalizeProductVideoUrl } from "@/lib/productVideoUrl";
+import VideoBufferDots from "./VideoBufferDots";
+
 
 interface Props {
   url: string;
