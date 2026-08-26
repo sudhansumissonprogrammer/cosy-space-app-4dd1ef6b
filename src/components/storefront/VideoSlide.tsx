@@ -50,8 +50,12 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
   }, [warm, source]);
 
   useEffect(() => {
-    if (!isActive && videoRef.current) videoRef.current.pause();
+    if (!isActive && videoRef.current) {
+      videoRef.current.pause();
+      setBuffering(false);
+    }
   }, [isActive]);
+
 
 
   // Keep the element in sync when the shopper toggles sound.
