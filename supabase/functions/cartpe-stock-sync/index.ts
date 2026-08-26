@@ -150,7 +150,13 @@ Deno.serve(async (req) => {
       for (const p of (hot || []) as Row[]) targets.set(p.id, p);
     }
 
-    let rotQuery = admin.from("products").select(cols).eq("store_id", store.id);
+    // Scope the rotating window before LIMIT. Legacy/manual rows without a
+    // Cartpe PDP path previously occupied the oldest slots and were filtered
+    // only after the query, starving real supplier products of stock checks.
+    let rotQuery = admin.from("products").select(cols)
+      .eq("store_id", store.id)
+      .eq("source_platform", "cartpe")
+      .not("source_path", "is", null);
     if (onlyOos) rotQuery = rotQuery.lte("stock_quantity", 0);
     const { data: rot, error: rotErr } = await rotQuery
       .order("source_synced_at", { ascending: true, nullsFirst: true })
@@ -172,8 +178,10 @@ Deno.serve(async (req) => {
     const nowIso = new Date().toISOString();
 
     for (const { p, src } of results) {
-      touchedIds.push(p.id);
       if (!src) { failed++; continue; }
+      // Only advance the sync timestamp after a trustworthy supplier parse.
+      // Network failures must stay old so the next run retries them quickly.
+      touchedIds.push(p.id);
       checked++;
 
       const nextStock = src.inStock ? IN_STOCK_QTY : 0;
