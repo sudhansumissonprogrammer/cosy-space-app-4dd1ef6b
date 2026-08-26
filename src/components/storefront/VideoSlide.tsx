@@ -137,7 +137,7 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
         ref={videoRef}
         src={source}
         poster={poster}
-        preload={isActive ? "metadata" : "none"}
+        preload={isActive || warm ? "metadata" : "none"}
         autoPlay={isActive}
         muted
         playsInline
