@@ -2491,6 +2491,8 @@ export type Database = {
           source_synced_at: string | null
           stock_quantity: number
           store_id: string
+          supplier_out_of_stock: boolean
+          supplier_stock_checked_at: string | null
           updated_at: string
           video_poster_url: string | null
           video_url: string | null
@@ -2529,6 +2531,8 @@ export type Database = {
           source_synced_at?: string | null
           stock_quantity?: number
           store_id: string
+          supplier_out_of_stock?: boolean
+          supplier_stock_checked_at?: string | null
           updated_at?: string
           video_poster_url?: string | null
           video_url?: string | null
@@ -2567,6 +2571,8 @@ export type Database = {
           source_synced_at?: string | null
           stock_quantity?: number
           store_id?: string
+          supplier_out_of_stock?: boolean
+          supplier_stock_checked_at?: string | null
           updated_at?: string
           video_poster_url?: string | null
           video_url?: string | null
