@@ -129,19 +129,14 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
                 </button>
                 {catalogOpen && (
                    <div
-                    className="absolute left-0 top-full mt-1 min-w-[180px] max-h-[70vh] overflow-y-auto rounded-lg border py-1.5 shadow-lg"
-                    style={{
-                      backgroundColor: "var(--storefront-bg, hsl(var(--background)))",
-                      borderColor: "var(--storefront-text, hsl(var(--foreground)))15",
-                    }}
+                    className="absolute left-0 top-full mt-1 min-w-[180px] max-h-[70vh] overflow-y-auto rounded-lg border border-border bg-popover py-1.5 shadow-lg"
                   >
                     {categories.map((cat: any) => (
                       <Link
                         key={cat.id}
                         to={storefrontPath(store.slug, `category/${cat.slug}`)}
                         onClick={() => setCatalogOpen(false)}
-                        className="block px-4 py-2 text-[13px] font-medium transition-colors hover:opacity-70"
-                        style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}
+                        className="block px-4 py-2 text-[13px] font-medium text-popover-foreground transition-colors hover:opacity-70"
                       >
                         {cat.name}
                       </Link>
