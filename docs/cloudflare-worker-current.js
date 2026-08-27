@@ -7106,6 +7106,10 @@ async function _handleWaRedirectNative(token, request, env, ctx) {
 
 export default {
   async fetch(request, env, ctx) {
+    // v8.91.0: stash env/ctx so low-level helpers (proxyToOrigin) can trigger
+    // a shell self-heal when a hashed asset comes back non-ok.
+    _envRef = env;
+    _ctxRef = ctx;
     const _res = await _handleFetch(request, env, ctx);
     return finalizeResponse(request, _res);
   },
