@@ -1684,8 +1684,9 @@ async function getDeepChunkPreloads(entryPath, origin, env) {
       .slice(0, 12); // cap at 12 to avoid head bloat
 
     _memDeepChunks = arr;
+    _memDeepChunksSig = sig;
     if (env?.STORE_KV) {
-      env.STORE_KV.put(DEEP_CHUNKS_KV_KEY, JSON.stringify({ entry: entryPath, chunks: arr }), {
+      env.STORE_KV.put(DEEP_CHUNKS_KV_KEY, JSON.stringify({ entry: entryPath, sig, chunks: arr }), {
         expirationTtl: DEEP_CHUNKS_TTL,
       }).catch(() => {});
     }
