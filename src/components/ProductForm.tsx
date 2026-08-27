@@ -504,8 +504,10 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
           .eq("product_id", savedProductId);
         const current = (currentLinks || []) as { category_id: string; is_primary: boolean }[];
 
+        // Remove any link that is neither the current primary nor a ticked
+        // extra — including stale rows that used to be the primary category.
         const toRemove = current
-          .filter((l) => !l.is_primary && l.category_id !== primaryId && !wanted.includes(l.category_id))
+          .filter((l) => l.category_id !== primaryId && !wanted.includes(l.category_id))
           .map((l) => l.category_id);
         if (toRemove.length > 0) {
           await (supabase as any)
