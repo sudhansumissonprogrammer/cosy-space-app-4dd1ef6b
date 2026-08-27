@@ -1228,6 +1228,11 @@ export type Database = {
           buyer_user_agent: string | null
           checkout_token: string | null
           city: string | null
+          cod_confirm_followup_at: string | null
+          cod_confirm_reply: string | null
+          cod_confirm_sent_at: string | null
+          cod_confirm_status: string | null
+          cod_confirmed_at: string | null
           coupon_discount: number
           created_at: string
           currency: string
@@ -1277,6 +1282,11 @@ export type Database = {
           buyer_user_agent?: string | null
           checkout_token?: string | null
           city?: string | null
+          cod_confirm_followup_at?: string | null
+          cod_confirm_reply?: string | null
+          cod_confirm_sent_at?: string | null
+          cod_confirm_status?: string | null
+          cod_confirmed_at?: string | null
           coupon_discount?: number
           created_at?: string
           currency?: string
@@ -1326,6 +1336,11 @@ export type Database = {
           buyer_user_agent?: string | null
           checkout_token?: string | null
           city?: string | null
+          cod_confirm_followup_at?: string | null
+          cod_confirm_reply?: string | null
+          cod_confirm_sent_at?: string | null
+          cod_confirm_status?: string | null
+          cod_confirmed_at?: string | null
           coupon_discount?: number
           created_at?: string
           currency?: string
@@ -4074,6 +4089,7 @@ export type Database = {
           pilot_cohort: boolean
           platform_marketing_enabled: boolean
           send_abandoned_cart: boolean
+          send_cod_confirmation: boolean
           send_order_confirmation: boolean
           send_order_shipped: boolean
           store_id: string
@@ -4084,6 +4100,7 @@ export type Database = {
           pilot_cohort?: boolean
           platform_marketing_enabled?: boolean
           send_abandoned_cart?: boolean
+          send_cod_confirmation?: boolean
           send_order_confirmation?: boolean
           send_order_shipped?: boolean
           store_id: string
@@ -4094,6 +4111,7 @@ export type Database = {
           pilot_cohort?: boolean
           platform_marketing_enabled?: boolean
           send_abandoned_cart?: boolean
+          send_cod_confirmation?: boolean
           send_order_confirmation?: boolean
           send_order_shipped?: boolean
           store_id?: string
