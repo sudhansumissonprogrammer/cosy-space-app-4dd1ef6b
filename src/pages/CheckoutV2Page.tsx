@@ -3346,8 +3346,11 @@ export default function CheckoutV2Page() {
     opts?: { userInitiated?: boolean },
   ): Promise<PendingOrder> => {
     const userInitiated = opts?.userInitiated === true;
-    // Nothing automatic may mint an order once payment is confirmed.
-    if (orderPlacedRef.current && !userInitiated) {
+    // Nothing may mint another order from this mounted checkout once success
+    // has been committed. A second rapid COD tap is still `userInitiated`, so
+    // exempting explicit taps here allowed that stale call to re-arm checkout.
+    // A genuinely new checkout mounts this page afresh with a new token.
+    if (orderPlacedRef.current) {
       throw new Error("checkout_already_completed");
     }
     // A previous order in THIS tab already consumed the idempotency token
@@ -3355,15 +3358,7 @@ export default function CheckoutV2Page() {
     // Start clean, otherwise place-order would return the old paid order and
     // the UPI tiles would fail with already_paid.
     if (tokenRetiredRef.current) {
-      if (!userInitiated) throw new Error("checkout_already_completed");
-      // Genuine new checkout in the same tab — unfreeze and start fresh.
-      orderPlacedRef.current = false;
-      rotateCheckoutToken();
-      orderIdRef.current = null;
-      orderNumberRef.current = null;
-      orderSnapshotRef.current = null;
-      setOrderId(null);
-      setOrderNumber(null);
+      throw new Error("checkout_already_completed");
     }
 
 
@@ -4219,10 +4214,13 @@ export default function CheckoutV2Page() {
 
   // ─── COD (goes through checkout-v2-cod edge fn to enforce partial rules) ─
   const [placingCod, setPlacingCod] = useState(false);
+  // React state does not update synchronously. Two taps in the same frame can
+  // both observe placingCod=false, so use a ref as the authoritative lock.
+  const placingCodRef = useRef(false);
   // Confirm-before-place popup, standalone COD only (never the partial flow).
   const [codConfirmOpen, setCodConfirmOpen] = useState(false);
   const placeCod = async () => {
-    if (placingCod || creatingOrder || couponLoading || paymentAmountSyncing) return;
+    if (placingCodRef.current || placingCod || creatingOrder || couponLoading || paymentAmountSyncing) return;
     // Partial-payment stores collect the configured advance online and only
     // the remaining balance on delivery. Never allow a separate zero-advance
     // COD path, including from a stale tab that rendered older checkout code.
@@ -4243,6 +4241,9 @@ export default function CheckoutV2Page() {
       toast.info("Updating details…");
       return;
     }
+    // Acquire before the first await so a double tap cannot start a second
+    // create/finalize chain while React is still committing `placingCod`.
+    placingCodRef.current = true;
     setPlacingCod(true);
     try {
       saveExpressInfo();
@@ -4257,8 +4258,13 @@ export default function CheckoutV2Page() {
       fireAddPaymentInfoOnce("cod", total);
       finishSuccess(order.id);
     } catch (e: any) {
-      toast.error(e.message || "Failed to place COD order");
+      // A stale duplicate invocation arriving after success is benign and must
+      // never replace the confirmation screen with an error.
+      if (e?.message !== "checkout_already_completed") {
+        toast.error(e.message || "Failed to place COD order");
+      }
     } finally {
+      placingCodRef.current = false;
       setPlacingCod(false);
     }
   };

@@ -26,6 +26,23 @@ function jsonRes(data: unknown, status = 200) {
   });
 }
 
+function firePurchaseCapiInBackground(
+  supabase: ReturnType<typeof createClient>,
+  orderId: string,
+  source: string,
+) {
+  const task = firePurchaseCapi(supabase, orderId, { source }).catch((err) => {
+    console.warn("checkout-v2-cod CAPI background error", err);
+  });
+  // Keep tracking alive after returning the shopper-facing response. CAPI can
+  // retry upstream for several seconds and must not hold the COD confirmation.
+  // @ts-ignore — EdgeRuntime is provided by the edge-function Deno runtime.
+  if (typeof EdgeRuntime !== "undefined" && (EdgeRuntime as any).waitUntil) {
+    // @ts-ignore — EdgeRuntime is provided by the edge-function Deno runtime.
+    EdgeRuntime.waitUntil(task);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return jsonRes({ error: "Method not allowed" }, 405);
@@ -89,7 +106,7 @@ Deno.serve(async (req) => {
     if (order.status === "confirmed" || order.status === "partially_paid" || order.status === "paid") {
       // Safety re-fire: no-op if already stamped. Covers race where the initial
       // flip succeeded but the CAPI call was interrupted.
-      await firePurchaseCapi(supabase, order_id, { source: "checkout-v2-cod-idempotent" });
+      firePurchaseCapiInBackground(supabase, order_id, "checkout-v2-cod-idempotent");
       return jsonRes({ ok: true, already: true, order_id });
     }
     if (order.status !== "pending") {
@@ -132,7 +149,7 @@ Deno.serve(async (req) => {
     // UPI placeholder). Without this, browser Pixel Purchase fires with no
     // server-side dedup partner and Meta Event Match Quality tanks for the
     // "UPI-then-switched-to-COD" segment of orders.
-    await firePurchaseCapi(supabase, order_id, { source: "checkout-v2-cod" });
+    firePurchaseCapiInBackground(supabase, order_id, "checkout-v2-cod");
 
     return jsonRes({ ok: true, order_id });
   } catch (err) {
