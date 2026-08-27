@@ -225,7 +225,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.90.0-css-preload-fix";
+const WORKER_VERSION = "8.91.0-stale-chunk-preload-fix";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -1511,12 +1511,27 @@ function _validateHeadAgainstShell(head, html) {
   if (!head || !html) return null;
   const a = _extractEntryChunk(head);
   const b = _extractEntryChunk(html);
-  if (!a || !b) return head; // can't tell — don't throw away a usable head
-  if (a === b) return head;
-  // Stale: drop every derived in-memory cache so this isolate rebuilds.
-  _memPrebuiltHead = null;
-  _memDeepChunks = null;
-  return null;
+  const invalidate = () => {
+    // Stale: drop every derived in-memory cache so this isolate rebuilds.
+    _memPrebuiltHead = null;
+    _memDeepChunks = null;
+    _memDeepChunksSig = null;
+    return null;
+  };
+  if (a && b && a !== b) return invalidate();
+
+  /* v8.91.0: the entry chunk hash is stable across most deploys (it only
+     carries the bootstrap), so entry-only comparison let a head full of DEAD
+     child hashes survive. Every /assets/*.js the live shell references must
+     also appear in the cached head — otherwise the head belongs to an older
+     build and its preloads would 404. */
+  try {
+    for (const m of html.matchAll(/(?:src|href)="(\/assets\/[^"]+\.js)"/g)) {
+      if (!head.includes(m[1])) return invalidate();
+    }
+  } catch {}
+
+  return head;
 }
 
 function _buildPrebuiltHead(html) {
@@ -1561,6 +1576,7 @@ function _buildPrebuiltHead(html) {
    ============================================================ */
 
 let _memDeepChunks = null;
+let _memDeepChunksSig = null;
 const DEEP_CHUNKS_KV_KEY = `deep-chunks:${WORKER_VERSION}`;
 const DEEP_CHUNKS_TTL = 86400; // 24h
 const DEEP_CHUNK_DASH_PATTERN =
@@ -1592,33 +1608,58 @@ function _extractChunkRefs(code) {
   return out;
 }
 
-async function getDeepChunkPreloads(entryPath, origin, env) {
+/* v8.91.0 — STALE DEEP-PRELOAD FIX (root cause of the `?__r=` auto-refresh).
+   The cache was validated by entry path alone. The entry chunk
+   (/assets/index-*.js) keeps the SAME hash across most frontend deploys
+   because it only carries the bootstrap, while its children (App-*,
+   storefront-shell-*, CategoryDetail-*, ProductDetail-*) get new hashes.
+   Result: for up to 24h every storefront HTML shipped modulepreloads for
+   dead chunk hashes → origin 404 → Worker 503 → browser chunk error →
+   chunkLoadRecovery reload with ?__r= → the page looked like it was
+   refreshing itself over and over.
+   Fix: fingerprint the LIVE entry code (its direct chunk refs) and only trust
+   the cached list when that fingerprint matches. */
+function _entrySignature(refs) {
+  return [...refs].sort().join("|");
+}
 
-  if (_memDeepChunks) return _memDeepChunks;
-  // KV first
+async function getDeepChunkPreloads(entryPath, origin, env) {
+  // Fetch entry JS first (edge-cached 1h, so effectively free) and derive the
+  // live fingerprint. Never trust a cached list without it.
+  let code = "";
+  try {
+    const res = await fetch(`${origin}${entryPath}`, {
+      cf: { cacheTtl: 3600, cacheEverything: true },
+    });
+    if (!res.ok) return _memDeepChunks || [];
+    code = await res.text();
+  } catch {
+    return _memDeepChunks || [];
+  }
+
+  const firstLevel = _extractChunkRefs(code);
+  const sig = _entrySignature(firstLevel);
+
+  if (_memDeepChunks && _memDeepChunksSig === sig) return _memDeepChunks;
+
   if (env?.STORE_KV) {
     try {
       const cached = await env.STORE_KV.get(DEEP_CHUNKS_KV_KEY);
       if (cached) {
         const parsed = JSON.parse(cached);
-        // Invalidate if entry hash changed (new deploy)
-        if (parsed.entry === entryPath && Array.isArray(parsed.chunks)) {
+        if (parsed.entry === entryPath && parsed.sig === sig && Array.isArray(parsed.chunks)) {
           _memDeepChunks = parsed.chunks;
+          _memDeepChunksSig = sig;
           return _memDeepChunks;
         }
       }
     } catch {}
   }
-  // Fetch entry JS and extract imports
+
   try {
-    const res = await fetch(`${origin}${entryPath}`, {
-      cf: { cacheTtl: 3600, cacheEverything: true },
-    });
-    if (!res.ok) return [];
-    const code = await res.text();
     const found = new Set();
     // v8.69.0: use the shared, hash-safe extractor (see _extractChunkRefs).
-    for (const p of _extractChunkRefs(code)) {
+    for (const p of firstLevel) {
       if (p === entryPath) continue;
       if (DEEP_CHUNK_DASH_PATTERN.test(p)) continue;
       found.add(p);
@@ -1659,8 +1700,9 @@ async function getDeepChunkPreloads(entryPath, origin, env) {
       .slice(0, 12); // cap at 12 to avoid head bloat
 
     _memDeepChunks = arr;
+    _memDeepChunksSig = sig;
     if (env?.STORE_KV) {
-      env.STORE_KV.put(DEEP_CHUNKS_KV_KEY, JSON.stringify({ entry: entryPath, chunks: arr }), {
+      env.STORE_KV.put(DEEP_CHUNKS_KV_KEY, JSON.stringify({ entry: entryPath, sig, chunks: arr }), {
         expirationTtl: DEEP_CHUNKS_TTL,
       }).catch(() => {});
     }
@@ -3624,6 +3666,11 @@ async function fetchOriginNoRedirectLoop(urlStr, init) {
   return fetch(target.toString(), { ...init, headers: hopHeaders, redirect: "manual" });
 }
 
+// v8.91.0 — last-seen env/ctx, set by the fetch handler. Lets deep helpers
+// self-heal caches without threading params through every call site.
+let _envRef = null;
+let _ctxRef = null;
+
 async function proxyToOrigin(request) {
   const url = new URL(request.url);
   url.hostname = ORIGIN_HOST;
@@ -3662,6 +3709,16 @@ async function proxyToOrigin(request) {
     // asset. Browsers otherwise report a misleading chunk-load failure and
     // enter recovery. The response is deliberately non-cacheable.
     if (!res.ok) {
+      // v8.91.0: a hashed asset that no longer exists at origin means the
+      // HTML shell / prebuilt head / deep-chunk list we are serving belongs
+      // to a dead build. Flush them so the very next HTML request rebuilds
+      // against the live build instead of shipping dead preloads forever
+      // (this was the `?__r=` auto-refresh loop on desktop).
+      if (/^\/assets\/.*\.(?:js|mjs|css)$/i.test(url.pathname)) {
+        try {
+          maybeSelfHealShell(_envRef, _ctxRef);
+        } catch {}
+      }
       return new Response("Upstream asset unavailable", {
         status: 503,
         headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
@@ -3725,10 +3782,16 @@ async function invalidateShellCaches(env, ctx) {
   _kvWriteRecent.delete(SPA_SHELL_KV_KEY);
   _kvWriteRecent.delete(prevKeys.kvKey);
   _kvWriteRecent.delete(PREBUILT_HEAD_KV_KEY);
+  // v8.91.0: the deep-chunk list was NOT part of the flush, so after a shell
+  // heal the head was rebuilt but re-enriched with the SAME dead App/
+  // storefront-shell/CategoryDetail hashes for up to 24h.
+  _memDeepChunks = null;
+  _kvWriteRecent.delete(DEEP_CHUNKS_KV_KEY);
   if (env?.STORE_KV) {
     ops.push(kvDeleteForce(env, SPA_SHELL_KV_KEY));
     ops.push(kvDeleteForce(env, prevKeys.kvKey));
     ops.push(kvDeleteForce(env, PREBUILT_HEAD_KV_KEY));
+    ops.push(kvDeleteForce(env, DEEP_CHUNKS_KV_KEY));
   }
   const done = Promise.allSettled(ops);
   if (ctx?.waitUntil) ctx.waitUntil(done);
