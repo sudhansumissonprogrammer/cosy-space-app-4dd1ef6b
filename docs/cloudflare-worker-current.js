@@ -3740,10 +3740,16 @@ async function invalidateShellCaches(env, ctx) {
   _kvWriteRecent.delete(SPA_SHELL_KV_KEY);
   _kvWriteRecent.delete(prevKeys.kvKey);
   _kvWriteRecent.delete(PREBUILT_HEAD_KV_KEY);
+  // v8.91.0: the deep-chunk list was NOT part of the flush, so after a shell
+  // heal the head was rebuilt but re-enriched with the SAME dead App/
+  // storefront-shell/CategoryDetail hashes for up to 24h.
+  _memDeepChunks = null;
+  _kvWriteRecent.delete(DEEP_CHUNKS_KV_KEY);
   if (env?.STORE_KV) {
     ops.push(kvDeleteForce(env, SPA_SHELL_KV_KEY));
     ops.push(kvDeleteForce(env, prevKeys.kvKey));
     ops.push(kvDeleteForce(env, PREBUILT_HEAD_KV_KEY));
+    ops.push(kvDeleteForce(env, DEEP_CHUNKS_KV_KEY));
   }
   const done = Promise.allSettled(ops);
   if (ctx?.waitUntil) ctx.waitUntil(done);
