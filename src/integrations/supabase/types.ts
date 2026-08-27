@@ -4158,27 +4158,6 @@ export type Database = {
         }
         Relationships: []
       }
-      temp_hide_snapshot_utkal: {
-        Row: {
-          created_at: string | null
-          kind: string | null
-          prev: Json | null
-          ref_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          kind?: string | null
-          prev?: Json | null
-          ref_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          kind?: string | null
-          prev?: Json | null
-          ref_id?: string | null
-        }
-        Relationships: []
-      }
       upsell_events: {
         Row: {
           created_at: string
