@@ -9,6 +9,7 @@
  * so it never looks like a bolted-on generic green widget.
  */
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { X, ShieldCheck, Clock, BadgePercent } from "lucide-react";
 
 interface Props {
@@ -48,7 +49,19 @@ export default function CheckoutExitOffer({
     return () => window.clearInterval(id);
   }, [open]);
 
-  if (!open) return null;
+  // Checkout is rendered inside PageTransition, which uses a CSS transform on
+  // forward navigation. A fixed descendant of a transformed element is fixed
+  // to that element instead of the viewport, so after scrolling the dialog was
+  // rendered at the document top and appeared clipped off-screen on mobile.
+  // Portalling to body gives the overlay a true visual-viewport containing block.
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, [open]);
+
+  if (!open || typeof document === "undefined") return null;
 
   const mm = String(Math.floor(secondsLeft / 60)).padStart(2, "0");
   const ss = String(secondsLeft % 60).padStart(2, "0");
@@ -60,7 +73,7 @@ export default function CheckoutExitOffer({
   const softTint = `color-mix(in srgb, ${primary} 9%, transparent)`;
   const softBorder = `color-mix(in srgb, ${primary} 26%, transparent)`;
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[120] flex items-start justify-center px-4 pt-[max(12px,env(safe-area-inset-top))] bg-black/45 backdrop-blur-md animate-in fade-in duration-150 overflow-y-auto overscroll-contain"
       role="dialog"
@@ -159,6 +172,7 @@ export default function CheckoutExitOffer({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
