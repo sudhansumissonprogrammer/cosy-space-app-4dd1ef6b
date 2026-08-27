@@ -92,7 +92,7 @@ export default function CategoryDetail() {
 
       if (rpc?.category) {
         if (Array.isArray(rpc.products)) {
-          const qKey = ["cat-detail-v3", store.id, rpc.category.name, "default", PAGE_SIZE];
+          const qKey = ["cat-detail-v3", store.id, categorySlug || rpc.category.name, "default", PAGE_SIZE];
           queryClient.setQueryData(qKey, seedInfinitePages(rpc.products));
           // Note: this path is a FRESH Supabase RPC response — no need to
           // invalidate. (The stale-pin invalidation only matters for the
@@ -117,7 +117,7 @@ export default function CategoryDetail() {
       if (pre?.category) {
         if (Array.isArray(pre.products)) {
           queryClient.setQueryData(
-            ["cat-detail-v3", store.id, pre.category.name, "default", PAGE_SIZE],
+            ["cat-detail-v3", store.id, categorySlug || pre.category.name, "default", PAGE_SIZE],
             seedInfinitePages(pre.products)
           );
         }
@@ -126,7 +126,7 @@ export default function CategoryDetail() {
       const inline = getInlineCategory();
       if (inline?.category) {
         if (Array.isArray(inline.products)) {
-          const qKey = ["cat-detail-v3", store.id, inline.category.name, "default", PAGE_SIZE];
+          const qKey = ["cat-detail-v3", store.id, categorySlug || inline.category.name, "default", PAGE_SIZE];
           queryClient.setQueryData(qKey, seedInfinitePages(inline.products));
           // PERF: the inline HTML payload can be stale, so we still refresh from
           // the version-aware /api/products endpoint — but NOT synchronously.

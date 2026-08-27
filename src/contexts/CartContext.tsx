@@ -205,9 +205,23 @@ export function CartProvider({ slug, storeId, currency = "INR", children }: { sl
       );
       if (idx >= 0) {
         const updated = [...prev];
-        updated[idx] = { ...updated[idx], quantity: updated[idx].quantity + (item.quantity || 1) };
+        const existing = updated[idx];
+        // Packaging upgrade: the same product+variant added again with a
+        // different gift-box choice must not keep the stale packaging (that
+        // charged/refunded the surcharge for every unit in the line).
+        // Apply the newest selection to the whole merged line so the price
+        // shown, stored meta and server-side surcharge always agree.
+        const packagingChanged =
+          (existing.meta?.kind === "packaging" || item.meta?.kind === "packaging") &&
+          (existing.meta?.packaging ?? null) !== (item.meta?.packaging ?? null);
+        updated[idx] = {
+          ...existing,
+          ...(packagingChanged ? { price: item.price, meta: item.meta } : {}),
+          quantity: existing.quantity + (item.quantity || 1),
+        };
         return updated;
       }
+
       return [...prev, { ...item, quantity: item.quantity || 1 }];
     });
     if (!options?.silent) setIsCartOpen(true);
