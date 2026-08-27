@@ -3624,6 +3624,11 @@ async function fetchOriginNoRedirectLoop(urlStr, init) {
   return fetch(target.toString(), { ...init, headers: hopHeaders, redirect: "manual" });
 }
 
+// v8.91.0 — last-seen env/ctx, set by the fetch handler. Lets deep helpers
+// self-heal caches without threading params through every call site.
+let _envRef = null;
+let _ctxRef = null;
+
 async function proxyToOrigin(request) {
   const url = new URL(request.url);
   url.hostname = ORIGIN_HOST;
