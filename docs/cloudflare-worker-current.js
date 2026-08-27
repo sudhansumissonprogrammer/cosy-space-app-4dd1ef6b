@@ -1592,33 +1592,58 @@ function _extractChunkRefs(code) {
   return out;
 }
 
-async function getDeepChunkPreloads(entryPath, origin, env) {
+/* v8.91.0 — STALE DEEP-PRELOAD FIX (root cause of the `?__r=` auto-refresh).
+   The cache was validated by entry path alone. The entry chunk
+   (/assets/index-*.js) keeps the SAME hash across most frontend deploys
+   because it only carries the bootstrap, while its children (App-*,
+   storefront-shell-*, CategoryDetail-*, ProductDetail-*) get new hashes.
+   Result: for up to 24h every storefront HTML shipped modulepreloads for
+   dead chunk hashes → origin 404 → Worker 503 → browser chunk error →
+   chunkLoadRecovery reload with ?__r= → the page looked like it was
+   refreshing itself over and over.
+   Fix: fingerprint the LIVE entry code (its direct chunk refs) and only trust
+   the cached list when that fingerprint matches. */
+function _entrySignature(refs) {
+  return [...refs].sort().join("|");
+}
 
-  if (_memDeepChunks) return _memDeepChunks;
-  // KV first
+async function getDeepChunkPreloads(entryPath, origin, env) {
+  // Fetch entry JS first (edge-cached 1h, so effectively free) and derive the
+  // live fingerprint. Never trust a cached list without it.
+  let code = "";
+  try {
+    const res = await fetch(`${origin}${entryPath}`, {
+      cf: { cacheTtl: 3600, cacheEverything: true },
+    });
+    if (!res.ok) return _memDeepChunks || [];
+    code = await res.text();
+  } catch {
+    return _memDeepChunks || [];
+  }
+
+  const firstLevel = _extractChunkRefs(code);
+  const sig = _entrySignature(firstLevel);
+
+  if (_memDeepChunks && _memDeepChunksSig === sig) return _memDeepChunks;
+
   if (env?.STORE_KV) {
     try {
       const cached = await env.STORE_KV.get(DEEP_CHUNKS_KV_KEY);
       if (cached) {
         const parsed = JSON.parse(cached);
-        // Invalidate if entry hash changed (new deploy)
-        if (parsed.entry === entryPath && Array.isArray(parsed.chunks)) {
+        if (parsed.entry === entryPath && parsed.sig === sig && Array.isArray(parsed.chunks)) {
           _memDeepChunks = parsed.chunks;
+          _memDeepChunksSig = sig;
           return _memDeepChunks;
         }
       }
     } catch {}
   }
-  // Fetch entry JS and extract imports
+
   try {
-    const res = await fetch(`${origin}${entryPath}`, {
-      cf: { cacheTtl: 3600, cacheEverything: true },
-    });
-    if (!res.ok) return [];
-    const code = await res.text();
     const found = new Set();
     // v8.69.0: use the shared, hash-safe extractor (see _extractChunkRefs).
-    for (const p of _extractChunkRefs(code)) {
+    for (const p of firstLevel) {
       if (p === entryPath) continue;
       if (DEEP_CHUNK_DASH_PATTERN.test(p)) continue;
       found.add(p);
