@@ -405,6 +405,25 @@ Deno.serve(async (req) => {
           if (attempt < 3) await new Promise((res) => setTimeout(res, 400 * attempt));
         }
         console.log("wa-order-event result", lastStatus, lastBody);
+
+        // 🧾 COD confirmation (interactive Confirm / Edit-address buttons).
+        // wa-order-event itself enforces: store toggle ON + pure COD only
+        // (partial-COD orders are skipped), so this is safe to always fire.
+        try {
+          const rc = await fetch(`${supabaseUrl}/functions/v1/wa-order-event`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-cron-secret": cronSecret,
+              Authorization: `Bearer ${serviceRoleKey}`,
+              apikey: serviceRoleKey,
+            },
+            body: JSON.stringify({ event: "cod_confirmation", order_id }),
+          });
+          console.log("wa-order-event cod result", rc.status, await rc.text().catch(() => ""));
+        } catch (e) {
+          console.error("cod_confirmation trigger error:", (e as Error).message);
+        }
       } else {
         console.warn("wa-order-event skipped — cron_auth secret missing");
       }
