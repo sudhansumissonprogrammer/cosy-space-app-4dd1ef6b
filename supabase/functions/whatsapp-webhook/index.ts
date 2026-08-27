@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { verifyMetaSignature } from "../_shared/security.ts";
+import { handleCodReply } from "../_shared/wa-cod-confirm.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -189,8 +190,15 @@ Deno.serve(async (req) => {
         const messages = value?.messages || [];
         for (const msg of messages) {
           const from = msg?.from;
-          const msgBody = (msg?.text?.body || "").trim();
           const msgType = msg?.type || "text";
+          // Quick-reply buttons on a template arrive as type "button"
+          // ({ button: { text, payload } }); interactive replies as
+          // type "interactive" ({ interactive: { button_reply: { title } } }).
+          const buttonText: string =
+            msg?.button?.text || msg?.button?.payload ||
+            msg?.interactive?.button_reply?.title ||
+            msg?.interactive?.list_reply?.title || "";
+          const msgBody = (msg?.text?.body || buttonText || "").trim();
 
           // Resolve access token used for media download:
           //   platform delivery → platform token
@@ -291,6 +299,26 @@ Deno.serve(async (req) => {
               .is("replied_at", null)
               .order("created_at", { ascending: false })
               .limit(1);
+          }
+
+          // ── 🧾 COD order confirmation buttons / replies ──
+          // Runs before opt-out handling: "Confirm Order" must never be read
+          // as anything else. Best-effort — inbox storage already happened.
+          if (!alreadyProcessed && !isOptOut && finalBody) {
+            try {
+              const { data: cronRow } = await adminClient
+                .from("cron_auth").select("secret").eq("id", true).maybeSingle();
+              const cronSecret = (cronRow as any)?.secret || Deno.env.get("CRON_SECRET") || "";
+              if (cronSecret) {
+                await handleCodReply(adminClient, cronSecret, {
+                  phone: from,
+                  text: finalBody,
+                  contextId: msg?.context?.id || null,
+                });
+              }
+            } catch (e) {
+              console.error("cod reply handling failed:", (e as Error).message);
+            }
           }
 
           if (!alreadyProcessed && isOptOut) {
