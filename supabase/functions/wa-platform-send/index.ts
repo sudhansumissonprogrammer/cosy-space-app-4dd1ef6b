@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
     const mt = body.message_type || "";
     const { data: s } = await admin
       .from("stores_wa_settings")
-      .select("platform_marketing_enabled, send_order_confirmation, send_order_shipped, send_abandoned_cart")
+      .select("platform_marketing_enabled, send_order_confirmation, send_order_shipped, send_abandoned_cart, send_cod_confirmation")
       .eq("store_id", body.store_id)
       .maybeSingle();
     if (!s || (s as any).platform_marketing_enabled !== true) {
@@ -122,7 +122,8 @@ Deno.serve(async (req) => {
     const perEventOk =
       (mt === "order_confirmation" && (s as any).send_order_confirmation === true) ||
       (mt === "order_shipped" && (s as any).send_order_shipped === true) ||
-      (mt === "abandoned_cart" && (s as any).send_abandoned_cart === true);
+      (mt === "abandoned_cart" && (s as any).send_abandoned_cart === true) ||
+      ((mt === "cod_confirmation" || mt === "cod_confirm_followup") && (s as any).send_cod_confirmation === true);
     if (!perEventOk) {
       return json({ skipped: true, reason: "event_toggle_off" });
     }
