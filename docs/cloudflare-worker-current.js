@@ -225,7 +225,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.89.0-pdp-lcp";
+const WORKER_VERSION = "8.90.0-css-preload-fix";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -2030,7 +2030,13 @@ function _buildLinkPreloadHeader(html) {
   const links = [];
 
   const cssMatch = html.match(/href="(\/assets\/[^"]+\.css)"/);
-  if (cssMatch) links.push(`<${cssMatch[1]}>; rel=preload; as=style; crossorigin`);
+  // v8.90.0 — no `crossorigin` here. The stylesheet is same-origin and the
+  // <link rel=preload as=style> tags emitted in the HTML (and the real
+  // <link rel=stylesheet>) carry no crossorigin attribute, so an Early-Hints
+  // preload with crossorigin mismatches the credentials mode and the browser
+  // discards it ("preload found but not used"), downloading the CSS twice.
+  if (cssMatch) links.push(`<${cssMatch[1]}>; rel=preload; as=style`);
+
 
   const seen = new Set();
   for (const m of [...html.matchAll(/src="(\/assets\/[^"]+\.js)"/g)]) {
