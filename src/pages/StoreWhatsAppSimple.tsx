@@ -5,18 +5,19 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, ShoppingCart, CheckCircle2, Truck, Inbox, Zap } from "lucide-react";
+import { MessageSquare, ShoppingCart, CheckCircle2, Truck, Inbox, Zap, ShieldCheck } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { StoreInbox } from "@/components/whatsapp/StoreInbox";
 import { toast } from "sonner";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
-type ToggleKey = "master" | "order_confirmation" | "order_shipped" | "abandoned_cart";
+type ToggleKey = "master" | "order_confirmation" | "cod_confirmation" | "order_shipped" | "abandoned_cart";
 type Toggles = Record<ToggleKey, boolean>;
 
 const DEFAULTS: Toggles = {
   master: false,
   order_confirmation: false,
+  cod_confirmation: false,
   order_shipped: false,
   abandoned_cart: false,
 };
@@ -38,6 +39,7 @@ export default function StoreWhatsAppSimple() {
         setToggles({
           master: !!d.master,
           order_confirmation: !!d.order_confirmation,
+          cod_confirmation: !!d.cod_confirmation,
           order_shipped: !!d.order_shipped,
           abandoned_cart: !!d.abandoned_cart,
         });
@@ -68,6 +70,7 @@ export default function StoreWhatsAppSimple() {
   const master = toggles.master;
   const automations: { key: ToggleKey; icon: any; label: string; desc: string }[] = [
     { key: "order_confirmation", icon: CheckCircle2, label: "Order confirmation", desc: "Instant WhatsApp confirmation the moment an order is placed." },
+    { key: "cod_confirmation", icon: ShieldCheck, label: "COD order confirmation", desc: "Full Cash-on-Delivery orders get a WhatsApp with ✅ Confirm Order / ✏️ Edit Address buttons, plus one reminder after 4 hours. Partly-prepaid orders are never messaged." },
     { key: "order_shipped", icon: Truck, label: "Shipping update", desc: "Tracking link goes out automatically when you mark the order shipped with a tracking number." },
     { key: "abandoned_cart", icon: ShoppingCart, label: "Abandoned cart recovery", desc: "Customers who left items in their cart get one friendly reminder." },
   ];
