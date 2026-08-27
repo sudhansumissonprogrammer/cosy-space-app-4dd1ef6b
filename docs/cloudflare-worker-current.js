@@ -3667,6 +3667,16 @@ async function proxyToOrigin(request) {
     // asset. Browsers otherwise report a misleading chunk-load failure and
     // enter recovery. The response is deliberately non-cacheable.
     if (!res.ok) {
+      // v8.91.0: a hashed asset that no longer exists at origin means the
+      // HTML shell / prebuilt head / deep-chunk list we are serving belongs
+      // to a dead build. Flush them so the very next HTML request rebuilds
+      // against the live build instead of shipping dead preloads forever
+      // (this was the `?__r=` auto-refresh loop on desktop).
+      if (/^\/assets\/.*\.(?:js|mjs|css)$/i.test(url.pathname)) {
+        try {
+          maybeSelfHealShell(_envRef, _ctxRef);
+        } catch {}
+      }
       return new Response("Upstream asset unavailable", {
         status: 503,
         headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
