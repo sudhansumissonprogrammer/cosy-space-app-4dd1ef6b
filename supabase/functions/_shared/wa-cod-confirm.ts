@@ -110,11 +110,7 @@ export async function handleCodReply(
     await admin.from("orders").update({
       cod_confirm_reply: addr,
     } as any).eq("id", order.id);
-    await admin.from("store_notifications").insert({
-      store_id: order.store_id,
-      type: "cod_address_update",
-      message: `Address correction for order ${order.order_number || order.id}: ${addr}`,
-    } as any).then(() => {}, () => {});
+    await notifyStore(admin, order, "Address correction received", `Customer sent a corrected address for order ${order.order_number || order.id}: ${addr}`);
     await sendSessionText(
       admin, cronSecret, order.store_id, opts.phone,
       "Thank you 🙏 We have noted the corrected address and our team will verify it before dispatch.",
@@ -140,14 +136,21 @@ export async function handleCodReply(
     cod_confirm_status: "edit_requested",
     cod_confirm_reply: opts.text.slice(0, 500),
   } as any).eq("id", order.id);
-  await admin.from("store_notifications").insert({
-    store_id: order.store_id,
-    type: "cod_address_edit",
-    message: `Customer asked to edit the address / cancel order ${order.order_number || order.id}.`,
-  } as any).then(() => {}, () => {});
+  await notifyStore(admin, order, "COD order needs address edit", `Customer tapped "Edit Address" on order ${order.order_number || order.id}.`);
   await sendSessionText(
     admin, cronSecret, order.store_id, opts.phone,
     "No problem ✏️ Please reply with your correct address — house/flat number, landmark, city and pincode. We'll hold the parcel until then. If you'd like to cancel instead, just reply CANCEL.",
   );
   return true;
+}
+
+async function notifyStore(admin: any, order: any, title: string, body: string) {
+  try {
+    await admin.from("store_notifications").insert({
+      store_id: order.store_id,
+      title,
+      body,
+      link_url: `/dashboard/orders/${order.id}`,
+    } as any);
+  } catch { /* notifications are best-effort */ }
 }
