@@ -7,10 +7,11 @@ import { formatExpectedDelivery, formatPaymentStatusLine, formatPaidSummary, for
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-type Event = "order_confirmation" | "payment_received" | "order_shipped" | "order_delivered" | "review_request";
+type Event = "order_confirmation" | "cod_confirmation" | "payment_received" | "order_shipped" | "order_delivered" | "review_request";
 
 const TEMPLATE_BY_EVENT: Record<Event, string> = {
   order_confirmation: "order_confirmation_v2",
+  cod_confirmation: "cod_order_confirm_v1",
   payment_received: "payment_success_v1",
   order_shipped: "order_shipped_v2",
   order_delivered: "order_delivered_v1",
@@ -50,14 +51,14 @@ Deno.serve(async (req) => {
 
   // Only these two events are enabled platform-wide right now.
   // Abandoned cart is handled by a separate cron. Everything else is disabled.
-  const ALLOWED: Event[] = ["order_confirmation", "order_shipped"];
+  const ALLOWED: Event[] = ["order_confirmation", "cod_confirmation", "order_shipped"];
   if (!ALLOWED.includes(body.event)) {
     return json({ skipped: true, reason: "event_disabled" });
   }
 
   const { data: order } = await admin
     .from("orders")
-    .select("id, store_id, status, customer_phone, customer_name, total, currency, tracking_url, tracking_number, order_number, payment_method, payment_type, advance_paid, balance_due, created_at, stores:store_id(name, slug, custom_domain)")
+    .select("id, store_id, status, customer_phone, customer_name, total, currency, tracking_url, tracking_number, order_number, payment_method, payment_type, advance_paid, balance_due, created_at, street_address, city, pincode, cod_confirm_status, stores:store_id(name, slug, custom_domain)")
     .eq("id", body.order_id).maybeSingle();
   if (!order) return json({ error: "order_not_found" }, 404);
 
@@ -70,7 +71,7 @@ Deno.serve(async (req) => {
   // If the store owner has WhatsApp OFF, nothing goes out on their behalf.
   const { data: storeSettings } = await admin
     .from("stores_wa_settings")
-    .select("platform_marketing_enabled, send_order_confirmation, send_order_shipped")
+    .select("platform_marketing_enabled, send_order_confirmation, send_order_shipped, send_cod_confirmation")
     .eq("store_id", o.store_id)
     .maybeSingle();
   if (!storeSettings || (storeSettings as any).platform_marketing_enabled !== true) {
@@ -79,12 +80,27 @@ Deno.serve(async (req) => {
   // Per-event toggle — default OFF, must be explicitly enabled by the store.
   const perEventOn =
     (body.event === "order_confirmation" && (storeSettings as any).send_order_confirmation === true) ||
-    (body.event === "order_shipped" && (storeSettings as any).send_order_shipped === true);
+    (body.event === "order_shipped" && (storeSettings as any).send_order_shipped === true) ||
+    (body.event === "cod_confirmation" && (storeSettings as any).send_cod_confirmation === true);
   if (!perEventOn) {
     return json({ skipped: true, reason: "event_toggle_off" });
   }
 
 
+
+  // 🧾 COD confirmation is STRICTLY for full Cash-on-Delivery orders.
+  // Partial-COD (advance paid online, e.g. Serdiya Jewellers) is never eligible —
+  // those customers already paid and must not be asked to re-confirm.
+  if (body.event === "cod_confirmation") {
+    const method = String(o.payment_method || "").toLowerCase();
+    const ptype = String(o.payment_type || "").toLowerCase();
+    const advance = Number(o.advance_paid || 0);
+    const isPureCod = method === "cod" && ptype === "full" && advance <= 0;
+    if (!isPureCod) return json({ skipped: true, reason: "not_pure_cod" });
+    if (String(o.status || "").toLowerCase() === "cancelled") {
+      return json({ skipped: true, reason: "order_cancelled" });
+    }
+  }
 
   // Gate: "shipped" must have a tracking number, otherwise customer gets a useless message.
   if (body.event === "order_shipped" && (!o.tracking_number || String(o.tracking_number).trim() === "")) {
@@ -138,6 +154,11 @@ Deno.serve(async (req) => {
   const etaDays = body.event === "order_shipped" ? 4 : 6;
   const expectedDelivery = formatExpectedDelivery(etaFrom, etaDays);
 
+  const deliveryAddress = [o.street_address, o.city, o.pincode]
+    .map((p: any) => String(p || "").trim())
+    .filter(Boolean)
+    .join(", ") || "As provided at checkout";
+
   const paymentStatusLine = formatPaymentStatusLine(o);
   const paidSummary = formatPaidSummary(o);
   const codDueLine = formatCodDueLine(o);
@@ -156,6 +177,19 @@ Deno.serve(async (req) => {
   // Branded short link token resolved by /functions/v1/wa-r/<token>.
   // 'o-' = order page, 't-' = tracking URL (falls back to order page).
   const ctaToken = body.event === "order_shipped" ? `t-${o.id}` : `o-${o.id}`;
+
+  // 🧾 COD confirmation must never go out on an unapproved template — quick-reply
+  // buttons only exist once Meta approves cod_order_confirm_v1.
+  if (body.event === "cod_confirmation") {
+    const { data: codTpl } = await admin
+      .from("platform_wa_templates")
+      .select("is_active, paused, meta_status")
+      .eq("name", TEMPLATE_BY_EVENT.cod_confirmation)
+      .maybeSingle();
+    const ok = codTpl && (codTpl as any).is_active && !(codTpl as any).paused &&
+      String((codTpl as any).meta_status || "").toUpperCase() === "APPROVED";
+    if (!ok) return json({ skipped: true, reason: "no_approved_cod_template" });
+  }
 
   // 🧩 Template resolution for shipping: TEXT-ONLY by choice — merchants asked
   // for the plain `order_shipped_v3` template (no image header) so the tracking
@@ -206,12 +240,13 @@ Deno.serve(async (req) => {
       courier_name: courierName,
       review_url: reviewUrl,
       cta_token: ctaToken,
+      delivery_address: deliveryAddress,
       // Shipping is text-only now, so never attach a media header for it.
       ...(headerImage && body.event !== "order_shipped" ? { header_media_url: headerImage } : {}),
 
     },
 
-    priority: body.event === "order_confirmation" ? 1 : 3,
+    priority: body.event === "order_confirmation" || body.event === "cod_confirmation" ? 1 : 3,
     scheduled_at: new Date().toISOString(),
   } as any);
 
@@ -220,6 +255,15 @@ Deno.serve(async (req) => {
   if (qErr) {
     if ((qErr as any).code === "23505") return json({ ok: true, queued: false, reason: "already_enqueued" });
     return json({ error: qErr.message }, 500);
+  }
+
+  // 🧾 Mark the order as awaiting the customer's WhatsApp confirmation so the
+  // follow-up cron and the dashboard both know its state.
+  if (body.event === "cod_confirmation") {
+    await admin.from("orders").update({
+      cod_confirm_status: "awaiting",
+      cod_confirm_sent_at: new Date().toISOString(),
+    } as any).eq("id", o.id).is("cod_confirm_status", null);
   }
 
   // 🚀 Fire the queue worker immediately (fire-and-forget) so the customer
