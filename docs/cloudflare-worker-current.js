@@ -225,7 +225,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.90.0-css-preload-fix";
+const WORKER_VERSION = "8.91.0-stale-chunk-preload-fix";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -1576,6 +1576,7 @@ function _buildPrebuiltHead(html) {
    ============================================================ */
 
 let _memDeepChunks = null;
+let _memDeepChunksSig = null;
 const DEEP_CHUNKS_KV_KEY = `deep-chunks:${WORKER_VERSION}`;
 const DEEP_CHUNKS_TTL = 86400; // 24h
 const DEEP_CHUNK_DASH_PATTERN =
