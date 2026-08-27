@@ -25,6 +25,19 @@ const sanitizeFb = (v: unknown, rx: RegExp): string | null =>
 const sanitizeMetaEventId = (v: unknown): string | null =>
   typeof v === "string" && META_EVENT_ID_RX.test(v) ? v : null;
 
+function runInBackground(task: Promise<unknown>, label: string): void {
+  const guarded = task.catch((error) => {
+    console.warn(`${label} background error`, error);
+  });
+  // Purchase tracking is best-effort and must never hold the shopper on the
+  // COD spinner. The edge runtime keeps this promise alive after the response.
+  // @ts-ignore — EdgeRuntime is provided by the edge-function Deno runtime.
+  if (typeof EdgeRuntime !== "undefined" && (EdgeRuntime as any).waitUntil) {
+    // @ts-ignore — EdgeRuntime is provided by the edge-function Deno runtime.
+    EdgeRuntime.waitUntil(guarded);
+  }
+}
+
 function normalizeHost(host: string): string {
   return host.toLowerCase().replace(/^www\./, "");
 }
@@ -892,7 +905,10 @@ Deno.serve(async (req) => {
     // BAN-FIX B4: extra per-phone COD throttle — 3 confirmed COD orders per
     // hour per normalized phone number. Same phone spamming COD orders is
     // the classic fake-conversion signal Meta watches for.
-    if (order.payment_method === "cod") {
+    // Count only a genuinely new COD order. Checkout retries/address updates
+    // reuse the same pending row and must not consume additional quota; doing
+    // so locked legitimate shoppers after one order plus a few UI retries.
+    if (order.payment_method === "cod" && !reusableOrder) {
       try {
         const normPhoneForRl = String(order.customer_phone || "").replace(/\D/g, "").slice(-10);
         if (normPhoneForRl.length >= 10) {
@@ -1293,10 +1309,10 @@ Deno.serve(async (req) => {
     // Sending those tanks Event Match Quality and adds noise without attribution value.
     const isStorefrontOrder = !!buyerUa && !!(buyerFbp || buyerFbc || metaEventId);
     if (order.payment_method === "cod" && isStorefrontOrder) {
-      await firePurchaseCapi(supabase, createdOrder.id, {
+      runInBackground(firePurchaseCapi(supabase, createdOrder.id, {
         source: "cod",
         eventSourceUrl: metaEventSourceUrl || undefined,
-      });
+      }), "place-order CAPI");
     }
 
     return new Response(JSON.stringify({ success: true, order_id: createdOrder.id, order_number: orderNumber, profit: totalProfit }), {
