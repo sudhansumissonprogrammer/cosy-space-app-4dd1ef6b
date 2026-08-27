@@ -1511,12 +1511,27 @@ function _validateHeadAgainstShell(head, html) {
   if (!head || !html) return null;
   const a = _extractEntryChunk(head);
   const b = _extractEntryChunk(html);
-  if (!a || !b) return head; // can't tell — don't throw away a usable head
-  if (a === b) return head;
-  // Stale: drop every derived in-memory cache so this isolate rebuilds.
-  _memPrebuiltHead = null;
-  _memDeepChunks = null;
-  return null;
+  const invalidate = () => {
+    // Stale: drop every derived in-memory cache so this isolate rebuilds.
+    _memPrebuiltHead = null;
+    _memDeepChunks = null;
+    _memDeepChunksSig = null;
+    return null;
+  };
+  if (a && b && a !== b) return invalidate();
+
+  /* v8.91.0: the entry chunk hash is stable across most deploys (it only
+     carries the bootstrap), so entry-only comparison let a head full of DEAD
+     child hashes survive. Every /assets/*.js the live shell references must
+     also appear in the cached head — otherwise the head belongs to an older
+     build and its preloads would 404. */
+  try {
+    for (const m of html.matchAll(/(?:src|href)="(\/assets\/[^"]+\.js)"/g)) {
+      if (!head.includes(m[1])) return invalidate();
+    }
+  } catch {}
+
+  return head;
 }
 
 function _buildPrebuiltHead(html) {
