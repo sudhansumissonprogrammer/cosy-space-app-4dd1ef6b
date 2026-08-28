@@ -1018,7 +1018,7 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
                         rel="noopener noreferrer"
                         className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
                       >
-                        <ExternalLink className="h-3 w-3" /> Order on {sourceLabel(sourcePlatform)}
+                        <ExternalLink className="h-3 w-3" /> Order
                       </a>
                     )}
                   </div>
