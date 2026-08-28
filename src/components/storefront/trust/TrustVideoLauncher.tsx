@@ -23,7 +23,10 @@ const TrustVideoReel = lazy(() => import("./TrustVideoReel"));
 interface Props {
   storeId: string;
   storeSlug: string;
+  storeName: string;
+  whatsappNumber?: string | null;
 }
+
 
 const LS_KEY = (id: string) => `sf_trust_videos_${id}`;
 const LS_PREVIEW = (id: string) => `sf_trust_preview_${id}`;
