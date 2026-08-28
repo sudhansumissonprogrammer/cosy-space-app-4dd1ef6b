@@ -2272,6 +2272,24 @@ export type Database = {
         }
         Relationships: []
       }
+      price_bump_backup_utkal_20260828: {
+        Row: {
+          id: string | null
+          price: number | null
+          sale_price: number | null
+        }
+        Insert: {
+          id?: string | null
+          price?: number | null
+          sale_price?: number | null
+        }
+        Update: {
+          id?: string | null
+          price?: number | null
+          sale_price?: number | null
+        }
+        Relationships: []
+      }
       product_categories: {
         Row: {
           category_id: string
