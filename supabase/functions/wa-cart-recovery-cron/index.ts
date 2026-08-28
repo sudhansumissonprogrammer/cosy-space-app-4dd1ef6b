@@ -340,16 +340,7 @@ Deno.serve(async (req) => {
 
     // Auto-pick the newest APPROVED + active abandoned_cart template. This lets
     // us promote v4/v5 by flipping is_active/meta_status in the DB — no code edit.
-    const { data: activeTpl } = await admin
-      .from("platform_wa_templates")
-      .select("name, variables")
-      .like("name", "abandoned_cart_v%")
-      .eq("is_active", true)
-      .eq("paused", false)
-      .ilike("meta_status", "approved")
-      .order("name", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    const activeTpl = pickRecoveryTemplate((c as any).store_id);
     let chosenTemplate = (activeTpl as any)?.name || "abandoned_cart_v2";
     // 🛡️ Offer-template guard: v4/v5 need MRP ≥ ₹300 or the copy reads broken
     // (e.g. "Ab Sirf ₹0", "delivery ₹0"). Below the floor, fall back to v2.
