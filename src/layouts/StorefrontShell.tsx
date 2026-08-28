@@ -453,9 +453,15 @@ export default function StorefrontShell({
           only fetches the player chunk + media on tap. */}
       {overlaysReady && !/\/checkout(\/|$)/.test(pathname) && (
         <Suspense fallback={null}>
-          <TrustVideoLauncher storeId={store.id} storeSlug={store.slug} />
+          <TrustVideoLauncher
+            storeId={store.id}
+            storeSlug={store.slug}
+            storeName={store.name}
+            whatsappNumber={(store as any).whatsapp_number}
+          />
         </Suspense>
       )}
+
 
       {/* ExitIntentPopup permanently disabled — SAVE100 reserved for WhatsApp recovery links only.
           Coupon auto-applies at checkout via ?coupon=SAVE100 in the recovery link. */}
