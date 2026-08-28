@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
   const storeIds = Array.from(new Set(carts.map((c: any) => c.store_id).filter(Boolean)));
   const { data: settings } = await admin
     .from("stores_wa_settings")
-    .select("store_id, platform_marketing_enabled, send_abandoned_cart")
+    .select("store_id, platform_marketing_enabled, send_abandoned_cart, recovery_template_name")
     .in("store_id", storeIds);
   const enabled = new Set(
     (settings || [])
@@ -167,6 +167,30 @@ Deno.serve(async (req) => {
   );
 
   const disabled = new Set(storeIds.filter((id: any) => !enabled.has(id)));
+
+  // 🏪 Per-store recovery template override (e.g. COD-only stores use the COD
+  // copy instead of the ₹100-advance partial-payment copy). Only honored when
+  // the named template is APPROVED + active — otherwise the global default wins.
+  const tplOverrideByStore = new Map<string, string>();
+  for (const s of (settings || []) as any[]) {
+    if (s?.recovery_template_name) tplOverrideByStore.set(s.store_id, String(s.recovery_template_name));
+  }
+  // Approved + active abandoned_cart templates, fetched ONCE per cron run
+  // (was: one query per cart / per drop-off order).
+  const { data: approvedTpls } = await admin
+    .from("platform_wa_templates")
+    .select("name, variables")
+    .like("name", "abandoned_cart_v%")
+    .eq("is_active", true)
+    .eq("paused", false)
+    .ilike("meta_status", "approved")
+    .order("name", { ascending: false });
+  const tplByName = new Map<string, any>(((approvedTpls as any[]) || []).map((t: any) => [t.name, t]));
+  const pickRecoveryTemplate = (storeId: any): any => {
+    const ov = storeId ? tplOverrideByStore.get(String(storeId)) : undefined;
+    if (ov && tplByName.has(ov)) return tplByName.get(ov);
+    return ((approvedTpls as any[]) || [])[0] || null;
+  };
 
   // Do not suppress eligible carts here with a broad 24h cooldown. The sender
   // already enforces the configured daily per-phone marketing cap, while a
