@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
       const nowIso = new Date().toISOString();
       const [{ data: coupons }, { data: st }] = await Promise.all([
         admin.from("coupons")
-          .select("discount_type, discount_value, min_order_amount, starts_at, expires_at, wa_exclusive")
+          .select("code, discount_type, discount_value, min_order_amount, starts_at, expires_at, wa_exclusive")
           .eq("store_id", storeId).eq("auto_apply", true).eq("is_active", true)
           .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
           // WhatsApp-exclusive coupons win for recovery recipients — they are
@@ -62,7 +62,11 @@ Deno.serve(async (req) => {
           ? Math.round((payable * Number(s.partial_payment_value || 0)) / 100)
           : Math.round(Number(s.partial_payment_value || 0)))
       : 0;
-    return { discount, advance: Math.max(0, Math.min(rawAdvance, payable)) };
+    return {
+      discount,
+      advance: Math.max(0, Math.min(rawAdvance, payable)),
+      coupon_code: c?.code ? String(c.code).toUpperCase() : "",
+    };
   }
 
 
@@ -188,7 +192,7 @@ Deno.serve(async (req) => {
   const tplByName = new Map<string, any>(((approvedTpls as any[]) || []).map((t: any) => [t.name, t]));
   // Store-specific variants (…_cod) must never become the global default just
   // because their name sorts highest — the default skips them.
-  const defaultTpl = ((approvedTpls as any[]) || []).find((t: any) => !/_cod$/i.test(String(t?.name || "")))
+  const defaultTpl = ((approvedTpls as any[]) || []).find((t: any) => !/_(cod|adv)$/i.test(String(t?.name || "")))
     || ((approvedTpls as any[]) || [])[0] || null;
   const pickRecoveryTemplate = (storeId: any): any => {
     const ov = storeId ? tplOverrideByStore.get(String(storeId)) : undefined;
@@ -376,6 +380,10 @@ Deno.serve(async (req) => {
         original_price: mrpPrice.toFixed(0),
         discounted_price: discountedPrice.toFixed(0),
         balance_due: balanceDue.toFixed(0),
+        // v10 vars — advance/discount/coupon are now dynamic per store
+        advance_amount: ADVANCE_AMOUNT.toFixed(0),
+        discount_amount: OFFER_DISCOUNT.toFixed(0),
+        coupon_code: offer.coupon_code,
         cta_token: ctaToken,
         // v7_img — dynamic header image. Ignored by TEXT-header templates.
         ...(headerMediaUrl ? { header_media_url: headerMediaUrl } : {}),
@@ -580,6 +588,9 @@ Deno.serve(async (req) => {
           original_price: mrpPrice2.toFixed(0),
           discounted_price: discountedPrice.toFixed(0),
           balance_due: balanceDue.toFixed(0),
+          advance_amount: offer2.advance.toFixed(0),
+          discount_amount: offer2.discount.toFixed(0),
+          coupon_code: offer2.coupon_code,
           cta_token: ctaToken,
           ...(headerMediaUrl2 ? { header_media_url: headerMediaUrl2 } : {}),
         },
