@@ -922,7 +922,7 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
   onClose: () => void;
 }) {
   const items = order.order_items || [];
-  const { linkFor: sourceLinkFor, platform: sourcePlatform } = useProductSourceLinks(
+  const { linkFor: sourceLinkFor } = useProductSourceLinks(
     store?.id,
     items.map((i: any) => i.product_id).filter(Boolean),
   );
