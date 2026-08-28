@@ -92,19 +92,31 @@ export default function TrustVideoLauncher({ storeId, storeSlug }: Props) {
     };
   }, [storeId, dismissed]);
 
-  // Reveal only after the shopper has scrolled — keeps the tile (and its
-  // poster request) completely out of the first-paint / LCP window.
+  // Reveal after the shopper has scrolled, OR after 3s of page load.
+  // The tile + poster still only render once the idle probe confirms
+  // availability, so the first-paint / LCP window is untouched.
   useEffect(() => {
     if (dismissed || revealed) return;
-    const check = () => {
-      if (window.scrollY >= SCROLL_REVEAL_PX) {
-        setRevealed(true);
-        window.removeEventListener("scroll", check);
-      }
+
+    let loadTimer: number | undefined;
+    const reveal = () => {
+      setRevealed(true);
+      if (loadTimer !== undefined) window.clearTimeout(loadTimer);
+      window.removeEventListener("scroll", check);
     };
+
+    const check = () => {
+      if (window.scrollY >= SCROLL_REVEAL_PX) reveal();
+    };
+
     check();
     window.addEventListener("scroll", check, { passive: true });
-    return () => window.removeEventListener("scroll", check);
+    loadTimer = window.setTimeout(reveal, 3000);
+
+    return () => {
+      window.removeEventListener("scroll", check);
+      if (loadTimer !== undefined) window.clearTimeout(loadTimer);
+    };
   }, [dismissed, revealed]);
 
   /** Warm the reel chunk + first video on touch-start so tap feels instant. */
