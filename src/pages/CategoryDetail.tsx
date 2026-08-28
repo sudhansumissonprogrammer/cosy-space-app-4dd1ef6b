@@ -318,7 +318,7 @@ export default function CategoryDetail() {
         />
       )}
 
-      <div style={{ minHeight: 600 }} className="mt-3">
+      <div style={{ minHeight: 600 }} className={hideFilters ? "mt-1" : "mt-3"}>
         {categoryLoading || productsLoading ? (
           <div className={gridClass}>
             {Array.from({ length: 8 }).map((_, i) => (
