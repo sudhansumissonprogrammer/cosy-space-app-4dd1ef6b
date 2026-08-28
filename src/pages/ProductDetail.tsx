@@ -387,7 +387,25 @@ export default function ProductDetail() {
     return undefined;
   };
 
+  // Packaging add-ons are limited to a single collection (se-ko-trending).
+  // Only queried for stores that show the custom PDP sections at all.
+  const packagingEligible = hasCustomPdpSections(store);
+  const { data: inPackagingCategory } = useQuery({
+    queryKey: ["pdp-packaging-category", productId],
+    enabled: !!productId && packagingEligible,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("product_categories")
+        .select("categories!inner(slug)")
+        .eq("product_id", productId!);
+      if (error) return false;
+      return (data || []).some((r: any) => r?.categories?.slug === "se-ko-trending");
+    },
+  });
+
   const { data: extraImages } = useQuery({
+
     queryKey: ["product-images", productId],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
