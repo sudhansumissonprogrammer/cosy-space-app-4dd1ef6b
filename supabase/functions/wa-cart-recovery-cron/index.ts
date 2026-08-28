@@ -459,6 +459,11 @@ Deno.serve(async (req) => {
         .map((s: any) => s.store_id),
 
     );
+    // Lane-2 stores may not appear in the cart-lane settings fetch — merge
+    // their template overrides too.
+    for (const s of (dropSettings || []) as any[]) {
+      if (s?.recovery_template_name) tplOverrideByStore.set(s.store_id, String(s.recovery_template_name));
+    }
 
     // Dedup by phone: only keep the newest drop-off per phone.
     const seenPhone = new Set<string>();
