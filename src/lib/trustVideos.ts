@@ -21,6 +21,15 @@ export interface TrustSlide {
     salePrice?: number | null;
     currency?: string | null;
   };
+  /** Mini product grid shown on the first slide (store-specific promo). */
+  featuredProducts?: Array<{
+    name: string;
+    imageUrl?: string | null;
+    price?: number | null;
+    salePrice?: number | null;
+    currency?: string | null;
+    to: string;
+  }>;
 }
 
 interface TrustVideoRow {
