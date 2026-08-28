@@ -164,6 +164,42 @@ export default function TrustVideoReel({ slides, onClose }: Props) {
             {/* Glassmorphic CTA — product-tagged slides get a shoppable card */}
             <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 p-4 pb-8">
               <div className="mx-auto flex max-w-sm flex-col gap-2">
+                {s.featuredProducts && s.featuredProducts.length > 0 && (
+                  <div className="pointer-events-auto grid grid-cols-2 gap-1.5">
+                    {s.featuredProducts.map((p, pi) => (
+                      <button
+                        key={pi}
+                        onClick={() => { onClose(); navigate(p.to); }}
+                        className="flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 p-1.5 text-left shadow-[0_6px_24px_rgba(0,0,0,0.3)] backdrop-blur-2xl transition-transform active:scale-[0.97]"
+                      >
+                        <span className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/10 ring-1 ring-white/15">
+                          {p.imageUrl && (
+                            <img
+                              src={optimizeImageUrl(p.imageUrl, 80, 80)}
+                              alt=""
+                              className="h-full w-full object-cover"
+                              loading="lazy"
+                              draggable={false}
+                            />
+                          )}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[10.5px] font-semibold leading-tight text-white">
+                            {p.name}
+                          </span>
+                          {(p.salePrice ?? p.price) != null && (
+                            <span className="mt-0.5 block text-[10px] font-semibold text-white/85">
+                              {formatPrice(Number(p.salePrice ?? p.price), p.currency || "INR")}
+                            </span>
+                          )}
+                          <span className="mt-0.5 inline-flex items-center gap-0.5 text-[9px] font-medium text-white/60">
+                            See details <ArrowRight className="h-2.5 w-2.5" />
+                          </span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
                 {s.product && (s.to || s.href) && (
                   <button
                     onClick={() => handleCta(s)}
@@ -208,10 +244,12 @@ export default function TrustVideoReel({ slides, onClose }: Props) {
                 {!s.product && s.ctaLabel && (s.to || s.href) && (
                   <button
                     onClick={() => handleCta(s)}
-                    className="pointer-events-auto flex w-full items-center justify-center gap-2 rounded-2xl border border-white/25 bg-white/15 px-5 py-3.5 text-[15px] font-semibold text-white shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-2xl transition-transform active:scale-[0.97]"
+                    className={s.featuredProducts
+                      ? "pointer-events-auto mx-auto inline-flex items-center gap-1.5 rounded-full bg-white/95 px-4 py-2 text-[12px] font-semibold text-black shadow-[0_4px_16px_rgba(0,0,0,0.3)] transition-transform active:scale-[0.95]"
+                      : "pointer-events-auto flex w-full items-center justify-center gap-2 rounded-2xl border border-white/25 bg-white/15 px-5 py-3.5 text-[15px] font-semibold text-white shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-2xl transition-transform active:scale-[0.97]"}
                   >
                     {s.ctaLabel}
-                    <ArrowRight className="h-4 w-4" />
+                    <ArrowRight className={s.featuredProducts ? "h-3.5 w-3.5" : "h-4 w-4"} />
                   </button>
                 )}
 
