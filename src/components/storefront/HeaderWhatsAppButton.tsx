@@ -1,4 +1,4 @@
-import { waPhoneNumber } from "@/lib/trustVideos";
+/**
  * HeaderWhatsAppButton — replaces the account icon in the storefront header.
  *
  * Account is already reachable from the mobile bottom nav ("Orders"), so the
@@ -6,6 +6,7 @@ import { waPhoneNumber } from "@/lib/trustVideos";
  * rendering nothing when the store has no WhatsApp number configured.
  */
 import { waPhoneNumber } from "@/lib/trustVideos";
+
 interface Props {
   storeName: string;
   whatsappNumber?: string | null;
