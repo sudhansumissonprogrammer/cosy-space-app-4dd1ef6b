@@ -205,3 +205,18 @@ export async function fetchFirstTrustVideo(
   if (!data?.video_url) return null;
   return { videoUrl: data.video_url, posterUrl: data.poster_url ?? null };
 }
+
+/**
+ * Normalize an owner-entered WhatsApp number for wa.me links.
+ * Store owners frequently paste "98765 43210" (no country code), which makes
+ * WhatsApp show "Couldn't look up this phone number". Indian default: +91.
+ */
+export function waPhoneNumber(raw?: string | null): string | null {
+  if (!raw) return null;
+  let d = raw.replace(/[^0-9]/g, "");
+  if (d.startsWith("00")) d = d.slice(2);           // 0091… → 91…
+  if (d.length === 11 && d.startsWith("0")) d = d.slice(1); // 09876…
+  if (d.length === 10) d = "91" + d;               // bare Indian mobile
+  if (d.length < 10) return null;
+  return d;
+}
