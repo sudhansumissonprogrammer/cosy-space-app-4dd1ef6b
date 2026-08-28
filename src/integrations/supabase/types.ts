@@ -4106,6 +4106,7 @@ export type Database = {
           created_at: string
           pilot_cohort: boolean
           platform_marketing_enabled: boolean
+          recovery_template_name: string | null
           send_abandoned_cart: boolean
           send_cod_confirmation: boolean
           send_order_confirmation: boolean
@@ -4117,6 +4118,7 @@ export type Database = {
           created_at?: string
           pilot_cohort?: boolean
           platform_marketing_enabled?: boolean
+          recovery_template_name?: string | null
           send_abandoned_cart?: boolean
           send_cod_confirmation?: boolean
           send_order_confirmation?: boolean
@@ -4128,6 +4130,7 @@ export type Database = {
           created_at?: string
           pilot_cohort?: boolean
           platform_marketing_enabled?: boolean
+          recovery_template_name?: string | null
           send_abandoned_cart?: boolean
           send_cod_confirmation?: boolean
           send_order_confirmation?: boolean
