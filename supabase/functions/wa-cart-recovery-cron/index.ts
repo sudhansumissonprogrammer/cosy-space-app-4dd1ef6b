@@ -338,8 +338,9 @@ Deno.serve(async (req) => {
     const balanceDue = Math.max(discountedPrice - ADVANCE_AMOUNT, 0);
 
 
-    // Auto-pick the newest APPROVED + active abandoned_cart template. This lets
-    // us promote v4/v5 by flipping is_active/meta_status in the DB — no code edit.
+    // Auto-pick the newest APPROVED + active abandoned_cart template, honoring
+    // the per-store override when one is configured. Promote by flipping
+    // is_active/meta_status in the DB — no code edit.
     const activeTpl = pickRecoveryTemplate((c as any).store_id);
     let chosenTemplate = (activeTpl as any)?.name || "abandoned_cart_v2";
     // 🛡️ Offer-template guard: v4/v5 need MRP ≥ ₹300 or the copy reads broken
@@ -450,7 +451,7 @@ Deno.serve(async (req) => {
     const dropStoreIds = Array.from(new Set(dropOrders.map((o: any) => o.store_id).filter(Boolean)));
     const { data: dropSettings } = await admin
       .from("stores_wa_settings")
-      .select("store_id, platform_marketing_enabled, send_abandoned_cart")
+      .select("store_id, platform_marketing_enabled, send_abandoned_cart, recovery_template_name")
       .in("store_id", dropStoreIds);
     const dropEnabled = new Set(
       (dropSettings || [])
@@ -548,12 +549,7 @@ Deno.serve(async (req) => {
       const balanceDue = Math.max(discountedPrice - offer2.advance, 0);
 
 
-      const { data: activeTpl2 } = await admin
-        .from("platform_wa_templates")
-        .select("name, variables")
-        .like("name", "abandoned_cart_v%")
-        .eq("is_active", true).eq("paused", false).ilike("meta_status", "approved")
-        .order("name", { ascending: false }).limit(1).maybeSingle();
+      const activeTpl2 = pickRecoveryTemplate((o as any).store_id);
       let chosenTemplate2 = (activeTpl2 as any)?.name || "abandoned_cart_v2";
       const tplVars2: string[] = ((activeTpl2 as any)?.variables) || [];
       const needsOfferMath2 = tplVars2.includes("discounted_price") || tplVars2.includes("balance_due");
