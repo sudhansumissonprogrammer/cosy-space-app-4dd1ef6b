@@ -141,18 +141,24 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
 
 
   const handleOpen = async () => {
-    if (loading) return;
-    if (slides) { setOpen(true); return; }
+    // Open IMMEDIATELY — the shopper gets a full-screen response on the very
+    // first tap. Slides load behind the overlay (previously a slow/failed
+    // fetch made the tap look completely dead).
+    setOpen(true);
+    if (slides || loading) return;
     setLoading(true);
     try {
       const list = await fetchTrustReel(storeId, storeSlug);
-      if (list.length === 0) { setAvailable(false); return; }
+      if (list.length === 0) { setOpen(false); setAvailable(false); return; }
       setSlides(list);
-      setOpen(true);
+    } catch {
+      // Network hiccup — let the next tap retry instead of dead-ending.
+      setOpen(false);
     } finally {
       setLoading(false);
     }
   };
+
 
   const handleDismiss = (e: React.MouseEvent) => {
     e.stopPropagation();
