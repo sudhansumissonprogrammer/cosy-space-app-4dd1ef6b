@@ -7,6 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Search, ChevronDown, User, ShoppingCart, MapPin } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { storefrontPath } from "@/lib/subdomain";
+import { waPhoneNumber } from "@/lib/trustVideos";
 import { useCart } from "@/contexts/CartContext";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
