@@ -115,6 +115,47 @@ export async function fetchTrustReel(storeId: string, slug: string): Promise<Tru
     /* app registry unavailable — trust videos alone are fine */
   }
 
+  // Utkal Watches only: pin a 4-product "Casio New" mini grid onto the FIRST
+  // slide so the opening trust video doubles as a shoppable collection card.
+  if (slug === "utkalwatches" && slides.length > 0) {
+    try {
+      const { data: cat } = await (supabase as any)
+        .from("categories")
+        .select("id")
+        .eq("store_id", storeId)
+        .eq("slug", "casio-new")
+        .maybeSingle();
+      if (cat?.id) {
+        const { data: rows } = await (supabase as any)
+          .from("product_categories")
+          .select("products!inner(id,slug,name,price,sale_price,currency,image_url)")
+          .eq("category_id", cat.id)
+          .eq("products.is_active", true)
+          .limit(12);
+        const picked = ((rows as any[]) || [])
+          .map((r) => r?.products)
+          .filter((p: any) => p && p.slug)
+          .slice(0, 4);
+        if (picked.length > 0) {
+          slides[0].featuredProducts = picked.map((p: any) => ({
+            name: p.name,
+            imageUrl: p.image_url ?? null,
+            price: p.price ?? null,
+            salePrice: p.sale_price ?? null,
+            currency: p.currency ?? null,
+            to: storefrontPath(slug, `product/${p.slug}`),
+          }));
+          // Bottom button now opens the full collection.
+          slides[0].ctaLabel = slides[0].ctaLabel || "See more";
+          slides[0].to = storefrontPath(slug, "category/casio-new");
+          delete slides[0].href;
+        }
+      }
+    } catch {
+      /* featured grid is optional — reel still works without it */
+    }
+  }
+
   return slides;
 }
 
