@@ -34,7 +34,7 @@ export default function TrustVideoReel({ slides, onClose, storeName, whatsappNum
 
   const [muted, setMuted] = useState(true);
 
-  const waPhone = whatsappNumber?.replace(/[^0-9+]/g, "");
+  const waPhone = waPhoneNumber(whatsappNumber);
   const waMessage = encodeURIComponent(
     `Hi ${storeName}! 👋\nI'm interested in buying products from your store. Could you help me?`
   );
