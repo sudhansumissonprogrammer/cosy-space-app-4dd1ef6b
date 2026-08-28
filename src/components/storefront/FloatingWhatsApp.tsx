@@ -1,4 +1,5 @@
 import type { StoreData } from "@/layouts/StorefrontLayout";
+import { waPhoneNumber } from "@/lib/trustVideos";
 
 interface FloatingWhatsAppProps {
   store: StoreData;
@@ -7,7 +8,10 @@ interface FloatingWhatsAppProps {
 export default function FloatingWhatsApp({ store }: FloatingWhatsAppProps) {
   if (!store.whatsapp_number) return null;
 
-  const phone = store.whatsapp_number.replace(/[^0-9+]/g, "");
+  // wa.me needs the full international number — owner often saves the bare
+  // 10-digit mobile, which made WhatsApp show "couldn't look up this number".
+  const phone = waPhoneNumber(store.whatsapp_number);
+  if (!phone) return null;
   const message = encodeURIComponent(
     `Hi ${store.name}! 👋\nI'm interested in buying products from your store. Could you help me?`
   );

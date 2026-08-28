@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { waPhoneNumber } from "@/lib/trustVideos";
 import { addDeliveryDays } from "@/lib/deliveryEstimate";
 import useEmblaCarousel from "embla-carousel-react";
 // VideoSlide lazy-loaded (only ~5% of products have video) — see below
@@ -1166,7 +1167,8 @@ export default function ProductDetail() {
                       document.getElementById("variant-picker")?.scrollIntoView({ behavior: "smooth", block: "center" });
                       return;
                     }
-                    const phone = store.whatsapp_number!.replace(/[^0-9+]/g, "");
+                    const phone = waPhoneNumber(store.whatsapp_number!);
+                    if (!phone) { toast.error("WhatsApp number is not valid"); return; }
                     const variantInfo = selectedVariant ? ` (${selectedVariant.name})` : "";
                     const productUrl = `${window.location.origin}${window.location.pathname}`;
                     const text = `Hi ${store.name}! 👋\n\nI want to buy *${product.name}${variantInfo}* x${quantity}\n\n💰 Price: ${formatPrice((unitPrice * quantity), currency)}\n\n🔗 ${productUrl}\n\nPlease share availability, delivery time & payment options.`;

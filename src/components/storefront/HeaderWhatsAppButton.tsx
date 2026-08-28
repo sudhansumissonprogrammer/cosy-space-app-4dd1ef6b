@@ -1,10 +1,11 @@
-/**
+import { waPhoneNumber } from "@/lib/trustVideos";
  * HeaderWhatsAppButton — replaces the account icon in the storefront header.
  *
  * Account is already reachable from the mobile bottom nav ("Orders"), so the
  * header slot is used for one-tap WhatsApp contact instead. Falls back to
  * rendering nothing when the store has no WhatsApp number configured.
  */
+import { waPhoneNumber } from "@/lib/trustVideos";
 interface Props {
   storeName: string;
   whatsappNumber?: string | null;
@@ -22,7 +23,8 @@ export default function HeaderWhatsAppButton({
 }: Props) {
   if (!whatsappNumber) return null;
 
-  const phone = whatsappNumber.replace(/[^0-9+]/g, "");
+  const phone = waPhoneNumber(whatsappNumber);
+  if (!phone) return null;
   const message = encodeURIComponent(
     `Hi ${storeName}! 👋\nI'm interested in buying products from your store. Could you help me?`
   );
