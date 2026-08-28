@@ -28,7 +28,6 @@ import { Separator } from "@/components/ui/separator";
 import OrderInvoice from "@/components/OrderInvoice";
 import OrderItemImage from "@/components/OrderItemImage";
 import { useProductSourceLinks } from "@/hooks/useSourceLinks";
-import { sourceLabel } from "@/lib/sourcePdpUrl";
 import OrderShipmentSection from "@/components/shipping/OrderShipmentSection";
 import ShipmentEditorDialog from "@/components/shipping/ShipmentEditorDialog";
 import CreateOrderDialog from "@/components/CreateOrderDialog";
@@ -923,7 +922,7 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
   onClose: () => void;
 }) {
   const items = order.order_items || [];
-  const { linkFor: sourceLinkFor, platform: sourcePlatform } = useProductSourceLinks(
+  const { linkFor: sourceLinkFor } = useProductSourceLinks(
     store?.id,
     items.map((i: any) => i.product_id).filter(Boolean),
   );
@@ -1018,7 +1017,7 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
                         rel="noopener noreferrer"
                         className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
                       >
-                        <ExternalLink className="h-3 w-3" /> Order on {sourceLabel(sourcePlatform)}
+                        <ExternalLink className="h-3 w-3" /> Order
                       </a>
                     )}
                   </div>
