@@ -186,10 +186,14 @@ Deno.serve(async (req) => {
     .ilike("meta_status", "approved")
     .order("name", { ascending: false });
   const tplByName = new Map<string, any>(((approvedTpls as any[]) || []).map((t: any) => [t.name, t]));
+  // Store-specific variants (…_cod) must never become the global default just
+  // because their name sorts highest — the default skips them.
+  const defaultTpl = ((approvedTpls as any[]) || []).find((t: any) => !/_cod$/i.test(String(t?.name || "")))
+    || ((approvedTpls as any[]) || [])[0] || null;
   const pickRecoveryTemplate = (storeId: any): any => {
     const ov = storeId ? tplOverrideByStore.get(String(storeId)) : undefined;
     if (ov && tplByName.has(ov)) return tplByName.get(ov);
-    return ((approvedTpls as any[]) || [])[0] || null;
+    return defaultTpl;
   };
 
   // Do not suppress eligible carts here with a broad 24h cooldown. The sender
