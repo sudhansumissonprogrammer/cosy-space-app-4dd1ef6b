@@ -296,21 +296,11 @@ export default function CategoryDetail() {
     : `grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-5 xl:grid-cols-5${cardStyle === "style-6" ? " -mx-3 sm:mx-0 gap-x-1" : ""}`;
 
   return (
-    <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 py-5">
+    <div className={`mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 ${hideFilters ? "py-1" : "py-5"}`}>
       <h1 className="sr-only">{category?.name || "Category"} — {store.name}</h1>
       {!hideFilters && <CategoryQuickJump storeId={store.id} slug={slug!} activeCategory={categorySlug} />}
 
-      {hideFilters ? (
-        <div className="pt-0.5">
-          <button
-            onClick={() => navigate(storefrontPath(slug!, ""))}
-            aria-label="Back"
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card hover:bg-accent transition-colors shrink-0"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </button>
-        </div>
-      ) : (
+      {hideFilters ? null : (
         <ShopFilterBar
           total={totalEstimate || rawProducts.length}
           showing={products.length}
@@ -328,7 +318,7 @@ export default function CategoryDetail() {
         />
       )}
 
-      <div style={{ minHeight: 600 }} className="mt-3">
+      <div style={{ minHeight: 600 }} className={hideFilters ? "mt-1" : "mt-3"}>
         {categoryLoading || productsLoading ? (
           <div className={gridClass}>
             {Array.from({ length: 8 }).map((_, i) => (
