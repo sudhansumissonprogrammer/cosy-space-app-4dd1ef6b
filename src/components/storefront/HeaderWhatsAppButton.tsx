@@ -1,4 +1,5 @@
 /**
+import { waPhoneNumber } from "@/lib/trustVideos";
  * HeaderWhatsAppButton — replaces the account icon in the storefront header.
  *
  * Account is already reachable from the mobile bottom nav ("Orders"), so the
