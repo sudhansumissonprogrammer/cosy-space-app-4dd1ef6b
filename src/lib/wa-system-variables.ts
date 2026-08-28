@@ -33,7 +33,10 @@ export const WA_SYSTEM_VARIABLES: WASystemVar[] = [
   { key: "product_price", label: "Product price", description: "Formatted ₹ unit price of the first item in the abandoned cart", example: "₹1,899", scope: "cart" },
   { key: "original_price", label: "Original price (MRP)", description: "Item MRP before offer discount, plain number (no ₹)", example: "1899", scope: "cart" },
   { key: "discounted_price", label: "Discounted price", description: "MRP after ₹100 flat offer, plain number (no ₹)", example: "1799", scope: "cart" },
-  { key: "balance_due", label: "COD balance due", description: "Amount to pay on delivery after ₹100 advance, plain number (no ₹)", example: "1699", scope: "cart" },
+  { key: "balance_due", label: "COD balance due", description: "Amount to pay on delivery after the store's advance, plain number (no ₹)", example: "1699", scope: "cart" },
+  { key: "advance_amount", label: "Advance amount", description: "Advance the shopper pays online, from the store's partial-payment setting. Plain number (no ₹). 0 for pure-COD stores.", example: "49", scope: "cart" },
+  { key: "discount_amount", label: "Discount amount", description: "Value of the live auto-apply coupon, plain number (no ₹)", example: "100", scope: "cart" },
+  { key: "coupon_code", label: "Coupon code", description: "Code of the store's live auto-apply coupon (auto-applies at checkout)", example: "FLAT100", scope: "cart" },
 
   // Branded short-link token (consumed by URL buttons → shopbanao.in/r/{{1}})
   { key: "cta_token", label: "CTA link token", description: "Branded short token: o-<order>, t-<order>, c-<cart>. Use inside a URL button as https://shopbanao.in/r/{{n}}.", example: "o-3f9c…", scope: "all" },
