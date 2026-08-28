@@ -36,7 +36,7 @@ const SCROLL_REVEAL_PX = 500;
 
 type PreviewCache = { videoUrl: string; posterUrl: string | null };
 
-export default function TrustVideoLauncher({ storeId, storeSlug }: Props) {
+export default function TrustVideoLauncher({ storeId, storeSlug, storeName, whatsappNumber }: Props) {
   const [available, setAvailable] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     try { return localStorage.getItem(LS_KEY(storeId)) === "1"; } catch { return false; }
