@@ -380,6 +380,10 @@ Deno.serve(async (req) => {
         original_price: mrpPrice.toFixed(0),
         discounted_price: discountedPrice.toFixed(0),
         balance_due: balanceDue.toFixed(0),
+        // v10 vars — advance/discount/coupon are now dynamic per store
+        advance_amount: ADVANCE_AMOUNT.toFixed(0),
+        discount_amount: OFFER_DISCOUNT.toFixed(0),
+        coupon_code: offer.coupon_code,
         cta_token: ctaToken,
         // v7_img — dynamic header image. Ignored by TEXT-header templates.
         ...(headerMediaUrl ? { header_media_url: headerMediaUrl } : {}),
