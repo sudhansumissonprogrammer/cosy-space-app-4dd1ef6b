@@ -1,0 +1,1 @@
+ALTER TABLE public.stores_wa_settings ADD COLUMN IF NOT EXISTS recovery_template_name text;
