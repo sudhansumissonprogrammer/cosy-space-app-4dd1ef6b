@@ -665,7 +665,7 @@ export default function ProductDetail() {
   const variantPrice = basePrice; // variants no longer override price
   // Packaging add-on (store-scoped). Surcharge is re-derived server-side in
   // `place-order`, so this is display + cart metadata only.
-  const showPackaging = hasCustomPdpSections(store);
+  const showPackaging = packagingEligible && inPackagingCategory === true;
   const pkgOption = getPackagingOption(showPackaging ? packaging : DEFAULT_PACKAGING);
   const pkgSurcharge = showPackaging ? packagingSurcharge(packaging) : 0;
   const unitPrice = variantPrice + pkgSurcharge;
