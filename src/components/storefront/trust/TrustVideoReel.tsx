@@ -19,7 +19,10 @@ import { optimizeImageUrl } from "@/lib/imageOptimize";
 interface Props {
   slides: TrustSlide[];
   onClose: () => void;
+  storeName: string;
+  whatsappNumber?: string | null;
 }
+
 
 export default function TrustVideoReel({ slides, onClose }: Props) {
   const navigate = useNavigate();
