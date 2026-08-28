@@ -11,10 +11,12 @@
  *    prefetch on touch-start so the first frame paints fast).
  */
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Play, X } from "lucide-react";
 import {
   fetchTrustVideoProbe,
   fetchTrustReel,
+  waPhoneNumber,
   type TrustSlide,
 } from "@/lib/trustVideos";
 
