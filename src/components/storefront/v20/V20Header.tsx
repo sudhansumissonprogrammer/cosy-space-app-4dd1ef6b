@@ -150,7 +150,7 @@ export default function V20Header({ store }: { store: any }) {
 
           {store?.whatsapp_number ? (
             <a
-              href={`https://wa.me/${String(store.whatsapp_number).replace(/[^0-9]/g, "")}?text=${encodeURIComponent(`Hi ${store?.name || ""}! I have a question.`)}`}
+              href={`https://wa.me/${waPhoneNumber(store.whatsapp_number) ?? ""}?text=${encodeURIComponent(`Hi ${store?.name || ""}! I have a question.`)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="md:hidden h-9 w-9 rounded-full flex items-center justify-center bg-[#25D366] flex-shrink-0 shadow-md active:scale-95 transition-transform"

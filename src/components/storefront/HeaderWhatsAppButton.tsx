@@ -22,7 +22,8 @@ export default function HeaderWhatsAppButton({
 }: Props) {
   if (!whatsappNumber) return null;
 
-  const phone = whatsappNumber.replace(/[^0-9+]/g, "");
+  const phone = waPhoneNumber(whatsappNumber);
+  if (!phone) return null;
   const message = encodeURIComponent(
     `Hi ${storeName}! 👋\nI'm interested in buying products from your store. Could you help me?`
   );
