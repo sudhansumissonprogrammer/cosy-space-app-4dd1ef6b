@@ -172,10 +172,10 @@ export default function TrustVideoReel({ slides, onClose }: Props) {
                         onClick={() => { onClose(); navigate(p.to); }}
                         className="flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 p-1.5 text-left shadow-[0_6px_24px_rgba(0,0,0,0.3)] backdrop-blur-2xl transition-transform active:scale-[0.97]"
                       >
-                        <span className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/10 ring-1 ring-white/15">
+                        <span className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-white/10 ring-1 ring-white/15">
                           {p.imageUrl && (
                             <img
-                              src={optimizeImageUrl(p.imageUrl, 80, 80)}
+                              src={optimizeImageUrl(p.imageUrl, 128, 128)}
                               alt=""
                               className="h-full w-full object-cover"
                               loading="lazy"
