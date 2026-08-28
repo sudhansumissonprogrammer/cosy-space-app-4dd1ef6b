@@ -28,7 +28,6 @@ import { Separator } from "@/components/ui/separator";
 import OrderInvoice from "@/components/OrderInvoice";
 import OrderItemImage from "@/components/OrderItemImage";
 import { useProductSourceLinks } from "@/hooks/useSourceLinks";
-import { sourceLabel } from "@/lib/sourcePdpUrl";
 import OrderShipmentSection from "@/components/shipping/OrderShipmentSection";
 import ShipmentEditorDialog from "@/components/shipping/ShipmentEditorDialog";
 import CreateOrderDialog from "@/components/CreateOrderDialog";
