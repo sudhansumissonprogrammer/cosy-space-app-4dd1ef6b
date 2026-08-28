@@ -170,11 +170,6 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
 
   if (!available || dismissed || !preview || !revealed) return null;
 
-  const waPhone = waPhoneNumber(whatsappNumber);
-  const waMessage = encodeURIComponent(
-    `Hi ${storeName}! 👋\nI'm interested in buying products from your store. Could you help me?`
-  );
-
   return (
     <>
       <div
