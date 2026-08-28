@@ -24,7 +24,7 @@ interface Props {
 }
 
 
-export default function TrustVideoReel({ slides, onClose }: Props) {
+export default function TrustVideoReel({ slides, onClose, storeName, whatsappNumber }: Props) {
   const navigate = useNavigate();
   const scrollerRef = useRef<HTMLDivElement>(null);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
@@ -33,6 +33,12 @@ export default function TrustVideoReel({ slides, onClose }: Props) {
   const [buffering, setBuffering] = useState(true);
 
   const [muted, setMuted] = useState(true);
+
+  const waPhone = whatsappNumber?.replace(/[^0-9+]/g, "");
+  const waMessage = encodeURIComponent(
+    `Hi ${storeName}! 👋\nI'm interested in buying products from your store. Could you help me?`
+  );
+
 
 
   // Lock background scroll while the reel owns the screen.
