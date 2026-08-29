@@ -126,16 +126,24 @@ Deno.serve(async (req) => {
       tracking = await publicTrack(slug, awb, adapter?.officialUrl(awb) ?? null);
     }
   } catch (e) {
-    const attempts = (shipment.sync_attempts ?? 0) + 1;
+    const msg = (e as Error).message;
+    // India Post put its tracking feed behind a captcha (Aug 2026). There is
+    // nothing to retry — park the shipment on a daily re-check instead of
+    // burning attempts and eventually deactivating it.
+    const blocked = /captcha/i.test(msg);
+    const attempts = blocked ? (shipment.sync_attempts ?? 0) : (shipment.sync_attempts ?? 0) + 1;
     await admin.from("order_shipments").update({
       sync_attempts: attempts,
-      last_error: (e as Error).message.slice(0, 500),
+      last_error: msg.slice(0, 500),
       last_synced_at: new Date().toISOString(),
-      next_sync_at: new Date(Date.now() + Math.min(attempts, 6) * 60 * 60 * 1000).toISOString(),
-      is_active: attempts < 20,
+      next_sync_at: new Date(
+        Date.now() + (blocked ? 24 : Math.min(attempts, 6)) * 60 * 60 * 1000,
+      ).toISOString(),
+      is_active: blocked ? true : attempts < 20,
     }).eq("id", shipmentId);
-    return json({ error: (e as Error).message }, 502);
+    return json({ error: msg, blocked }, 502);
   }
+
 
 
   // Persist events (unique on shipment_id + event_hash → no duplicates).

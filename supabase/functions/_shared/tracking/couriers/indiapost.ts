@@ -53,16 +53,56 @@ export async function indiaPostTrack(awb: string, officialUrl: string | null): P
 /**
  * indiapost.gov.in's current tracking feed.
  *
- * The old ASP.NET web method (`GetArticleDetails`) is gone — the portal is now
- * a Next.js app and tracking runs through two React Server Actions:
- *   1. `getTrackingToken()`  → short-lived signed nonce
- *   2. `trackArticle(token, awb)` → booking + scan details
- * Both are keyless and captcha-free. Action IDs are build-scoped, so if a
- * redeploy rotates them we fall through to the universal aggregator.
+ * The portal is a Next.js app; tracking runs through two React Server Actions
+ * exposed on the home route ("/"), NOT on /track-result/article-tracking —
+ * that path now 404s:
+ *   1. `getTrackingToken()`            → short-lived signed nonce
+ *   2. `trackArticleWithCaptcha(...)`  → booking + scan details
+ * Action IDs are build-scoped, so they are discovered at runtime from the
+ * home page's JS chunks and cached; a redeploy simply re-discovers them.
+ *
+ * Since mid-Aug 2026 the track action answers `captcha_required` unless a
+ * solved becaptcha session is attached. We surface that verbatim so the
+ * caller can mark the shipment manual instead of retrying forever.
  */
-const IP_PAGE = "https://www.indiapost.gov.in/track-result/article-tracking/";
-const IP_ACTION_TOKEN = "00b4f44fd7cd8e5a9d969100904e4880581555ea21";
-const IP_ACTION_TRACK = "60d4c45fc5727f9c4c3efc1c93b182559c9cedbaaf";
+const IP_ORIGIN = "https://www.indiapost.gov.in";
+const IP_PAGE = `${IP_ORIGIN}/`;
+
+let actionCache: { token: string; track: string; at: number } | null = null;
+const ACTION_TTL_MS = 6 * 60 * 60 * 1000;
+
+async function discoverActions(): Promise<{ token: string; track: string }> {
+  if (actionCache && Date.now() - actionCache.at < ACTION_TTL_MS) return actionCache;
+
+  const html = await (await fetchWithTimeout(IP_PAGE, {
+    headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
+    timeoutMs: 20_000,
+  })).text();
+
+  const chunks = [...new Set(html.match(/\/_next\/static\/chunks\/[^"']+\.js/g) ?? [])];
+  for (const c of chunks) {
+    let js: string;
+    try {
+      js = await (await fetchWithTimeout(IP_ORIGIN + c, {
+        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
+        timeoutMs: 20_000,
+      })).text();
+    } catch { continue; }
+    if (!js.includes("getTrackingToken")) continue;
+
+    const ids: Record<string, string> = {};
+    const re = /createServerReference\)\("([0-9a-f]{40,42})"(?:\s*,[^,]*){0,4},"([A-Za-z0-9_$]+)"/g;
+    for (let m = re.exec(js); m; m = re.exec(js)) ids[m[2]] = m[1];
+
+    const token = ids["getTrackingToken"];
+    const track = ids["trackArticleWithCaptcha"] ?? ids["trackArticle"];
+    if (token && track) {
+      actionCache = { token, track, at: Date.now() };
+      return actionCache;
+    }
+  }
+  throw new Error("tracking actions not found on portal");
+}
 
 async function ipAction(actionId: string, args: unknown[]): Promise<unknown> {
   const r = await fetchWithTimeout(IP_PAGE, {
@@ -75,24 +115,29 @@ async function ipAction(actionId: string, args: unknown[]): Promise<unknown> {
       Referer: IP_PAGE,
     },
     body: JSON.stringify(args),
-    timeoutMs: 15_000,
+    timeoutMs: 20_000,
   });
-  // Next.js answers server actions on this route with a 404 status but a valid
-  // flight body, so the status is deliberately not gated on.
   const text = await r.text();
   if (!text) throw new Error(`empty response (HTTP ${r.status})`);
+  if (text.startsWith("Server action not found")) {
+    actionCache = null;
+    throw new Error("server action rotated");
+  }
 
   // RSC flight payload: newline-delimited `<id>:<json>` rows. The action's
-  // return value is the last row that parses to something non-trivial.
+  // return value is the first row that parses to a plain object/string that
+  // is not part of the page tree.
   let result: unknown = null;
   for (const line of text.split("\n")) {
     const i = line.indexOf(":");
     if (i <= 0) continue;
     const raw = line.slice(i + 1).trim();
-    if (!raw || raw.startsWith("$")) continue;
+    if (!raw || raw.startsWith("$") || raw.startsWith("I[") || raw.startsWith("HL[")) continue;
     try {
       const v = JSON.parse(raw);
-      if (typeof v === "string" || (v && typeof v === "object" && !("a" in (v as object)))) result = v;
+      if (typeof v === "string" && v.length > 30) { result ??= v; continue; }
+      if (v && typeof v === "object" && !Array.isArray(v) &&
+          ("success" in v || "data" in v || "error" in v)) { result = v; break; }
     } catch { /* partial row */ }
   }
   if (result === null) throw new Error("unparsable RSC response");
@@ -100,11 +145,14 @@ async function ipAction(actionId: string, args: unknown[]): Promise<unknown> {
 }
 
 async function indiaPostPortal(awb: string): Promise<NormalizedEvent[]> {
-  const token = await ipAction(IP_ACTION_TOKEN, []);
+  const { token: tokenAction, track: trackAction } = await discoverActions();
+
+  const token = await ipAction(tokenAction, []);
   if (typeof token !== "string" || !token) throw new Error("no tracking token");
 
-  const res = await ipAction(IP_ACTION_TRACK, [token, awb.toUpperCase()]) as Record<string, any>;
+  const res = await ipAction(trackAction, [token, awb.toUpperCase()]) as Record<string, any>;
   if (res?.error) throw new Error(String(res.error).slice(0, 120));
+
   const scans = res?.data?.tracking_details;
   if (!Array.isArray(scans) || !scans.length) return [];
 
