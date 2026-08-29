@@ -17,7 +17,6 @@ function courier(slug: string, displayName: string, url: (awb: string) => string
 
 export const manualAdapters: TrackingAdapter[] = [
   courier("india_post", "India Post", () => "https://www.indiapost.gov.in/_layouts/15/DOP.Portal.Tracking/TrackConsignment.aspx"),
-  courier("bluedart", "Blue Dart", (awb) => `https://www.bluedart.com/web/guest/trackdartresult?trackFor=0&trackNo=${encodeURIComponent(awb)}`),
   courier("dtdc", "DTDC", (awb) => `https://www.dtdc.in/tracking/shipment-tracking?strCnno=${encodeURIComponent(awb)}`),
   courier("xpressbees", "Xpressbees", (awb) => `https://www.xpressbees.com/shipment/tracking?awbNo=${encodeURIComponent(awb)}`),
   courier("ecom_express", "Ecom Express", () => "https://ecomexpress.in/tracking/"),

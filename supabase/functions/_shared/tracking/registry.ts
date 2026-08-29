@@ -2,6 +2,7 @@ import { TrackingAdapter } from "./types.ts";
 import { shiprocketAdapter } from "./couriers/shiprocket.ts";
 import { delhiveryAdapter } from "./couriers/delhivery.ts";
 import { ekartAdapter } from "./couriers/ekart.ts";
+import { bluedartAdapter } from "./couriers/bluedart.ts";
 import { manualAdapters } from "./couriers/manual.ts";
 
 /**
@@ -12,6 +13,7 @@ const ADAPTERS: TrackingAdapter[] = [
   shiprocketAdapter,
   delhiveryAdapter,
   ekartAdapter,
+  bluedartAdapter,
   ...manualAdapters,
 ];
 

@@ -20,7 +20,6 @@ import { mapByKeywords, NormalizedEvent, NormalizedTracking } from "../types.ts"
 /** 17TRACK numeric carrier hints (0 = let 17TRACK auto-detect). */
 const CARRIER_HINT: Record<string, number> = {
   india_post: 7041,
-  bluedart: 100002,
   dtdc: 100004,
   ecom_express: 100008,
   xpressbees: 100085,
