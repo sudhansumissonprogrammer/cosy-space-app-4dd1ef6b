@@ -136,7 +136,7 @@ function ProviderCard({ provider, storeId, existing, onSaved, pickups }: any) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Truck className="h-5 w-5" /> {provider[0].toUpperCase() + provider.slice(1)}
+          <Truck className="h-5 w-5" /> {provider === "bluedart" ? "Blue Dart" : provider[0].toUpperCase() + provider.slice(1)}
           {existing && <span className="text-xs text-green-600 flex items-center gap-1 ml-2"><CheckCircle2 className="h-4 w-4"/> configured</span>}
         </CardTitle>
         <CardDescription>{DESCS[provider as Provider]}</CardDescription>
