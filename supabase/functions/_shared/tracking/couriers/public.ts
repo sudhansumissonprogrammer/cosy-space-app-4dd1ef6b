@@ -16,7 +16,6 @@ import {
 } from "../types.ts";
 import { hasUniversalFeed, indiaPostTrack, universalTrack } from "./indiapost.ts";
 import { amazonTrack } from "./amazon.ts";
-import { bluedartTrack } from "./bluedart.ts";
 
 
 interface Endpoint {
@@ -43,7 +42,6 @@ const PUBLIC_ENDPOINTS: Record<string, Endpoint[]> = {
 const CUSTOM_TRACKERS: Record<string, (awb: string, url: string | null) => Promise<NormalizedTracking>> = {
   india_post: indiaPostTrack,
   amazon_shipping: amazonTrack,
-  bluedart: bluedartTrack,
 };
 
 const enc = encodeURIComponent;

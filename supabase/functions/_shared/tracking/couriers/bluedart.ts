@@ -33,13 +33,18 @@ export const bluedartAdapter: TrackingAdapter = {
   async track(ctx: TrackContext): Promise<NormalizedTracking> {
     const cfg = await ctx.loadProvider("bluedart");
     return await bluedartTrackWithCreds(ctx.awb, {
-      loginId: str(cfg.client_id),
-      licenceKey: str(cfg.api_key),
-      gatewayClientId: str(cfg.api_email),
-      gatewayClientSecret: str(cfg.api_secret),
+      loginId: str(cfg?.client_id),
+      licenceKey: str(cfg?.api_key),
+      gatewayClientId: str(cfg?.api_email),
+      gatewayClientSecret: str(cfg?.api_secret),
     }, bluedartAdapter.officialUrl(ctx.awb));
   },
 };
+
+function str(v: unknown): string | null {
+  const s = typeof v === "string" ? v.trim() : "";
+  return s || null;
+}
 
 export interface BlueDartCreds {
   loginId: string | null;
@@ -87,11 +92,9 @@ export async function bluedartTrackWithCreds(
   const xml = await r.text();
   if (!r.ok) throw new Error(`bluedart HTTP ${r.status}: ${xml.slice(0, 160)}`);
 
-  const err = tag(xml, "Error") ?? attr(xml, "Shipment", "StatusType") === "E"
-    ? tag(xml, "Error") ?? tag(xml, "StatusInformation")
-    : null;
+  const err = tag(xml, "Error") ??
+    (attr(xml, "Shipment", "StatusType") === "E" ? tag(xml, "StatusInformation") : null);
   if (err) throw new Error(`bluedart: ${err.slice(0, 160)}`);
-  if (/<\s*Error\s*>/i.test(xml)) throw new Error("bluedart: tracking rejected by Blue Dart");
 
   const events = parseScans(xml);
   if (!events.length) {
