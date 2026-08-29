@@ -963,19 +963,6 @@ export default function ProductDetail() {
             </Suspense>
           )}
 
-          {/* Gold-plated jewellery assurance grid + COD/partial strip */}
-          {hasJewelleryPdpSections(store) && !isOutOfStock && (
-            <Suspense fallback={null}>
-              <JewelleryAssuranceGrid />
-              <CodAssuranceStrip
-                codLabel={
-                  store?.partial_payment_enabled
-                    ? "Partial COD\nAvailable"
-                    : "100% COD\nAvailable"
-                }
-              />
-            </Suspense>
-          )}
 
 
 

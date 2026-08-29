@@ -44,35 +44,3 @@ export function hidesCategoryFilters(store?: StoreLike): boolean {
   return hasCustomPdpSections(store);
 }
 
-/* ------------------------------------------------------------------ *
- * Gold-plated / imitation jewellery stores.
- * They get the jewellery quality-assurance grid + the COD assurance
- * strip (with a "Partial COD" label when partial payment is on) — but
- * NOT the watch-store packaging add-ons or category-filter hiding.
- * ------------------------------------------------------------------ */
-export const JEWELLERY_PDP_STORE_IDS = new Set<string>([
-  "771a3012-393c-421a-b1c9-2ca918e6917f", // serdiyajewellers  → serdiyajewellers.shop
-  "04010cad-1cbe-40ac-b818-07d9a79c1bf7", // serdiyajewels     → serdiya.com
-  "96dd4090-c3c8-431b-be1e-ab700dd3b30a", // serdiya           → serdiyajewellers.in
-  "e62eade0-acc0-4dfd-891d-3580d7d9e5f4", // sanwariyaimitation
-  "5fb2aa02-79dc-4f14-9dcf-ab410730b394", // shakshiimitation
-  "c3c5dff2-173a-4f4d-90e4-8b1c88c305d9", // imitationworld
-]);
-
-export const JEWELLERY_PDP_STORE_SLUGS = new Set<string>([
-  "serdiyajewellers",
-  "serdiyajewels",
-  "serdiya",
-  "sanwariyaimitation",
-  "shakshiimitation",
-  "imitationworld",
-]);
-
-export function hasJewelleryPdpSections(store?: StoreLike): boolean {
-  if (!store) return false;
-  if (typeof store === "string") {
-    return JEWELLERY_PDP_STORE_IDS.has(store) || JEWELLERY_PDP_STORE_SLUGS.has(store);
-  }
-  if (store.id && JEWELLERY_PDP_STORE_IDS.has(store.id)) return true;
-  return !!store.slug && JEWELLERY_PDP_STORE_SLUGS.has(store.slug);
-}
