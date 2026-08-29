@@ -104,7 +104,11 @@ async function discoverActions(): Promise<{ token: string; track: string }> {
   throw new Error("tracking actions not found on portal");
 }
 
-async function ipAction(actionId: string, args: unknown[]): Promise<unknown> {
+async function ipAction(
+  actionId: string,
+  args: unknown[],
+  want: "string" | "object",
+): Promise<unknown> {
   const r = await fetchWithTimeout(IP_PAGE, {
     method: "POST",
     headers: {
@@ -124,21 +128,23 @@ async function ipAction(actionId: string, args: unknown[]): Promise<unknown> {
     throw new Error("server action rotated");
   }
 
-  // RSC flight payload: newline-delimited `<id>:<json>` rows. The action's
-  // return value is the first row that parses to a plain object/string that
-  // is not part of the page tree.
+  // RSC flight payload: newline-delimited `<id>:<json>` rows. The page tree
+  // rides along, so pick the row that matches the shape the caller expects.
   let result: unknown = null;
   for (const line of text.split("\n")) {
     const i = line.indexOf(":");
     if (i <= 0) continue;
     const raw = line.slice(i + 1).trim();
     if (!raw || raw.startsWith("$") || raw.startsWith("I[") || raw.startsWith("HL[")) continue;
-    try {
-      const v = JSON.parse(raw);
-      if (typeof v === "string" && v.length > 30) { result ??= v; continue; }
-      if (v && typeof v === "object" && !Array.isArray(v) &&
-          ("success" in v || "data" in v || "error" in v)) { result = v; break; }
-    } catch { /* partial row */ }
+    let v: unknown;
+    try { v = JSON.parse(raw); } catch { continue; }
+    if (want === "string") {
+      if (typeof v === "string" && v.length > 30 && !v.includes(" ")) { result = v; break; }
+    } else if (v && typeof v === "object" && !Array.isArray(v) &&
+               ("success" in v || "data" in v || "error" in v)) {
+      result = v;
+      break;
+    }
   }
   if (result === null) throw new Error("unparsable RSC response");
   return result;
@@ -147,8 +153,10 @@ async function ipAction(actionId: string, args: unknown[]): Promise<unknown> {
 async function indiaPostPortal(awb: string): Promise<NormalizedEvent[]> {
   const { token: tokenAction, track: trackAction } = await discoverActions();
 
-  const token = await ipAction(tokenAction, []);
+  const token = await ipAction(tokenAction, [], "string");
   if (typeof token !== "string" || !token) throw new Error("no tracking token");
+
+
 
   const res = await ipAction(trackAction, [token, awb.toUpperCase()]) as Record<string, any>;
   if (res?.error) throw new Error(String(res.error).slice(0, 120));
