@@ -158,7 +158,7 @@ async function indiaPostPortal(awb: string): Promise<NormalizedEvent[]> {
 
 
 
-  const res = await ipAction(trackAction, [token, awb.toUpperCase()]) as Record<string, any>;
+  const res = await ipAction(trackAction, [token, awb.toUpperCase()], "object") as Record<string, any>;
   if (res?.error) throw new Error(String(res.error).slice(0, 120));
 
   const scans = res?.data?.tracking_details;
