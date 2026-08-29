@@ -60,6 +60,8 @@ const ReviewsShowcase = lazy(() => import("@/components/storefront/pdp/ReviewsSh
 import PdpReviewsBadge from "@/components/storefront/pdp/PdpReviewsBadge";
 const PdpCarousels = lazy(() => import("@/components/storefront/pdp/PdpCarousels"));
 const WristlifeSections = lazy(() => import("@/components/storefront/pdp/storeSections/WristlifeSections"));
+const JewelleryAssuranceGrid = lazy(() => import("@/components/storefront/pdp/storeSections/JewelleryAssuranceGrid"));
+
 import { VideoSlide } from "@/components/storefront/VideoSlide";
 
 
