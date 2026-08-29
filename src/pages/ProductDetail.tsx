@@ -42,7 +42,7 @@ import { lazy, Suspense } from "react";
 import { fetchPdpEdge } from "@/lib/storefrontEdgeApi";
 import { pdpPrefetchCache } from "@/lib/prefetchProductDetail";
 import DeferUntilVisible from "@/components/storefront/DeferUntilVisible";
-import { hasCustomPdpSections, hasJewelleryPdpSections } from "@/components/storefront/pdp/storeSections/config";
+import { hasCustomPdpSections } from "@/components/storefront/pdp/storeSections/config";
 import PartialPaymentTrustCard from "@/components/storefront/PartialPaymentTrustCard";
 const PackagingSelector = lazy(() => import("@/components/storefront/pdp/storeSections/PackagingSelector"));
 const CodAssuranceStrip = lazy(() => import("@/components/storefront/pdp/storeSections/CodAssuranceStrip"));
@@ -60,7 +60,6 @@ const ReviewsShowcase = lazy(() => import("@/components/storefront/pdp/ReviewsSh
 import PdpReviewsBadge from "@/components/storefront/pdp/PdpReviewsBadge";
 const PdpCarousels = lazy(() => import("@/components/storefront/pdp/PdpCarousels"));
 const WristlifeSections = lazy(() => import("@/components/storefront/pdp/storeSections/WristlifeSections"));
-const JewelleryAssuranceGrid = lazy(() => import("@/components/storefront/pdp/storeSections/JewelleryAssuranceGrid"));
 
 import { VideoSlide } from "@/components/storefront/VideoSlide";
 
