@@ -4,14 +4,21 @@ import { Banknote, RefreshCw, ReceiptText } from "lucide-react";
  * Three-up assurance strip shown directly above the packaging selector.
  * Cream card, hairline dividers, green serif labels — matches the
  * quality-assurance grid it sits under. Dark-mode safe via [data-sf-qa].
+ *
+ * `codLabel` lets partial-payment stores say "Partial COD Available"
+ * instead of the default "100% COD Available".
  */
-const ITEMS = [
-  { Icon: Banknote, label: "100% COD\nAvailable" },
-  { Icon: RefreshCw, label: "3 Days\nReplacement" },
-  { Icon: ReceiptText, label: "Refund on\nEligible Returns" },
-];
+interface Props {
+  codLabel?: string;
+}
 
-export default function CodAssuranceStrip() {
+export default function CodAssuranceStrip({ codLabel = "100% COD\nAvailable" }: Props) {
+  const ITEMS = [
+    { Icon: Banknote, label: codLabel },
+    { Icon: RefreshCw, label: "3 Days\nReplacement" },
+    { Icon: ReceiptText, label: "Refund on\nEligible Returns" },
+  ];
+
   return (
     <section className="mt-4" data-sf-qa>
       <div className="rounded-2xl bg-[#FBF7EE] px-1 py-3 ring-1 ring-[#E7DFC9]">
