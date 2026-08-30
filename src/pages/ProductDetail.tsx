@@ -1844,18 +1844,13 @@ function ImageGallery({
 
   const isVideoSlide = slides[activeIndex]?.kind === "video";
   // The carousel viewport height must NOT depend on which slide is active.
-  // Switching height on `select` forced Embla to re-measure + the page to
-  // reflow in the middle of the swipe, which is exactly the lag/jump shoppers
-  // felt when sliding onto the video. Products that have a video reserve the
-  // taller box for every slide instead (images letterbox with object-contain).
+  // Switching height on `select` forces Embla to re-measure and makes the page
+  // jump while swiping. Measure the first product photo once and use that one
+  // stable height for every slide, including video. Previously video products
+  // bypassed this measurement and always reserved 168vw, which is why their
+  // square/short photos still showed the original large empty bands.
   const hasVideoSlide = slides.some((s) => s.kind === "video");
-  // Image-only products: the box height follows the FIRST photo's real aspect
-  // ratio (clamped 0.8–1.45 h/w) so square or wide shots stop leaving thick
-  // empty bands above/below, and very tall shots stop leaving side gutters.
-  // Measured once per product, so it never changes mid-swipe.
-  const mobileBoxHeight = hasVideoSlide
-    ? "min(168vw, 86svh)"
-    : `min(${((imgRatio ?? 1.32) * 100).toFixed(1)}vw, 82svh)`;
+  const mobileBoxHeight = `min(${((imgRatio ?? 1.32) * 100).toFixed(1)}vw, 82svh)`;
 
 
 
