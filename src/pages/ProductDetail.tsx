@@ -1783,6 +1783,8 @@ function ImageGallery({
     if (embla) embla.reInit();
     setImageLoaded({});
     setImgRatio(null);
+    setVideoPlaying(false);
+
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slidesKey, embla]);
