@@ -126,6 +126,7 @@ export default function ProductDetail() {
   const { isWishlisted, toggleWishlist } = useWishlist();
   const queryClient = useQueryClient();
   const mainThemeConfig = useStorefrontThemeConfig(store?.id);
+  const awardBadgeIds = useAwardBadgeProducts(store?.id);
   const bilingualCta = ((store as any)?.theme === "theme-16" || (store as any)?.theme === "theme-21") && !!(mainThemeConfig as any)?.bilingual_cta;
 
   // Fetch store shipping config for free shipping threshold
