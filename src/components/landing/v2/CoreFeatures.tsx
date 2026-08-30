@@ -9,8 +9,8 @@ const features = [
   },
   {
     icon: LineChart,
-    title: "AI Ads Tracker",
-    body: "Meta, Google and influencer spend pulled into one dashboard. See ROAS per creative, not per campaign.",
+    title: "Sales Analytics",
+    body: "Orders, revenue, repeat customers and top products in one live dashboard — no spreadsheets, no guesswork.",
     color: "bg-bauhaus-blue",
   },
   {

@@ -13,18 +13,18 @@ const AboutUs = () => (
       <li>Mobile-first storefronts optimized for Indian shoppers.</li>
       <li>WhatsApp ordering, Razorpay / Cashfree / PayU payments, and Cash on Delivery support.</li>
       <li>Inventory, orders, customers, coupons, and marketing — all in one dashboard.</li>
-      <li>Custom domains, SEO, and Meta / Facebook ads integration.</li>
+      <li>Custom domains, SEO and analytics built in.</li>
       <li>Automated order confirmation, shipping updates, and abandoned cart recovery on WhatsApp.</li>
     </ul>
 
     <h2>Our Pricing</h2>
-    <p>ShopBanao is <strong>free to sign up and free to use</strong> — no monthly or yearly subscription fees. We charge a small <strong>3% platform commission</strong> only on confirmed orders, debited from your store wallet. You succeed first, then we earn.</p>
+    <p>ShopBanao is <strong>free to sign up and free to use</strong> — no monthly or yearly subscription fees. We charge a small <strong>2% platform commission</strong> on every order, debited from your store wallet. You succeed first, then we earn.</p>
 
     <h2>Why ShopBanao</h2>
     <ul>
       <li><strong>Built for India:</strong> rupee pricing, local payment methods, WhatsApp-first messaging, COD ready.</li>
       <li><strong>No-code:</strong> launch your store in under 10 minutes — no developer required.</li>
-      <li><strong>Pay as you grow:</strong> no upfront fees; only a flat 3% commission on orders that actually convert.</li>
+      <li><strong>Pay as you grow:</strong> no upfront fees; a flat 2% commission on every sale you make.</li>
       <li><strong>Made in India:</strong> our team, support, and infrastructure — India-first.</li>
     </ul>
 

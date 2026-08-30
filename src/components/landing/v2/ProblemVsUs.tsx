@@ -5,15 +5,15 @@ const oldWay = [
   "Pay subscription whether you sell or not",
   "Manual RTO follow-ups eat your margin",
   "Marketing data lives in 4 different dashboards",
-  "Hire an agency just to keep ads running",
+  "Hire an agency just to keep the store running",
 ];
 
 const newWay = [
-  "One platform — store, ads, WhatsApp, logistics, AI calling",
-  "₹0 subscription. Pay 3% only when an order is delivered",
+  "One platform — store, WhatsApp, logistics, AI calling, checkout",
+  "₹0 subscription. Flat 2% on every sale",
   "AI calling agent confirms COD orders & cuts RTO automatically",
   "Unified dashboard — every rupee spent and earned, in one view",
-  "Agentic automations handle ads, recovery and support 24/7",
+  "Automations handle order updates, recovery and support 24/7",
 ];
 
 const ProblemVsUs = () => (

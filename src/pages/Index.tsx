@@ -5,7 +5,7 @@ import LazyMount from "@/components/landing/LazyMount";
 
 const LandingJsonLd = lazy(() => import("@/components/landing/LandingJsonLd"));
 
-// V2 sections — agentic-commerce / 3%-on-delivered positioning.
+// V2 sections — complete commerce OS / flat-2%-on-every-sale positioning.
 const TrustLogos = lazy(() => import("@/components/landing/v2/TrustLogos"));
 const ProblemVsUs = lazy(() => import("@/components/landing/v2/ProblemVsUs"));
 const CoreFeatures = lazy(() => import("@/components/landing/v2/CoreFeatures"));

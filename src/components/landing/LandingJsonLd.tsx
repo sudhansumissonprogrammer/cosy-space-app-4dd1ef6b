@@ -21,7 +21,7 @@ const LandingJsonLd = () => {
           availableLanguage: ["English", "Hindi"],
         },
         description:
-          "ShopBanao is India's agentic commerce OS — store, WhatsApp, ads, logistics, AI calling and checkout in one platform. ₹0 subscription, 3% only on delivered orders.",
+          "ShopBanao is India's complete commerce OS — store, WhatsApp, logistics, AI calling and checkout in one platform. ₹0 subscription, a flat 2% on every sale.",
       },
       {
         "@context": "https://schema.org",
@@ -45,7 +45,7 @@ const LandingJsonLd = () => {
           "@type": "Offer",
           price: "0",
           priceCurrency: "INR",
-          description: "₹0 subscription. 3% success fee only on delivered orders.",
+          description: "₹0 subscription. Flat 2% platform fee on every sale.",
         },
         aggregateRating: {
           "@type": "AggregateRating",
@@ -55,7 +55,7 @@ const LandingJsonLd = () => {
           worstRating: "1",
         },
         description:
-          "Agentic commerce OS for Indian D2C brands. Storefront, WhatsApp, ads attribution, logistics, AI calling and checkout — one platform, 3% only when orders deliver.",
+          "Complete commerce OS for Indian D2C brands. Storefront, WhatsApp, logistics, AI calling and checkout — one platform, a flat 2% on every sale.",
       },
     ];
 

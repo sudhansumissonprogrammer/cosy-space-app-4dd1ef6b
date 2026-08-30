@@ -1,9 +1,9 @@
 const steps = [
   { n: "01", title: "Pick a theme", body: "Choose from 20+ Indian-grade storefronts. Your brand colours, fonts and logo wire up automatically." },
   { n: "02", title: "Plug in integrations", body: "UPI, Razorpay, Cashfree, Shiprocket, Delhivery, WhatsApp Business — connected in clicks, not days." },
-  { n: "03", title: "Connect ad accounts", body: "Meta, Google and Pixel events stream into a single attribution view. No more spreadsheets at month-end." },
+  { n: "03", title: "Set up WhatsApp", body: "Order updates, COD confirmation and abandoned-cart recovery go out automatically on WhatsApp." },
   { n: "04", title: "Activate logistics", body: "Auto-assign couriers by pincode, RTO score and weight. AI calls high-risk COD before pickup." },
-  { n: "05", title: "Watch the data unify", body: "Every order, ad click, recovery call and delivery in one timeline. Pay 3% only on what actually delivers." },
+  { n: "05", title: "Watch the data unify", body: "Every order, recovery call and delivery in one timeline. Pay a flat 2% on every sale." },
 ];
 
 const HowItWorks = () => (
