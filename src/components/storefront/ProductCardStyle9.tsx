@@ -104,13 +104,6 @@ function ProductCardStyle9Impl({ product, slug, store, priority = false, onVaria
             );
           })()}
 
-          {discountPercent && (
-            <div className="absolute left-3 top-3">
-              <span className="inline-flex items-center rounded-full bg-background/95 px-2 py-1 text-[10px] font-bold backdrop-blur-sm" style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }}>
-                {discountPercent}% off
-              </span>
-            </div>
-          )}
 
           <WishlistHeartButton wishlisted={wishlisted} bursting={heartBursting} onClick={handleToggleWishlist} size={34} className="absolute right-3 top-3" />
 

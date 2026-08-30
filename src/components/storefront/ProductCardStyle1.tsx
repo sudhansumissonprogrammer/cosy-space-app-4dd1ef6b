@@ -88,13 +88,6 @@ function ProductCardStyle1Impl({ product, slug, store, priority = false, onVaria
             backgroundColor: imageStageBackground,
           }}
         >
-          {discountPercent && (
-            <div className="absolute top-2 z-10" style={{ left: "0.5rem", right: "auto" }}>
-              <span className="inline-flex items-center gap-0.5 rounded-full bg-destructive px-1.5 py-0.5 text-[8px] font-bold text-destructive-foreground shadow-sm">
-                -{discountPercent}%
-              </span>
-            </div>
-          )}
           <WishlistHeartButton wishlisted={wishlisted} bursting={heartBursting} onClick={handleToggleWishlist} className="absolute top-2 right-2 z-10 lg:hidden" />
 
 
@@ -131,7 +124,7 @@ function ProductCardStyle1Impl({ product, slug, store, priority = false, onVaria
             <>
               <span className="text-sm sm:text-base font-semibold whitespace-nowrap" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{currencySymbol(store.currency)}{Number(product.sale_price).toFixed(0)}</span>
               <span className="price-strike-draw text-[10px] sm:text-xs whitespace-nowrap" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>{currencySymbol(store.currency)}{Number(product.price).toFixed(0)}</span>
-              {discountPercent && <span className="rounded-full bg-success px-1 py-0.5 text-[8px] font-bold text-success-foreground whitespace-nowrap shrink-0">{discountPercent}% off</span>}
+              
             </>
           ) : (
             <span className="text-sm sm:text-base font-semibold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{currencySymbol(store.currency)}{Number(product.price).toFixed(0)}</span>

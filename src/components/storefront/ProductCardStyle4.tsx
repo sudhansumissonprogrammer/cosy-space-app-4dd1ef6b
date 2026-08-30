@@ -101,11 +101,6 @@ function ProductCardStyle4Impl({ product, slug, store, priority = false, onVaria
             {hasSecond && hoverLoaded && (
               <img src={optimizeImageUrl(images[1], 400, 72)} alt={product.name} width={400} height={400} className="absolute inset-0 h-full w-full object-cover opacity-0 transition-[transform,opacity,colors,box-shadow] duration-300 group-hover/img:opacity-100" loading="lazy" fetchPriority="low" />
             )}
-            {hasDiscount && (
-              <div className="absolute left-1 top-1 rounded-md bg-destructive px-1.5 py-0.5 text-[10px] font-bold text-destructive-foreground">
-                {Math.round(((originalPrice - price) / originalPrice) * 100)}% OFF
-              </div>
-            )}
           </div>
         );
       })()}

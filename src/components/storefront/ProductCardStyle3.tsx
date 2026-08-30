@@ -68,11 +68,6 @@ function ProductCardStyle3Impl({ product, slug, store, priority = false, onVaria
               </>
             );
           })()}
-          {discount && !isOutOfStock && (
-            <div className="absolute top-2.5 left-2.5 px-2 py-0.5 text-[10px] font-bold" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", borderRadius: "6px" }}>
-              -{discount}%
-            </div>
-          )}
           {isOutOfStock && (
             <>
               <div className="absolute inset-0 bg-background/55" aria-hidden="true" />
