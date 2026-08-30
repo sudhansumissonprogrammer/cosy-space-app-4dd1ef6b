@@ -1890,6 +1890,14 @@ function ImageGallery({
             </div>
           )}
 
+          {/* Merchant-picked "Best Seller" seal — bottom-left of the hero image,
+              clear of the share button, dots and warranty pill. */}
+          {showAwardSeal && (
+            <div className="absolute left-7 sm:left-3 bottom-4 sm:bottom-5 z-10">
+              <AwardSealBadge size="pdp" />
+            </div>
+          )}
+
           {/* Embla viewport */}
           <div
             ref={emblaRef}
