@@ -318,6 +318,25 @@ export default function ProductsList() { // v2
     onError: (err: any) => toast.error(err.message || "Failed to update pin"),
   });
 
+  // "Best Seller award seal" toggle — shows the gold BEST SELLER emblem on the
+  // product card and PDP image. Purely visual; independent of Best Selling.
+  const awardMutation = useMutation({
+    mutationFn: async ({ id, value }: { id: string; value: boolean }) => {
+      const { error } = await supabase
+        .from("products")
+        .update({ award_badge: value } as any)
+        .eq("id", id);
+      if (error) throw error;
+      return { id, value };
+    },
+    onSuccess: ({ value }) => {
+      queryClient.invalidateQueries({ queryKey: ["products-all", storeId] });
+      toast.success(value ? "Best Seller badge added" : "Best Seller badge removed");
+      purgeStore({ force: true });
+    },
+    onError: (err: any) => toast.error(err.message || "Failed to update badge"),
+  });
+
   const activeFilterCount =
     (stockFilter !== "all" ? 1 : 0) +
     (categoryFilter.length > 0 ? 1 : 0);
