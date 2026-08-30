@@ -91,6 +91,8 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
   preloadCardStyle(store?.theme === "theme-19" || store?.theme === "theme-20" ? store.theme : cardStyle);
   const [variantOpen, setVariantOpen] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
+  const awardIds = useAwardBadgeProducts(store?.id);
+  const showAwardSeal = hasAwardBadge(product, awardIds);
   // Tap-to-play video is available on every store/theme by default; the
   // App Store "Card Video (Mobile)" toggle is an explicit opt-out.
   const inlineVideoUrl = ((product as any)?.video_url as string | null) || null;
