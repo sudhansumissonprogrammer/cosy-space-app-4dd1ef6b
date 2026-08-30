@@ -48,6 +48,8 @@ const PackagingSelector = lazy(() => import("@/components/storefront/pdp/storeSe
 const CodAssuranceStrip = lazy(() => import("@/components/storefront/pdp/storeSections/CodAssuranceStrip"));
 import { DEFAULT_PACKAGING, packagingSurcharge, getPackagingOption, type PackagingKey } from "@/lib/packagingOptions";
 import WarrantyBadge from "@/components/storefront/WarrantyBadge";
+import AwardSealBadge from "@/components/storefront/AwardSealBadge";
+import { useAwardBadgeProducts, hasAwardBadge } from "@/hooks/useAwardBadgeProducts";
 import PdpTrustSeals from "@/components/storefront/PdpTrustSeals";
 import PdpTrustBadges from "@/components/storefront/PdpTrustBadges";
 // BuyNowPhoneModal deprecated — phone capture is now Step 1 of CheckoutPage.
