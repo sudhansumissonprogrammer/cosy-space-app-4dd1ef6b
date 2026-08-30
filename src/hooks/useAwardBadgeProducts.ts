@@ -14,14 +14,15 @@ export function useAwardBadgeProducts(storeId?: string | null): Set<string> {
   const { data } = useQuery({
     queryKey: ["award-badge-products", storeId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("id")
-        .eq("store_id", storeId!)
-        .eq("award_badge", true);
+      // Public storefront visitors cannot read `products` directly (no anon
+      // grant) — a SECURITY DEFINER RPC returns just the flagged ids.
+      const { data, error } = await (supabase as any).rpc("get_award_badge_products", {
+        _store_id: storeId!,
+      });
       if (error) throw error;
       return (data || []).map((r: any) => r.id as string);
     },
+
     enabled: !!storeId,
     staleTime: 10 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
