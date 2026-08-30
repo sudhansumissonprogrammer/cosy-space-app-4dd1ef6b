@@ -1,8 +1,8 @@
-import { Bot, PhoneCall, Megaphone, RotateCcw } from "lucide-react";
+import { Bot, PhoneCall, Truck, RotateCcw } from "lucide-react";
 
 const agents = [
   { icon: PhoneCall, title: "Calling agent", body: "Confirms COD, answers product questions and re-engages drop-offs — in Hindi and English." },
-  { icon: Megaphone, title: "Ads agent", body: "Watches creative-level ROAS and pauses losers before they burn ₹2,000 more." },
+  { icon: Truck, title: "Logistics agent", body: "Picks the right courier by pincode and flags high-risk COD orders before they ship." },
   { icon: RotateCcw, title: "Recovery agent", body: "Texts, calls and DMs abandoned carts on the right channel at the right hour." },
 ];
 
