@@ -1895,13 +1895,15 @@ function ImageGallery({
           {/* Embla viewport */}
           <div
             ref={emblaRef}
-            className={`overflow-hidden rounded-none sm:rounded-2xl cursor-zoom-in select-none ${viewportHeightClass} sm:h-auto sm:aspect-[4/5]`}
+            className="overflow-hidden rounded-none sm:rounded-2xl cursor-zoom-in select-none h-[var(--pdp-gallery-h)] sm:h-auto sm:aspect-[4/5]"
             style={{
               backgroundColor: "var(--storefront-bg, hsl(var(--background)))",
+              ["--pdp-gallery-h" as any]: mobileBoxHeight,
               // Isolate the gallery from the rest of the PDP so slide changes
               // never trigger a document-wide layout pass.
               contain: "layout paint",
             }}
+
 
           >
             <div className="flex h-full touch-pan-y items-stretch">
