@@ -1802,8 +1802,12 @@ function ImageGallery({
       if (!s || s.kind !== "image") return;
       if (imageLoaded[idx]) return;
       const img = new Image();
-      img.onload = () => setImageLoaded((prev) => (prev[idx] ? prev : { ...prev, [idx]: true }));
+      img.onload = () => {
+        if (idx === 0) noteRatio(img.naturalWidth, img.naturalHeight);
+        setImageLoaded((prev) => (prev[idx] ? prev : { ...prev, [idx]: true }));
+      };
       img.src = optimizeImageUrl(s.url, 800);
+
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeIndex, slidesKey, len, imageLoaded]);
