@@ -105,17 +105,6 @@ export default function QuickViewModal({ open, onClose, product, store, slug }: 
                 ))}
               </div>
             )}
-            {discount && (
-              <div
-                className="absolute top-3 left-3 px-2.5 py-1 text-xs font-bold rounded-lg"
-                style={{
-                  backgroundColor: "var(--storefront-primary, hsl(var(--primary)))",
-                  color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))",
-                }}
-              >
-                -{discount}%
-              </div>
-            )}
           </div>
 
           {/* Right: Info */}
@@ -143,17 +132,6 @@ export default function QuickViewModal({ open, onClose, product, store, slug }: 
                   style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 45%, transparent)" }}
                 >
                   {formatPrice(product.price, store.currency)}
-                </span>
-              )}
-              {discount && (
-                <span
-                  className="text-xs font-bold px-2 py-0.5 rounded-full"
-                  style={{
-                    backgroundColor: "color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 15%, transparent)",
-                    color: "var(--storefront-primary, hsl(var(--primary)))",
-                  }}
-                >
-                  {discount}% off
                 </span>
               )}
             </div>
