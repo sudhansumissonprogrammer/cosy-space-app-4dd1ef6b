@@ -1704,6 +1704,17 @@ function ImageGallery({
     } catch { return {}; }
   });
   const [videoPlaying, setVideoPlaying] = useState(false);
+  // Measured aspect ratio (height / width) of the FIRST gallery image.
+  // The mobile gallery box adapts to it (clamped) so square / wide / extra-tall
+  // photos don't sit inside a fixed 3:4 frame with big empty bands.
+  const [imgRatio, setImgRatio] = useState<number | null>(null);
+  const noteRatio = useCallback((w: number, h: number) => {
+    if (!w || !h) return;
+    // Clamp: never wider than 4:5-ish landscape, never taller than 3:4 portrait.
+    const r = Math.min(1.45, Math.max(0.8, h / w));
+    setImgRatio((prev) => (prev !== null ? prev : r));
+  }, []);
+
 
   // Build slides: image #1, video (if present), then remaining images.
   type Slide =
@@ -1771,7 +1782,10 @@ function ImageGallery({
   useEffect(() => {
     if (embla) embla.reInit();
     setImageLoaded({});
+    setImgRatio(null);
     setVideoPlaying(false);
+
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slidesKey, embla]);
 
@@ -1788,8 +1802,12 @@ function ImageGallery({
       if (!s || s.kind !== "image") return;
       if (imageLoaded[idx]) return;
       const img = new Image();
-      img.onload = () => setImageLoaded((prev) => (prev[idx] ? prev : { ...prev, [idx]: true }));
+      img.onload = () => {
+        if (idx === 0) noteRatio(img.naturalWidth, img.naturalHeight);
+        setImageLoaded((prev) => (prev[idx] ? prev : { ...prev, [idx]: true }));
+      };
       img.src = optimizeImageUrl(s.url, 800);
+
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeIndex, slidesKey, len, imageLoaded]);
@@ -1831,7 +1849,14 @@ function ImageGallery({
   // felt when sliding onto the video. Products that have a video reserve the
   // taller box for every slide instead (images letterbox with object-contain).
   const hasVideoSlide = slides.some((s) => s.kind === "video");
-  const viewportHeightClass = hasVideoSlide ? "h-[min(168vw,86svh)]" : "h-[min(132vw,70svh)]";
+  // Image-only products: the box height follows the FIRST photo's real aspect
+  // ratio (clamped 0.8–1.45 h/w) so square or wide shots stop leaving thick
+  // empty bands above/below, and very tall shots stop leaving side gutters.
+  // Measured once per product, so it never changes mid-swipe.
+  const mobileBoxHeight = hasVideoSlide
+    ? "min(168vw, 86svh)"
+    : `min(${((imgRatio ?? 1.32) * 100).toFixed(1)}vw, 82svh)`;
+
 
 
   return (
@@ -1870,13 +1895,15 @@ function ImageGallery({
           {/* Embla viewport */}
           <div
             ref={emblaRef}
-            className={`overflow-hidden rounded-none sm:rounded-2xl cursor-zoom-in select-none ${viewportHeightClass} sm:h-auto sm:aspect-[4/5]`}
+            className="overflow-hidden rounded-none sm:rounded-2xl cursor-zoom-in select-none h-[var(--pdp-gallery-h)] sm:h-auto sm:aspect-[4/5]"
             style={{
               backgroundColor: "var(--storefront-bg, hsl(var(--background)))",
+              ["--pdp-gallery-h" as any]: mobileBoxHeight,
               // Isolate the gallery from the rest of the PDP so slide changes
               // never trigger a document-wide layout pass.
               contain: "layout paint",
             }}
+
 
           >
             <div className="flex h-full touch-pan-y items-stretch">
@@ -1925,12 +1952,18 @@ function ImageGallery({
                       fetchPriority={realIdx === 0 ? "high" : "auto"}
                       draggable={false}
                       ref={(el) => {
-                        if (el && el.complete && el.naturalWidth > 0 && !imageLoaded[realIdx]) {
-                          setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }));
+                        if (el && el.complete && el.naturalWidth > 0) {
+                          if (realIdx === 0) noteRatio(el.naturalWidth, el.naturalHeight);
+                          if (!imageLoaded[realIdx]) {
+                            setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }));
+                          }
                         }
                       }}
-                      onLoad={() => {
+                      onLoad={(e) => {
+                        const el = e.currentTarget;
+                        if (realIdx === 0) noteRatio(el.naturalWidth, el.naturalHeight);
                         setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }));
+
                       }}
                       onError={() => setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }))}
                     />
