@@ -16,7 +16,7 @@
 
 /** Fields needed to render a product card (grid tile, carousel, related, FBT). */
 export const PRODUCT_CARD_FIELDS =
-  "id,name,slug,price,sale_price,image_url,category,stock_quantity,is_best_selling,video_url,video_poster_url";
+  "id,name,slug,price,sale_price,image_url,category,stock_quantity,is_best_selling,award_badge,video_url,video_poster_url";
 
 /** Fields needed for the full PDP view (card fields + long-form content). */
 export const PRODUCT_PDP_FIELDS =
