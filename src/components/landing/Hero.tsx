@@ -97,11 +97,11 @@ const Hero = () => {
             <div className="flex items-center gap-3 sm:gap-5">
               <div className="flex items-center gap-1.5">
                 <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-bauhaus-blue flex-shrink-0" />
-                <span className="font-medium text-[11px] sm:text-xs text-muted-foreground whitespace-nowrap">3% on delivered</span>
+                <span className="font-medium text-[11px] sm:text-xs text-muted-foreground whitespace-nowrap">2% on every sale</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <CreditCard className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-bauhaus-blue flex-shrink-0" />
-                <span className="font-medium text-[11px] sm:text-xs text-muted-foreground whitespace-nowrap">₹0 on RTO</span>
+                <span className="font-medium text-[11px] sm:text-xs text-muted-foreground whitespace-nowrap">₹0 subscription</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Globe className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-bauhaus-blue flex-shrink-0" />
