@@ -74,6 +74,9 @@ import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import WarrantyBadge from "./WarrantyBadge";
 import ProductCardVideo from "./ProductCardVideo";
 import { useAppDisabled } from "@/hooks/useAppDisabled";
+import { useAwardBadgeProducts, hasAwardBadge } from "@/hooks/useAwardBadgeProducts";
+import AwardSealBadge from "./AwardSealBadge";
+
 
 interface Props {
   product: any;
