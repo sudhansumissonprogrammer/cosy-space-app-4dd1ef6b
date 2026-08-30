@@ -827,6 +827,7 @@ export default function ProductDetail() {
           hasDiscount={hasDiscount}
           discountPct={discountPct}
           showWarrantyBadge={!!(mainThemeConfig as any)?.show_warranty_badge}
+          showAwardSeal={hasAwardBadge(product, awardBadgeIds)}
           storeId={store.id}
           onShare={async () => {
             const storeHost = (store as any).custom_domain
