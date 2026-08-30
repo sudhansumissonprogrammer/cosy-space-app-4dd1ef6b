@@ -805,26 +805,9 @@ export default function ProductsList() { // v2
                       </button>
                     </div>
                   </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (longPressTriggered.current) return;
-                      awardMutation.mutate({ id: product.id, value: !(product as any).award_badge });
-                    }}
-                    title={(product as any).award_badge ? "Best Seller badge ON" : "Show Best Seller badge"}
-                    aria-label="Toggle Best Seller badge"
-                    className="shrink-0 p-1.5 rounded-md active:bg-muted"
-                  >
-                    <Star
-                      className={cn(
-                        "h-4 w-4 transition-colors",
-                        (product as any).award_badge
-                          ? "fill-amber-400 text-amber-500"
-                          : "text-muted-foreground"
-                      )}
-                    />
-                  </button>
+                  {/* Best Seller seal is toggled inside the product edit sheet
+                      (bottom toggles) — kept off the row to avoid mis-taps. */}
+
                   <button
                     type="button"
                     onClick={(e) => {
