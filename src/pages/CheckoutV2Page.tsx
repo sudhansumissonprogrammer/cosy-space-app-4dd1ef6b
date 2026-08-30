@@ -5678,7 +5678,34 @@ export default function CheckoutV2Page() {
             );
           })()}
 
+          {/* Charge mirror — the button the shopper is about to tap must never
+              disagree with the plan tile above. Always restates exactly what is
+              charged now vs what stays for delivery, plus the cancel promise. */}
+          {hasOnline && (
+            <div className="mt-2 rounded-xl border border-[#ECECEC] bg-white px-3.5 py-2.5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">Paying now</div>
+                  <div className="text-[18px] font-black leading-tight tabular-nums">{formatPrice(chargeAmount, currency)}</div>
+                </div>
+                <div className="text-right min-w-0">
+                  <div className="text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">On delivery</div>
+                  <div className="text-[13.5px] font-bold leading-tight tabular-nums">
+                    {isPartialOrder ? formatPrice(partialBalanceDue, currency) : "Nothing to pay"}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-2 flex items-center gap-1.5 border-t border-[#F3F3F3] pt-2 text-[11.5px] font-semibold text-emerald-700">
+                <ShieldCheck className="h-3.5 w-3.5 shrink-0" strokeWidth={2.6} />
+                <span className="truncate">
+                  Cancel free before dispatch{deliveryEta ? ` · Arrives ${deliveryEta.shortLabel}` : ""}
+                </span>
+              </div>
+            </div>
+          )}
+
           <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-1 pt-1">Payment Options</div>
+
 
           {/* Hosted-gateway stores (no PayU S2S UPI — e.g. Cashfree / Razorpay
               only). Showing individual UPI app tiles here is a lie: every tap
