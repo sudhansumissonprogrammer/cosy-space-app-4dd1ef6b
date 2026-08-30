@@ -318,6 +318,25 @@ export default function ProductsList() { // v2
     onError: (err: any) => toast.error(err.message || "Failed to update pin"),
   });
 
+  // "Best Seller award seal" toggle — shows the gold BEST SELLER emblem on the
+  // product card and PDP image. Purely visual; independent of Best Selling.
+  const awardMutation = useMutation({
+    mutationFn: async ({ id, value }: { id: string; value: boolean }) => {
+      const { error } = await supabase
+        .from("products")
+        .update({ award_badge: value } as any)
+        .eq("id", id);
+      if (error) throw error;
+      return { id, value };
+    },
+    onSuccess: ({ value }) => {
+      queryClient.invalidateQueries({ queryKey: ["products-all", storeId] });
+      toast.success(value ? "Best Seller badge added" : "Best Seller badge removed");
+      purgeStore({ force: true });
+    },
+    onError: (err: any) => toast.error(err.message || "Failed to update badge"),
+  });
+
   const activeFilterCount =
     (stockFilter !== "all" ? 1 : 0) +
     (categoryFilter.length > 0 ? 1 : 0);
@@ -791,6 +810,26 @@ export default function ProductsList() { // v2
                     onClick={(e) => {
                       e.stopPropagation();
                       if (longPressTriggered.current) return;
+                      awardMutation.mutate({ id: product.id, value: !(product as any).award_badge });
+                    }}
+                    title={(product as any).award_badge ? "Best Seller badge ON" : "Show Best Seller badge"}
+                    aria-label="Toggle Best Seller badge"
+                    className="shrink-0 p-1.5 rounded-md active:bg-muted"
+                  >
+                    <Star
+                      className={cn(
+                        "h-4 w-4 transition-colors",
+                        (product as any).award_badge
+                          ? "fill-amber-400 text-amber-500"
+                          : "text-muted-foreground"
+                      )}
+                    />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (longPressTriggered.current) return;
                       if (!product.category) {
                         toast.error("Assign a category first");
                         return;
@@ -883,6 +922,27 @@ export default function ProductsList() { // v2
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title={(product as any).award_badge ? "Best Seller badge ON — click to remove" : "Show Best Seller badge on card & PDP"}
+                              disabled={awardMutation.isPending}
+                              onClick={() =>
+                                awardMutation.mutate({
+                                  id: product.id,
+                                  value: !(product as any).award_badge,
+                                })
+                              }
+                            >
+                              <Star
+                                className={cn(
+                                  "h-4 w-4",
+                                  (product as any).award_badge
+                                    ? "fill-amber-400 text-amber-500"
+                                    : "text-muted-foreground"
+                                )}
+                              />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="icon"
