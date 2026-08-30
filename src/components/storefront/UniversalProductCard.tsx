@@ -208,6 +208,13 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
         <ProductCardVideo hostRef={hostRef} enabled videoUrl={cardVideoUrl!} />
       )}
 
+      {/* Merchant-picked "Best Seller" seal — top-left of the image, the only
+          corner left free after the discount pills were removed. */}
+      {showAwardSeal && (
+        <AwardSealBadge className="absolute left-1.5 top-1.5 z-[5]" />
+      )}
+
+
       {hasVariants && variantOpen && (
         <Suspense fallback={null}>
           <VariantPickerDialog
