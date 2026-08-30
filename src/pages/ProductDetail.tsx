@@ -1704,6 +1704,17 @@ function ImageGallery({
     } catch { return {}; }
   });
   const [videoPlaying, setVideoPlaying] = useState(false);
+  // Measured aspect ratio (height / width) of the FIRST gallery image.
+  // The mobile gallery box adapts to it (clamped) so square / wide / extra-tall
+  // photos don't sit inside a fixed 3:4 frame with big empty bands.
+  const [imgRatio, setImgRatio] = useState<number | null>(null);
+  const noteRatio = useCallback((w: number, h: number) => {
+    if (!w || !h) return;
+    // Clamp: never wider than 4:5-ish landscape, never taller than 3:4 portrait.
+    const r = Math.min(1.34, Math.max(0.8, h / w));
+    setImgRatio((prev) => (prev !== null ? prev : r));
+  }, []);
+
 
   // Build slides: image #1, video (if present), then remaining images.
   type Slide =
