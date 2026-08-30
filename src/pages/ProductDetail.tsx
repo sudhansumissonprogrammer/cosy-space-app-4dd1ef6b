@@ -1672,6 +1672,7 @@ function ImageGallery({
   discountPct,
   onShare,
   showWarrantyBadge,
+  showAwardSeal,
   storeId,
 }: {
   images: string[];
@@ -1681,6 +1682,7 @@ function ImageGallery({
   discountPct: number;
   onShare?: () => void;
   showWarrantyBadge?: boolean;
+  showAwardSeal?: boolean;
   storeId?: string;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
