@@ -1940,7 +1940,7 @@ function ImageGallery({
                       sizes={gallerySrcSet ? "(max-width: 640px) 100vw, 50vw" : undefined}
                       alt={productName}
 
-                      className={`absolute inset-0 z-[1] m-auto h-auto max-h-full w-auto max-w-full object-contain transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+                      className={`absolute inset-0 z-[1] h-full w-full object-contain transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`}
 
 
                       decoding="async"
