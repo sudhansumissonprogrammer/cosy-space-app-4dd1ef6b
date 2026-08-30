@@ -1849,7 +1849,14 @@ function ImageGallery({
   // felt when sliding onto the video. Products that have a video reserve the
   // taller box for every slide instead (images letterbox with object-contain).
   const hasVideoSlide = slides.some((s) => s.kind === "video");
-  const viewportHeightClass = hasVideoSlide ? "h-[min(168vw,86svh)]" : "h-[min(132vw,70svh)]";
+  // Image-only products: the box height follows the FIRST photo's real aspect
+  // ratio (clamped 0.8–1.34 h/w) so square or wide shots stop leaving thick
+  // empty bands above/below, and very tall shots stop leaving side gutters.
+  // Measured once per product, so it never changes mid-swipe.
+  const mobileBoxHeight = hasVideoSlide
+    ? "min(168vw, 86svh)"
+    : `min(${((imgRatio ?? 1.32) * 100).toFixed(1)}vw, 82svh)`;
+
 
 
   return (
