@@ -1197,7 +1197,10 @@ function buildSkeleton(
       .slice(0, 2)
       .map((w) => w.charAt(0).toUpperCase())
       .join("");
-    const wordCls = safeName.length <= 10 ? "s1" : safeName.length <= 18 ? "s2" : "s3";
+    // Size on the LONGEST WORD, not the whole string: single-word names like
+    // "serdiyajewellers" must never break mid-word on the splash.
+    const longestWord = safeName.split(/\s+/).reduce((m, w) => Math.max(m, w.length), 0);
+    const wordCls = longestWord <= 8 ? "s1" : longestWord <= 13 ? "s2" : longestWord <= 18 ? "s3" : "s4";
     const mark = safeLogo
       ? `<img src="${safeLogo}" alt="" fetchpriority="high" decoding="async">`
       : `<span class="sbsp-wordmark ${wordCls}">${safeName || mono}</span>`;
