@@ -5498,13 +5498,19 @@ export default function CheckoutV2Page() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-[13px] font-semibold">
-                        Pay {formatPrice(prepaidTotalPreview, currency)} online
+                        Pay full {formatPrice(prepaidTotalPreview, currency)} online
                       </div>
-                      <div className="mt-0.5 text-[12px] font-semibold text-emerald-700">
-                        {(prepaidDiscountPreview + couponDiscount) > 0
-                          ? `${formatPrice(prepaidDiscountPreview + couponDiscount, currency)} OFF • Nothing to pay on delivery`
-                          : "Nothing to pay on delivery"}
-                      </div>
+                      {(prepaidDiscountPreview + couponDiscount) > 0 && (
+                        <div className="mt-0.5 text-[12px] font-semibold text-emerald-700">
+                          Discount {formatPrice(prepaidDiscountPreview + couponDiscount, currency)}
+                        </div>
+                      )}
+                      {prepaidDiscountPreview > 0 && (
+                        <div className="text-[11.5px] text-muted-foreground">
+                          Save {formatPrice(prepaidDiscountPreview, currency)} extra vs. advance
+                        </div>
+                      )}
+
                     </div>
                   </div>
                 </button>
