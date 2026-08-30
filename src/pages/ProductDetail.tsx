@@ -1710,8 +1710,10 @@ function ImageGallery({
   const [imgRatio, setImgRatio] = useState<number | null>(null);
   const noteRatio = useCallback((w: number, h: number) => {
     if (!w || !h) return;
-    // Clamp: never wider than 4:5-ish landscape, never taller than 3:4 portrait.
-    const r = Math.min(1.45, Math.max(0.8, h / w));
+    // Preserve common portrait product photos (2:3 and 9:16 included) instead
+    // of squeezing them into the old 1.45 ceiling. The separate 82svh cap
+    // still prevents an unusually tall source from taking over the screen.
+    const r = Math.min(1.8, Math.max(0.8, h / w));
     setImgRatio((prev) => (prev !== null ? prev : r));
   }, []);
 
