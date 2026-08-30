@@ -1172,8 +1172,8 @@
              Only fall back to the 2-letter monogram if we have no name. */
           var wordmark = '';
           if(!logo && safeName){
-            var L = safeName.length;
-            var sizeCls = L <= 10 ? 's1' : (L <= 18 ? 's2' : 's3');
+            var LW = 0; safeName.split(/\s+/).forEach(function(w){ if(w.length>LW) LW=w.length; });
+            var sizeCls = LW <= 8 ? 's1' : (LW <= 13 ? 's2' : (LW <= 18 ? 's3' : 's4'));
             wordmark = '<span class="sbsp-wordmark '+sizeCls+'">'+safeName+'</span>';
           }
           var mark = logo
