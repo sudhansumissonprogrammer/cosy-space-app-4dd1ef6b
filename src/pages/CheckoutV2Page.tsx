@@ -5475,14 +5475,18 @@ export default function CheckoutV2Page() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-[13px] font-semibold flex items-center justify-between gap-2">
-                        <span className="min-w-0">Pay {formatPrice(partialAdvanceTotal, currency)} advance now</span>
+                        <span className="min-w-0">Pay {formatPrice(partialAdvanceTotal, currency)} to confirm your order</span>
                         {couponDiscount > 0 && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm shrink-0 whitespace-nowrap">
                             <Sparkles className="h-3 w-3" /> Discount {formatPrice(couponDiscount, currency)}
                           </span>
                         )}
                       </div>
-                      <div className="text-[12px] text-muted-foreground mt-0.5">{formatPrice(partialBalanceDue, currency)} Cash on delivery</div>
+                      <div className="text-[12.5px] font-semibold text-gray-900 mt-0.5">{formatPrice(partialBalanceDue, currency)} Cash on Delivery</div>
+                      <div className="mt-1 flex items-center gap-1 text-[11.5px] font-semibold text-emerald-700">
+                        <Check className="h-3.5 w-3.5 shrink-0" strokeWidth={3} />
+                        {formatPrice(partialAdvanceTotal, currency)} is fully adjusted in your final bill
+                      </div>
                     </div>
                   </div>
                 </button>
@@ -5496,24 +5500,18 @@ export default function CheckoutV2Page() {
                       {payMode === "full" && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-semibold flex items-center justify-between gap-2">
-                        <span className="min-w-0">Pay full {formatPrice(prepaidTotalPreview, currency)} online</span>
-                        {(prepaidDiscountPreview + couponDiscount) > 0 && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm shrink-0 whitespace-nowrap">
-                            <Sparkles className="h-3 w-3" /> Discount {formatPrice(prepaidDiscountPreview + couponDiscount, currency)}
-                          </span>
-                        )}
+                      <div className="text-[13px] font-semibold">
+                        Pay {formatPrice(prepaidTotalPreview, currency)} online
                       </div>
-
-                      <div className="text-[12px] text-muted-foreground mt-0.5">Nothing to pay on delivery</div>
-                      {payMode !== "full" && prepaidDiscountPreview > 0 && (
-                        <div className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
-                          <Sparkles className="h-3 w-3" /> Save {formatPrice(prepaidDiscountPreview, currency)} extra vs. advance
-                        </div>
-                      )}
+                      <div className="mt-0.5 text-[12px] font-semibold text-emerald-700">
+                        {(prepaidDiscountPreview + couponDiscount) > 0
+                          ? `${formatPrice(prepaidDiscountPreview + couponDiscount, currency)} OFF • Nothing to pay on delivery`
+                          : "Nothing to pay on delivery"}
+                      </div>
                     </div>
                   </div>
                 </button>
+
               </div>
               {isPartialOrder && (
                 <button
