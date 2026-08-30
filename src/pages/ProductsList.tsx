@@ -925,6 +925,27 @@ export default function ProductsList() { // v2
                             <Button
                               variant="ghost"
                               size="icon"
+                              title={(product as any).award_badge ? "Best Seller badge ON — click to remove" : "Show Best Seller badge on card & PDP"}
+                              disabled={awardMutation.isPending}
+                              onClick={() =>
+                                awardMutation.mutate({
+                                  id: product.id,
+                                  value: !(product as any).award_badge,
+                                })
+                              }
+                            >
+                              <Star
+                                className={cn(
+                                  "h-4 w-4",
+                                  (product as any).award_badge
+                                    ? "fill-amber-400 text-amber-500"
+                                    : "text-muted-foreground"
+                                )}
+                              />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               title={
                                 !product.category
                                   ? "Assign a category first"
