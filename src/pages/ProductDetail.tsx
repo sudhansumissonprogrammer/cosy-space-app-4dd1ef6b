@@ -1952,12 +1952,18 @@ function ImageGallery({
                       fetchPriority={realIdx === 0 ? "high" : "auto"}
                       draggable={false}
                       ref={(el) => {
-                        if (el && el.complete && el.naturalWidth > 0 && !imageLoaded[realIdx]) {
-                          setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }));
+                        if (el && el.complete && el.naturalWidth > 0) {
+                          if (realIdx === 0) noteRatio(el.naturalWidth, el.naturalHeight);
+                          if (!imageLoaded[realIdx]) {
+                            setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }));
+                          }
                         }
                       }}
-                      onLoad={() => {
+                      onLoad={(e) => {
+                        const el = e.currentTarget;
+                        if (realIdx === 0) noteRatio(el.naturalWidth, el.naturalHeight);
                         setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }));
+
                       }}
                       onError={() => setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }))}
                     />
