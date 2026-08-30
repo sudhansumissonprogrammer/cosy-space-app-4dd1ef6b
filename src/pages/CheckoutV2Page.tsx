@@ -5892,7 +5892,8 @@ export default function CheckoutV2Page() {
 
                     <span className="text-[13px] font-semibold">All UPI Apps</span>
                     <span className="flex items-center gap-2 text-[12px] text-muted-foreground font-semibold">
-                      {anyPressed ? "Opening…" : gatewayOnly ? `Pay with ${gatewayLabel}` : isIOS() ? "Choose payment app" : "Pay with any UPI app"}
+                      {anyPressed ? "Opening…" : gatewayOnly ? `Pay ${formatPrice(chargeAmount, currency)} with ${gatewayLabel}` : isIOS() ? "Choose payment app" : `Pay ${formatPrice(chargeAmount, currency)}`}
+
                       {anyPressed
                         ? <Loader2 className="h-4 w-4 animate-spin text-primary" />
                         : <ArrowLeft className="h-4 w-4 rotate-180 text-muted-foreground" />}
