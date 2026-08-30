@@ -12,8 +12,7 @@ const SavingsCalculator = () => {
 
   const result = useMemo(() => {
     const gmv = orders * aov;
-    const delivered = orders * (1 - rto / 100);
-    const sbFee = delivered * aov * 0.03;
+    const sbFee = gmv * 0.02; // flat 2% on every order, incl. RTO
     const sbTotal = sbFee; // ₹0 subscription
     const oldTotal = toolSpend + orders * aov * (rto / 100) * 0.15; // RTO logistics burn estimate
     const monthlySavings = oldTotal - sbTotal;
@@ -59,13 +58,13 @@ const SavingsCalculator = () => {
 
             <div className="grid grid-cols-2 gap-3">
               <Stat label="Annual savings" value={fmt(result.annualSavings)} />
-              <Stat label="Delivered rate" value={`${result.deliveredPct.toFixed(0)}%`} />
+              <Stat label="Monthly GMV" value={fmt(result.gmv)} />
               <Stat label="ShopBanao cost" value={fmt(result.sbTotal)} />
               <Stat label="Old stack cost" value={fmt(result.oldTotal)} />
             </div>
 
             <p className="font-medium text-[11px] text-foreground/60 mt-4 leading-relaxed">
-              Estimates only. Real numbers depend on your category, ad mix and operational maturity. Talk to us for a custom model.
+              Estimates only. Real numbers depend on your category, pricing and operational maturity. Talk to us for a custom model.
             </p>
           </div>
         </div>

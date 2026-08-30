@@ -19,7 +19,7 @@ const RefundPolicy = () => (
     </ul>
 
     <h2>3. Commission Refunds</h2>
-    <p>Platform commission is charged only on confirmed, shipped, or delivered orders.</p>
+    <p>Platform commission is charged on every order placed through the platform, including RTO and post-dispatch cancellations.</p>
     <ul>
       <li>If a customer order is fully cancelled or refunded before the commission cut-off, the corresponding commission is automatically reversed to your wallet.</li>
       <li>Commission already settled on completed orders is non-refundable.</li>
