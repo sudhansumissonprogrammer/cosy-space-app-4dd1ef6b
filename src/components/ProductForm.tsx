@@ -63,6 +63,8 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
 
   const [isBestSelling, setIsBestSelling] = useState(false);
   const [isCategoryPinned, setIsCategoryPinned] = useState(false);
+  const [awardBadge, setAwardBadge] = useState(false);
+
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
