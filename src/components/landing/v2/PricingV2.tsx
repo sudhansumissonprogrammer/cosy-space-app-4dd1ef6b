@@ -45,7 +45,7 @@ const PricingV2 = () => (
         <div className="bg-bauhaus-red text-primary-foreground px-6 py-5 border-b-4 border-foreground flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
           <div>
             <div className="font-bold uppercase tracking-widest text-[10px] opacity-80">Success-based</div>
-            <div className="font-black text-3xl sm:text-4xl tracking-tight">3% per delivered order</div>
+            <div className="font-black text-3xl sm:text-4xl tracking-tight">2% per order</div>
           </div>
           <div className="font-bold text-sm opacity-90">Charged weekly. No lock-in.</div>
         </div>
