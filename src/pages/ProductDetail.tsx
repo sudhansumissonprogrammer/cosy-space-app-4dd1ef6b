@@ -1711,7 +1711,7 @@ function ImageGallery({
   const noteRatio = useCallback((w: number, h: number) => {
     if (!w || !h) return;
     // Clamp: never wider than 4:5-ish landscape, never taller than 3:4 portrait.
-    const r = Math.min(1.34, Math.max(0.8, h / w));
+    const r = Math.min(1.45, Math.max(0.8, h / w));
     setImgRatio((prev) => (prev !== null ? prev : r));
   }, []);
 
@@ -1850,7 +1850,7 @@ function ImageGallery({
   // taller box for every slide instead (images letterbox with object-contain).
   const hasVideoSlide = slides.some((s) => s.kind === "video");
   // Image-only products: the box height follows the FIRST photo's real aspect
-  // ratio (clamped 0.8–1.34 h/w) so square or wide shots stop leaving thick
+  // ratio (clamped 0.8–1.45 h/w) so square or wide shots stop leaving thick
   // empty bands above/below, and very tall shots stop leaving side gutters.
   // Measured once per product, so it never changes mid-swipe.
   const mobileBoxHeight = hasVideoSlide
