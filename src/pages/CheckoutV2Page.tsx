@@ -5743,7 +5743,8 @@ export default function CheckoutV2Page() {
                 </span>
                 {(openingGateway || tappedUpiApp === "any")
                   ? <><Loader2 className="h-4 w-4 animate-spin" /> Opening {gatewayLabel}…</>
-                  : <><Lock className="h-4 w-4" /> Pay with {gatewayLabel}</>}
+                  : <><Lock className="h-4 w-4" /> Pay {formatPrice(chargeAmount, currency)} with {gatewayLabel}</>}
+
               </button>
 
               <div className="mt-2.5 flex items-center justify-center gap-2 opacity-80">
