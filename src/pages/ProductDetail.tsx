@@ -1852,7 +1852,13 @@ function ImageGallery({
   // bypassed this measurement and always reserved 168vw, which is why their
   // square/short photos still showed the original large empty bands.
   const hasVideoSlide = slides.some((s) => s.kind === "video");
-  const mobileBoxHeight = `min(${((imgRatio ?? 1.32) * 100).toFixed(1)}vw, 82svh)`;
+  // Products WITH a video keep the original tall reserved box (the video player
+  // was sized for it and looked correct). Only image-only PDPs use the adaptive
+  // first-photo ratio that removes the empty letterbox bands.
+  const mobileBoxHeight = hasVideoSlide
+    ? "168vw"
+    : `min(${((imgRatio ?? 1.32) * 100).toFixed(1)}vw, 82svh)`;
+
 
 
 
