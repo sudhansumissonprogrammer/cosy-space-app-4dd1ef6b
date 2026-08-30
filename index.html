@@ -1152,7 +1152,7 @@
               '[data-splash="1"] .sbsp-stage.is-word{width:auto;height:auto;max-width:min(88vw,520px);flex-direction:column;gap:14px}'+
               '[data-splash="1"] .sbsp-stage.is-word::before,[data-splash="1"] .sbsp-stage.is-word::after{content:"";display:block;width:min(62vw,300px);height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:sbsp-rule .8s cubic-bezier(.22,1,.36,1) .45s both}'+
               '[data-splash="1"] .sbsp-stage.is-word .sbsp-logoBox{width:auto;height:auto;padding:2px 4px;overflow:visible;animation:none;filter:drop-shadow(0 0 26px rgba(255,255,255,.16))}'+
-              '[data-splash="1"] .sbsp-wordmark{display:block;text-align:center;font-family:Didot,"Bodoni MT","Playfair Display","Hoefler Text",Garamond,"Times New Roman",serif;font-weight:500;text-transform:uppercase;letter-spacing:.18em;text-indent:.18em;line-height:1.12;word-break:normal;overflow-wrap:anywhere;hyphens:none;background:linear-gradient(100deg,#fff 0%,#fff 34%,#f6e2b4 46%,#fffaf0 52%,#fff 62%,#fff 100%);background-size:260% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:sbsp-track 1s cubic-bezier(.22,1,.36,1) both,sbsp-sheen 3.2s ease-in-out .7s infinite}'+
+              '[data-splash="1"] .sbsp-wordmark{display:block;text-align:center;font-family:Didot,"Bodoni MT","Playfair Display","Hoefler Text",Garamond,"Times New Roman",serif;font-weight:500;text-transform:uppercase;letter-spacing:.16em;text-indent:.16em;line-height:1.14;font-size:clamp(15px,calc(min(88vw,520px)/(var(--n,10)*0.95)),58px);word-break:normal;overflow-wrap:anywhere;hyphens:none;background:linear-gradient(100deg,#fff 0%,#fff 34%,#f6e2b4 46%,#fffaf0 52%,#fff 62%,#fff 100%);background-size:260% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:sbsp-track 1s cubic-bezier(.22,1,.36,1) both,sbsp-sheen 3.2s ease-in-out .7s infinite}'+
               '[data-splash="1"] .sbsp-wordmark.s1{font-size:clamp(30px,9.5vw,58px)}'+
               '[data-splash="1"] .sbsp-wordmark.s2{font-size:clamp(24px,7.5vw,44px)}'+
               '[data-splash="1"] .sbsp-wordmark.s3{font-size:clamp(19px,5.6vw,34px);letter-spacing:.12em;text-indent:.12em}'+
@@ -1174,8 +1174,7 @@
           var wordmark = '';
           if(!logo && safeName){
             var LW = 0; safeName.split(/\s+/).forEach(function(w){ if(w.length>LW) LW=w.length; });
-            var sizeCls = LW <= 8 ? 's1' : (LW <= 13 ? 's2' : (LW <= 18 ? 's3' : 's4'));
-            wordmark = '<span class="sbsp-wordmark '+sizeCls+'">'+safeName+'</span>';
+            wordmark = '<span class="sbsp-wordmark s-auto" style="--n:'+Math.max(LW,5)+'">'+safeName+'</span>';
           }
           var mark = logo
             ? '<img src="'+logo.replace(/"/g,'&quot;')+'" alt="" fetchpriority="high" decoding="async" onerror="this.parentNode.innerHTML=\'<span class=&quot;sbsp-mono&quot;>'+mono+'</span>\'">'
