@@ -1197,7 +1197,10 @@ function buildSkeleton(
       .slice(0, 2)
       .map((w) => w.charAt(0).toUpperCase())
       .join("");
-    const wordCls = safeName.length <= 10 ? "s1" : safeName.length <= 18 ? "s2" : "s3";
+    // Size on the LONGEST WORD, not the whole string: single-word names like
+    // "serdiyajewellers" must never break mid-word on the splash.
+    const longestWord = safeName.split(/\s+/).reduce((m, w) => Math.max(m, w.length), 0);
+    const wordCls = longestWord <= 8 ? "s1" : longestWord <= 13 ? "s2" : longestWord <= 18 ? "s3" : "s4";
     const mark = safeLogo
       ? `<img src="${safeLogo}" alt="" fetchpriority="high" decoding="async">`
       : `<span class="sbsp-wordmark ${wordCls}">${safeName || mono}</span>`;
@@ -1221,10 +1224,11 @@ function buildSkeleton(
       `[data-splash="1"] .sbsp-stage.is-word{width:auto;height:auto;max-width:min(88vw,520px);flex-direction:column;gap:14px}` +
       `[data-splash="1"] .sbsp-stage.is-word::before,[data-splash="1"] .sbsp-stage.is-word::after{content:"";display:block;width:min(62vw,300px);height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:sbsp-rule .8s cubic-bezier(.22,1,.36,1) .45s both}` +
       `[data-splash="1"] .sbsp-stage.is-word .sbsp-logoBox{width:auto;height:auto;padding:2px 4px;overflow:visible;animation:none;filter:drop-shadow(0 0 26px rgba(255,255,255,.16))}` +
-      `[data-splash="1"] .sbsp-wordmark{display:block;text-align:center;font-family:Didot,"Bodoni MT","Playfair Display","Hoefler Text",Garamond,"Times New Roman",serif;font-weight:500;text-transform:uppercase;letter-spacing:.18em;text-indent:.18em;line-height:1.12;word-break:break-word;background:linear-gradient(100deg,#fff 0%,#fff 34%,#f6e2b4 46%,#fffaf0 52%,#fff 62%,#fff 100%);background-size:260% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:sbsp-track 1s cubic-bezier(.22,1,.36,1) both,sbsp-sheen 3.2s ease-in-out .7s infinite}` +
+      `[data-splash="1"] .sbsp-wordmark{display:block;text-align:center;font-family:Didot,"Bodoni MT","Playfair Display","Hoefler Text",Garamond,"Times New Roman",serif;font-weight:500;text-transform:uppercase;letter-spacing:.18em;text-indent:.18em;line-height:1.12;word-break:normal;overflow-wrap:anywhere;hyphens:none;background:linear-gradient(100deg,#fff 0%,#fff 34%,#f6e2b4 46%,#fffaf0 52%,#fff 62%,#fff 100%);background-size:260% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:sbsp-track 1s cubic-bezier(.22,1,.36,1) both,sbsp-sheen 3.2s ease-in-out .7s infinite}` +
       `[data-splash="1"] .sbsp-wordmark.s1{font-size:clamp(30px,9.5vw,58px)}` +
       `[data-splash="1"] .sbsp-wordmark.s2{font-size:clamp(24px,7.5vw,44px)}` +
       `[data-splash="1"] .sbsp-wordmark.s3{font-size:clamp(19px,5.6vw,34px);letter-spacing:.12em;text-indent:.12em}` +
+      `[data-splash="1"] .sbsp-wordmark.s4{font-size:clamp(15px,4.2vw,26px);letter-spacing:.1em;text-indent:.1em}` +
       `[data-splash="1"] .sbsp-word{font:700 11px/1 Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;text-transform:uppercase;color:#fff;text-shadow:0 0 18px rgba(255,255,255,.35),0 1px 2px rgba(0,0,0,.4);animation:sbsp-word .9s ease-out .25s both}` +
       `[data-splash="1"] .sbsp-bar{width:132px;height:2px;border-radius:2px;background:rgba(255,255,255,.14);overflow:hidden}` +
       `[data-splash="1"] .sbsp-bar>i{display:block;height:100%;transform-origin:left;background:linear-gradient(90deg,rgba(255,255,255,.45),#fff);animation:sbsp-bar 2.8s cubic-bezier(.16,.84,.3,1) forwards}` +
