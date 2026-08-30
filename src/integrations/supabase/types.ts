@@ -2491,6 +2491,7 @@ export type Database = {
       }
       products: {
         Row: {
+          award_badge: boolean
           category: string | null
           category_pinned_at: string | null
           cost_price: number | null
@@ -2531,6 +2532,7 @@ export type Database = {
           video_url: string | null
         }
         Insert: {
+          award_badge?: boolean
           category?: string | null
           category_pinned_at?: string | null
           cost_price?: number | null
@@ -2571,6 +2573,7 @@ export type Database = {
           video_url?: string | null
         }
         Update: {
+          award_badge?: boolean
           category?: string | null
           category_pinned_at?: string | null
           cost_price?: number | null
