@@ -120,9 +120,6 @@ function ProductCardStyle10Impl({ product, slug, store, priority = false, onVari
             {isNew && (
               <span className="inline-block rounded bg-foreground/90 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-background shadow-sm">NEW</span>
             )}
-            {discountPercent && (
-              <span className="inline-block rounded bg-destructive px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-destructive-foreground shadow-sm">−{discountPercent}%</span>
-            )}
             {((product as any).featured) && (
               <span className="inline-block rounded bg-warning px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-warning-foreground shadow-sm">TOP</span>
             )}

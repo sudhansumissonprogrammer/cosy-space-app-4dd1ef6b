@@ -95,13 +95,6 @@ function ProductCardStyle8Impl({ product, slug, store, priority = false, onVaria
             </span>
           </div>
 
-          {discountPercent && (
-            <div className="absolute -left-1 top-7">
-              <span className="inline-block rounded-r-md bg-destructive px-1.5 py-0.5 text-[9px] font-extrabold text-destructive-foreground shadow-sm">
-                {discountPercent}% OFF
-              </span>
-            </div>
-          )}
 
           <WishlistHeartButton wishlisted={wishlisted} bursting={heartBursting} onClick={handleToggleWishlist} size={28} className="absolute right-1 top-1" />
 

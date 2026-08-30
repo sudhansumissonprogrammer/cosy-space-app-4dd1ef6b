@@ -67,12 +67,6 @@ export default function V20ProductCard({ product, slug, store, priority = false,
     <div className="v20-card card-tilt relative h-full flex flex-col">
       <Link to={productPath} className="block">
         <div className="card-img-zoom relative w-full overflow-hidden rounded-lg bg-gray-50 aspect-square">
-          {discountPercent && !outOfStock && (
-            <div className={`absolute left-2 top-2 z-10 inline-flex items-center gap-0.5 rounded-full bg-gradient-to-r from-rose-500 to-red-600 px-2 py-0.5 text-[10px] font-extrabold text-white shadow-md ring-1 ring-white/30 backdrop-blur-sm ${discountPercent >= 20 ? "sale-badge-pulse" : ""}`}>
-              <span className="leading-none tracking-tight">{discountPercent}%</span>
-              <span className="leading-none opacity-90">OFF</span>
-            </div>
-          )}
           {outOfStock ? (
             <div className="v20-stock-badge v20-stock-out">OUT OF STOCK</div>
           ) : lowStock ? (

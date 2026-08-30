@@ -928,11 +928,6 @@ export default function ProductDetail() {
                   <span className={`text-sm line-through ${isV18 ? '' : 'text-muted-foreground'}`} style={isV18 ? { color: "#666666", ...v18Font } : {}}>
                     {isV18 ? `₹${Number(product.price).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${formatPrice(Number(product.price), currency)}`}
                   </span>
-                  {!isV18 && !waPreview.active && (
-                    <Badge className="bg-emerald-600 text-white text-[11px] font-bold border-0 px-2 py-0.5">
-                      {discountPct}% OFF
-                    </Badge>
-                  )}
                 </>
               )}
               {waPreview.active && (
@@ -1337,9 +1332,6 @@ export default function ProductDetail() {
                       <p className="text-sm font-semibold text-foreground truncate" style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}>{product.name}</p>
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm font-extrabold text-foreground" style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}>{formatPrice((unitPrice * quantity), currency)}</span>
-                        {hasDiscount && (
-                          <span className="text-[10px] text-emerald-600 font-semibold">{discountPct}% OFF</span>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -1353,7 +1345,7 @@ export default function ProductDetail() {
                         <span className="text-[10px] text-muted-foreground line-through whitespace-nowrap">
                           {formatPrice((Number(product.price) * quantity), currency)}
                         </span>
-                        <span className="text-[10px] font-bold text-emerald-600 whitespace-nowrap">{discountPct}% OFF</span>
+                        
                       </div>
                     )}
                   </div>

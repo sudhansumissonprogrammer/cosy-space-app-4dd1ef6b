@@ -66,11 +66,6 @@ function ProductCardStyle2Impl({ product, slug, store, priority = false, onVaria
               </>
             );
           })()}
-          {discount && (
-            <div className="absolute top-2.5 left-2.5 px-2 py-0.5 text-[10px] font-bold" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", borderRadius: "6px" }}>
-              -{discount}%
-            </div>
-          )}
           {/* Mobile: floating icons */}
           <div className="absolute bottom-2.5 right-2.5 flex flex-col gap-1.5 lg:hidden">
             <WishlistHeartButton wishlisted={wishlisted} onClick={handleToggleWishlist} size={32} />
