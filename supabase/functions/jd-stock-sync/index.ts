@@ -183,12 +183,15 @@ Deno.serve(async (req) => {
     }
 
     // 2) ROTATING set — least-recently-synced first (NULLs first).
+    //    Scoped to jdwebship rows BEFORE the LIMIT: manual/other-source rows
+    //    used to occupy the oldest slots and starve real supplier products.
     //    `only_oos` targets currently sold-out rows instead, used to re-verify
     //    products after a matching bug wrongly zeroed them.
     let rotQuery = admin
       .from("products")
       .select("id, slug, source_id, stock_quantity, is_active")
-      .eq("store_id", store.id);
+      .eq("store_id", store.id)
+      .eq("source_platform", "jdwebship");
     if (onlyOos) rotQuery = rotQuery.lte("stock_quantity", 0);
     const { data: rot, error: rotErr } = await rotQuery
       .order("source_synced_at", { ascending: true, nullsFirst: true })
