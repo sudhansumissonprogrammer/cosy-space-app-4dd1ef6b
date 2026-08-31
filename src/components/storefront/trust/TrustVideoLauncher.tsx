@@ -173,7 +173,7 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
   return (
     <>
       <div
-        className="fixed bottom-24 right-3 z-40 animate-fade-in sm:bottom-5"
+        className="fixed bottom-[4.5rem] right-3 z-40 animate-fade-in sm:bottom-5"
         style={{ width: 78 }}
       >
         <button
