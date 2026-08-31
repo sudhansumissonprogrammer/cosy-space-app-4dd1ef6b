@@ -1,0 +1,1 @@
+GRANT SELECT (award_badge) ON public.products TO anon;
