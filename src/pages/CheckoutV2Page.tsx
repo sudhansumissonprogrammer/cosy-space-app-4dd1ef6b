@@ -4159,6 +4159,17 @@ export default function CheckoutV2Page() {
     if (openingGateway || creatingOrder || couponLoading || paymentAmountSyncing) return;
     // PAYMENT-FIRST address gate — same as UPI tap.
     if (!requireAddressOrPrompt(() => { void startGatewayPayment(); })) return;
+    // Hard validation too: in-app browsers (Instagram/WhatsApp) can recreate
+    // the tab and wipe the form while the gate bypass is armed, which used to
+    // mint a paid order with a blank name/address.
+    const addrErr = validateAddress();
+    if (addrErr) {
+      toast.error(addrErr);
+      setAddressSheetDismissed(false);
+      setShowAddressFormSheet(true);
+      return;
+    }
+
     // Flush any pending address/email edits into the snapshot so the order
     // row minted here reflects the live-typed values, not the pre-debounce
     // ones. See tapUpiApp for the same guard.

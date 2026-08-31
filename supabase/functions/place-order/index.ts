@@ -351,14 +351,25 @@ Deno.serve(async (req) => {
     // price recomputation and UPDATE that same row. If it is already paid/COD
     // confirmed, return it unchanged. This prevents payment-plan toggles from
     // creating multiple pending orders for the same phone/session.
-    let reusableOrder: { id: string; order_number: number | null; status: string | null; applied_coupon_id: string | null } | null = null;
+    let reusableOrder: {
+      id: string;
+      order_number: number | null;
+      status: string | null;
+      applied_coupon_id: string | null;
+      customer_name?: string | null;
+      street_address?: string | null;
+      city?: string | null;
+      state?: string | null;
+      pincode?: string | null;
+    } | null = null;
     if (checkout_token) {
       const { data: existingOrder } = await supabase
         .from("orders")
-        .select("id, order_number, status, applied_coupon_id, payment_verified, created_at")
+        .select("id, order_number, status, applied_coupon_id, payment_verified, created_at, customer_name, street_address, city, state, pincode")
         .eq("store_id", store_id)
         .eq("checkout_token", checkout_token)
         .maybeSingle();
+
 
       if (existingOrder) {
         // A cancelled/failed row can still be payment_verified (customer paid,
@@ -967,17 +978,42 @@ Deno.serve(async (req) => {
       if (Object.keys(out).length) attributionClean = out;
     }
 
+    // SHIPPING IDENTITY GUARD.
+    // In-app browsers (Instagram / WhatsApp webviews) sometimes recreate the
+    // checkout tab and wipe React state, so a re-mint can post an EMPTY name /
+    // address while the shopper is mid-payment. Writing those blanks produced
+    // paid orders with no delivery address. Never blank out values we already
+    // hold on the same checkout_token row, and refuse to create a brand-new
+    // order without a usable address.
+    const keep = (incoming: unknown, existing: unknown): string => {
+      const inc = String(incoming ?? "").trim();
+      if (inc) return inc;
+      return String(existing ?? "").trim();
+    };
+    const shipName = keep(order.customer_name, reusableOrder?.customer_name);
+    const shipStreet = keep(order.street_address, reusableOrder?.street_address);
+    const shipCity = keep(order.city, reusableOrder?.city);
+    const shipState = keep(order.state, reusableOrder?.state);
+    const shipPincode = keep(order.pincode, reusableOrder?.pincode);
+    if (!shipName || !shipStreet || !/^\d{6}$/.test(shipPincode.replace(/\D/g, ""))) {
+      return new Response(
+        JSON.stringify({ error: "Delivery address is missing — please re-enter your address." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const orderPayload = {
         store_id,
         total: Number(order.total),
         currency: order.currency,
         status: order.status,
-        customer_name: order.customer_name,
+        customer_name: shipName,
         customer_phone: order.customer_phone,
-        street_address: order.street_address,
-        city: order.city,
-        state: order.state,
-        pincode: order.pincode,
+        street_address: shipStreet,
+        city: shipCity,
+        state: shipState,
+        pincode: shipPincode,
+
         payment_method: order.payment_method,
         notes: order.notes,
         storefront_customer_id: storefrontCustomerId,
