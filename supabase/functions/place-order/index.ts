@@ -351,14 +351,25 @@ Deno.serve(async (req) => {
     // price recomputation and UPDATE that same row. If it is already paid/COD
     // confirmed, return it unchanged. This prevents payment-plan toggles from
     // creating multiple pending orders for the same phone/session.
-    let reusableOrder: { id: string; order_number: number | null; status: string | null; applied_coupon_id: string | null } | null = null;
+    let reusableOrder: {
+      id: string;
+      order_number: number | null;
+      status: string | null;
+      applied_coupon_id: string | null;
+      customer_name?: string | null;
+      street_address?: string | null;
+      city?: string | null;
+      state?: string | null;
+      pincode?: string | null;
+    } | null = null;
     if (checkout_token) {
       const { data: existingOrder } = await supabase
         .from("orders")
-        .select("id, order_number, status, applied_coupon_id, payment_verified, created_at")
+        .select("id, order_number, status, applied_coupon_id, payment_verified, created_at, customer_name, street_address, city, state, pincode")
         .eq("store_id", store_id)
         .eq("checkout_token", checkout_token)
         .maybeSingle();
+
 
       if (existingOrder) {
         // A cancelled/failed row can still be payment_verified (customer paid,
