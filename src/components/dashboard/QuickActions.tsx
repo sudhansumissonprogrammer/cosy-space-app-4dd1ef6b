@@ -17,7 +17,7 @@ export default function QuickActions({ storeId, storeSlug, storeName, isWhatsApp
   // Only *actions* here — Theme/Settings/Analytics already live in the sidebar,
   // repeating them made this row feel like a second menu.
   const actions = [
-    { label: "Add product", icon: Plus, onClick: () => navigate(`/dashboard/stores/${storeSlug}/products/new`) },
+    { label: "Add product", icon: Plus, onClick: () => navigate(`/dashboard/stores/${storeSlug}/products/create`) },
     { label: "View orders", icon: ShoppingBag, onClick: () => navigate(`/dashboard/stores/${storeSlug}/orders`) },
     ...(showWallet ? [{ label: "Wallet", icon: Wallet, onClick: () => navigate(`/dashboard/stores/${storeSlug}/wallet`) }] : []),
   ];
