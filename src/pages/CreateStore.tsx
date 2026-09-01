@@ -70,6 +70,9 @@ export default function CreateStore() {
 
 
   const [editContact, setEditContact] = useState(false);
+  // v2 onboarding: one screen. Everything beyond the store name lives behind
+  // this optional panel so a merchant can launch in ~10 seconds.
+  const [showMore, setShowMore] = useState(false);
 
 
   useEffect(() => {
@@ -199,8 +202,6 @@ export default function CreateStore() {
     if (!user) return;
     setCreatingAnimation(true);
     setLoading(true);
-
-    await new Promise(r => setTimeout(r, 1200));
 
     try {
       let logoUrl: string | null = null;
