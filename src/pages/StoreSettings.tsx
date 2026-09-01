@@ -35,6 +35,17 @@ function generateSlug(name: string): string {
 
 
 
+const SETTINGS_SECTIONS = [
+  { id: "basic", label: "Basics" },
+  { id: "location", label: "Location & Hours" },
+  { id: "media", label: "Logo & Images" },
+  { id: "display", label: "Storefront Display" },
+  { id: "pages", label: "Pages & Policies" },
+  { id: "seo", label: "SEO" },
+  { id: "ai", label: "AI Search" },
+  { id: "domain", label: "Domain" },
+] as const;
+
 export default function StoreSettings() {
   const { storeId, storeSlug } = useStoreSlugParam();
   const { user } = useAuth();
@@ -318,6 +329,24 @@ export default function StoreSettings() {
         </div>
       </div>
 
+      {/* Jump to a section — keeps this long page navigable */}
+      <nav
+        aria-label="Settings sections"
+        className="sticky top-0 z-20 -mx-1 overflow-x-auto border-b bg-background/95 px-1 py-2 backdrop-blur"
+      >
+        <div className="flex gap-2">
+          {SETTINGS_SECTIONS.map((sec) => (
+            <a
+              key={sec.id}
+              href={`#s-${sec.id}`}
+              className="shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+              {sec.label}
+            </a>
+          ))}
+        </div>
+      </nav>
+
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -329,7 +358,7 @@ export default function StoreSettings() {
         <PushNotificationManager storeId={storeId} />
 
         {/* ── 1. Basic Info ── */}
-        <Card>
+        <Card id="s-basic" className="scroll-mt-24">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Store className="h-5 w-5 text-primary" /> Basic Information
@@ -402,7 +431,7 @@ export default function StoreSettings() {
         </Card>
 
         {/* ── 2. Location & Hours ── */}
-        <Card>
+        <Card id="s-location" className="scroll-mt-24">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <MapPin className="h-5 w-5 text-primary" /> Location & Hours
@@ -427,7 +456,7 @@ export default function StoreSettings() {
         </Card>
 
         {/* ── 3. Images & Media ── */}
-        <Card>
+        <Card id="s-media" className="scroll-mt-24">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Image className="h-5 w-5 text-primary" /> Images & Media
@@ -541,7 +570,7 @@ export default function StoreSettings() {
         </Card>
 
         {/* ── 4. Storefront Display ── */}
-        <Card>
+        <Card id="s-display" className="scroll-mt-24">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Flame className="h-5 w-5 text-primary" /> Storefront Display
@@ -561,7 +590,7 @@ export default function StoreSettings() {
         </Card>
 
         {/* ── 5. Pages & Policies ── */}
-        <Card>
+        <Card id="s-pages" className="scroll-mt-24">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <FileText className="h-5 w-5 text-primary" /> Pages & Policies
@@ -583,7 +612,7 @@ export default function StoreSettings() {
         </Card>
 
         {/* ── 6. SEO ── */}
-        <Card>
+        <Card id="s-seo" className="scroll-mt-24">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Search className="h-5 w-5 text-primary" /> SEO Settings
@@ -624,7 +653,7 @@ export default function StoreSettings() {
         </Card>
 
         {/* ── 6a. AI Search Readiness ── */}
-        <Card>
+        <Card id="s-ai" className="scroll-mt-24">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Award className="h-5 w-5 text-primary" /> AI Search Readiness
@@ -781,7 +810,7 @@ export default function StoreSettings() {
           city={city}
         />
 
-        <Card>
+        <Card id="s-domain" className="scroll-mt-24">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Globe className="h-5 w-5 text-primary" /> Custom Domain
@@ -808,10 +837,12 @@ export default function StoreSettings() {
           <QRCodeGeneratorCard slug={store.slug} customDomain={store.custom_domain} />
         )}
 
-        <Button type="submit" className="w-full" disabled={updateMutation.isPending}>
-          {updateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Save Changes
-        </Button>
+        <div className="sticky bottom-0 z-20 -mx-1 border-t bg-background/95 px-1 py-3 backdrop-blur">
+          <Button type="submit" className="w-full" disabled={updateMutation.isPending}>
+            {updateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save Changes
+          </Button>
+        </div>
       </form>
     </div>
   );
