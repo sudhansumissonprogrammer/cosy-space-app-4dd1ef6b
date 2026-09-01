@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { LogOut, Store, Plus, Search, X } from "lucide-react";
+import { LogOut, Store, Plus, Search, X, ChevronDown } from "lucide-react";
 import { prefetchDashboardRoutes } from "@/lib/prefetchDashboardRoutes";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useParams, useNavigate } from "react-router-dom";
@@ -98,6 +98,7 @@ export function AppSidebar() {
   );
 
   const [query, setQuery] = useState("");
+  const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
   const results = useMemo(() => searchNav(navGroups, query), [navGroups, query]);
 
   const navigate = useNavigate();
