@@ -239,8 +239,6 @@ export function AppSidebar() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-        ) : storeId || !storeSlug ? (
-          navGroups.map(renderGroup)
         ) : (
           navGroups.map(renderGroup)
         )}
