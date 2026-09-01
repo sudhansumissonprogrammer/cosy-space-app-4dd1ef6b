@@ -936,11 +936,11 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
     toast.success("Copied!");
   };
 
-  /** Master copy — name, phone, full address, items and the COD amount to collect. */
+  /** Compact copy — customer info + COD amount only (no order ID / items / totals). */
   const copyAllDetails = () => {
     const text = buildOrderCopyText(order, store?.name);
     navigator.clipboard.writeText(text).then(
-      () => toast.success("Order details copied"),
+      () => toast.success("COD details copied"),
       () => toast.error("Could not copy"),
     );
   };
@@ -957,7 +957,7 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
               className="h-7 px-2 text-[11px] font-semibold"
               onClick={copyAllDetails}
             >
-              <Copy className="h-3 w-3 mr-1" /> Copy details
+              <Copy className="h-3 w-3 mr-1" /> Copy COD
             </Button>
             <span className={cn("px-2.5 py-1 rounded-full text-xs font-semibold", statusColor(order.status))}>
               {orderStatusLabel(order.status)}
@@ -1187,7 +1187,7 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
             <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
               <Copy className="h-4 w-4 text-primary" />
             </div>
-            <span className="text-[10px] font-medium text-foreground">Copy All</span>
+            <span className="text-[10px] font-medium text-foreground">Copy COD</span>
           </button>
         </div>
 
