@@ -59,85 +59,25 @@ function MobileMenu({
   const isActive = (path: string, exact?: boolean) =>
     exact ? location.pathname === path : location.pathname.startsWith(path);
 
-  type MenuItem = { label: string; icon: React.ElementType; path: string; exact?: boolean; badge?: number; menuKey?: string };
-  type MenuSection = { title?: string; items: MenuItem[] };
+  const navGroups = useMemo(
+    () =>
+      filterNavGroups(
+        buildDashboardNav({ storeSlug, isCommissionMode, isWhatsAppOnly, pendingOrders }),
+        isVisible,
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [storeSlug, isCommissionMode, isWhatsAppOnly, pendingOrders, isVisible],
+  );
 
-  const filterItems = (items: MenuItem[]) =>
-    items.filter((i) => !i.menuKey || isVisible(i.menuKey));
+  const [query, setQuery] = useState("");
+  const results = useMemo(() => searchNav(navGroups, query), [navGroups, query]);
 
-  const menuSections: MenuSection[] = storeSlug
-    ? [
-        {
-          title: "Overview",
-          items: [
-            { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard", exact: true },
-            { label: "Analytics", icon: BarChart3, path: "/dashboard/analytics", exact: true },
-          ],
-        },
-        {
-          title: "Catalog",
-          items: filterItems([
-            { label: "Products", icon: Package, path: `/dashboard/stores/${storeSlug}/products`, menuKey: "products" },
-            { label: "Best Sellers", icon: Star, path: `/dashboard/stores/${storeSlug}/best-sellers`, menuKey: "best_sellers" },
-            { label: "Reviews", icon: MessageCircle, path: `/dashboard/stores/${storeSlug}/reviews`, menuKey: "reviews" },
-            { label: "Categories", icon: Grid3X3, path: `/dashboard/stores/${storeSlug}/categories`, menuKey: "categories" },
-            { label: "Media Library", icon: Upload, path: `/dashboard/stores/${storeSlug}/media`, menuKey: "media_library" },
-            { label: "Bulk Upload", icon: Upload, path: `/dashboard/stores/${storeSlug}/products/bulk-upload`, menuKey: "bulk_upload" },
-          ]),
-        },
-        ...(!isWhatsAppOnly
-          ? [
-              {
-                title: "Sales & Customers",
-                items: filterItems([
-                  { label: "Orders", icon: ShoppingBag, path: `/dashboard/stores/${storeSlug}/orders`, badge: pendingOrders, menuKey: "orders" },
-                  { label: "Customers", icon: Users, path: `/dashboard/stores/${storeSlug}/customers`, menuKey: "customers" },
-                  { label: "Leads", icon: UserCheck, path: `/dashboard/stores/${storeSlug}/leads`, menuKey: "leads" },
-                  { label: "Abandoned Carts", icon: ShoppingCart, path: `/dashboard/stores/${storeSlug}/abandoned-carts`, menuKey: "abandoned_carts" },
-                ]),
-              },
-            ]
-          : []),
-        {
-          title: "Payments & Shipping",
-          items: [
-            { label: "Payments", icon: CreditCard, path: `/dashboard/stores/${storeSlug}/payments`, menuKey: "payments" },
-            ...(isCommissionMode ? [{ label: "Wallet", icon: Wallet, path: `/dashboard/stores/${storeSlug}/wallet`, menuKey: "wallet" }] : []),
-            ...(!isWhatsAppOnly ? [{ label: "Coupons", icon: Tag, path: `/dashboard/stores/${storeSlug}/coupons`, menuKey: "coupons" }] : []),
-            { label: "Shipping", icon: Truck, path: `/dashboard/stores/${storeSlug}/shipping`, menuKey: "shipping" },
-            { label: "Shipping Integrations", icon: Truck, path: `/dashboard/stores/${storeSlug}/shipping-integrations`, menuKey: "shipping" },
-            { label: "Tax / GST", icon: Receipt, path: `/dashboard/stores/${storeSlug}/tax`, menuKey: "tax_gst" },
-          ].filter((i) => i.menuKey === "wallet" || isVisible(i.menuKey)),
-        },
-        {
-          title: "Marketing",
-          items: filterItems([
-            ...(!isWhatsAppOnly ? [{ label: "WhatsApp Marketing", icon: MessageSquare, path: `/dashboard/stores/${storeSlug}/whatsapp`, menuKey: "whatsapp_marketing" }] : []),
-            { label: "Sales Funnel", icon: TrendingDown, path: `/dashboard/stores/${storeSlug}/funnel`, menuKey: "sales_funnel" },
-            { label: "Tracking & Analytics", icon: BarChart3, path: `/dashboard/stores/${storeSlug}/tracking`, menuKey: "tracking_analytics" },
-          ]),
-        },
-        {
-          title: "Add-ons",
-          items: [
-            { label: "App Store", icon: Blocks, path: `/dashboard/stores/${storeSlug}/apps` },
-          ],
-        },
-        {
-          title: "Appearance & Settings",
-          items: filterItems([
-            { label: "Theme", icon: Palette, path: `/dashboard/stores/${storeSlug}/theme`, menuKey: "theme" },
-            { label: "Pages", icon: FileText, path: `/dashboard/stores/${storeSlug}/pages`, menuKey: "pages" },
-            { label: "Domain", icon: Globe, path: `/dashboard/stores/${storeSlug}/domain`, menuKey: "domain" },
-            { label: "Store Settings", icon: Settings, path: `/dashboard/stores/${storeSlug}/settings`, menuKey: "store_settings" },
-          ]),
-        },
-      ].filter((s) => s.items.length > 0)
-    : [
-        { items: [{ label: "Home", icon: LayoutDashboard, path: "/dashboard", exact: true }] },
-      ];
+  useEffect(() => {
+    if (!open) setQuery("");
+  }, [open]);
 
   if (!open) return null;
+
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background text-foreground font-dashboard">
