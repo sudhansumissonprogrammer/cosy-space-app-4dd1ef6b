@@ -6,6 +6,17 @@ const corsHeaders = {
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 
+/** wa.me needs a country code — owners often save a bare 10-digit mobile. */
+function waPhone(raw: unknown): string {
+  let d = String(raw ?? "").replace(/[^0-9]/g, "");
+  if (d.startsWith("00")) d = d.slice(2);
+  if (d.length === 13 && d.startsWith("091")) d = d.slice(1);
+  if (d.length === 11 && d.startsWith("0")) d = d.slice(1);
+  if (d.length === 10) d = `91${d}`;
+  return d.length >= 11 ? d : "";
+}
+
+
 const ROOT_DOMAIN = "shopbanao.in";
 
 function esc(str: string = ""): string {
@@ -252,7 +263,7 @@ ${categories.length > 0 ? `<nav class="categories">${categoryLinks}</nav>` : ""}
 <section class="info">
 <div class="info-card"><h2>About ${storeName}</h2><p>${esc(store.description || `${store.name} is an online store serving customers across India.`)}</p></div>
 ${store.city || store.state ? `<div class="info-card"><h2>Location</h2><p>${esc([store.city, store.state].filter(Boolean).join(", "))}, India</p></div>` : ""}
-${store.whatsapp_number ? `<div class="info-card"><h2>Contact</h2><p>WhatsApp: <a href="https://wa.me/${esc(String(store.whatsapp_number).replace(/[^0-9]/g, ""))}">${esc(store.whatsapp_number)}</a></p></div>` : ""}
+${store.whatsapp_number ? `<div class="info-card"><h2>Contact</h2><p>WhatsApp: <a href="https://wa.me/${esc(waPhone(store.whatsapp_number))}">${esc(store.whatsapp_number)}</a></p></div>` : ""}
 </section>
 </main>
 <footer class="footer">&copy; ${new Date().getFullYear()} ${storeName}. All rights reserved.</footer>
@@ -619,7 +630,7 @@ function buildStaticInfoHtml(
       lines.push(`<ul>${usp.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>`);
     }
     const contactBits: string[] = [];
-    if (store.whatsapp_number) contactBits.push(`WhatsApp <a href="https://wa.me/${esc(String(store.whatsapp_number).replace(/[^0-9]/g, ""))}">${esc(store.whatsapp_number)}</a>`);
+    if (store.whatsapp_number) contactBits.push(`WhatsApp <a href="https://wa.me/${esc(waPhone(store.whatsapp_number))}">${esc(store.whatsapp_number)}</a>`);
     if (store.instagram_url) contactBits.push(`<a href="${esc(store.instagram_url)}">Instagram</a>`);
     if (store.facebook_url) contactBits.push(`<a href="${esc(store.facebook_url)}">Facebook</a>`);
     if (contactBits.length) {
@@ -627,7 +638,7 @@ function buildStaticInfoHtml(
     }
   } else if (kind === "contact") {
     lines.push(`<p>${esc(meta.intro)}</p>`);
-    if (store.whatsapp_number) lines.push(`<p><strong>WhatsApp:</strong> <a href="https://wa.me/${esc(String(store.whatsapp_number).replace(/[^0-9]/g, ""))}">${esc(store.whatsapp_number)}</a></p>`);
+    if (store.whatsapp_number) lines.push(`<p><strong>WhatsApp:</strong> <a href="https://wa.me/${esc(waPhone(store.whatsapp_number))}">${esc(store.whatsapp_number)}</a></p>`);
     if (store.city || store.state) lines.push(`<p><strong>Location:</strong> ${esc([store.city, store.state].filter(Boolean).join(", "))}, India</p>`);
     if (store.instagram_url) lines.push(`<p><strong>Instagram:</strong> <a href="${esc(store.instagram_url)}">${esc(store.instagram_url)}</a></p>`);
     if (store.facebook_url) lines.push(`<p><strong>Facebook:</strong> <a href="${esc(store.facebook_url)}">${esc(store.facebook_url)}</a></p>`);
