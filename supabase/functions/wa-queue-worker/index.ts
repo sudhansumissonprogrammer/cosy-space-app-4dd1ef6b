@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
     .order("priority", { ascending: true })
     .order("scheduled_at", { ascending: true })
     .limit(batchSize);
-  if (!candidates?.length) return json({ processed: 0 });
+  if (!candidates?.length) return json({ processed: 0, reclaimed });
 
   const ids = (candidates as any[]).map((r) => r.id);
   const { data: claimed } = await admin
