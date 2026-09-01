@@ -15,9 +15,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Progress } from "@/components/ui/progress";
 import {
-  Loader2, Upload, X, ArrowRight, ArrowLeft, Store, MapPin, Phone,
+  Loader2, Upload, X, ArrowRight, MapPin, Phone,
   Instagram, Facebook, Check, Sparkles, Globe,
   Rocket, Crown, ShoppingBag, CreditCard, ExternalLink, Copy,
 } from "lucide-react";
@@ -42,12 +41,6 @@ const CURRENCIES = [
   { code: "PHP", label: "Philippine Peso (₱)" },
 ];
 
-const STEPS = [
-  { id: 1, title: "Store Info", icon: Store, desc: "Name & branding", motivation: "Let's build something amazing! 🚀" },
-  { id: 2, title: "Contact", icon: Phone, desc: "Location & contact", motivation: "Almost done — this is all optional 💪" },
-  { id: 3, title: "Social", icon: Instagram, desc: "Your presence", motivation: "Final step — you're a star! ⭐" },
-];
-
 
 // Commission-only stores use website checkout so platform commission,
 // abandoned-cart recovery, order confirmations and wallet invoices stay linked.
@@ -57,8 +50,6 @@ export default function CreateStore() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(1);
-  const [direction, setDirection] = useState<"forward" | "back">("forward");
   const [checkingStore, setCheckingStore] = useState(true);
   const [showConfetti, setShowConfetti] = useState(false);
   const [showExistingStoreDialog, setShowExistingStoreDialog] = useState(false);
@@ -183,20 +174,6 @@ export default function CreateStore() {
     return result.mainUrl;
   };
 
-  const goNext = () => {
-    if (step === 1 && (!name.trim() || !slug.trim())) {
-      toast.error("Store name and slug are required");
-      return;
-    }
-    setDirection("forward");
-    setStep((s) => Math.min(s + 1, STEPS.length));
-  };
-
-
-  const goBack = () => {
-    setDirection("back");
-    setStep((s) => Math.max(s - 1, 1));
-  };
 
   const handleSubmit = async () => {
     if (!user) return;
@@ -429,8 +406,6 @@ export default function CreateStore() {
     }
   };
 
-  const progress = (step / STEPS.length) * 100;
-  const currentStep = STEPS[step - 1];
 
   if (checkingStore) {
     return (
