@@ -185,14 +185,15 @@ export function buildDashboardNav({
             ]
           : []),
         {
-          id: "abandoned_carts",
-          label: "Abandoned Carts",
-          icon: ShoppingCart,
-          path: `${s}/abandoned-carts`,
-          menuKey: "abandoned_carts",
-          description: "Customers who left without paying — send a WhatsApp recovery nudge.",
-          keywords: ["abandoned", "cart", "recovery", "left", "incomplete order"],
+          id: "customers",
+          label: "Customers",
+          icon: Users,
+          path: `${s}/customers`,
+          menuKey: "customers",
+          description: "Everyone who has ordered from you, with contact details and history.",
+          keywords: ["customer", "buyer", "contact", "phone", "repeat"],
         },
+
         {
           id: "customers",
           label: "Customers",
