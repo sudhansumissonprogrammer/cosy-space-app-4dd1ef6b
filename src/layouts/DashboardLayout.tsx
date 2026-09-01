@@ -384,7 +384,6 @@ export default function DashboardLayout() {
         { label: "Home", icon: LayoutDashboard, path: "/dashboard", exact: true },
         ...(!isWhatsAppOnly ? [{ label: "Orders", icon: ShoppingBag, path: `/dashboard/stores/${storeSlug}/orders`, exact: false, badge: pendingOrders }] : []),
         { label: "Products", icon: Package, path: `/dashboard/stores/${storeSlug}/products`, exact: false },
-        { label: "Categories", icon: Grid3X3, path: `/dashboard/stores/${storeSlug}/categories`, exact: false },
         { label: "More", icon: Menu, path: "__menu__", exact: false },
         { label: "Profile", icon: User, path: "/dashboard/settings", exact: true },
       ]
@@ -443,9 +442,11 @@ export default function DashboardLayout() {
             variant="ghost"
             size="icon"
             className="h-9 w-9 text-muted-foreground hover:text-foreground"
-            onClick={() => {/* notification bell */}}
+            onClick={() => setMenuOpen(true)}
+            aria-label="Search dashboard menus"
+            title="Search menus"
           >
-            <Bell className="h-5 w-5" />
+            <Search className="h-5 w-5" />
           </Button>
           <Button
             variant="ghost"
@@ -472,8 +473,7 @@ export default function DashboardLayout() {
         <div className="flex items-center justify-around h-16 px-1">
           {bottomNav.map((item) => {
             const isMenu = item.path === "__menu__";
-            const isSearch = item.path === "__search__";
-            const active = !isMenu && !isSearch && isActive(item.path, item.exact);
+            const active = !isMenu && isActive(item.path, item.exact);
 
             return (
               <button
@@ -481,8 +481,6 @@ export default function DashboardLayout() {
                 onClick={() => {
                   if (isMenu) {
                     setMenuOpen(true);
-                  } else if (isSearch) {
-                    // Could open a search overlay in the future
                   } else {
                     go(item.path);
                   }
