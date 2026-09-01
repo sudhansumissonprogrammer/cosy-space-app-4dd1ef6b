@@ -30,6 +30,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { useMenuConfig } from "@/hooks/useMenuConfig";
+import { buildDashboardNav, filterNavGroups, searchNav } from "@/config/dashboardNav";
 
 function MobileMenu({
   open,
