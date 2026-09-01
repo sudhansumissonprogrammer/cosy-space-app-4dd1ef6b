@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { toast } from "sonner";
 import { Loader2, Upload, X, ArrowLeft, Globe, Plus, Flame, Store, MapPin, Clock, Image, FileText, Search, Award, QrCode, Download, AlertTriangle } from "lucide-react";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
-import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
+import { uploadOptimizedImage, uploadStoreLogo, generateUploadPath } from "@/lib/uploadOptimizedImage";
 import { Switch } from "@/components/ui/switch";
 
 import { Link, useNavigate } from "react-router-dom";
@@ -192,7 +192,7 @@ export default function StoreSettings() {
       if (bannerRemoved) bannerUrl = null;
       if (heroRemoved) mobileHeroUrl = null;
 
-      if (logoFile) logoUrl = await uploadFile(logoFile, "store-logos");
+      if (logoFile) logoUrl = await uploadStoreLogo(logoFile, generateUploadPath(user!.id, storeId!));
       if (bannerFile) bannerUrl = await uploadFile(bannerFile, "store-banners");
       if (heroFile) mobileHeroUrl = await uploadFile(heroFile, "store-banners");
 
