@@ -938,7 +938,7 @@ export default function V22ProductDetail() {
                   {showBuyNow && (
                     <button
                       className="btn-press flex h-12 w-full items-center justify-center gap-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-[transform,opacity,colors,box-shadow] animate-[vibrate_0.8s_ease-in-out_infinite_3s]"
-                      style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-bg, hsl(var(--primary-foreground)))" }}
+                      style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }}
                       onClick={handleBuyNow}
                     >
                       <span className="flex items-center gap-1.5">
