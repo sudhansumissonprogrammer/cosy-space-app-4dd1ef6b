@@ -79,56 +79,94 @@ function MobileMenu({
   if (!open) return null;
 
 
+  const renderItem = (item: (typeof navGroups)[number]["items"][number]) => {
+    const active = isActive(item.path, item.exact);
+    const comingSoon = item.menuKey ? isComingSoon(item.menuKey) : false;
+    return (
+      <button
+        key={item.id}
+        onClick={() => !comingSoon && go(item.path)}
+        disabled={comingSoon}
+        className={cn(
+          "flex w-full items-center gap-3.5 rounded-xl px-4 py-3 text-left text-[15px] transition-colors min-h-[48px]",
+          comingSoon
+            ? "opacity-40 cursor-not-allowed text-muted-foreground"
+            : active
+              ? "bg-accent text-accent-foreground font-medium"
+              : "text-muted-foreground active:bg-accent/60"
+        )}
+      >
+        <item.icon className="h-5 w-5 shrink-0" />
+        <span className="flex-1 min-w-0">
+          <span className="block truncate">{item.label}</span>
+          <span className="block truncate text-[11px] text-muted-foreground/80">{item.description}</span>
+        </span>
+        {comingSoon && (
+          <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-amber-400/50 text-amber-400 shrink-0">
+            Soon
+          </Badge>
+        )}
+        {!comingSoon && item.badge !== undefined && item.badge > 0 && (
+          <Badge className="h-5 min-w-5 px-1.5 text-[10px] font-bold rounded-full bg-red-500 text-white border-0">
+            {item.badge > 99 ? "99+" : item.badge}
+          </Badge>
+        )}
+      </button>
+    );
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background text-foreground font-dashboard">
-      {/* Scrollable menu items */}
-      <div className="flex-1 overflow-auto px-4 pt-6 pb-4">
-        <div className="space-y-4">
-          {menuSections.map((section, si) => (
-            <div key={si}>
-              {section.title && (
-                <p className="px-4 pb-1 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  {section.title}
-                </p>
-              )}
-              <div className="space-y-0.5">
-                {section.items.map((item) => {
-                  const active = isActive(item.path, item.exact);
-                  const comingSoon = item.menuKey ? isComingSoon(item.menuKey) : false;
-                  return (
-                    <button
-                      key={item.path}
-                      onClick={() => !comingSoon && go(item.path)}
-                      disabled={comingSoon}
-                      className={cn(
-                        "flex w-full items-center gap-3.5 rounded-xl px-4 py-3 text-[15px] transition-colors",
-                        comingSoon
-                          ? "opacity-40 cursor-not-allowed text-muted-foreground"
-                          : active
-                            ? "bg-accent text-accent-foreground font-medium"
-                            : "text-muted-foreground active:bg-accent/60"
-                      )}
-                    >
-                      <item.icon className="h-5 w-5 shrink-0" />
-                      <span className="flex-1 text-left">{item.label}</span>
-                      {comingSoon && (
-                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-amber-400/50 text-amber-400 shrink-0">
-                          Soon
-                        </Badge>
-                      )}
-                      {!comingSoon && item.badge !== undefined && item.badge > 0 && (
-                        <Badge className="h-5 min-w-5 px-1.5 text-[10px] font-bold rounded-full bg-red-500 text-white border-0">
-                          {item.badge > 99 ? "99+" : item.badge}
-                        </Badge>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+      {/* Search */}
+      <div className="safe-area-pt px-4 pt-4">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search menus and settings…"
+            aria-label="Search dashboard menus"
+            className="h-11 w-full rounded-xl border border-border bg-card pl-10 pr-10 text-[14px] outline-none focus:ring-2 focus:ring-ring"
+          />
+          {query && (
+            <button
+              type="button"
+              aria-label="Clear search"
+              onClick={() => setQuery("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-2 text-muted-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Scrollable menu items */}
+      <div className="flex-1 overflow-auto px-4 pt-4 pb-4">
+        {query.trim() ? (
+          <div className="space-y-0.5">
+            {results.length === 0 ? (
+              <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+                Nothing matches “{query}”.
+              </p>
+            ) : (
+              results.map(renderItem)
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {navGroups.map((group) => (
+              <div key={group.id}>
+                <p className="px-4 pb-1 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                  {group.title}
+                </p>
+                <div className="space-y-0.5">{group.items.map(renderItem)}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
 
       {/* Bottom bar with Settings + Close */}
       <div className="safe-area-pb px-4 pb-4 pt-2 flex items-center gap-3 justify-center">
