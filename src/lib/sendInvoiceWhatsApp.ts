@@ -23,15 +23,12 @@ export async function sendInvoiceToWhatsApp({ order, store, ownerEmail }: SendIn
       return { success: false, error: "Store info missing" };
     }
 
-    // ── Format phone (with +91 default for India) ──
+    // ── Format phone (adds +91 country code when the owner saved a bare number) ──
     const phone = waPhoneNumber(order.customer_phone);
-    if (phone.startsWith("91") && phone.length === 12) {
-      // already prefixed
-    } else if (phone.length === 10) {
-      phone = "91" + phone;
-    } else if (phone.length < 10) {
+    if (!phone) {
       return { success: false, error: "Invalid phone number" };
     }
+
 
     // ── Build PDF (mirrors the on-screen label design) ──
     const pdf = await buildInvoicePdf(order, store, ownerEmail);
