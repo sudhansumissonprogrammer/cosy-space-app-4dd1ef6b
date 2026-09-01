@@ -22,7 +22,7 @@ import {
   Rocket, Crown, ShoppingBag, CreditCard, ExternalLink, Copy,
 } from "lucide-react";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
-import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
+import { uploadOptimizedImage, uploadStoreLogo, generateUploadPath } from "@/lib/uploadOptimizedImage";
 
 const CURRENCIES = [
   { code: "INR", label: "Indian Rupee (₹)" },
@@ -208,8 +208,7 @@ export default function CreateStore() {
       let mobileHeroUrl: string | null = null;
 
       if (logoFile) {
-        const ext = logoFile.name.split(".").pop();
-        logoUrl = await uploadFile(logoFile, "store-logos", `${user.id}/${slug}-logo.${ext}`);
+        logoUrl = await uploadStoreLogo(logoFile, generateUploadPath(user.id, "new-store"));
       }
       if (bannerFile) {
         const ext = bannerFile.name.split(".").pop();

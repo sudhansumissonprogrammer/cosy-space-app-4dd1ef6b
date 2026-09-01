@@ -113,3 +113,65 @@ export function resolveVariantUrl(
 export function isOptimizedUrl(url: string): boolean {
   return /^.+-\d+w\.(webp|jpg|jpeg)$/i.test(url);
 }
+
+/**
+ * Store logos are rendered at most ~168px (splash screen) / ~40px (header),
+ * so a full 800w upload is wasted bytes that delay the branded splash.
+ * This always downscales to 384px max side and encodes WebP q0.86 —
+ * typically 2–30KB instead of 100KB+.
+ */
+export async function uploadStoreLogo(
+  file: File,
+  basePath: string,
+): Promise<string> {
+  const LOGO_MAX = 384;
+
+  const dataUrl = await new Promise<string>((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = () => res(fr.result as string);
+    fr.onerror = () => rej(new Error("Could not read the logo file"));
+    fr.readAsDataURL(file);
+  });
+
+  const img = await new Promise<HTMLImageElement>((res, rej) => {
+    const i = new Image();
+    i.onload = () => res(i);
+    i.onerror = () => rej(new Error("Could not decode the logo file"));
+    i.src = dataUrl;
+  });
+
+  const scale = Math.min(1, LOGO_MAX / Math.max(img.naturalWidth, img.naturalHeight));
+  const w = Math.max(1, Math.round(img.naturalWidth * scale));
+  const h = Math.max(1, Math.round(img.naturalHeight * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas unavailable");
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(img, 0, 0, w, h);
+
+  const blob = await new Promise<Blob | null>((res) =>
+    canvas.toBlob((b) => res(b), "image/webp", 0.86),
+  );
+  // Old Safari / privacy browsers can return null for WebP — r2-upload
+  // re-encodes server-side, so falling back to PNG is safe.
+  const finalBlob =
+    blob ??
+    (await new Promise<Blob | null>((res) => canvas.toBlob((b) => res(b), "image/png")));
+  if (!finalBlob) throw new Error("Logo compression failed");
+
+  const ext = finalBlob.type === "image/webp" ? "webp" : "png";
+  const logoFile = new File([finalBlob], `logo-384w.${ext}`, { type: finalBlob.type });
+  const path = `${basePath}-384w.${ext}`;
+
+  const form = new FormData();
+  form.append("file", logoFile);
+  form.append("bucket", "store-logos");
+  form.append("path", path);
+
+  const { data, error } = await supabase.functions.invoke("r2-upload", { body: form });
+  if (error) throw new Error(`Failed to upload logo: ${error.message || "upload failed"}`);
+  if (!data?.publicUrl) throw new Error("Logo upload failed: no URL returned");
+  return data.publicUrl as string;
+}
