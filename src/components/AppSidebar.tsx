@@ -1,27 +1,25 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  LayoutDashboard, Settings, LogOut, Package, Upload, ShoppingBag,
-  Users, UserCheck, Globe, Store, Plus, CreditCard, Tag, Truck, Receipt,
-  ShoppingCart, Palette, BarChart3, MessageSquare, FolderOpen, Image as ImageIcon,
-  Clock, FileText, Star, Wallet, TrendingDown, Blocks, MessageCircle,
-} from "lucide-react";
+import { LogOut, Store, Plus, Search, X } from "lucide-react";
 import { prefetchDashboardRoutes } from "@/lib/prefetchDashboardRoutes";
 import { NavLink } from "@/components/NavLink";
-import { useLocation, useParams } from "react-router-dom";
+import { useLocation, useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMyStore } from "@/hooks/useMyStore";
 import { useAdminStoreView } from "@/hooks/useAdminStoreView";
 import { supabase } from "@/integrations/supabase/client";
 import { useMenuConfig } from "@/hooks/useMenuConfig";
+import { buildDashboardNav, filterNavGroups, searchNav } from "@/config/dashboardNav";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
   SidebarFooter, useSidebar, SidebarMenuBadge,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+
 
 export function AppSidebar() {
   const { state } = useSidebar();
