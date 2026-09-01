@@ -807,13 +807,15 @@ export default function StoreSettings() {
 
         {/* ── 6b. Search engine helpers ── */}
 
-        <SearchEngineHelperCard
-          slug={store?.slug || storeSlug || ""}
-          storeName={name || store?.name || ""}
-          customDomain={store?.custom_domain || null}
-          whatsappNumber={whatsappNumber}
-          city={city}
-        />
+        <Suspense fallback={<div className="h-40 rounded-xl border bg-muted/30" />}>
+          <SearchEngineHelperCard
+            slug={store?.slug || storeSlug || ""}
+            storeName={name || store?.name || ""}
+            customDomain={store?.custom_domain || null}
+            whatsappNumber={whatsappNumber}
+            city={city}
+          />
+        </Suspense>
 
         <Card id="s-domain" className="scroll-mt-24">
           <CardHeader>
@@ -839,7 +841,9 @@ export default function StoreSettings() {
 
         {/* QR Code Generator for Restaurant Theme */}
         {store?.theme === "theme-13" && (
-          <QRCodeGeneratorCard slug={store.slug} customDomain={store.custom_domain} />
+          <Suspense fallback={<div className="h-40 rounded-xl border bg-muted/30" />}>
+            <QRCodeGeneratorCard slug={store.slug} customDomain={store.custom_domain} />
+          </Suspense>
         )}
 
         <div className="sticky bottom-0 z-20 -mx-1 border-t bg-background/95 px-1 py-3 backdrop-blur">
