@@ -936,11 +936,11 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
     toast.success("Copied!");
   };
 
-  /** Master copy — name, phone, full address, items and the COD amount to collect. */
+  /** Compact copy — customer info + COD amount only (no order ID / items / totals). */
   const copyAllDetails = () => {
     const text = buildOrderCopyText(order, store?.name);
     navigator.clipboard.writeText(text).then(
-      () => toast.success("Order details copied"),
+      () => toast.success("COD details copied"),
       () => toast.error("Could not copy"),
     );
   };
