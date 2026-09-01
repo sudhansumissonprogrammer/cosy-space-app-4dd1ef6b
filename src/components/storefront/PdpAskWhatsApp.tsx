@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { waPhoneNumber } from "@/lib/phoneUtils";
 
 interface PdpAskWhatsAppProps {
   phone: string;
@@ -32,7 +33,7 @@ export default function PdpAskWhatsApp({
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const cleanedPhone = phone.replace(/[^0-9+]/g, "");
+  const cleanedPhone = waPhoneNumber(phone) ?? "";
   if (!cleanedPhone) return null;
 
   const text = `Hi ${storeName}! 👋\n\nI have a question about *${productName}* (${priceLabel}).\n\n🔗 ${productUrl}\n\nCould you share more details — purity, weight, availability and customisation options?`;

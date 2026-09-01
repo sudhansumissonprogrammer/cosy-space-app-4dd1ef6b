@@ -29,6 +29,7 @@ import {
   Loader2, ShieldCheck, Receipt, Truck,
 } from "lucide-react";
 import { currencySymbol } from "@/lib/productUtils";
+import { waPhoneNumber } from "@/lib/phoneUtils";
 
 const CANCEL_REASONS = [
   "Changed my mind",
@@ -169,7 +170,7 @@ export default function StorefrontOrderDetail() {
   const isPaid = !!order.payment_verified || (order.payment_method && !/cod|cash/i.test(order.payment_method));
 
   const ownerPhone = store.whatsapp_number ? normalizePhone(store.whatsapp_number) : "";
-  const ownerPhoneClean = ownerPhone.replace(/\D/g, "");
+  const ownerPhoneClean = waPhoneNumber(store.whatsapp_number) ?? "";
   const buildWa = (msg: string) =>
     ownerPhoneClean ? `https://wa.me/${ownerPhoneClean}?text=${encodeURIComponent(msg)}` : "";
 

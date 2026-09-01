@@ -8,6 +8,7 @@ import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath, isCustomDomainHost } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import { supabase } from "@/integrations/supabase/client";
+import { waPhoneNumber } from "@/lib/phoneUtils";
 
 interface StorefrontFooterProps {
   store: StoreData;
@@ -110,7 +111,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
             <div className="flex items-center gap-3 pt-1">
               {store.whatsapp_number && (
                 <a
-                  href={`https://wa.me/${encodeURIComponent(store.whatsapp_number.replace(/[^0-9+]/g, ""))}`}
+                  href={`https://wa.me/${waPhoneNumber(store.whatsapp_number) ?? ""}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex h-9 w-9 items-center justify-center rounded-full transition-[transform,opacity,colors,box-shadow] hh:hover-scale-110"
@@ -213,7 +214,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
               )}
               {store.whatsapp_number && (
                 <a
-                  href={`https://wa.me/${store.whatsapp_number.replace(/[^0-9+]/g, "")}`}
+                  href={`https://wa.me/${waPhoneNumber(store.whatsapp_number) ?? ""}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-start gap-2 text-sm opacity-75 hover:opacity-100 transition-opacity"

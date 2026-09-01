@@ -22,6 +22,7 @@ import type { StoreData } from "@/layouts/StorefrontLayout";
 import { normalizePhone } from "@/lib/phoneUtils";
 import OrderCard from "@/components/storefront/OrderCard";
 import { currencySymbol } from "@/lib/productUtils";
+import { waPhoneNumber } from "@/lib/phoneUtils";
 
 function OrdersTab({ customerId, store }: { customerId: string; store: StoreData }) {
   const { data: orders, isLoading } = useQuery({
@@ -51,7 +52,8 @@ function OrdersTab({ customerId, store }: { customerId: string; store: StoreData
 
 
   const ownerPhone = store.whatsapp_number ? normalizePhone(store.whatsapp_number) : "";
-  const waLink = ownerPhone ? `https://wa.me/${ownerPhone.replace(/\D/g, "")}` : "";
+  const waDigits = waPhoneNumber(store.whatsapp_number);
+  const waLink = waDigits ? `https://wa.me/${waDigits}` : "";
   const telLink = ownerPhone ? `tel:${ownerPhone}` : "";
 
   const HelpCard = (

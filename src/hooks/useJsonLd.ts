@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { getStoreBaseUrl } from "@/lib/storeUrl";
+import { waPhoneNumber } from "@/lib/phoneUtils";
 
 const SCRIPT_ID = "json-ld-structured-data";
 const ORG_SCRIPT_ID = "json-ld-organization";
@@ -168,7 +169,7 @@ export function useStoreJsonLd({
     if (instagramUrl) sameAs.push(instagramUrl);
     if (facebookUrl) sameAs.push(facebookUrl);
     if (whatsappNumber) {
-      const waDigits = whatsappNumber.replace(/[^0-9]/g, "");
+      const waDigits = waPhoneNumber(whatsappNumber);
       if (waDigits) sameAs.push(`https://wa.me/${waDigits}`);
     }
 
