@@ -62,6 +62,27 @@ export function toWhatsappDigits(raw: string | null | undefined): string {
   return normalizePhone(raw).replace(/\D/g, "");
 }
 
+/**
+ * Canonical wa.me phone builder — THE single place that decides how an
+ * owner/customer-entered number becomes a WhatsApp-dialable number.
+ *
+ * Owners frequently save "98765 43210" (no country code) or "(+91) 98765-43210".
+ * Without a country code WhatsApp shows "Couldn't look up this phone number".
+ * Indian default: +91. Returns digits only (no "+"), or null when unusable.
+ */
+export function waPhoneNumber(raw?: string | null): string | null {
+  if (!raw) return null;
+  let d = String(raw).replace(/[^0-9]/g, "");
+  if (!d) return null;
+  if (d.startsWith("00")) d = d.slice(2);                    // 0091… → 91…
+  if (d.length === 13 && d.startsWith("091")) d = d.slice(1); // 091XXXXXXXXXX
+  if (d.length === 11 && d.startsWith("0")) d = d.slice(1);   // 09876543210
+  if (d.length === 10) d = `91${d}`;                          // bare Indian mobile
+  if (d.length < 11) return null;                             // too short to dial
+  return d;
+}
+
+
 /** Pretty display: "+91 98765 43210" */
 export function formatPhoneDisplay(raw: string | null | undefined): string {
   const norm = normalizePhone(raw);

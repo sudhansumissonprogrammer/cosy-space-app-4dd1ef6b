@@ -28,6 +28,7 @@ import {
   Mail,
 } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
+import { waPhoneNumber } from "@/lib/phoneUtils";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Award, Leaf, Shield, Star, Sparkles, Heart, Truck, ThumbsUp,
@@ -239,7 +240,7 @@ export default function StorefrontContact() {
             {/* WhatsApp Card */}
             {store.whatsapp_number && (
               <a
-                href={`https://wa.me/${store.whatsapp_number.replace(/\D/g, "")}`}
+                href={`https://wa.me/${waPhoneNumber(store.whatsapp_number) ?? ""}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group flex items-center gap-3 rounded-2xl border border-border bg-card p-5 transition-[transform,opacity,colors,box-shadow] hover:border-green-500/30 hover:shadow-md"

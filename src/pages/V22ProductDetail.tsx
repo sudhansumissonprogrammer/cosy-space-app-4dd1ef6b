@@ -51,6 +51,7 @@ import PdpUpsellSection from "@/components/storefront/apps/Upsell/PdpUpsellSecti
 
 
 import DeliveryTimeline from "@/components/storefront/DeliveryTimeline";
+import { waPhoneNumber } from "@/lib/phoneUtils";
 
 interface Variant {
   id: string;
@@ -966,7 +967,8 @@ export default function V22ProductDetail() {
                       document.getElementById("variant-picker")?.scrollIntoView({ behavior: "smooth", block: "center" });
                       return;
                     }
-                    const phone = store.whatsapp_number!.replace(/[^0-9+]/g, "");
+                    const phone = waPhoneNumber(store.whatsapp_number);
+                    if (!phone) { toast.error("WhatsApp number is not valid"); return; }
                     const variantInfo = selectedVariant ? ` (${selectedVariant.name})` : "";
                     const productUrl = `${window.location.origin}${window.location.pathname}`;
                     const text = `Hi ${store.name}! 👋\n\nI want to buy *${product.name}${variantInfo}* x${quantity}\n\n💰 Price: ${formatPrice((variantPrice * quantity), currency)}\n\n🔗 ${productUrl}\n\nPlease share availability, delivery time & payment options.`;

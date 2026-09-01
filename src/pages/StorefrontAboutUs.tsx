@@ -5,6 +5,7 @@ import { Instagram, Facebook, MessageCircle, Mail, Phone, MapPin } from "lucide-
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
+import { waPhoneNumber } from "@/lib/phoneUtils";
 
 /* ── Rich Text Renderer ─────────────────────────────────────────── */
 const HEADING_PATTERNS = /^(about us|our mission|our story|why choose|our promise|contact us|our vision|what we do|who we are)/i;
@@ -141,7 +142,7 @@ function DefaultAboutContent({ store }: { store: StoreData }) {
             )}
             {whatsapp && (
               <p className="flex items-center gap-2 flex-wrap"><Phone className="h-4 w-4 shrink-0" aria-hidden="true" /> <strong style={{ color: textColor }}>Phone:</strong>{" "}
-                <a href={`https://wa.me/${whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }}>{whatsapp}</a>
+                <a href={`https://wa.me/${waPhoneNumber(whatsapp) ?? ""}`} target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }}>{whatsapp}</a>
                 {(store as any).secondary_phone && (
                   <>
                     {" / "}
@@ -166,7 +167,7 @@ function DefaultAboutContent({ store }: { store: StoreData }) {
           <div className="flex flex-wrap gap-3">
             {whatsapp && (
               <a
-                href={`https://wa.me/${whatsapp.replace(/\D/g, "")}`}
+                href={`https://wa.me/${waPhoneNumber(whatsapp) ?? ""}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-[transform,opacity,colors,box-shadow] hover:shadow-md"

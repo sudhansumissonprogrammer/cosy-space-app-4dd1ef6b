@@ -1,5 +1,6 @@
 import { MapPin, Clock, MessageCircle, Instagram, Facebook } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
+import { waPhoneNumber } from "@/lib/phoneUtils";
 
 interface StorefrontAboutProps {
   store: StoreData;
@@ -41,7 +42,7 @@ export default function StorefrontAbout({ store, productCount }: StorefrontAbout
           )}
           {store.whatsapp_number && (
             <a
-              href={`https://wa.me/${encodeURIComponent(store.whatsapp_number.replace(/[^0-9+]/g, ""))}`}
+              href={`https://wa.me/${waPhoneNumber(store.whatsapp_number) ?? ""}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 text-sm hover:underline"

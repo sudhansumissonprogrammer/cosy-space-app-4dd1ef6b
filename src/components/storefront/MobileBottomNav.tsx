@@ -5,6 +5,7 @@ import { useCart } from "@/contexts/CartContext";
 import { navTap } from "@/lib/navHaptic";
 import { useNavIcons } from "@/hooks/useNavIcons";
 import type { StoreData } from "@/layouts/StorefrontLayout";
+import { waPhoneNumber } from "@/lib/phoneUtils";
 
 function WhatsAppIcon({ className, strokeWidth }: { className?: string; strokeWidth?: number }) {
   void strokeWidth;
@@ -48,7 +49,7 @@ export default function MobileBottomNav({ store, swapCartWhatsApp = false }: Mob
 
   const isHome = currentPath === storefrontPath(store.slug) || currentPath === storefrontPath(store.slug) + "/";
 
-  const waNumber = String((store as any).whatsapp_number || "").replace(/[^0-9+]/g, "");
+  const waNumber = waPhoneNumber((store as any).whatsapp_number) ?? "";
   const waHref = `https://wa.me/${waNumber}?text=${encodeURIComponent(`Hi ${store.name}! 👋\nI'm interested in buying products from your store. Could you help me?`)}`;
 
   const navItems = [

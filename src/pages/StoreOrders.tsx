@@ -46,6 +46,7 @@ import { useRealtimeStore } from "@/hooks/useRealtimeStore";
 
 import { ORDER_STATUS_OPTIONS, orderStatusBadgeClass, orderStatusLabel } from "@/lib/orderStatus";
 import { buildOrderBreakdown } from "@/lib/orderPaymentBreakdown";
+import { waPhoneNumber } from "@/lib/phoneUtils";
 const STATUS_OPTIONS = ORDER_STATUS_OPTIONS.map(o => o.value);
 const statusColor = (status: string) => orderStatusBadgeClass(status);
 
@@ -655,7 +656,7 @@ export default function StoreOrders() {
                     </div>
                     {group.orders.map((order: any) => {
                       const inBulkMode = selectedOrders.size > 0;
-                      const phone = order.customer_phone?.replace(/[^0-9]/g, "");
+                      const phone = waPhoneNumber(order.customer_phone);
                       const openWhatsApp = () => {
                         if (!phone) { toast.info("No phone on this order"); return; }
                         window.open(`https://wa.me/${phone}`, "_blank", "noopener,noreferrer");
@@ -972,7 +973,7 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
               </div>
               {order.customer_phone && (
                 <a
-                  href={`https://wa.me/${order.customer_phone.replace(/[^0-9]/g, '')}`}
+                  href={`https://wa.me/${waPhoneNumber(order.customer_phone) ?? ""}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="shrink-0 h-8 w-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center"
@@ -1126,7 +1127,7 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
             <span className="text-[10px] font-medium text-foreground">Call</span>
           </a>
           <a
-            href={order.customer_phone ? `https://wa.me/${order.customer_phone.replace(/[^0-9]/g, "")}` : undefined}
+            href={waPhoneNumber(order.customer_phone) ? `https://wa.me/${waPhoneNumber(order.customer_phone)}` : undefined}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => { if (!order.customer_phone) { e.preventDefault(); toast.info("No phone on this order"); } }}

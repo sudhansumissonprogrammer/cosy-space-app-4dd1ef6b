@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { PackageCheck, Phone, MessageCircle, PhoneCall, X } from "lucide-react";
+import { waPhoneNumber } from "@/lib/phoneUtils";
 
 interface Props {
   product: any;
@@ -29,10 +30,9 @@ export default function ParcelAssuranceSection({ product, store }: Props) {
   const [error, setError] = useState("");
   const [showTiming, setShowTiming] = useState(false);
 
-  const raw = String(store?.whatsapp_number || "").replace(/[^0-9]/g, "");
-  if (!raw) return null;
-  const waPhone = raw.length === 10 ? `91${raw}` : raw;
-  const telPhone = raw.length === 10 ? `+91${raw}` : `+${waPhone}`;
+  const waPhone = waPhoneNumber(store?.whatsapp_number);
+  if (!waPhone) return null;
+  const telPhone = `+${waPhone}`;
 
   const productLine = product?.name ? `\n\nProduct: ${product.name}` : "";
 

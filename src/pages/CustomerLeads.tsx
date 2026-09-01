@@ -19,6 +19,7 @@ import { format } from "date-fns";
 import { useMyStore } from "@/hooks/useMyStore";
 import { getStoreBaseUrl } from "@/lib/storeUrl";
 import { normalizePhone } from "@/lib/phoneUtils";
+import { waPhoneNumber } from "@/lib/phoneUtils";
 
 type CustomerLead = {
   id: string;
@@ -394,7 +395,7 @@ export default function CustomerLeads() {
               <div className="space-y-3 sm:hidden">
                 {pagedLeads.map((lead) => {
                   const sendWhatsApp = () => {
-                    const phone = lead.phone.replace(/[^0-9+]/g, "");
+                    const phone = waPhoneNumber(lead.phone) ?? "";
                     const message = buildRecoveryMessage(lead);
                     window.open(
                       `https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(message)}`,
@@ -530,7 +531,7 @@ export default function CustomerLeads() {
                               className="h-9 w-9"
                               title="Send recovery message on WhatsApp"
                               onClick={() => {
-                                const phone = lead.phone.replace(/[^0-9+]/g, "");
+                                const phone = waPhoneNumber(lead.phone) ?? "";
                                 const message = buildRecoveryMessage(lead);
                                 window.open(
                                   `https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(message)}`,

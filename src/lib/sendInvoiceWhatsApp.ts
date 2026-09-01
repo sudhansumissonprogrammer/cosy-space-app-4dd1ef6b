@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { waPhoneNumber } from "@/lib/phoneUtils";
 
 interface SendInvoiceArgs {
   order: any;
@@ -23,7 +24,7 @@ export async function sendInvoiceToWhatsApp({ order, store, ownerEmail }: SendIn
     }
 
     // ── Format phone (with +91 default for India) ──
-    let phone = String(order.customer_phone).replace(/[^\d]/g, "");
+    const phone = waPhoneNumber(order.customer_phone);
     if (phone.startsWith("91") && phone.length === 12) {
       // already prefixed
     } else if (phone.length === 10) {

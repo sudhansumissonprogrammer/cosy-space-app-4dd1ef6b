@@ -16,10 +16,10 @@ interface RecentOrdersProps {
 }
 
 import { orderStatusBadgeClass, orderStatusLabel } from "@/lib/orderStatus";
+import { waPhoneNumber } from "@/lib/phoneUtils";
 
 function buildWhatsAppUrl(phone: string, customerName: string, orderId: string, total: string, currencySymbol: string, storeName: string) {
-  const cleanPhone = phone.replace(/[\s+\-()]/g, "");
-  const phoneWithCode = cleanPhone.startsWith("91") ? cleanPhone : `91${cleanPhone}`;
+  const phoneWithCode = waPhoneNumber(phone) ?? "";
   const orderShort = orderId.slice(0, 8).toUpperCase();
   const text = encodeURIComponent(
     `Hi ${customerName || "there"}! 👋\n\nThank you for your order #${orderShort} of ${currencySymbol}${total} from ${storeName}.\n\nYour order has been confirmed ✅\nWe'll update you once it ships.\n\nThank you for shopping with us! 🙏`
