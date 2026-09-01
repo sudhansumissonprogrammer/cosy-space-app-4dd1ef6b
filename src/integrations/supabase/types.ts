@@ -6032,6 +6032,13 @@ export type Database = {
         Returns: Json
       }
       wa_pause_campaign: { Args: { _campaign_id: string }; Returns: Json }
+      wa_reclaim_stale_sending: {
+        Args: { p_grace_minutes?: number; p_limit?: number }
+        Returns: {
+          failed: number
+          requeued: number
+        }[]
+      }
       wa_replay_webhook_event: { Args: { _event_id: string }; Returns: Json }
       wa_request_category_change: {
         Args: { _category: string; _id: string; _reason?: string }

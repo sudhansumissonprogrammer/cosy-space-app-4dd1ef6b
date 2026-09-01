@@ -42,8 +42,23 @@ Deno.serve(async (req) => {
   const batchSize = (cfg as any)?.wa_queue_batch_size || 50;
   const downstreamSecret = (await getCronSecret(admin)) || "";
 
+  // 🔓 Reclaim rows stuck in 'sending'. A worker invocation can die mid-batch
+  // (CPU/wall limit, thrown error, cold-shutdown) after rows were flipped to
+  // 'sending'. Nothing else ever unlocks them, so those messages silently
+  // never reach the customer. Anything whose lock expired >5 min ago goes back
+  // to 'pending' (or 'failed' once attempts are exhausted).
+  let reclaimed = { requeued: 0, failed: 0 };
+  try {
+    const { data: rec } = await admin.rpc("wa_reclaim_stale_sending", { p_grace_minutes: 5, p_limit: 500 });
+    const r = Array.isArray(rec) ? rec[0] : rec;
+    if (r) reclaimed = { requeued: r.requeued ?? 0, failed: r.failed ?? 0 };
+  } catch (e) {
+    console.error("wa-queue-worker: stale reclaim failed", e);
+  }
+
   // Claim a batch atomically via SQL RPC fallback: select+update by id.
   // We do best-effort: select pending rows due, then update to 'sending' guarded by status=pending.
+
   const { data: candidates } = await admin
     .from("wa_send_queue")
     .select("id")
@@ -52,7 +67,7 @@ Deno.serve(async (req) => {
     .order("priority", { ascending: true })
     .order("scheduled_at", { ascending: true })
     .limit(batchSize);
-  if (!candidates?.length) return json({ processed: 0 });
+  if (!candidates?.length) return json({ processed: 0, reclaimed });
 
   const ids = (candidates as any[]).map((r) => r.id);
   const { data: claimed } = await admin
@@ -76,7 +91,11 @@ Deno.serve(async (req) => {
   let sent = 0, retried = 0, failed = 0, skippedPaused = 0;
   const STAGGER_MS = Number((cfg as any)?.wa_send_stagger_ms ?? 250);
   let firstIter = true;
+  const claimedIds = ((claimed as any[]) ?? []).map((r) => r.id);
+  let loopError: string | null = null;
+  try {
   for (const row of (claimed as any[]) ?? []) {
+
     // Pace sends to protect Meta quality score. Bursty sending (>10/sec) is a
     // known trigger for 131049 marketing throttle. 250ms gap ≈ 4 msgs/sec.
     if (!firstIter && STAGGER_MS > 0) {
@@ -230,9 +249,35 @@ Deno.serve(async (req) => {
     }
 
   }
+  } catch (e) {
+    // A thrown error used to abort the batch and leave every remaining row
+    // frozen in 'sending' forever. Record it and fall through to the unlock.
+    loopError = e instanceof Error ? e.message : String(e);
+    console.error("wa-queue-worker: batch aborted", loopError);
+  }
 
-  return json({ processed: (claimed as any[])?.length ?? 0, sent, retried, failed, skipped_paused: skippedPaused });
+  // 🧹 Safety net: release any row from THIS batch still sitting in 'sending'
+  // (crash, early return, timeout) so the next cron cycle retries it.
+  let released = 0;
+  if (claimedIds.length) {
+    const { data: leftovers } = await admin
+      .from("wa_send_queue")
+      .update({
+        status: "pending",
+        locked_until: null,
+        scheduled_at: new Date(Date.now() + 60_000).toISOString(),
+        last_error: loopError ? `batch_aborted: ${loopError}` : "batch_incomplete",
+        last_error_class: "transient",
+      } as any)
+      .in("id", claimedIds)
+      .eq("status", "sending")
+      .select("id");
+    released = ((leftovers as any[]) ?? []).length;
+  }
+
+  return json({ processed: (claimed as any[])?.length ?? 0, sent, retried, failed, skipped_paused: skippedPaused, released, reclaimed, error: loopError });
 });
+
 
 function json(b: unknown, s = 200) {
   return new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
