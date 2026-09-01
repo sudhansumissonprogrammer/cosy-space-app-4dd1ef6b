@@ -233,19 +233,8 @@ export function buildDashboardNav({
               } as DashboardNavItem,
             ]
           : []),
-        ...(!isWhatsAppOnly
-          ? [
-              {
-                id: "coupons",
-                label: "Coupons",
-                icon: Tag,
-                path: `${s}/coupons`,
-                menuKey: "coupons",
-                description: "Create discount codes and auto-apply offers at checkout.",
-                keywords: ["coupon", "discount", "promo code", "offer", "flat", "percent", "auto apply"],
-              } as DashboardNavItem,
-            ]
-          : []),
+
+
         {
           id: "shipping_rates",
           label: "Shipping Rates",
