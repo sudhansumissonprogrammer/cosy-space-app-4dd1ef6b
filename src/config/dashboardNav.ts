@@ -34,6 +34,11 @@ export interface DashboardNavItem {
   description: string;
   /** Extra search terms merchants may type. */
   keywords: string[];
+  /**
+   * Thin / occasional pages. Hidden behind "More" inside their group so the
+   * sidebar shows only the rows a merchant uses daily. Still fully searchable.
+   */
+  secondary?: boolean;
 }
 
 export interface DashboardNavGroup {
@@ -118,6 +123,7 @@ export function buildDashboardNav({
           menuKey: "categories",
           description: "Group products into collections shown in your storefront menu.",
           keywords: ["category", "collection", "menu", "group", "hide category"],
+          secondary: true,
         },
         {
           id: "best_sellers",
@@ -127,6 +133,7 @@ export function buildDashboardNav({
           menuKey: "best_sellers",
           description: "Choose which products appear in the Best Sellers row.",
           keywords: ["best seller", "trending", "featured", "top products", "carousel"],
+          secondary: true,
         },
         {
           id: "reviews",
@@ -145,6 +152,7 @@ export function buildDashboardNav({
           menuKey: "media_library",
           description: "All uploaded product photos and videos in one place.",
           keywords: ["media", "image", "photo", "video", "gallery", "upload"],
+          secondary: true,
         },
         {
           id: "bulk_upload",
@@ -154,6 +162,7 @@ export function buildDashboardNav({
           menuKey: "bulk_upload",
           description: "Import many products at once from a spreadsheet or supplier link.",
           keywords: ["bulk", "csv", "excel", "import", "mass upload", "many products"],
+          secondary: true,
         },
       ],
     },
@@ -176,14 +185,15 @@ export function buildDashboardNav({
             ]
           : []),
         {
-          id: "abandoned_carts",
-          label: "Abandoned Carts",
-          icon: ShoppingCart,
-          path: `${s}/abandoned-carts`,
-          menuKey: "abandoned_carts",
-          description: "Customers who left without paying — send a WhatsApp recovery nudge.",
-          keywords: ["abandoned", "cart", "recovery", "left", "incomplete order"],
+          id: "customers",
+          label: "Customers",
+          icon: Users,
+          path: `${s}/customers`,
+          menuKey: "customers",
+          description: "Everyone who has ordered from you, with contact details and history.",
+          keywords: ["customer", "buyer", "contact", "phone", "repeat"],
         },
+
         {
           id: "customers",
           label: "Customers",
@@ -201,6 +211,7 @@ export function buildDashboardNav({
           menuKey: "leads",
           description: "Enquiries and sign-ups collected from your storefront.",
           keywords: ["lead", "enquiry", "waitlist", "subscriber", "contact form"],
+          secondary: true,
         },
       ],
     },
@@ -261,6 +272,7 @@ export function buildDashboardNav({
           menuKey: "shipping",
           description: "Connect Delhivery, Blue Dart, India Post and other couriers for tracking.",
           keywords: ["courier", "delhivery", "blue dart", "india post", "shiprocket", "awb", "tracking integration"],
+          secondary: true,
         },
         {
           id: "tax",
@@ -270,6 +282,7 @@ export function buildDashboardNav({
           menuKey: "tax_gst",
           description: "GST number, tax rates and how tax appears on invoices.",
           keywords: ["tax", "gst", "hsn", "invoice", "gstin"],
+          secondary: true,
         },
       ],
     },
@@ -308,6 +321,7 @@ export function buildDashboardNav({
           menuKey: "sales_funnel",
           description: "Where shoppers drop off between viewing, cart and payment.",
           keywords: ["funnel", "conversion", "drop off", "checkout rate"],
+          secondary: true,
         },
         {
           id: "tracking",
