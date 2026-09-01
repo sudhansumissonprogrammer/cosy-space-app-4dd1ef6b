@@ -104,37 +104,21 @@ export function AppSidebar() {
 
   const isCommissionMode = (store as any)?.billing_mode === "commission" || (walletSummary as any)?.billing_mode === "commission";
 
-  const paymentItems = storeSlug
-    ? [
-        { title: "Payments", url: `/dashboard/stores/${storeSlug}/payments`, icon: CreditCard, menuKey: "payments" },
-        ...(isCommissionMode ? [{ title: "Wallet", url: `/dashboard/stores/${storeSlug}/wallet`, icon: Wallet, menuKey: "wallet" }] : []),
-        ...(!isWhatsAppOnly ? [{ title: "Coupons", url: `/dashboard/stores/${storeSlug}/coupons`, icon: Tag, menuKey: "coupons" }] : []),
-        { title: "Shipping", url: `/dashboard/stores/${storeSlug}/shipping`, icon: Truck, menuKey: "shipping" },
-        { title: "Shipping Integrations", url: `/dashboard/stores/${storeSlug}/shipping-integrations`, icon: Truck, menuKey: "shipping" },
-        { title: "Tax / GST", url: `/dashboard/stores/${storeSlug}/tax`, icon: Receipt, menuKey: "tax_gst" },
-      ].filter((i) => i.menuKey === "wallet" || isVisible(i.menuKey))
-    : [];
+  const navGroups = useMemo(
+    () =>
+      filterNavGroups(
+        buildDashboardNav({ storeSlug, isCommissionMode, isWhatsAppOnly, pendingOrders }),
+        isVisible,
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [storeSlug, isCommissionMode, isWhatsAppOnly, pendingOrders, isVisible],
+  );
 
-  const marketingItems = storeSlug
-    ? [
-        ...(!isWhatsAppOnly ? [{ title: "WhatsApp Marketing", url: `/dashboard/stores/${storeSlug}/whatsapp`, icon: MessageSquare, menuKey: "whatsapp_marketing" }] : []),
-        { title: "Sales Funnel", url: `/dashboard/stores/${storeSlug}/funnel`, icon: TrendingDown, menuKey: "sales_funnel" },
-        { title: "Tracking & Analytics", url: `/dashboard/stores/${storeSlug}/tracking`, icon: BarChart3, menuKey: "tracking_analytics" },
-      ].filter((i) => isVisible(i.menuKey))
-    : [];
+  const [query, setQuery] = useState("");
+  const results = useMemo(() => searchNav(navGroups, query), [navGroups, query]);
 
-  const settingsItems = storeSlug
-    ? [
-        { title: "Theme", url: `/dashboard/stores/${storeSlug}/theme`, icon: Palette, menuKey: "theme" },
-        { title: "Pages", url: `/dashboard/stores/${storeSlug}/pages`, icon: FileText, menuKey: "pages" },
-        { title: "Domain", url: `/dashboard/stores/${storeSlug}/domain`, icon: Globe, menuKey: "domain" },
-        { title: "Store Settings", url: `/dashboard/stores/${storeSlug}/settings`, icon: Settings, menuKey: "store_settings" },
-      ].filter((i) => isVisible(i.menuKey))
-    : [];
+  const navigate = useNavigate();
 
-  const addonsItems = storeSlug
-    ? [{ title: "App Store", url: `/dashboard/stores/${storeSlug}/apps`, icon: Blocks, menuKey: "apps" }]
-    : [];
 
   const renderGroup = (
     label: string,
