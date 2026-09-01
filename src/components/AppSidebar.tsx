@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { LogOut, Store, Plus, Search, X } from "lucide-react";
+import { LogOut, Store, Plus, Search, X, ChevronDown } from "lucide-react";
 import { prefetchDashboardRoutes } from "@/lib/prefetchDashboardRoutes";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useParams, useNavigate } from "react-router-dom";
@@ -98,72 +98,101 @@ export function AppSidebar() {
   );
 
   const [query, setQuery] = useState("");
+  const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
   const results = useMemo(() => searchNav(navGroups, query), [navGroups, query]);
 
   const navigate = useNavigate();
 
 
-  const renderGroup = (group: (typeof navGroups)[number]) => (
-    <SidebarGroup key={group.id}>
-      <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground/70 mb-1">
-        {group.title}
-      </SidebarGroupLabel>
-      <SidebarGroupContent>
-        <SidebarMenu>
-          {group.items.map((item) => {
-            const comingSoon = item.menuKey ? isComingSoon(item.menuKey) : false;
-            const active = !comingSoon && isActive(item.path, item.exact);
-            return (
-              <SidebarMenuItem key={item.id}>
-                <SidebarMenuButton
-                  asChild={!comingSoon}
-                  isActive={active}
-                  tooltip={collapsed ? item.label : undefined}
-                  className={comingSoon ? "opacity-50 cursor-not-allowed" : active ? "font-semibold" : "font-medium"}
+  const renderItem = (item: (typeof navGroups)[number]["items"][number]) => {
+    const comingSoon = item.menuKey ? isComingSoon(item.menuKey) : false;
+    const active = !comingSoon && isActive(item.path, item.exact);
+    return (
+      <SidebarMenuItem key={item.id}>
+        <SidebarMenuButton
+          asChild={!comingSoon}
+          isActive={active}
+          tooltip={collapsed ? item.label : undefined}
+          className={comingSoon ? "opacity-50 cursor-not-allowed" : active ? "font-semibold" : "font-medium"}
+        >
+          {comingSoon ? (
+            <div className="flex items-center w-full hover:bg-transparent">
+              <item.icon className="mr-2 h-4 w-4" />
+              {!collapsed && (
+                <>
+                  <span>{item.label}</span>
+                  <Badge variant="outline" className="ml-auto text-[9px] px-1 py-0 h-4 border-amber-300 text-amber-600 shrink-0">
+                    Soon
+                  </Badge>
+                </>
+              )}
+            </div>
+          ) : (
+            <NavLink
+              to={item.path}
+              end={item.exact}
+              instant
+              title={item.description}
+              className="hover:bg-accent/50"
+              activeClassName="bg-accent text-accent-foreground font-semibold"
+            >
+              <item.icon className="mr-2.5 h-4 w-4" />
+              {!collapsed && <span className="text-[13px]">{item.label}</span>}
+            </NavLink>
+          )}
+        </SidebarMenuButton>
+        {!comingSoon && item.badge !== undefined && item.badge > 0 && (
+          <SidebarMenuBadge>
+            <Badge
+              variant="destructive"
+              className="h-5 min-w-5 px-1.5 text-[10px] font-bold rounded-full"
+            >
+              {item.badge > 99 ? "99+" : item.badge}
+            </Badge>
+          </SidebarMenuBadge>
+        )}
+      </SidebarMenuItem>
+    );
+  };
+
+  const renderGroup = (group: (typeof navGroups)[number]) => {
+    const primary = group.items.filter((i) => !i.secondary);
+    const secondary = group.items.filter((i) => i.secondary);
+    // Auto-open the drawer when the current page lives inside it.
+    const secondaryActive = secondary.some((i) => isActive(i.path, i.exact));
+    const open = expandedGroups.includes(group.id) || secondaryActive;
+
+    return (
+      <SidebarGroup key={group.id}>
+        <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground/70 mb-1">
+          {group.title}
+        </SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {primary.map(renderItem)}
+            {open && secondary.map(renderItem)}
+            {secondary.length > 0 && !collapsed && !secondaryActive && (
+              <SidebarMenuItem>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExpandedGroups((prev) =>
+                      prev.includes(group.id) ? prev.filter((g) => g !== group.id) : [...prev, group.id],
+                    )
+                  }
+                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[12px] text-muted-foreground hover:bg-accent/40 hover:text-foreground"
                 >
-                  {comingSoon ? (
-                    <div className="flex items-center w-full hover:bg-transparent">
-                      <item.icon className="mr-2 h-4 w-4" />
-                      {!collapsed && (
-                        <>
-                          <span>{item.label}</span>
-                          <Badge variant="outline" className="ml-auto text-[9px] px-1 py-0 h-4 border-amber-300 text-amber-600 shrink-0">
-                            Soon
-                          </Badge>
-                        </>
-                      )}
-                    </div>
-                  ) : (
-                    <NavLink
-                      to={item.path}
-                      end={item.exact}
-                      instant
-                      title={item.description}
-                      className="hover:bg-accent/50"
-                      activeClassName="bg-accent text-accent-foreground font-semibold"
-                    >
-                      <item.icon className="mr-2.5 h-4 w-4" />
-                      {!collapsed && <span className="text-[13px]">{item.label}</span>}
-                    </NavLink>
-                  )}
-                </SidebarMenuButton>
-                {!comingSoon && item.badge !== undefined && item.badge > 0 && (
-                  <SidebarMenuBadge>
-                    <Badge
-                      variant="destructive"
-                      className="h-5 min-w-5 px-1.5 text-[10px] font-bold rounded-full"
-                    >
-                      {item.badge > 99 ? "99+" : item.badge}
-                    </Badge>
-                  </SidebarMenuBadge>
-                )}
+                  <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
+                  {open ? "Less" : `More (${secondary.length})`}
+                </button>
               </SidebarMenuItem>
-            );
-          })}
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
-  );
+            )}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    );
+  };
+
 
   return (
     <Sidebar collapsible="icon">

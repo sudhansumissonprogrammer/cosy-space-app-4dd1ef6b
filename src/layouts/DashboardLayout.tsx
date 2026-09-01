@@ -159,7 +159,10 @@ function MobileMenu({
                 <p className="px-4 pb-1 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
                   {group.title}
                 </p>
-                <div className="space-y-0.5">{group.items.map(renderItem)}</div>
+                <div className="space-y-0.5">
+                  {[...group.items].sort((a, b) => Number(!!a.secondary) - Number(!!b.secondary)).map(renderItem)}
+                </div>
+
               </div>
             ))}
           </div>

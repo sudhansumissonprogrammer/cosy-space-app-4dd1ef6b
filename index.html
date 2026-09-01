@@ -260,7 +260,9 @@
           preloadFont('/fonts/inter-latin.woff2');
           preloadFont('/fonts/outfit-latin.woff2');
           // Preload landing hero LCP image (desktop only — mobile shows different hero)
-          if(window.matchMedia&&window.matchMedia('(min-width: 1024px)').matches){
+          // Only on the landing route — preloading it on /dashboard or a storefront
+          // wastes bandwidth and triggers "preloaded but not used" console warnings.
+          if(location.pathname==='/'&&window.matchMedia&&window.matchMedia('(min-width: 1024px)').matches){
             var l=document.createElement('link');l.rel='preload';l.as='image';l.href='/landing/showcase-overlays-mobile.webp';l.setAttribute('fetchpriority','high');document.head.appendChild(l);
           }
         }catch(e){}

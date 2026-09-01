@@ -195,15 +195,6 @@ export function buildDashboardNav({
         },
 
         {
-          id: "customers",
-          label: "Customers",
-          icon: Users,
-          path: `${s}/customers`,
-          menuKey: "customers",
-          description: "Everyone who has ordered from you, with contact details and history.",
-          keywords: ["customer", "buyer", "contact", "phone", "repeat"],
-        },
-        {
           id: "leads",
           label: "Leads",
           icon: UserCheck,
@@ -242,19 +233,8 @@ export function buildDashboardNav({
               } as DashboardNavItem,
             ]
           : []),
-        ...(!isWhatsAppOnly
-          ? [
-              {
-                id: "coupons",
-                label: "Coupons",
-                icon: Tag,
-                path: `${s}/coupons`,
-                menuKey: "coupons",
-                description: "Create discount codes and auto-apply offers at checkout.",
-                keywords: ["coupon", "discount", "promo code", "offer", "flat", "percent", "auto apply"],
-              } as DashboardNavItem,
-            ]
-          : []),
+
+
         {
           id: "shipping_rates",
           label: "Shipping Rates",
@@ -303,6 +283,28 @@ export function buildDashboardNav({
               } as DashboardNavItem,
             ]
           : []),
+        ...(!isWhatsAppOnly
+          ? [
+              {
+                id: "coupons",
+                label: "Coupons",
+                icon: Tag,
+                path: `${s}/coupons`,
+                menuKey: "coupons",
+                description: "Create discount codes and auto-apply offers at checkout.",
+                keywords: ["coupon", "discount", "promo code", "offer", "flat", "percent", "auto apply"],
+              } as DashboardNavItem,
+            ]
+          : []),
+        {
+          id: "abandoned_carts",
+          label: "Abandoned Carts",
+          icon: ShoppingCart,
+          path: `${s}/abandoned-carts`,
+          menuKey: "abandoned_carts",
+          description: "Customers who left without paying — send a WhatsApp recovery nudge.",
+          keywords: ["abandoned", "cart", "recovery", "left", "incomplete order", "recover"],
+        },
         {
           id: "analytics",
           label: "Analytics",
@@ -313,6 +315,7 @@ export function buildDashboardNav({
           description: "Visitors, revenue, top products and traffic sources over time.",
           keywords: ["analytics", "report", "visitors", "traffic", "revenue", "stats", "insights"],
         },
+
         {
           id: "funnel",
           label: "Sales Funnel",
