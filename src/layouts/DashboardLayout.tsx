@@ -16,10 +16,8 @@ import SmartInstallPrompt from "@/components/SmartInstallPrompt";
 import LowBalanceDialog from "@/components/billing/LowBalanceDialog";
 import {
   LayoutDashboard, Package, ShoppingBag, Menu, LogOut,
-  Upload, Users, UserCheck, Globe, Settings, CreditCard, Tag, Truck,
-  Receipt, ShoppingCart, Store, ChevronDown, ExternalLink, Palette,
-  Search, User, Bell, X, BarChart3, MessageSquare, Clock, RefreshCw,
-  Grid3X3, FileText, Star, Wallet, Blocks, TrendingDown, MessageCircle,
+  Settings, Store, ExternalLink,
+  Search, User, X, RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
