@@ -249,9 +249,35 @@ Deno.serve(async (req) => {
     }
 
   }
+  } catch (e) {
+    // A thrown error used to abort the batch and leave every remaining row
+    // frozen in 'sending' forever. Record it and fall through to the unlock.
+    loopError = e instanceof Error ? e.message : String(e);
+    console.error("wa-queue-worker: batch aborted", loopError);
+  }
 
-  return json({ processed: (claimed as any[])?.length ?? 0, sent, retried, failed, skipped_paused: skippedPaused });
+  // 🧹 Safety net: release any row from THIS batch still sitting in 'sending'
+  // (crash, early return, timeout) so the next cron cycle retries it.
+  let released = 0;
+  if (claimedIds.length) {
+    const { data: leftovers } = await admin
+      .from("wa_send_queue")
+      .update({
+        status: "pending",
+        locked_until: null,
+        scheduled_at: new Date(Date.now() + 60_000).toISOString(),
+        last_error: loopError ? `batch_aborted: ${loopError}` : "batch_incomplete",
+        last_error_class: "transient",
+      } as any)
+      .in("id", claimedIds)
+      .eq("status", "sending")
+      .select("id");
+    released = ((leftovers as any[]) ?? []).length;
+  }
+
+  return json({ processed: (claimed as any[])?.length ?? 0, sent, retried, failed, skipped_paused: skippedPaused, released, reclaimed, error: loopError });
 });
+
 
 function json(b: unknown, s = 200) {
   return new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
