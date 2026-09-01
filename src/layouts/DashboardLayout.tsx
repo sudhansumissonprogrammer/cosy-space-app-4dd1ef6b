@@ -427,7 +427,7 @@ export default function DashboardLayout() {
     >
       {isAdminView && (
         <div className="bg-amber-500 text-amber-950 text-center text-xs font-semibold py-1.5 px-4">
-          ⚡ Admin View — Viewing "{store?.name}"
+          ⚡ Admin View — Editing "{store?.name}" (full access)
         </div>
       )}
 
