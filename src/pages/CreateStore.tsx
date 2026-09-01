@@ -221,10 +221,17 @@ export default function CreateStore() {
       }
 
       const storeName = name.trim();
-      const { data: newStore, error } = await (supabase as any).from("stores").insert({
+      // Slug clashes used to dead-end the merchant with an error. Now we retry
+      // automatically with -1, -2, -3 so onboarding never stalls.
+      let finalSlug = slug.trim();
+      let attempt = 0;
+      let newStore: any = null;
+      let error: any = null;
+      while (attempt < 4) {
+        const res = await (supabase as any).from("stores").insert({
         owner_id: user.id,
         name: storeName,
-        slug: slug.trim(),
+        slug: finalSlug,
         description: description.trim() || null,
         whatsapp_number: whatsappNumber.trim() || null,
         currency,
@@ -242,15 +249,21 @@ export default function CreateStore() {
         owner_name: ownerName.trim() || null,
         meta_title: `${storeName} — Shop Online`,
         meta_description: `Discover products at ${storeName}. Order online today.`,
-      }).select("id").single();
+        }).select("id").single();
+        newStore = res.data;
+        error = res.error;
+        if (!error || error.code !== "23505") break;
+        attempt += 1;
+        finalSlug = `${slug.trim()}-${attempt}`;
+      }
 
       if (error) {
         setCreatingAnimation(false);
-        if (error.code === "23505") {
-          toast.error("A store with this slug already exists");
-        } else {
-          toast.error(error.message);
-        }
+        toast.error(
+          error.code === "23505"
+            ? "That store address is taken — try a slightly different store name."
+            : error.message,
+        );
         return;
       }
 
@@ -402,7 +415,7 @@ export default function CreateStore() {
 
       setCreatingAnimation(false);
       setStoreCreated(true);
-      setCreatedSlug(slug.trim());
+      setCreatedSlug(finalSlug);
       setShowConfetti(true);
       toast.success("Store created successfully! 🎉");
       queryClient.invalidateQueries({ queryKey: ["my-store"] });
