@@ -69,25 +69,8 @@ export function AppSidebar() {
   const isActive = (path: string, exact?: boolean) =>
     exact ? location.pathname === path : location.pathname.startsWith(path);
 
-  const catalogItems = storeSlug
-    ? [
-        { title: "Products", url: `/dashboard/stores/${storeSlug}/products`, icon: Package, menuKey: "products" },
-        { title: "Best Sellers", url: `/dashboard/stores/${storeSlug}/best-sellers`, icon: Star, menuKey: "best_sellers" },
-        { title: "Reviews", url: `/dashboard/stores/${storeSlug}/reviews`, icon: MessageCircle, menuKey: "reviews" },
-        { title: "Categories", url: `/dashboard/stores/${storeSlug}/categories`, icon: FolderOpen, menuKey: "categories" },
-        { title: "Media Library", url: `/dashboard/stores/${storeSlug}/media`, icon: ImageIcon, menuKey: "media_library" },
-        { title: "Bulk Upload", url: `/dashboard/stores/${storeSlug}/products/bulk-upload`, icon: Upload, menuKey: "bulk_upload" },
-      ].filter((i) => isVisible(i.menuKey))
-    : [];
 
-  const salesItems = storeSlug && !isWhatsAppOnly
-    ? [
-        { title: "Orders", url: `/dashboard/stores/${storeSlug}/orders`, icon: ShoppingBag, badge: pendingOrders, menuKey: "orders" },
-        { title: "Customers", url: `/dashboard/stores/${storeSlug}/customers`, icon: Users, menuKey: "customers" },
-        { title: "Leads", url: `/dashboard/stores/${storeSlug}/leads`, icon: UserCheck, menuKey: "leads" },
-        { title: "Abandoned Carts", url: `/dashboard/stores/${storeSlug}/abandoned-carts`, icon: ShoppingCart, menuKey: "abandoned_carts" },
-      ].filter((i) => isVisible(i.menuKey))
-    : [];
+
 
   const { data: walletSummary } = useQuery({
     queryKey: ["store-wallet", storeId],
