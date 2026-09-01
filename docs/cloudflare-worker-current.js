@@ -225,7 +225,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.91.0-stale-chunk-preload-fix";
+const WORKER_VERSION = "8.92.0-splash-logo-fast";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -1202,7 +1202,7 @@ function buildSkeleton(
     const longestWord = safeName.split(/\s+/).reduce((m, w) => Math.max(m, w.length), 0);
     const wordCls = "s-auto";
     const mark = safeLogo
-      ? `<img src="${safeLogo}" alt="" fetchpriority="high" decoding="async">`
+      ? `<img src="${safeLogo}" alt="" fetchpriority="high" decoding="async" onerror="this.parentNode.innerHTML='&lt;span class=&quot;sbsp-mono&quot;&gt;${mono || safeName.slice(0, 2).toUpperCase()}&lt;/span&gt;'">`
       : `<span class="sbsp-wordmark ${wordCls}" style="--n:${Math.max(longestWord, 5)}">${safeName || mono}</span>`;
     const caption = safeLogo && safeName ? safeName : "Loading store";
     const css =
@@ -4473,7 +4473,7 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
     }
     // Also preload logo (small, needed for header)
     if (s.logo_url) {
-      lcpPreload += `<link rel="preload" as="image" href="${escapeHtml(s.logo_url)}" />\n`;
+      lcpPreload += `<link rel="preload" as="image" href="${escapeHtml(s.logo_url)}" fetchpriority="high" />\n`;
     }
   }
   // Preload critical font
@@ -4671,6 +4671,19 @@ async function serveStreamedHtml(
              LCP entry it already recorded. */
       let pdpImgPreconnect = "";
       let pdpEdgeHero = "";
+      // v8.92.0: the branded splash paints a <img> of the store logo, but the
+      // logo URL was only discoverable once that markup streamed. Emitting a
+      // high-priority preload in the FIRST head chunk (from the cached
+      // theme-lite record) starts the fetch at byte 0, so the logo is decoded
+      // by the time the splash paints instead of popping in late.
+      let splashLogoPreload = "";
+      {
+        const _splashLogo = (themeLite && (themeLite.logo_url || themeLite.logo)) || "";
+        if (_splashLogo && /^https?:\/\//i.test(_splashLogo)) {
+          splashLogoPreload =
+            `<link rel="preload" as="image" href="${escapeHtml(_splashLogo)}" fetchpriority="high" />`;
+        }
+      }
       if (_isPdpPreload && _pdpHeroRaw) {
         try {
           const _main = _toGalleryUrl(_pdpHeroRaw, 800, 80);
@@ -4754,7 +4767,7 @@ async function serveStreamedHtml(
       headChunk = headChunk.slice(0, headChunk.indexOf("</head>"));
       headChunk = headChunk.replace(
         "<head>",
-        `<head>${pdpImgPreconnect}${themeCss}${productImagePreloads}${perRouteSeoHead}${prebuiltHead || ""}${slugScript}`,
+        `<head>${splashLogoPreload}${pdpImgPreconnect}${themeCss}${productImagePreloads}${perRouteSeoHead}${prebuiltHead || ""}${slugScript}`,
       );
 
       // v8.66.0: guard against legacy/prebuilt shells carrying an empty
