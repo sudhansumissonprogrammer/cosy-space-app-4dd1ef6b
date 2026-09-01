@@ -45,6 +45,7 @@ import { useDashboardStore } from "@/contexts/DashboardStoreContext";
 import { useRealtimeStore } from "@/hooks/useRealtimeStore";
 
 import { ORDER_STATUS_OPTIONS, orderStatusBadgeClass, orderStatusLabel } from "@/lib/orderStatus";
+import { buildOrderCopyText } from "@/lib/orderCopyText";
 import { buildOrderBreakdown } from "@/lib/orderPaymentBreakdown";
 import { waPhoneNumber } from "@/lib/phoneUtils";
 const STATUS_OPTIONS = ORDER_STATUS_OPTIONS.map(o => o.value);
@@ -935,14 +936,33 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
     toast.success("Copied!");
   };
 
+  /** Master copy — name, phone, full address, items and the COD amount to collect. */
+  const copyAllDetails = () => {
+    const text = buildOrderCopyText(order, store?.name);
+    navigator.clipboard.writeText(text).then(
+      () => toast.success("Order details copied"),
+      () => toast.error("Could not copy"),
+    );
+  };
+
   return (
     <>
       <SheetHeader className="px-4 pb-3 border-b">
         <div className="flex items-center justify-between">
           <SheetTitle className="text-lg font-bold">Order {displayId}</SheetTitle>
-          <span className={cn("px-2.5 py-1 rounded-full text-xs font-semibold", statusColor(order.status))}>
-            {orderStatusLabel(order.status)}
-          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 px-2 text-[11px] font-semibold"
+              onClick={copyAllDetails}
+            >
+              <Copy className="h-3 w-3 mr-1" /> Copy details
+            </Button>
+            <span className={cn("px-2.5 py-1 rounded-full text-xs font-semibold", statusColor(order.status))}>
+              {orderStatusLabel(order.status)}
+            </span>
+          </div>
         </div>
         <p className="text-xs text-muted-foreground -mt-1">{format(new Date(order.created_at), "MMM d, yyyy · h:mm a")}</p>
       </SheetHeader>
@@ -1115,7 +1135,7 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
         style={{ paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom))" }}
       >
         {/* Quick action grid */}
-        <div className="grid grid-cols-4 gap-1 px-3 pt-3">
+        <div className="grid grid-cols-5 gap-1 px-3 pt-3">
           <a
             href={order.customer_phone ? `tel:${order.customer_phone}` : undefined}
             onClick={(e) => { if (!order.customer_phone) { e.preventDefault(); toast.info("No phone on this order"); } }}
@@ -1159,6 +1179,15 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
               <MapPin className="h-4 w-4 text-foreground" />
             </div>
             <span className="text-[10px] font-medium text-foreground">Address</span>
+          </button>
+          <button
+            onClick={copyAllDetails}
+            className="flex flex-col items-center gap-1 py-2 rounded-lg active:bg-accent transition-colors"
+          >
+            <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
+              <Copy className="h-4 w-4 text-primary" />
+            </div>
+            <span className="text-[10px] font-medium text-foreground">Copy All</span>
           </button>
         </div>
 
