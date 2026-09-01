@@ -16,10 +16,8 @@ import SmartInstallPrompt from "@/components/SmartInstallPrompt";
 import LowBalanceDialog from "@/components/billing/LowBalanceDialog";
 import {
   LayoutDashboard, Package, ShoppingBag, Menu, LogOut,
-  Upload, Users, UserCheck, Globe, Settings, CreditCard, Tag, Truck,
-  Receipt, ShoppingCart, Store, ChevronDown, ExternalLink, Palette,
-  Search, User, Bell, X, BarChart3, MessageSquare, Clock, RefreshCw,
-  Grid3X3, FileText, Star, Wallet, Blocks, TrendingDown, MessageCircle,
+  Settings, Store, ExternalLink,
+  Search, User, X, RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -30,6 +28,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { useMenuConfig } from "@/hooks/useMenuConfig";
+import { buildDashboardNav, filterNavGroups, searchNav } from "@/config/dashboardNav";
 
 function MobileMenu({
   open,
@@ -59,136 +58,114 @@ function MobileMenu({
   const isActive = (path: string, exact?: boolean) =>
     exact ? location.pathname === path : location.pathname.startsWith(path);
 
-  type MenuItem = { label: string; icon: React.ElementType; path: string; exact?: boolean; badge?: number; menuKey?: string };
-  type MenuSection = { title?: string; items: MenuItem[] };
+  const navGroups = useMemo(
+    () =>
+      filterNavGroups(
+        buildDashboardNav({ storeSlug, isCommissionMode, isWhatsAppOnly, pendingOrders }),
+        isVisible,
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [storeSlug, isCommissionMode, isWhatsAppOnly, pendingOrders, isVisible],
+  );
 
-  const filterItems = (items: MenuItem[]) =>
-    items.filter((i) => !i.menuKey || isVisible(i.menuKey));
+  const [query, setQuery] = useState("");
+  const results = useMemo(() => searchNav(navGroups, query), [navGroups, query]);
 
-  const menuSections: MenuSection[] = storeSlug
-    ? [
-        {
-          title: "Overview",
-          items: [
-            { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard", exact: true },
-            { label: "Analytics", icon: BarChart3, path: "/dashboard/analytics", exact: true },
-          ],
-        },
-        {
-          title: "Catalog",
-          items: filterItems([
-            { label: "Products", icon: Package, path: `/dashboard/stores/${storeSlug}/products`, menuKey: "products" },
-            { label: "Best Sellers", icon: Star, path: `/dashboard/stores/${storeSlug}/best-sellers`, menuKey: "best_sellers" },
-            { label: "Reviews", icon: MessageCircle, path: `/dashboard/stores/${storeSlug}/reviews`, menuKey: "reviews" },
-            { label: "Categories", icon: Grid3X3, path: `/dashboard/stores/${storeSlug}/categories`, menuKey: "categories" },
-            { label: "Media Library", icon: Upload, path: `/dashboard/stores/${storeSlug}/media`, menuKey: "media_library" },
-            { label: "Bulk Upload", icon: Upload, path: `/dashboard/stores/${storeSlug}/products/bulk-upload`, menuKey: "bulk_upload" },
-          ]),
-        },
-        ...(!isWhatsAppOnly
-          ? [
-              {
-                title: "Sales & Customers",
-                items: filterItems([
-                  { label: "Orders", icon: ShoppingBag, path: `/dashboard/stores/${storeSlug}/orders`, badge: pendingOrders, menuKey: "orders" },
-                  { label: "Customers", icon: Users, path: `/dashboard/stores/${storeSlug}/customers`, menuKey: "customers" },
-                  { label: "Leads", icon: UserCheck, path: `/dashboard/stores/${storeSlug}/leads`, menuKey: "leads" },
-                  { label: "Abandoned Carts", icon: ShoppingCart, path: `/dashboard/stores/${storeSlug}/abandoned-carts`, menuKey: "abandoned_carts" },
-                ]),
-              },
-            ]
-          : []),
-        {
-          title: "Payments & Shipping",
-          items: [
-            { label: "Payments", icon: CreditCard, path: `/dashboard/stores/${storeSlug}/payments`, menuKey: "payments" },
-            ...(isCommissionMode ? [{ label: "Wallet", icon: Wallet, path: `/dashboard/stores/${storeSlug}/wallet`, menuKey: "wallet" }] : []),
-            ...(!isWhatsAppOnly ? [{ label: "Coupons", icon: Tag, path: `/dashboard/stores/${storeSlug}/coupons`, menuKey: "coupons" }] : []),
-            { label: "Shipping", icon: Truck, path: `/dashboard/stores/${storeSlug}/shipping`, menuKey: "shipping" },
-            { label: "Shipping Integrations", icon: Truck, path: `/dashboard/stores/${storeSlug}/shipping-integrations`, menuKey: "shipping" },
-            { label: "Tax / GST", icon: Receipt, path: `/dashboard/stores/${storeSlug}/tax`, menuKey: "tax_gst" },
-          ].filter((i) => i.menuKey === "wallet" || isVisible(i.menuKey)),
-        },
-        {
-          title: "Marketing",
-          items: filterItems([
-            ...(!isWhatsAppOnly ? [{ label: "WhatsApp Marketing", icon: MessageSquare, path: `/dashboard/stores/${storeSlug}/whatsapp`, menuKey: "whatsapp_marketing" }] : []),
-            { label: "Sales Funnel", icon: TrendingDown, path: `/dashboard/stores/${storeSlug}/funnel`, menuKey: "sales_funnel" },
-            { label: "Tracking & Analytics", icon: BarChart3, path: `/dashboard/stores/${storeSlug}/tracking`, menuKey: "tracking_analytics" },
-          ]),
-        },
-        {
-          title: "Add-ons",
-          items: [
-            { label: "App Store", icon: Blocks, path: `/dashboard/stores/${storeSlug}/apps` },
-          ],
-        },
-        {
-          title: "Appearance & Settings",
-          items: filterItems([
-            { label: "Theme", icon: Palette, path: `/dashboard/stores/${storeSlug}/theme`, menuKey: "theme" },
-            { label: "Pages", icon: FileText, path: `/dashboard/stores/${storeSlug}/pages`, menuKey: "pages" },
-            { label: "Domain", icon: Globe, path: `/dashboard/stores/${storeSlug}/domain`, menuKey: "domain" },
-            { label: "Store Settings", icon: Settings, path: `/dashboard/stores/${storeSlug}/settings`, menuKey: "store_settings" },
-          ]),
-        },
-      ].filter((s) => s.items.length > 0)
-    : [
-        { items: [{ label: "Home", icon: LayoutDashboard, path: "/dashboard", exact: true }] },
-      ];
+  useEffect(() => {
+    if (!open) setQuery("");
+  }, [open]);
 
   if (!open) return null;
 
+
+  const renderItem = (item: (typeof navGroups)[number]["items"][number]) => {
+    const active = isActive(item.path, item.exact);
+    const comingSoon = item.menuKey ? isComingSoon(item.menuKey) : false;
+    return (
+      <button
+        key={item.id}
+        onClick={() => !comingSoon && go(item.path)}
+        disabled={comingSoon}
+        className={cn(
+          "flex w-full items-center gap-3.5 rounded-xl px-4 py-3 text-left text-[15px] transition-colors min-h-[48px]",
+          comingSoon
+            ? "opacity-40 cursor-not-allowed text-muted-foreground"
+            : active
+              ? "bg-accent text-accent-foreground font-medium"
+              : "text-muted-foreground active:bg-accent/60"
+        )}
+      >
+        <item.icon className="h-5 w-5 shrink-0" />
+        <span className="flex-1 min-w-0">
+          <span className="block truncate">{item.label}</span>
+          <span className="block truncate text-[11px] text-muted-foreground/80">{item.description}</span>
+        </span>
+        {comingSoon && (
+          <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-amber-400/50 text-amber-400 shrink-0">
+            Soon
+          </Badge>
+        )}
+        {!comingSoon && item.badge !== undefined && item.badge > 0 && (
+          <Badge className="h-5 min-w-5 px-1.5 text-[10px] font-bold rounded-full bg-red-500 text-white border-0">
+            {item.badge > 99 ? "99+" : item.badge}
+          </Badge>
+        )}
+      </button>
+    );
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background text-foreground font-dashboard">
-      {/* Scrollable menu items */}
-      <div className="flex-1 overflow-auto px-4 pt-6 pb-4">
-        <div className="space-y-4">
-          {menuSections.map((section, si) => (
-            <div key={si}>
-              {section.title && (
-                <p className="px-4 pb-1 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  {section.title}
-                </p>
-              )}
-              <div className="space-y-0.5">
-                {section.items.map((item) => {
-                  const active = isActive(item.path, item.exact);
-                  const comingSoon = item.menuKey ? isComingSoon(item.menuKey) : false;
-                  return (
-                    <button
-                      key={item.path}
-                      onClick={() => !comingSoon && go(item.path)}
-                      disabled={comingSoon}
-                      className={cn(
-                        "flex w-full items-center gap-3.5 rounded-xl px-4 py-3 text-[15px] transition-colors",
-                        comingSoon
-                          ? "opacity-40 cursor-not-allowed text-muted-foreground"
-                          : active
-                            ? "bg-accent text-accent-foreground font-medium"
-                            : "text-muted-foreground active:bg-accent/60"
-                      )}
-                    >
-                      <item.icon className="h-5 w-5 shrink-0" />
-                      <span className="flex-1 text-left">{item.label}</span>
-                      {comingSoon && (
-                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-amber-400/50 text-amber-400 shrink-0">
-                          Soon
-                        </Badge>
-                      )}
-                      {!comingSoon && item.badge !== undefined && item.badge > 0 && (
-                        <Badge className="h-5 min-w-5 px-1.5 text-[10px] font-bold rounded-full bg-red-500 text-white border-0">
-                          {item.badge > 99 ? "99+" : item.badge}
-                        </Badge>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+      {/* Search */}
+      <div className="safe-area-pt px-4 pt-4">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search menus and settings…"
+            aria-label="Search dashboard menus"
+            className="h-11 w-full rounded-xl border border-border bg-card pl-10 pr-10 text-[14px] outline-none focus:ring-2 focus:ring-ring"
+          />
+          {query && (
+            <button
+              type="button"
+              aria-label="Clear search"
+              onClick={() => setQuery("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-2 text-muted-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Scrollable menu items */}
+      <div className="flex-1 overflow-auto px-4 pt-4 pb-4">
+        {query.trim() ? (
+          <div className="space-y-0.5">
+            {results.length === 0 ? (
+              <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+                Nothing matches “{query}”.
+              </p>
+            ) : (
+              results.map(renderItem)
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {navGroups.map((group) => (
+              <div key={group.id}>
+                <p className="px-4 pb-1 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                  {group.title}
+                </p>
+                <div className="space-y-0.5">{group.items.map(renderItem)}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
 
       {/* Bottom bar with Settings + Close */}
       <div className="safe-area-pb px-4 pb-4 pt-2 flex items-center gap-3 justify-center">
@@ -405,7 +382,6 @@ export default function DashboardLayout() {
         { label: "Home", icon: LayoutDashboard, path: "/dashboard", exact: true },
         ...(!isWhatsAppOnly ? [{ label: "Orders", icon: ShoppingBag, path: `/dashboard/stores/${storeSlug}/orders`, exact: false, badge: pendingOrders }] : []),
         { label: "Products", icon: Package, path: `/dashboard/stores/${storeSlug}/products`, exact: false },
-        { label: "Categories", icon: Grid3X3, path: `/dashboard/stores/${storeSlug}/categories`, exact: false },
         { label: "More", icon: Menu, path: "__menu__", exact: false },
         { label: "Profile", icon: User, path: "/dashboard/settings", exact: true },
       ]
@@ -464,9 +440,11 @@ export default function DashboardLayout() {
             variant="ghost"
             size="icon"
             className="h-9 w-9 text-muted-foreground hover:text-foreground"
-            onClick={() => {/* notification bell */}}
+            onClick={() => setMenuOpen(true)}
+            aria-label="Search dashboard menus"
+            title="Search menus"
           >
-            <Bell className="h-5 w-5" />
+            <Search className="h-5 w-5" />
           </Button>
           <Button
             variant="ghost"
@@ -493,8 +471,7 @@ export default function DashboardLayout() {
         <div className="flex items-center justify-around h-16 px-1">
           {bottomNav.map((item) => {
             const isMenu = item.path === "__menu__";
-            const isSearch = item.path === "__search__";
-            const active = !isMenu && !isSearch && isActive(item.path, item.exact);
+            const active = !isMenu && isActive(item.path, item.exact);
 
             return (
               <button
@@ -502,8 +479,6 @@ export default function DashboardLayout() {
                 onClick={() => {
                   if (isMenu) {
                     setMenuOpen(true);
-                  } else if (isSearch) {
-                    // Could open a search overlay in the future
                   } else {
                     go(item.path);
                   }

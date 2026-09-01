@@ -72,8 +72,25 @@ export function buildDashboardNav({
     ],
   };
 
+  const account: DashboardNavGroup = {
+    id: "account",
+    title: "Account",
+    items: [
+      {
+        id: "my_account",
+        label: "My Account",
+        icon: UserCog,
+        path: "/dashboard/settings",
+        exact: true,
+        alwaysVisible: true,
+        description: "Your login email, password and personal profile.",
+        keywords: ["account", "profile", "password", "email", "login", "sign out", "my details"],
+      },
+    ],
+  };
+
   if (!storeSlug) {
-    return [overview];
+    return [overview, account];
   }
 
   const s = `/dashboard/stores/${storeSlug}`;
@@ -354,22 +371,7 @@ export function buildDashboardNav({
         },
       ],
     },
-    {
-      id: "account",
-      title: "Account",
-      items: [
-        {
-          id: "my_account",
-          label: "My Account",
-          icon: UserCog,
-          path: "/dashboard/settings",
-          exact: true,
-          alwaysVisible: true,
-          description: "Your login email, password and personal profile.",
-          keywords: ["account", "profile", "password", "email", "login", "sign out", "my details"],
-        },
-      ],
-    },
+    account,
   ];
 
   return groups;
