@@ -181,7 +181,8 @@ export const BauhausCard = React.forwardRef<
       {children}
     </div>
   );
-}
+});
+BauhausCard.displayName = "BauhausCard";
 
 /* ---------- Field ---------- */
 export const BauhausField = React.forwardRef<
@@ -245,7 +246,8 @@ export const BauhausButton = React.forwardRef<
       {children}
     </button>
   );
-}
+});
+BauhausButton.displayName = "BauhausButton";
 
 /* ---------- Inline link ---------- */
 export const BauhausLink = React.forwardRef<
@@ -260,7 +262,9 @@ export const BauhausLink = React.forwardRef<
   >
     {children}
   </Link>
-);
+  );
+});
+BauhausLink.displayName = "BauhausLink";
 
 /* ---------- Full-screen loader in style ---------- */
 export const BauhausLoader = () => (
