@@ -91,7 +91,11 @@ Deno.serve(async (req) => {
   let sent = 0, retried = 0, failed = 0, skippedPaused = 0;
   const STAGGER_MS = Number((cfg as any)?.wa_send_stagger_ms ?? 250);
   let firstIter = true;
+  const claimedIds = ((claimed as any[]) ?? []).map((r) => r.id);
+  let loopError: string | null = null;
+  try {
   for (const row of (claimed as any[]) ?? []) {
+
     // Pace sends to protect Meta quality score. Bursty sending (>10/sec) is a
     // known trigger for 131049 marketing throttle. 250ms gap ≈ 4 msgs/sec.
     if (!firstIter && STAGGER_MS > 0) {
