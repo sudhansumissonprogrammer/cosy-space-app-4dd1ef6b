@@ -155,17 +155,17 @@ export function AuthShell({
 }
 
 /* ---------- Card: soft white sheet with a hairline border + gentle elevation ---------- */
-export function BauhausCard({
-  children,
-  className,
-  corner = "red",
-}: {
-  children: React.ReactNode;
-  className?: string;
-  corner?: "red" | "blue" | "yellow" | "none";
-}) {
+export const BauhausCard = React.forwardRef<
+  HTMLDivElement,
+  {
+    children: React.ReactNode;
+    className?: string;
+    corner?: "red" | "blue" | "yellow" | "none";
+  }
+>(function BauhausCard({ children, className, corner = "red" }, ref) {
   return (
     <div
+      ref={ref}
       className={cn(
         "relative overflow-hidden rounded-2xl border border-[#101827]/10 bg-white p-5 sm:p-7",
         "shadow-[0_1px_2px_rgba(16,24,39,0.04),0_12px_32px_-12px_rgba(16,24,39,0.16)]",
@@ -220,18 +220,16 @@ const variantMap: Record<BtnVariant, string> = {
   ghost: "bg-transparent text-[#101827] hover:bg-[#101827]/5",
 };
 
-export function BauhausButton({
-  variant = "red",
-  loading,
-  className,
-  children,
-  ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: BtnVariant;
-  loading?: boolean;
-}) {
+export const BauhausButton = React.forwardRef<
+  HTMLButtonElement,
+  React.ButtonHTMLAttributes<HTMLButtonElement> & {
+    variant?: BtnVariant;
+    loading?: boolean;
+  }
+>(function BauhausButton({ variant = "red", loading, className, children, ...props }, ref) {
   return (
     <button
+      ref={ref}
       className={cn(
         "inline-flex h-12 min-h-[44px] items-center justify-center gap-2.5 rounded-xl px-6",
         "text-[15px] font-semibold tracking-tight",
@@ -250,14 +248,13 @@ export function BauhausButton({
 }
 
 /* ---------- Inline link ---------- */
-export const BauhausLink = ({
-  to,
-  children,
-}: {
-  to: string;
-  children: React.ReactNode;
-}) => (
+export const BauhausLink = React.forwardRef<
+  HTMLAnchorElement,
+  { to: string; children: React.ReactNode }
+>(function BauhausLink({ to, children }, ref) {
+  return (
   <Link
+    ref={ref}
     to={to}
     className="font-semibold text-[#101827] underline decoration-[#F0932B] decoration-2 underline-offset-4 transition-colors duration-200 hover:text-[#B26410] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#F0932B] focus-visible:outline-offset-2"
   >
