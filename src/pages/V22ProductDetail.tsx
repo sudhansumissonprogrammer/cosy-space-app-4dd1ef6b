@@ -938,7 +938,7 @@ export default function V22ProductDetail() {
                   {showBuyNow && (
                     <button
                       className="btn-press flex h-12 w-full items-center justify-center gap-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-[transform,opacity,colors,box-shadow] animate-[vibrate_0.8s_ease-in-out_infinite_3s]"
-                      style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-bg, hsl(var(--primary-foreground)))" }}
+                      style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }}
                       onClick={handleBuyNow}
                     >
                       <span className="flex items-center gap-1.5">
@@ -1159,7 +1159,7 @@ export default function V22ProductDetail() {
                     </button>
                     <button
                       className="btn-press flex h-10 sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-2 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-[transform,opacity,colors,box-shadow]"
-                      style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", fontFamily: "var(--storefront-body-font, inherit)" }}
+                      style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", fontFamily: "var(--storefront-body-font, inherit)" }}
                       onClick={handleBuyNow}
                     >
                       <span className="flex items-center gap-1.5">
