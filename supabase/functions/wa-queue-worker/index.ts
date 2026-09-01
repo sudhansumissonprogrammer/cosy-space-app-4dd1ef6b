@@ -42,8 +42,23 @@ Deno.serve(async (req) => {
   const batchSize = (cfg as any)?.wa_queue_batch_size || 50;
   const downstreamSecret = (await getCronSecret(admin)) || "";
 
+  // 🔓 Reclaim rows stuck in 'sending'. A worker invocation can die mid-batch
+  // (CPU/wall limit, thrown error, cold-shutdown) after rows were flipped to
+  // 'sending'. Nothing else ever unlocks them, so those messages silently
+  // never reach the customer. Anything whose lock expired >5 min ago goes back
+  // to 'pending' (or 'failed' once attempts are exhausted).
+  let reclaimed = { requeued: 0, failed: 0 };
+  try {
+    const { data: rec } = await admin.rpc("wa_reclaim_stale_sending", { p_grace_minutes: 5, p_limit: 500 });
+    const r = Array.isArray(rec) ? rec[0] : rec;
+    if (r) reclaimed = { requeued: r.requeued ?? 0, failed: r.failed ?? 0 };
+  } catch (e) {
+    console.error("wa-queue-worker: stale reclaim failed", e);
+  }
+
   // Claim a batch atomically via SQL RPC fallback: select+update by id.
   // We do best-effort: select pending rows due, then update to 'sending' guarded by status=pending.
+
   const { data: candidates } = await admin
     .from("wa_send_queue")
     .select("id")
