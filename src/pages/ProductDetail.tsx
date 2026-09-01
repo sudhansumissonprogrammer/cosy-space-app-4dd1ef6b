@@ -1375,7 +1375,7 @@ export default function ProductDetail() {
                     </button>
                     <button
                       className="btn-press flex h-10 sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-2 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-[transform,opacity,colors,box-shadow]"
-                      style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", fontFamily: "var(--storefront-body-font, inherit)" }}
+                      style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", fontFamily: "var(--storefront-body-font, inherit)" }}
                       onPointerDown={prefetchCheckout}
                       onClick={handleBuyNow}
                     >
