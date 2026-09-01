@@ -103,68 +103,67 @@ export function AppSidebar() {
   const navigate = useNavigate();
 
 
-  const renderGroup = (
-    label: string,
-    items: { title: string; url: string; icon: React.ElementType; badge?: number; menuKey?: string }[]
-  ) => {
-    if (items.length === 0) return null;
-    return (
-      <SidebarGroup key={label}>
-        <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground/70 mb-1">{label}</SidebarGroupLabel>
-        <SidebarGroupContent>
-          <SidebarMenu>
-            {items.map((item) => {
-              const comingSoon = item.menuKey ? isComingSoon(item.menuKey) : false;
-              return (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild={!comingSoon}
-                    isActive={!comingSoon && isActive(item.url)}
-                    className={comingSoon ? "opacity-50 cursor-not-allowed" : !comingSoon && isActive(item.url) ? "font-semibold" : "font-medium"}
-                  >
-                    {comingSoon ? (
-                      <div className="flex items-center w-full hover:bg-transparent">
-                        <item.icon className="mr-2 h-4 w-4" />
-                        {!collapsed && (
-                          <>
-                            <span>{item.title}</span>
-                            <Badge variant="outline" className="ml-auto text-[9px] px-1 py-0 h-4 border-amber-300 text-amber-600 shrink-0">
-                              Soon
-                            </Badge>
-                          </>
-                        )}
-                      </div>
-                    ) : (
-                      <NavLink
-                        to={item.url}
-                        end
-                        instant
-                        className="hover:bg-accent/50"
-                        activeClassName="bg-accent text-accent-foreground font-semibold"
-                      >
-                        <item.icon className="mr-2.5 h-4 w-4" />
-                        {!collapsed && <span className="text-[13px]">{item.title}</span>}
-                      </NavLink>
-                    )}
-                  </SidebarMenuButton>
-                  {!comingSoon && item.badge !== undefined && item.badge > 0 && (
-                    <SidebarMenuBadge>
-                      <Badge
-                        variant="destructive"
-                        className="h-5 min-w-5 px-1.5 text-[10px] font-bold rounded-full"
-                      >
-                        {item.badge > 99 ? "99+" : item.badge}
-                      </Badge>
-                    </SidebarMenuBadge>
+  const renderGroup = (group: (typeof navGroups)[number]) => (
+    <SidebarGroup key={group.id}>
+      <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground/70 mb-1">
+        {group.title}
+      </SidebarGroupLabel>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {group.items.map((item) => {
+            const comingSoon = item.menuKey ? isComingSoon(item.menuKey) : false;
+            const active = !comingSoon && isActive(item.path, item.exact);
+            return (
+              <SidebarMenuItem key={item.id}>
+                <SidebarMenuButton
+                  asChild={!comingSoon}
+                  isActive={active}
+                  tooltip={collapsed ? item.label : undefined}
+                  className={comingSoon ? "opacity-50 cursor-not-allowed" : active ? "font-semibold" : "font-medium"}
+                >
+                  {comingSoon ? (
+                    <div className="flex items-center w-full hover:bg-transparent">
+                      <item.icon className="mr-2 h-4 w-4" />
+                      {!collapsed && (
+                        <>
+                          <span>{item.label}</span>
+                          <Badge variant="outline" className="ml-auto text-[9px] px-1 py-0 h-4 border-amber-300 text-amber-600 shrink-0">
+                            Soon
+                          </Badge>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <NavLink
+                      to={item.path}
+                      end={item.exact}
+                      instant
+                      title={item.description}
+                      className="hover:bg-accent/50"
+                      activeClassName="bg-accent text-accent-foreground font-semibold"
+                    >
+                      <item.icon className="mr-2.5 h-4 w-4" />
+                      {!collapsed && <span className="text-[13px]">{item.label}</span>}
+                    </NavLink>
                   )}
-                </SidebarMenuItem>
-              );
-            })}
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
-    );
-  };
+                </SidebarMenuButton>
+                {!comingSoon && item.badge !== undefined && item.badge > 0 && (
+                  <SidebarMenuBadge>
+                    <Badge
+                      variant="destructive"
+                      className="h-5 min-w-5 px-1.5 text-[10px] font-bold rounded-full"
+                    >
+                      {item.badge > 99 ? "99+" : item.badge}
+                    </Badge>
+                  </SidebarMenuBadge>
+                )}
+              </SidebarMenuItem>
+            );
+          })}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
 
   return (
     <Sidebar collapsible="icon">
@@ -185,53 +184,68 @@ export function AppSidebar() {
           )}
         </div>
 
-        {/* Dashboard */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground/70 mb-1">Overview</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/dashboard", true)}>
-                  <NavLink
-                    to="/dashboard"
-                    end
-                    instant
-                    className="hover:bg-accent/50"
-                    activeClassName="bg-accent text-accent-foreground font-semibold"
-                  >
-                    <LayoutDashboard className="mr-2.5 h-4 w-4" />
-                    {!collapsed && <span className="text-[13px]">Dashboard</span>}
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/dashboard/analytics", true)}>
-                  <NavLink
-                    to="/dashboard/analytics"
-                    end
-                    instant
-                    className="hover:bg-accent/50"
-                    activeClassName="bg-accent text-accent-foreground font-semibold"
-                  >
-                    <BarChart3 className="mr-2.5 h-4 w-4" />
-                    {!collapsed && <span className="text-[13px]">Analytics</span>}
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {/* Find any setting */}
+        {!collapsed && (
+          <div className="px-3 pt-3">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Find a setting…"
+                aria-label="Search dashboard menus"
+                className="h-8 pl-8 pr-7 text-[12px]"
+              />
+              {query && (
+                <button
+                  type="button"
+                  aria-label="Clear search"
+                  onClick={() => setQuery("")}
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
-        {storeId ? (
-          <>
-            {renderGroup("Catalog", catalogItems)}
-            {renderGroup("Sales & Customers", salesItems)}
-            {renderGroup("Payments & Shipping", paymentItems)}
-            {renderGroup("Marketing", marketingItems)}
-            {renderGroup("Add-ons", addonsItems)}
-            {renderGroup("Appearance & Settings", settingsItems)}
-          </>
+        {!collapsed && query.trim() ? (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground/70 mb-1">
+              {results.length ? "Results" : "No matches"}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {results.map((item) => (
+                  <SidebarMenuItem key={item.id}>
+                    <SidebarMenuButton
+                      onClick={() => {
+                        navigate(item.path);
+                        setQuery("");
+                      }}
+                      className="h-auto flex-col items-start gap-0.5 py-2"
+                    >
+                      <span className="flex items-center gap-2 text-[13px] font-medium">
+                        <item.icon className="h-4 w-4" />
+                        {item.label}
+                      </span>
+                      <span className="pl-6 text-[11px] leading-snug text-muted-foreground line-clamp-2">
+                        {item.description}
+                      </span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ) : storeId || !storeSlug ? (
+          navGroups.map(renderGroup)
         ) : (
+          navGroups.map(renderGroup)
+        )}
+
+        {!storeSlug && (
           <SidebarGroup>
             <SidebarGroupLabel>Store</SidebarGroupLabel>
             <SidebarGroupContent>
@@ -253,30 +267,8 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         )}
-
-        {/* Account */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Account</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/dashboard/settings", true)}>
-                  <NavLink
-                    to="/dashboard/settings"
-                    end
-                    instant
-                    className="hover:bg-accent/50"
-                    activeClassName="bg-accent text-accent-foreground font-medium"
-                  >
-                    <Settings className="mr-2 h-4 w-4" />
-                    {!collapsed && <span>Settings</span>}
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
       </SidebarContent>
+
 
       <SidebarFooter>
         <Separator />
