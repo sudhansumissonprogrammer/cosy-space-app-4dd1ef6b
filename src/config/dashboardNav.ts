@@ -195,15 +195,6 @@ export function buildDashboardNav({
         },
 
         {
-          id: "customers",
-          label: "Customers",
-          icon: Users,
-          path: `${s}/customers`,
-          menuKey: "customers",
-          description: "Everyone who has ordered from you, with contact details and history.",
-          keywords: ["customer", "buyer", "contact", "phone", "repeat"],
-        },
-        {
           id: "leads",
           label: "Leads",
           icon: UserCheck,
