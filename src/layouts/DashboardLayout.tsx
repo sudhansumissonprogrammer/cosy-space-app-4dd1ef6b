@@ -347,7 +347,7 @@ export default function DashboardLayout() {
             <div className="flex-1 flex flex-col min-w-0">
               {isAdminView && (
                 <div className="bg-amber-500 text-amber-950 text-center text-xs font-semibold py-1.5 px-4">
-                  ⚡ Admin View — Viewing "{store?.name}" dashboard (read-only)
+                  ⚡ Admin View — Editing "{store?.name}" dashboard (full access)
                 </div>
               )}
               <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b bg-card px-4">
@@ -427,7 +427,7 @@ export default function DashboardLayout() {
     >
       {isAdminView && (
         <div className="bg-amber-500 text-amber-950 text-center text-xs font-semibold py-1.5 px-4">
-          ⚡ Admin View — Viewing "{store?.name}"
+          ⚡ Admin View — Editing "{store?.name}" (full access)
         </div>
       )}
 
