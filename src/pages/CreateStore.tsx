@@ -660,388 +660,247 @@ export default function CreateStore() {
         <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
           <Sparkles className="h-7 w-7 text-primary" />
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Create Your Store</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Set up your storefront in just a few steps</p>
-      </div>
-
-      {/* Progress bar */}
-      <div className="space-y-2">
-        <Progress value={progress} className="h-2" />
-        <p className="text-center text-xs font-medium text-primary animate-fade-in" key={step}>
-          {currentStep.motivation}
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Create your store</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Just your store name — everything else can wait. Takes about 10 seconds.
         </p>
       </div>
 
-      {/* Step Indicator */}
-      <div className="flex items-center justify-center gap-1">
-        {STEPS.map((s, i) => (
-          <div key={s.id} className="flex items-center">
-            <button
-              type="button"
-              onClick={() => { if (s.id < step) { setDirection("back"); setStep(s.id); } }}
-              className={`flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium transition-[transform,opacity,colors,box-shadow] duration-300 ${
-                step === s.id
-                  ? "bg-primary text-primary-foreground shadow-md scale-110"
-                  : step > s.id
-                  ? "bg-primary/10 text-primary cursor-pointer hover:bg-primary/20"
-                  : "bg-muted text-muted-foreground"
-              }`}
-            >
-              {step > s.id ? (
-                <Check className="h-3 w-3" />
-              ) : (
-                <s.icon className="h-3 w-3" />
-              )}
-              <span className="hidden sm:inline">{s.title}</span>
-            </button>
-            {i < STEPS.length - 1 && (
-              <div className={`mx-1 h-px w-6 transition-colors duration-500 ${
-                step > s.id ? "bg-primary" : "bg-border"
-              }`} />
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Step Content */}
       <Card className="overflow-hidden border-0 shadow-lg">
-        <CardContent className="p-5 sm:p-8">
-          <div
-            key={step}
-            className="animate-fade-in"
-            style={{ animationDuration: "0.35s" }}
-          >
-
-            {/* Step 1: Store Info */}
-            {step === 1 && (
-              <div className="space-y-5">
-                <div className="mb-4">
-                  <h2 className="text-xl font-semibold text-foreground">Store Information</h2>
-                  <p className="text-sm text-muted-foreground">Tell us about your store</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="store-name">Store Name *</Label>
-                  <Input
-                    id="store-name"
-                    placeholder="My Fashion Store"
-                    value={name}
-                    onChange={(e) => handleNameChange(e.target.value)}
-                    maxLength={100}
-                    className="h-11"
-                  />
-                </div>
-
-                {slug && (
-                  <div className="rounded-lg border bg-muted/50 p-3 space-y-1">
-                    <p className="text-xs text-muted-foreground">Your store will be live at:</p>
-                    <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                      <Globe className="h-3.5 w-3.5 text-primary" />
-                      {slug}.shopbanao.in
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">You can connect your own custom domain later in Settings → Domain</p>
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Describe your store in a few words..."
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    maxLength={500}
-                    rows={3}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Currency</Label>
-                  <Select value={currency} onValueChange={setCurrency}>
-                    <SelectTrigger className="h-11">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CURRENCIES.map((c) => (
-                        <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Order Mode */}
-                <div className="space-y-2">
-                  <Label>Order mode</Label>
-                  <div className="flex items-start gap-3 rounded-xl border-2 border-primary bg-primary/5 p-4 shadow-sm">
-                    <Globe className="mt-0.5 h-4 w-4 text-primary" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Website Checkout</p>
-                      <p className="text-xs text-muted-foreground">Enabled by default for commission tracking, wallet billing, invoices, abandoned-cart recovery and order automations.</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Logo + Banner */}
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Logo</Label>
-                    {logoPreview ? (
-                      <div className="relative inline-block">
-                        <img src={logoPreview} alt="Logo" className="h-24 w-24 rounded-xl border object-cover" />
-                        <button type="button" onClick={() => removeFile(setLogoFile, setLogoPreview)} className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground">
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ) : (
-                      <label className="flex h-24 w-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-input transition-[transform,opacity,colors,box-shadow] hover:border-primary/50 hover:bg-accent/50">
-                        <Upload className="h-5 w-5 text-muted-foreground" />
-                        <span className="text-[10px] text-muted-foreground">Upload</span>
-                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileSelect(e.target.files?.[0] || null, setLogoFile, setLogoPreview)} />
-                      </label>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Banner</Label>
-                    {bannerPreview ? (
-                      <div className="relative">
-                        <img src={bannerPreview} alt="Banner" className="h-24 w-full rounded-xl border object-cover" />
-                        <button type="button" onClick={() => removeFile(setBannerFile, setBannerPreview)} className="absolute right-2 top-2 rounded-full bg-destructive p-1 text-destructive-foreground">
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ) : (
-                      <label className="flex h-24 w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-input transition-[transform,opacity,colors,box-shadow] hover:border-primary/50 hover:bg-accent/50">
-                        <Upload className="h-5 w-5 text-muted-foreground" />
-                        <span className="text-[10px] text-muted-foreground">Upload banner</span>
-                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileSelect(e.target.files?.[0] || null, setBannerFile, setBannerPreview)} />
-                      </label>
-                    )}
-                  </div>
-                </div>
-
-                {/* Mobile Hero */}
-                <div className="space-y-2">
-                  <Label>Mobile Hero Banner <span className="text-xs text-muted-foreground font-normal">(optional)</span></Label>
-                  {heroPreview ? (
-                    <div className="relative">
-                      <img src={heroPreview} alt="Mobile Hero" className="w-full rounded-xl border object-contain max-h-48" />
-                      <button type="button" onClick={() => removeFile(setHeroFile, setHeroPreview)} className="absolute right-2 top-2 rounded-full bg-destructive p-1 text-destructive-foreground">
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="flex h-28 w-full cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-input transition-[transform,opacity,colors,box-shadow] hover:border-primary/50 hover:bg-accent/50">
-                      <Upload className="h-5 w-5 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">Upload mobile hero image</span>
-                      <span className="text-[10px] text-muted-foreground/70">You can skip this</span>
-                      <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileSelect(e.target.files?.[0] || null, setHeroFile, setHeroPreview)} />
-                    </label>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Step 2: Location & Contact */}
-            {step === 2 && (
-              <div className="space-y-5">
-                <div className="mb-4">
-                  <h2 className="text-xl font-semibold text-foreground">Location & Contact</h2>
-                  <p className="text-sm text-muted-foreground">Shown on your storefront — all optional</p>
-                </div>
-
-                {/* Contact — reused from the account you just created */}
-                <div className="rounded-xl border bg-accent/30 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground">Contact details from your account</p>
-                      <p className="mt-1 truncate text-xs text-muted-foreground">
-                        {ownerName.trim() || "—"} · {ownerEmail.trim() || "—"}
-                        {whatsappNumber.trim() ? ` · ${whatsappNumber.trim()}` : ""}
-                      </p>
-                      <p className="mt-1 text-[11px] text-muted-foreground">
-                        We reuse what you gave at signup — no need to type it again.
-                      </p>
-                    </div>
-                    <Button type="button" variant="outline" size="sm" onClick={() => setEditContact((v) => !v)}>
-                      {editContact ? "Done" : "Change"}
-                    </Button>
-                  </div>
-                </div>
-
-                {editContact && (
-                  <div className="space-y-4 rounded-xl border border-dashed p-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="owner-name">Store Owner / Founder Name</Label>
-                      <div className="flex items-center gap-0 rounded-md border border-input bg-muted/50">
-                        <span className="flex-shrink-0 px-3 text-muted-foreground"><Crown className="h-4 w-4" /></span>
-                        <Input id="owner-name" placeholder="e.g. Jetharam" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} maxLength={80} className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0" />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="whatsapp">WhatsApp Number</Label>
-                      <div className="flex items-center gap-0 rounded-md border border-input bg-muted/50">
-                        <span className="flex-shrink-0 px-3 text-muted-foreground"><Phone className="h-4 w-4" /></span>
-                        <Input id="whatsapp" placeholder="+91 98765 43210" value={whatsappNumber} onChange={(e) => setWhatsappNumber(e.target.value)} maxLength={20} className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0" />
-                      </div>
-                      <p className="text-xs text-muted-foreground">Shown as a customer support contact.</p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="owner-email">Support Email</Label>
-                      <div className="flex items-center gap-0 rounded-md border border-input bg-muted/50">
-                        <span className="flex-shrink-0 px-3 text-muted-foreground"><Globe className="h-4 w-4" /></span>
-                        <Input id="owner-email" type="email" placeholder="you@example.com" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} maxLength={200} className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0" />
-                      </div>
-                      <p className="text-xs text-muted-foreground">Shown on your storefront footer & contact page.</p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="city">City</Label>
-                    <Input id="city" placeholder="Mumbai" value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} className="h-11" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="state">State / Region</Label>
-                    <Input id="state" placeholder="Maharashtra" value={state} onChange={(e) => setState(e.target.value)} maxLength={100} className="h-11" />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="address">Full Address <span className="text-xs font-normal text-muted-foreground">(optional)</span></Label>
-                  <Textarea id="address" placeholder="123 Main Street, Building A, Floor 2..." value={location} onChange={(e) => setLocation(e.target.value)} maxLength={500} rows={3} />
-                </div>
-
-                <div className="rounded-xl border bg-accent/30 p-4">
-                  <div className="flex items-start gap-3">
-                    <MapPin className="mt-0.5 h-5 w-5 text-primary" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Why add a location?</p>
-                      <p className="text-xs text-muted-foreground">Stores with a location get more trust from customers and appear more professional.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Step 3: Social Media */}
-            {step === 3 && (
-
-              <div className="space-y-5">
-                <div className="mb-4">
-                  <h2 className="text-xl font-semibold text-foreground">Social Media</h2>
-                  <p className="text-sm text-muted-foreground">Connect your social accounts</p>
-                </div>
-
-                <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 p-3 text-center">
-                  <p className="text-xs text-muted-foreground">🔗 Both are optional — you can add them later from Settings</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="instagram">Instagram</Label>
-                  <div className="flex items-center gap-0 rounded-md border border-input bg-muted/50">
-                    <span className="flex-shrink-0 px-3 text-muted-foreground"><Instagram className="h-4 w-4" /></span>
-                    <Input id="instagram" placeholder="https://instagram.com/yourstore" value={instagramUrl} onChange={(e) => setInstagramUrl(e.target.value)} maxLength={200} className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0" />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="facebook">Facebook</Label>
-                  <div className="flex items-center gap-0 rounded-md border border-input bg-muted/50">
-                    <span className="flex-shrink-0 px-3 text-muted-foreground"><Facebook className="h-4 w-4" /></span>
-                    <Input id="facebook" placeholder="https://facebook.com/yourstore" value={facebookUrl} onChange={(e) => setFacebookUrl(e.target.value)} maxLength={200} className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0" />
-                  </div>
-                </div>
-
-                <div className="space-y-2 pt-2">
-                  <Label htmlFor="partnerCode" className="flex items-center gap-1.5">
-                    <Sparkles className="h-3.5 w-3.5 text-primary" />
-                    Partner referral code <span className="text-xs font-normal text-muted-foreground">(optional)</span>
-                  </Label>
-                  <div className="flex items-center gap-0 rounded-md border border-input bg-muted/50">
-                    <span className="flex-shrink-0 px-3 text-muted-foreground text-xs font-mono">SBP</span>
-                    <Input
-                      id="partnerCode"
-                      placeholder="e.g. SBP1023"
-                      value={partnerCode}
-                      onChange={(e) => setPartnerCode(e.target.value.toUpperCase())}
-                      maxLength={20}
-                      className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0 uppercase"
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Did a partner refer you? Enter their code here. If you signed up via their link, leave blank — it's already tracked.
-                  </p>
-                </div>
-
-
-                <div className="rounded-xl border bg-accent/30 p-4">
-                  <div className="flex items-start gap-3">
-                    <Sparkles className="mt-0.5 h-5 w-5 text-primary" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">You're all set! 🎉</p>
-                      <p className="text-xs text-muted-foreground">Click "Launch My Store" to create your store. You can always update everything later.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+        <CardContent className="space-y-5 p-5 sm:p-8">
+          {/* The only required field */}
+          <div className="space-y-2">
+            <Label htmlFor="store-name">Store name</Label>
+            <Input
+              id="store-name"
+              autoFocus
+              placeholder="e.g. Utkal Watches"
+              value={name}
+              onChange={(e) => handleNameChange(e.target.value)}
+              maxLength={100}
+              className="h-14 text-lg font-medium"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && name.trim()) handleSubmit();
+              }}
+            />
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Globe className="h-3.5 w-3.5 text-primary" />
+              <span className="truncate">
+                {slug ? `${slug}.shopbanao.in` : "yourstore.shopbanao.in"}
+              </span>
+            </div>
           </div>
 
-          {/* Navigation */}
-          <div className="mt-8 flex items-center justify-between gap-3">
-            {step > 1 ? (
-              <Button type="button" variant="ghost" onClick={goBack} className="gap-2">
-                <ArrowLeft className="h-4 w-4" /> Back
-              </Button>
-            ) : (
-              <div />
-            )}
-
-            {step < STEPS.length ? (
-              <div className="flex items-center gap-2">
-                <Button
+          {/* Logo — optional, inline */}
+          <div className="flex items-center gap-3 rounded-xl border bg-accent/20 p-3">
+            {logoPreview ? (
+              <div className="relative">
+                <img src={logoPreview} alt="Logo" className="h-14 w-14 rounded-xl border object-cover" />
+                <button
                   type="button"
-                  variant="ghost"
-                  disabled={loading || !name.trim() || !slug.trim()}
-                  onClick={handleSubmit}
-                  className="gap-1.5 text-xs sm:text-sm"
+                  onClick={() => removeFile(setLogoFile, setLogoPreview)}
+                  className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
                 >
-                  <Rocket className="h-3.5 w-3.5" /> Skip & launch now
-                </Button>
-                <Button type="button" onClick={goNext} className="gap-2 px-6">
-                  Next <ArrowRight className="h-4 w-4" />
-                </Button>
+                  <X className="h-3 w-3" />
+                </button>
               </div>
             ) : (
+              <label className="flex h-14 w-14 shrink-0 cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-input hover:border-primary/50">
+                <Upload className="h-5 w-5 text-muted-foreground" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleFileSelect(e.target.files?.[0] || null, setLogoFile, setLogoPreview)}
+                />
+              </label>
+            )}
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-foreground">Add your logo</p>
+              <p className="text-xs text-muted-foreground">Optional — we'll show your store name until you add one.</p>
+            </div>
+          </div>
 
-              <Button
-                type="button"
-                onClick={handleSubmit}
-                disabled={loading}
-                className="gap-2 px-8 relative overflow-hidden group"
-              >
-                <span className="absolute inset-0 bg-gradient-to-r from-primary via-primary/80 to-primary opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <span className="relative flex items-center gap-2">
-                  {loading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Rocket className="h-4 w-4 group-hover:animate-bounce" />
-                  )}
-                  Launch My Store 🚀
-                </span>
+          {/* Launch */}
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={loading || !name.trim()}
+            size="lg"
+            className="h-14 w-full gap-2 text-base"
+          >
+            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Rocket className="h-5 w-5" />}
+            Launch my store
+          </Button>
+
+          <p className="text-center text-xs text-muted-foreground">
+            Website checkout, COD, WhatsApp orders and analytics are switched on automatically.
+          </p>
+
+          {/* Contact — reused from signup, never asked twice */}
+          <div className="rounded-xl border bg-accent/30 p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-foreground">Support contact</p>
+                <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                  {[ownerName.trim(), ownerEmail.trim(), whatsappNumber.trim()].filter(Boolean).join(" · ") || "From your account"}
+                </p>
+              </div>
+              <Button type="button" variant="ghost" size="sm" onClick={() => setEditContact((v) => !v)}>
+                {editContact ? "Done" : "Change"}
               </Button>
+            </div>
+
+            {editContact && (
+              <div className="mt-3 space-y-3 border-t pt-3">
+                <div className="flex items-center rounded-md border border-input bg-background">
+                  <span className="px-3 text-muted-foreground"><Crown className="h-4 w-4" /></span>
+                  <Input aria-label="Owner name" placeholder="Owner name" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} maxLength={80} className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0" />
+                </div>
+                <div className="flex items-center rounded-md border border-input bg-background">
+                  <span className="px-3 text-muted-foreground"><Phone className="h-4 w-4" /></span>
+                  <Input aria-label="WhatsApp number" placeholder="+91 98765 43210" value={whatsappNumber} onChange={(e) => setWhatsappNumber(e.target.value)} maxLength={20} className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0" />
+                </div>
+                <div className="flex items-center rounded-md border border-input bg-background">
+                  <span className="px-3 text-muted-foreground"><Globe className="h-4 w-4" /></span>
+                  <Input aria-label="Support email" type="email" placeholder="you@example.com" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} maxLength={200} className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0" />
+                </div>
+              </div>
             )}
           </div>
+
+          {/* Everything optional lives here */}
+          <button
+            type="button"
+            onClick={() => setShowMore((v) => !v)}
+            className="flex w-full items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium text-primary hover:bg-primary/5"
+          >
+            {showMore ? "Hide extra details" : "Add more details (optional)"}
+            <ArrowRight className={`h-4 w-4 transition-transform ${showMore ? "rotate-90" : ""}`} />
+          </button>
+
+          {showMore && (
+            <div className="space-y-5 border-t pt-5 animate-fade-in">
+              <div className="space-y-2">
+                <Label htmlFor="description">Short description</Label>
+                <Textarea
+                  id="description"
+                  placeholder="What do you sell?"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  maxLength={500}
+                  rows={2}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Currency</Label>
+                <Select value={currency} onValueChange={setCurrency}>
+                  <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {CURRENCIES.map((c) => (
+                      <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Banner</Label>
+                {bannerPreview ? (
+                  <div className="relative">
+                    <img src={bannerPreview} alt="Banner" className="h-24 w-full rounded-xl border object-cover" />
+                    <button type="button" onClick={() => removeFile(setBannerFile, setBannerPreview)} className="absolute right-2 top-2 rounded-full bg-destructive p-1 text-destructive-foreground">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex h-24 w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-input hover:border-primary/50">
+                    <Upload className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-[10px] text-muted-foreground">Upload banner</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileSelect(e.target.files?.[0] || null, setBannerFile, setBannerPreview)} />
+                  </label>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label>Mobile hero banner</Label>
+                {heroPreview ? (
+                  <div className="relative">
+                    <img src={heroPreview} alt="Mobile hero" className="max-h-48 w-full rounded-xl border object-contain" />
+                    <button type="button" onClick={() => removeFile(setHeroFile, setHeroPreview)} className="absolute right-2 top-2 rounded-full bg-destructive p-1 text-destructive-foreground">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex h-24 w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-input hover:border-primary/50">
+                    <Upload className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-[10px] text-muted-foreground">Upload mobile hero</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileSelect(e.target.files?.[0] || null, setHeroFile, setHeroPreview)} />
+                  </label>
+                )}
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="city">City</Label>
+                  <Input id="city" placeholder="Mumbai" value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} className="h-11" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="state">State / region</Label>
+                  <Input id="state" placeholder="Maharashtra" value={state} onChange={(e) => setState(e.target.value)} maxLength={100} className="h-11" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="address" className="flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5 text-primary" /> Full address
+                </Label>
+                <Textarea id="address" placeholder="123 Main Street, Building A..." value={location} onChange={(e) => setLocation(e.target.value)} maxLength={500} rows={2} />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="instagram">Instagram</Label>
+                <div className="flex items-center rounded-md border border-input bg-muted/50">
+                  <span className="px-3 text-muted-foreground"><Instagram className="h-4 w-4" /></span>
+                  <Input id="instagram" placeholder="https://instagram.com/yourstore" value={instagramUrl} onChange={(e) => setInstagramUrl(e.target.value)} maxLength={200} className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="facebook">Facebook</Label>
+                <div className="flex items-center rounded-md border border-input bg-muted/50">
+                  <span className="px-3 text-muted-foreground"><Facebook className="h-4 w-4" /></span>
+                  <Input id="facebook" placeholder="https://facebook.com/yourstore" value={facebookUrl} onChange={(e) => setFacebookUrl(e.target.value)} maxLength={200} className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="partnerCode">Partner referral code</Label>
+                <div className="flex items-center rounded-md border border-input bg-muted/50">
+                  <span className="px-3 font-mono text-xs text-muted-foreground">SBP</span>
+                  <Input
+                    id="partnerCode"
+                    placeholder="e.g. SBP1023"
+                    value={partnerCode}
+                    onChange={(e) => setPartnerCode(e.target.value.toUpperCase())}
+                    maxLength={20}
+                    className="h-11 border-0 bg-transparent uppercase shadow-none focus-visible:ring-0"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Signed up through a partner link? Leave this blank — it's already tracked.
+                </p>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Step counter */}
       <p className="text-center text-xs text-muted-foreground">
-        Step {step} of {STEPS.length}
+        You can change every one of these later in Settings.
       </p>
+
     </div>
   );
 }
