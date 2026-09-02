@@ -716,6 +716,41 @@ export default function CreateStore() {
             </div>
           </div>
 
+          {/* What do you sell? — powers AI store description, About Us & SEO */}
+          <div className="space-y-2">
+            <Label>What do you sell?</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {BUSINESS_TYPES.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  aria-pressed={businessType === t}
+                  onClick={() => setBusinessType(businessType === t ? "" : t)}
+                  className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
+                    businessType === t
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-input bg-background text-muted-foreground hover:border-primary/50"
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+            <Input
+              placeholder="In your words — e.g. gold plated imitation jewellery for daily wear"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              maxLength={200}
+              className="h-11"
+            />
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              We'll auto-write your store description, About Us page and Google SEO text from this.
+            </p>
+          </div>
+
+
+
           {/* Logo — optional, inline */}
           <div className="flex items-center gap-3 rounded-xl border bg-accent/20 p-3">
             {logoPreview ? (
