@@ -204,6 +204,7 @@ export default function DashboardLayout() {
   const { storeSlug: routeStoreSlug } = useParams<{ storeSlug: string }>();
   const { signOut, user } = useAuth();
   const isMobile = useIsMobile();
+  const { isVisible } = useMenuConfig();
 
   // Prefetch all dashboard page chunks on mount (covers mobile layout)
   useEffect(() => { prefetchDashboardRoutes(); }, []);
