@@ -765,21 +765,25 @@ export default function StoreOrders() {
                             </TableCell>
                           </TableRow>
                           {group.orders.map((order: any) => (
-                            <TableRow key={order.id} className={selectedOrders.has(order.id) ? "bg-primary/5" : ""}>
-                              <TableCell>
+                            <TableRow
+                              key={order.id}
+                              onClick={() => setMobileDetailOrder(order)}
+                              className={cn(
+                                "cursor-pointer",
+                                selectedOrders.has(order.id) && "bg-primary/5",
+                                mobileDetailOrder?.id === order.id && "bg-primary/10",
+                              )}
+                            >
+                              <TableCell onClick={(e) => e.stopPropagation()}>
                                 <Checkbox
                                   checked={selectedOrders.has(order.id)}
                                   onCheckedChange={() => toggleOrderSelection(order.id)}
                                 />
                               </TableCell>
                               <TableCell className="font-mono text-xs text-muted-foreground">
-                                <button
-                                  type="button"
-                                  onClick={() => setMobileDetailOrder(order)}
-                                  className="hover:text-foreground hover:underline"
-                                >
+                                <span className="hover:text-foreground hover:underline">
                                   {getOrderDisplayId(order)}
-                                </button>
+                                </span>
                               </TableCell>
                               <TableCell className="font-medium text-foreground">{order.customer_name || "—"}</TableCell>
                               <TableCell className="text-sm text-muted-foreground">{order.customer_phone || "—"}</TableCell>
