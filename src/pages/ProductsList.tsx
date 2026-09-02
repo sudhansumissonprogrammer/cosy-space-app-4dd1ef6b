@@ -45,6 +45,7 @@ import { cleanImageUrl } from "@/lib/imageOptimize";
 import { useDashboardStore } from "@/contexts/DashboardStoreContext";
 import { useRealtimeStore } from "@/hooks/useRealtimeStore";
 import SortableHead from "@/components/dashboard/SortableHead";
+import { DataTableCard, DataTableRow, DataTableActionCell } from "@/components/dashboard/DataTable";
 
 type SortOption =
   | "title-asc"
@@ -937,7 +938,7 @@ export default function ProductsList() { // v2
                         <TableCell>
                           <Badge variant={product.is_active ? "default" : "secondary"}>{product.is_active ? "Active" : "Draft"}</Badge>
                         </TableCell>
-                        <TableCell onClick={(e) => e.stopPropagation()}>
+                        <DataTableActionCell>
                           <div className="flex gap-1">
                             <Button
                               variant="ghost"
@@ -1004,13 +1005,12 @@ export default function ProductsList() { // v2
                               </AlertDialogContent>
                             </AlertDialog>
                           </div>
-                        </TableCell>
-                      </TableRow>
+                        </DataTableActionCell>
+                      </DataTableRow>
                     ))}
                   </TableBody>
                 </Table>
-              </CardContent>
-            </Card>
+            </DataTableCard>
           )}
           <PaginationControls page={pagination.page} totalPages={pagination.totalPages} onPageChange={pagination.setPage} />
           <p className="text-center text-xs text-muted-foreground">
