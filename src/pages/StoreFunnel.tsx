@@ -516,7 +516,19 @@ export default function StoreFunnel() {
         </CardHeader>
         <CardContent className="space-y-3">
           {loading && <div className="text-xs text-muted-foreground">Loading…</div>}
-          {!loading && sessions === 0 && (
+          {!loading && hasError && (
+            <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-center text-xs text-muted-foreground">
+              Couldn&apos;t load funnel data.{" "}
+              <button
+                type="button"
+                className="font-medium text-foreground underline underline-offset-2"
+                onClick={() => { pvQ.refetch(); evQ.refetch(); ordQ.refetch(); }}
+              >
+                Retry
+              </button>
+            </div>
+          )}
+          {!loading && !hasError && sessions === 0 && (
             <div className="text-xs text-muted-foreground py-4 text-center">
               No traffic in this period yet.
             </div>
