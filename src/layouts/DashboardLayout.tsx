@@ -1,3 +1,4 @@
+import { IS_WHATSAPP_ONLY_STORE } from "@/config/storeMode";
 import { useState, useEffect, useMemo, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { prefetchDashboardRoutes } from "@/lib/prefetchDashboardRoutes";
@@ -105,12 +106,12 @@ function MobileMenu({
           <span className="block truncate text-[11px] text-muted-foreground/80">{item.description}</span>
         </span>
         {comingSoon && (
-          <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-amber-400/50 text-amber-400 shrink-0">
+          <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-warning/50 text-warning shrink-0">
             Soon
           </Badge>
         )}
         {!comingSoon && item.badge !== undefined && item.badge > 0 && (
-          <Badge className="h-5 min-w-5 px-1.5 text-[10px] font-bold rounded-full bg-red-500 text-white border-0">
+          <Badge className="h-5 min-w-5 px-1.5 text-[10px] font-bold rounded-full bg-destructive text-destructive-foreground border-0">
             {item.badge > 99 ? "99+" : item.badge}
           </Badge>
         )}
@@ -217,7 +218,7 @@ export default function DashboardLayout() {
 
   const storeId = store?.id;
   const storeSlug = store?.slug ?? (isAdminView ? routeStoreSlug : ownStore?.slug);
-  const isWhatsAppOnly = false;
+  const isWhatsAppOnly = IS_WHATSAPP_ONLY_STORE;
   const adminViewValue = useMemo(() => ({ isAdminView }), [isAdminView]);
   const dashboardStoreValue = useMemo(() => ({
     store,
@@ -507,7 +508,7 @@ export default function DashboardLayout() {
                     )}
                   />
                   {item.badge !== undefined && item.badge > 0 && (
-                    <span className="absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                    <span className="absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
                       {item.badge > 99 ? "99+" : item.badge}
                     </span>
                   )}

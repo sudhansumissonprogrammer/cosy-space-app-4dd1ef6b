@@ -137,7 +137,7 @@ function ProviderCard({ provider, storeId, existing, onSaved, pickups }: any) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Truck className="h-5 w-5" /> {provider === "bluedart" ? "Blue Dart" : provider[0].toUpperCase() + provider.slice(1)}
-          {existing && <span className="text-xs text-green-600 flex items-center gap-1 ml-2"><CheckCircle2 className="h-4 w-4"/> configured</span>}
+          {existing && <span className="text-xs text-success flex items-center gap-1 ml-2"><CheckCircle2 className="h-4 w-4"/> configured</span>}
         </CardTitle>
         <CardDescription>{DESCS[provider as Provider]}</CardDescription>
       </CardHeader>
@@ -219,7 +219,7 @@ function ShiprocketPickupRegister({ storeId, pickups }: any) {
         <div key={p.id} className="flex items-center justify-between text-sm">
           <div>
             {p.nickname} — {p.city}
-            {p.shiprocket_pickup_name && <span className="ml-2 text-green-600 text-xs">✓ {p.shiprocket_pickup_name}</span>}
+            {p.shiprocket_pickup_name && <span className="ml-2 text-success text-xs">✓ {p.shiprocket_pickup_name}</span>}
           </div>
           <Button size="sm" variant="outline" onClick={() => register.mutate(p.id)} disabled={register.isPending}>
             {p.shiprocket_pickup_name ? "Re-register" : "Register"}
@@ -276,7 +276,7 @@ function PickupAddresses({ storeId, pickups }: any) {
         {pickups.map((p: any) => (
           <div key={p.id} className="rounded border p-3 flex items-start justify-between gap-3">
             <div className="text-sm">
-              <div className="font-medium">{p.nickname} {p.is_default && <span className="text-xs text-green-600 ml-1">DEFAULT</span>}</div>
+              <div className="font-medium">{p.nickname} {p.is_default && <span className="text-xs text-success ml-1">DEFAULT</span>}</div>
               <div className="text-muted-foreground">{p.contact_name} • {p.phone}</div>
               <div className="text-muted-foreground">{p.address_line1}, {p.city}, {p.state} - {p.pincode}</div>
             </div>

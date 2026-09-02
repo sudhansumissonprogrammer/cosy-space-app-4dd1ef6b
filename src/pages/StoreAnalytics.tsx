@@ -134,7 +134,7 @@ export default function StoreAnalytics() {
     priorStart = startOfDay(subDays(now, days * 2 - 1));
     priorEnd = startOfDay(subDays(now, days - 1));
   }
-  const { data: salesAnalytics, isLoading } = useQuery({
+  const { data: salesAnalytics, isLoading, isError, refetch } = useQuery({
     queryKey: [
       "analytics-sales-exact",
       storeId,
@@ -429,6 +429,18 @@ export default function StoreAnalytics() {
       </div>
     );
   }
+
+  if (isError) {
+    return (
+      <div className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-6 text-center">
+        <p className="text-sm font-medium text-foreground">Couldn&apos;t load analytics</p>
+        <p className="text-xs text-muted-foreground">Check your connection and try again.</p>
+        <Button size="sm" variant="outline" onClick={() => refetch()}>Retry</Button>
+      </div>
+    );
+  }
+
+
 
   return (
     <div className="space-y-4">
