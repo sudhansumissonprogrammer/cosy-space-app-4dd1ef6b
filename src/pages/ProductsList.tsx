@@ -899,7 +899,7 @@ export default function ProductsList() { // v2
                         }}
                       >
                         {bulkMode && (
-                          <TableCell>
+                          <TableCell onClick={(e) => e.stopPropagation()}>
                             <Checkbox checked={bulkSelected.has(product.id)} onCheckedChange={() => toggleBulkSelect(product.id)} />
                           </TableCell>
                         )}
@@ -910,7 +910,7 @@ export default function ProductsList() { // v2
                               alt=""
                               className="h-10 w-10 rounded-md border object-cover cursor-pointer hover:opacity-80 transition-opacity"
                               loading="lazy"
-                              onClick={() => setPreviewImage(cleanImageUrl(product.image_url))}
+                              onClick={(e) => { e.stopPropagation(); setPreviewImage(cleanImageUrl(product.image_url)); }}
                             />
                           ) : (
                             <div className="flex h-10 w-10 items-center justify-center rounded-md bg-accent"><Package className="h-4 w-4 text-muted-foreground" /></div>
