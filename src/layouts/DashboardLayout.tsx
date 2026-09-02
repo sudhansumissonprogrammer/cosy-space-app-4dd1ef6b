@@ -105,7 +105,7 @@ function MobileMenu({
           <span className="block truncate text-[11px] text-muted-foreground/80">{item.description}</span>
         </span>
         {comingSoon && (
-          <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-amber-400/50 text-amber-400 shrink-0">
+          <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-warning/50 text-warning shrink-0">
             Soon
           </Badge>
         )}

@@ -348,7 +348,7 @@ export default function StorePayments() {
       {showPaymentConfig && (
         <div className={`rounded-xl border p-3 text-sm ${
           gatewayMismatch
-            ? "border-warning/50 bg-warning/10 text-warning-foreground dark:text-warning"
+            ? "border-warning/50 bg-warning/10 text-foreground"
             : "border-primary/30 bg-primary/5 text-foreground"
         }`}>
           <div className="flex items-start gap-2">
@@ -823,7 +823,7 @@ export default function StorePayments() {
           </CardHeader>
           <CardContent className="space-y-4">
             {!onlineEnabled && (
-              <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs text-warning-foreground dark:text-warning">
+              <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs text-foreground">
                 Select an online gateway (Razorpay, Cashfree or PayU) above for partial payment to take effect at checkout.
               </div>
             )}
@@ -909,7 +909,7 @@ export default function StorePayments() {
           </CardHeader>
           <CardContent className="space-y-4">
             {!onlineEnabled && (
-              <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs text-warning-foreground dark:text-warning">
+              <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs text-foreground">
                 Turn on an online gateway (Razorpay / Cashfree / PayU) above so the prepaid discount can be applied at checkout.
               </div>
             )}
@@ -1044,7 +1044,7 @@ export default function StorePayments() {
               <Switch checked={checkoutV2Enabled} onCheckedChange={setCheckoutV2Enabled} />
             </div>
             {checkoutV2Enabled && (
-              <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs text-warning-foreground dark:text-warning">
+              <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs text-foreground">
                 Fast Checkout will be shown to <b>all</b> customers on this store. Make sure you've tested it end-to-end (place a real ₹1 order) before saving.
               </div>
             )}
