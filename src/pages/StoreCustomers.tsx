@@ -131,7 +131,7 @@ export default function StoreCustomers() {
     <div className="space-y-6">
       <PullToRefreshIndicator pull={pull} refreshing={refreshing} />
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" asChild><Link to="/dashboard/stores"><ArrowLeft className="h-4 w-4" /></Link></Button>
+        <Button variant="ghost" size="icon" asChild aria-label="Back to stores"><Link to="/dashboard/stores"><ArrowLeft className="h-4 w-4" /></Link></Button>
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Customers</h1>
           <p className="text-sm text-muted-foreground">{store?.name}</p>

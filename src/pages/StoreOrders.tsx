@@ -443,7 +443,7 @@ export default function StoreOrders() {
       <FAB onClick={() => setCreateOrderOpen(true)} label="Order" />
 
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" asChild><Link to="/dashboard/stores"><ArrowLeft className="h-4 w-4" /></Link></Button>
+        <Button variant="ghost" size="icon" asChild aria-label="Back to stores"><Link to="/dashboard/stores"><ArrowLeft className="h-4 w-4" /></Link></Button>
         <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-semibold text-foreground">Orders</h1>
           <p className="text-sm text-muted-foreground truncate">{store?.name}</p>
@@ -821,6 +821,7 @@ export default function StoreOrders() {
                                     <Button
                                       variant="ghost"
                                       size="icon"
+                                      aria-label="Send invoice on WhatsApp"
                                       className="h-9 w-9 text-success hover:text-success hover:bg-success/10"
                                       title="Send invoice on WhatsApp"
                                       disabled={sendingInvoiceId === order.id}
