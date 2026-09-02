@@ -41,6 +41,23 @@ const CURRENCIES = [
   { code: "PHP", label: "Philippine Peso (₱)" },
 ];
 
+// What the merchant sells — used to auto-write the store description,
+// About Us page and SEO meta with AI at store creation.
+const BUSINESS_TYPES = [
+  "Imitation / artificial jewellery",
+  "Fashion & clothing",
+  "Watches",
+  "Beauty & skincare",
+  "Electronics & gadgets",
+  "Home & kitchen",
+  "Footwear & bags",
+  "Food & grocery",
+  "Handicraft & gifts",
+  "Health & wellness",
+  "Kids & toys",
+  "Other",
+];
+
 
 // Commission-only stores use website checkout so platform commission,
 // abandoned-cart recovery, order confirmations and wallet invoices stay linked.
