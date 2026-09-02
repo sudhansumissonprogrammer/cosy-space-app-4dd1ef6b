@@ -85,7 +85,9 @@ export default function Dashboard() {
   // Instead of polling HEAD requests every 60s (which hammers the Worker),
   // just assume the store is live if a slug exists. The store is served by
   // the Worker and is always reachable once published.
-  const isStoreLive = !!storeUrl;
+  // Published = the store has a reachable public URL. This is a setup state,
+  // not an uptime signal, so it does not pulse or claim "live".
+  const isStorePublished = !!storeUrl;
 
   const [copied, setCopied] = useState(false);
   const handleCopy = useCallback(() => {
@@ -243,12 +245,14 @@ export default function Dashboard() {
       {/* Store URL — compact strip */}
       {store?.slug && (
         <div className="flex items-center gap-2 rounded-xl border bg-accent/20 px-3 py-2">
-          {isStoreLive !== undefined && (
-            <span className={cn(
+          <span
+            className={cn(
               "h-2 w-2 rounded-full shrink-0",
-              isStoreLive ? "bg-emerald-500 animate-pulse" : "bg-red-500"
-            )} />
-          )}
+              isStorePublished ? "bg-success" : "bg-muted-foreground/40"
+            )}
+            title={isStorePublished ? "Store published" : "Store not published yet"}
+            aria-label={isStorePublished ? "Store published" : "Store not published yet"}
+          />
           <p className="text-xs font-medium text-foreground truncate flex-1">
             {customDomain || `${store.slug}.shopbanao.in`}
           </p>
@@ -260,7 +264,7 @@ export default function Dashboard() {
             aria-label={copied ? "Store link copied" : "Copy store link"}
             title="Copy link"
           >
-            {copied ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+            {copied ? <Check className="h-3 w-3 text-success" /> : <Copy className="h-3 w-3" />}
           </Button>
         </div>
       )}
