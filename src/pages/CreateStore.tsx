@@ -290,28 +290,56 @@ export default function CreateStore() {
           if (themeErr) console.warn("Theme config insert failed:", themeErr.message);
         });
 
-        // Fast static content (replaces slow AI generation to speed up store creation)
+        // Store copy: AI-written from what the merchant said they sell,
+        // with a safe static fallback so store creation never stalls.
         try {
           const storeName = name.trim();
           const shortDesc = description.trim();
           const founder = ownerName.trim();
+          const sells = businessType.trim();
+          const sellsLine = sells && sells !== "Other" ? sells.toLowerCase() : "";
 
-          const aboutUs = `About ${storeName}\n\n${founder ? `Founded by ${founder}\n\n` : ""}Welcome to ${storeName}! 🛍️${founder ? ` Founded by ${founder}, our` : "\n\nOur"} mission is to bring you carefully curated products with quality you can trust. Every item in our collection is hand-picked to ensure it meets our high standards.\n\nWe keep shopping easy, affordable, and delightful for every customer — from fast delivery to friendly support, we are here for you at every step.\n\nThank you for choosing ${storeName}. We can't wait to serve you! ❤️`;
+          let aboutUs = `About ${storeName}\n\n${founder ? `Founded by ${founder}\n\n` : ""}Welcome to ${storeName}! 🛍️ We sell ${sellsLine || "carefully curated products"} you can trust${founder ? `, and ${founder} personally checks what goes into the collection` : ""}.\n\nEvery item is hand-picked so it meets our quality standards before it reaches you.\n\nWe keep shopping easy and affordable — clear pricing, fast delivery and friendly support at every step.\n\nThank you for choosing ${storeName}. We can't wait to serve you! ❤️`;
 
-          const metaTitle = `${storeName} — Shop Online`.substring(0, 60);
-          const metaDescription = (shortDesc
+          let metaTitle = `${storeName}${sellsLine ? ` — ${sells}` : " — Shop Online"}`.substring(0, 60);
+          let metaDescription = (shortDesc
             ? `${storeName}: ${shortDesc}`
-            : `Shop the best products at ${storeName}. Quality items, fast delivery, and great prices. Order now!`
+            : `Shop ${sellsLine || "the best products"} at ${storeName}. Quality items, fast delivery and great prices. Order now!`
           ).substring(0, 150);
+          let storeDescription = shortDesc || `${storeName} — ${sellsLine ? `${sells}.` : "quality products."} Shop now for the best deals!`;
+
+          // AI pass (best-effort, short budget). Falls back to the text above.
+          try {
+            const ai = await Promise.race([
+              supabase.functions.invoke("generate-store-content", {
+                body: {
+                  store_name: storeName,
+                  store_description: shortDesc,
+                  business_type: sells,
+                  owner_name: founder,
+                },
+              }),
+              new Promise<null>((r) => setTimeout(() => r(null), 12000)),
+            ]);
+            const gen = (ai as any)?.data;
+            if (gen && !(ai as any)?.error) {
+              if (gen.about_us) {
+                aboutUs = `About ${storeName}\n\n${founder ? `Founded by ${founder}\n\n` : ""}${gen.about_us}`;
+              }
+              if (gen.meta_title) metaTitle = String(gen.meta_title).substring(0, 60);
+              if (gen.meta_description) metaDescription = String(gen.meta_description).substring(0, 150);
+              if (gen.store_description) storeDescription = String(gen.store_description).substring(0, 500);
+            }
+          } catch (aiErr) {
+            console.warn("AI store content failed, using fallback:", aiErr);
+          }
 
           const updatePayload: Record<string, string> = {
             meta_title: metaTitle,
             meta_description: metaDescription,
             about_us_text: aboutUs,
+            description: storeDescription,
           };
-          if (!shortDesc) {
-            updatePayload.description = `Discover quality products at ${storeName}. Shop now for the best deals!`;
-          }
 
           await (supabase as any)
             .from("stores")
@@ -330,8 +358,9 @@ export default function CreateStore() {
             if (pageErr) console.warn("About page insert failed:", pageErr.message);
           });
         } catch (contentError) {
-          console.warn("Static content generation failed (non-blocking):", contentError);
+          console.warn("Store content generation failed (non-blocking):", contentError);
         }
+
 
         // Seed 3 demo categories + 4 demo products
         try {
