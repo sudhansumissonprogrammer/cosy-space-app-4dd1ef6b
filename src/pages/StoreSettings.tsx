@@ -323,7 +323,7 @@ export default function StoreSettings() {
   return (
     <div className="mx-auto max-w-2xl xl:max-w-4xl space-y-6">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" asChild>
+        <Button variant="ghost" size="icon" asChild aria-label="Back to products">
           <Link to={`/dashboard/stores/${storeSlug}/products`}>
             <ArrowLeft className="h-4 w-4" />
           </Link>
@@ -713,6 +713,7 @@ export default function StoreSettings() {
                       type="button"
                       variant="ghost"
                       size="icon"
+                      aria-label="Remove highlight"
                       onClick={() => setUspBullets(uspBullets.filter((_, i) => i !== idx))}
                     >
                       <X className="h-4 w-4" />
@@ -743,6 +744,7 @@ export default function StoreSettings() {
                       type="button"
                       variant="ghost"
                       size="icon"
+                      aria-label="Remove item"
                       onClick={() => setFaqItems(faqItems.filter((_, i) => i !== idx))}
                     >
                       <X className="h-4 w-4" />

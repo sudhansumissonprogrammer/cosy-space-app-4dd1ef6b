@@ -1255,12 +1255,12 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
                 ))}
               </SelectContent>
             </Select>
-            <Button variant="outline" size="icon" className="h-11 w-11 shrink-0" onClick={onInvoice}>
+            <Button variant="outline" size="icon" aria-label="Download invoice" className="h-11 w-11 shrink-0" onClick={onInvoice}>
               <FileText className="h-4 w-4" />
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="outline" size="icon" className="h-11 w-11 shrink-0 text-destructive hover:bg-destructive/10">
+                <Button variant="outline" size="icon" aria-label="Delete order" className="h-11 w-11 shrink-0 text-destructive hover:bg-destructive/10">
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </AlertDialogTrigger>

@@ -231,7 +231,7 @@ export default function StorePageEditor() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" asChild>
+        <Button variant="ghost" size="icon" asChild aria-label="Back to pages">
           <Link to={`/dashboard/stores/${storeSlug}/pages`}>
             <ArrowLeft className="h-4 w-4" />
           </Link>
@@ -433,7 +433,7 @@ export default function StorePageEditor() {
                     </div>
                     <Input placeholder="Description" value={feature.description} onChange={(e) => { const updated = [...features]; updated[idx] = { ...updated[idx], description: e.target.value }; setFeatures(updated); }} maxLength={100} />
                   </div>
-                  <Button type="button" variant="ghost" size="icon" className="shrink-0" onClick={() => setFeatures(features.filter((_, i) => i !== idx))}>
+                  <Button type="button" variant="ghost" size="icon" aria-label="Remove feature" className="shrink-0" onClick={() => setFeatures(features.filter((_, i) => i !== idx))}>
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </div>

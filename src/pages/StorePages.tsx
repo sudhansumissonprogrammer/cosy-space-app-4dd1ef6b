@@ -131,7 +131,7 @@ export default function StorePages() {
     <div className="mx-auto max-w-2xl xl:max-w-4xl space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" asChild>
+          <Button variant="ghost" size="icon" asChild aria-label="Back to products">
             <Link to={`/dashboard/stores/${storeSlug}/products`}><ArrowLeft className="h-4 w-4" /></Link>
           </Button>
           <div>
@@ -169,7 +169,7 @@ export default function StorePages() {
                   checked={page.is_active}
                   onCheckedChange={(checked) => toggleMutation.mutate({ id: page.id, is_active: checked })}
                 />
-                <Button variant="ghost" size="icon" asChild>
+                <Button variant="ghost" size="icon" asChild aria-label="Edit page">
                   <Link to={`/dashboard/stores/${storeSlug}/pages/${page.id}/edit`}>
                     <Edit className="h-4 w-4" />
                   </Link>
@@ -177,7 +177,7 @@ export default function StorePages() {
                 {!isSystemPage(page.page_type) && (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" aria-label="Delete page">
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </AlertDialogTrigger>
