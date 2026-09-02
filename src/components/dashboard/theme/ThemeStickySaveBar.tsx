@@ -24,8 +24,8 @@ export default function ThemeStickySaveBar({ dirty, saving, onSave, onReset }: P
     >
       <div className="pointer-events-auto mx-3 flex w-full max-w-2xl items-center gap-2 rounded-2xl border border-border bg-background/95 px-3 py-2.5 shadow-2xl ring-1 ring-foreground/5 backdrop-blur-md sm:gap-3 sm:px-4">
         <div className="flex h-2 w-2 flex-shrink-0">
-          <span className="absolute inline-flex h-2 w-2 animate-ping rounded-full bg-amber-400/70" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
+          <span className="absolute inline-flex h-2 w-2 animate-ping rounded-full bg-warning/70" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-warning" />
         </div>
         <p className="flex-1 truncate text-xs font-semibold text-foreground sm:text-sm">
           Unsaved theme changes

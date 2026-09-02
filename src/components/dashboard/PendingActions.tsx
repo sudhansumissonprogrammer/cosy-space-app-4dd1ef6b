@@ -15,7 +15,7 @@ export default function PendingActions({ storeId, storeSlug }: PendingActionsPro
   const { data } = useDashboardStats(storeId);
 
   const items = [
-    { label: "Pending Orders", count: data?.pending_orders ?? 0, icon: ShoppingBag, color: "bg-amber-100 text-amber-700", url: `/dashboard/stores/${storeSlug}/orders` },
+    { label: "Pending Orders", count: data?.pending_orders ?? 0, icon: ShoppingBag, color: "bg-warning/15 text-warning", url: `/dashboard/stores/${storeSlug}/orders` },
     { label: "Abandoned Carts", count: data?.abandoned_carts ?? 0, icon: ShoppingCart, color: "bg-red-100 text-red-700", url: `/dashboard/stores/${storeSlug}/abandoned-carts` },
   ];
 

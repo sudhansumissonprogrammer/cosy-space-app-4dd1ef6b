@@ -111,7 +111,7 @@ const RecentOrders = React.forwardRef<HTMLDivElement, RecentOrdersProps>(functio
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-success/10 text-success hover:bg-success/20 transition-colors"
                   title="Message on WhatsApp"
                 >
                   <MessageCircle className="h-3.5 w-3.5" />

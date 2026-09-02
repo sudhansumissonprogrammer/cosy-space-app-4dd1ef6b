@@ -303,8 +303,8 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
         <CardContent className="p-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="relative">
-              <div className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-              <div className="absolute inset-0 h-2.5 w-2.5 rounded-full bg-emerald-500 animate-ping opacity-75" />
+              <div className="h-2.5 w-2.5 rounded-full bg-success" />
+              <div className="absolute inset-0 h-2.5 w-2.5 rounded-full bg-success animate-ping opacity-75" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Live visitors (last 5 min)</p>

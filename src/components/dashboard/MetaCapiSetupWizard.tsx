@@ -75,9 +75,9 @@ export function MetaCapiSetupWizard({ storeId, pixelId, accessToken, tokenLoadin
     <Card className="border-emerald-200 dark:border-emerald-900">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          <Server className="h-5 w-5 text-emerald-600" />
+          <Server className="h-5 w-5 text-success" />
           Conversions API (CAPI) Setup
-          <span className="ml-auto rounded-full bg-emerald-100 dark:bg-emerald-900/40 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+          <span className="ml-auto rounded-full bg-success/15 px-2 py-0.5 text-xs font-medium text-success">
             Recommended
           </span>
         </CardTitle>
@@ -186,9 +186,9 @@ export function MetaCapiSetupWizard({ storeId, pixelId, accessToken, tokenLoadin
                 </Button>
 
                 {verify.kind === "ok" && (
-                  <div className="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2.5 dark:border-emerald-900 dark:bg-emerald-950/30">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-                    <div className="text-xs text-emerald-700 dark:text-emerald-300">
+                  <div className="flex items-start gap-2 rounded-lg border border-success/30 bg-success/10 p-2.5">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+                    <div className="text-xs text-success">
                       <p className="font-medium">
                         Meta accepted the test event ({verify.events} received).
                       </p>
@@ -201,9 +201,9 @@ export function MetaCapiSetupWizard({ storeId, pixelId, accessToken, tokenLoadin
                 )}
 
                 {verify.kind === "error" && (
-                  <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 dark:border-amber-900 dark:bg-amber-950/30">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-                    <div className="text-xs text-amber-700 dark:text-amber-300">
+                  <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/10 p-2.5">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+                    <div className="text-xs text-warning">
                       <p className="font-medium">Test failed</p>
                       <p>{verify.message}</p>
                       {verify.fbtrace && (
@@ -250,7 +250,7 @@ function StepRow({
       <div
         className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
           done
-            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+            ? "bg-success/15 text-success"
             : "bg-muted text-muted-foreground"
         }`}
       >
