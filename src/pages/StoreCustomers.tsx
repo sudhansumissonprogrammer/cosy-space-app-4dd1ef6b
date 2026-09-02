@@ -28,6 +28,8 @@ export default function StoreCustomers() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  type CustomerSort = "orders-high" | "orders-low" | "name-asc" | "name-desc" | "joined-new" | "joined-old";
+  const [sort, setSort] = useState<CustomerSort>("orders-high");
 
   const { data: store, isLoading: storeLoading } = useStoreData(storeId);
 
