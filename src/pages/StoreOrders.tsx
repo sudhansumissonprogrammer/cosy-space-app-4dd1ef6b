@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { DataTableCard, DataTableRow, DataTableActionCell } from "@/components/dashboard/DataTable";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -726,8 +727,7 @@ export default function StoreOrders() {
             </div>
           ) : (
             /* ── DESKTOP: Table view with day section headers ── */
-            <Card>
-              <CardContent className="p-0">
+            <DataTableCard>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -765,21 +765,19 @@ export default function StoreOrders() {
                             </TableCell>
                           </TableRow>
                           {group.orders.map((order: any) => (
-                            <TableRow
+                            <DataTableRow
                               key={order.id}
+                              clickable
+                              selected={selectedOrders.has(order.id)}
+                              active={mobileDetailOrder?.id === order.id}
                               onClick={() => setMobileDetailOrder(order)}
-                              className={cn(
-                                "cursor-pointer",
-                                selectedOrders.has(order.id) && "bg-primary/5",
-                                mobileDetailOrder?.id === order.id && "bg-primary/10",
-                              )}
                             >
-                              <TableCell onClick={(e) => e.stopPropagation()}>
+                              <DataTableActionCell>
                                 <Checkbox
                                   checked={selectedOrders.has(order.id)}
                                   onCheckedChange={() => toggleOrderSelection(order.id)}
                                 />
-                              </TableCell>
+                              </DataTableActionCell>
                               <TableCell className="font-mono text-xs text-muted-foreground">
                                 <span className="hover:text-foreground hover:underline">
                                   {getOrderDisplayId(order)}
@@ -799,7 +797,7 @@ export default function StoreOrders() {
                                 )}
                               </TableCell>
                               <TableCell className="text-xs uppercase">{order.payment_method || "cod"}</TableCell>
-                              <TableCell onClick={(e) => e.stopPropagation()}>
+                              <DataTableActionCell>
                                 <Select value={order.status} onValueChange={(v) => handleStatusChange(order, v)}>
                                   <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
                                   <SelectContent>
@@ -814,9 +812,9 @@ export default function StoreOrders() {
                                     <span className="text-[10px] text-muted-foreground">{order.tracking_number}</span>
                                   </div>
                                 )}
-                              </TableCell>
+                              </DataTableActionCell>
                               <TableCell className="text-sm text-muted-foreground">{format(new Date(order.created_at), "h:mm a")}</TableCell>
-                              <TableCell onClick={(e) => e.stopPropagation()}>
+                              <DataTableActionCell>
                                 <div className="flex items-center gap-1">
                                   <Button variant="ghost" size="sm" className="text-xs h-9" onClick={() => setInvoiceOrder(order)}>Invoice</Button>
                                   {order.customer_phone && (
@@ -836,16 +834,15 @@ export default function StoreOrders() {
                                     </Button>
                                   )}
                                 </div>
-                              </TableCell>
-                            </TableRow>
+                              </DataTableActionCell>
+                            </DataTableRow>
                           ))}
                         </React.Fragment>
                       );
                     })}
                   </TableBody>
                 </Table>
-              </CardContent>
-            </Card>
+            </DataTableCard>
           )}
 
           <PaginationControls page={pagination.page} totalPages={pagination.totalPages} onPageChange={pagination.setPage} />
