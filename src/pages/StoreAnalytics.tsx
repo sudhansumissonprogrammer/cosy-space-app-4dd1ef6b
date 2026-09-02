@@ -422,7 +422,7 @@ export default function StoreAnalytics() {
     return (
       <div className="space-y-4">
         <div className="h-8 w-32 rounded bg-muted animate-pulse" />
-        <div className="grid grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
           {[1,2,3,4].map(i => <div key={i} className="h-24 rounded-lg bg-muted animate-pulse" />)}
         </div>
         <div className="h-64 rounded-lg bg-muted animate-pulse" />
@@ -494,7 +494,7 @@ export default function StoreAnalytics() {
       )}
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-2 gap-2.5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
         <MetricCard title="Total Sales" value={totalRevenue.toFixed(0)} prefix={sym} icon={DollarSign} change={revenueChange} />
         <MetricCard title="Orders" value={totalOrders} icon={ShoppingBag} change={ordersChange} />
         <MetricCard title="Sessions" value={totalSessions} icon={Eye} change={sessionsChange} />
@@ -502,7 +502,7 @@ export default function StoreAnalytics() {
       </div>
 
       {/* Conversion, Returning & Unique Visitors */}
-      <div className="grid grid-cols-2 gap-2.5">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5">
         <MetricCard title="Unique Visitors" value={totalVisitors} icon={Users} change={visitorsChange} />
         <MetricCard title="Conversion" value={conversionRate.toFixed(2)} suffix="%" icon={ArrowUpRight} change={conversionChange} />
         <MetricCard title="Returning" value={returningRate.toFixed(1)} suffix="%" icon={Repeat} />
