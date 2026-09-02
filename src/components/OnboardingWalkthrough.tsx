@@ -34,36 +34,46 @@ interface OnboardingStep {
   route?: string;
 }
 
+/**
+ * Store setup guide.
+ *
+ * Every `where` string must match the CURRENT dashboard navigation defined in
+ * `src/config/dashboardNav.ts` (group → item label) and the section chips in
+ * `src/pages/StoreSettings.tsx`. Update both together when nav changes.
+ */
 const STEPS: OnboardingStep[] = [
   {
     icon: Store,
     title: "Welcome! Let's set up your store 🎉",
     items: [
       { text: "This guide shows you exactly where everything is", where: "" },
-      { text: "Takes about 3 minutes — skip anytime", where: "" },
-      { text: "You can reopen this from the Guide button", where: "" },
+      { text: "Menu is grouped: Catalog, Orders, Payments, Marketing, Store Setup", where: "Left sidebar" },
+      { text: "Can't find something? Press Ctrl / ⌘ + K and search", where: "Anywhere in dashboard" },
+      { text: "Rarely used pages sit under the “More” link in each group", where: "Sidebar → More" },
+      { text: "Reopen this guide anytime from the Guide button", where: "Overview → Guide" },
     ],
   },
   {
     icon: Settings,
     title: "Complete Your Store Profile",
     items: [
-      { text: "Add your store logo & banner", where: "Settings → Media" },
-      { text: "Write a store description", where: "Settings → Basic Info" },
-      { text: "Add your WhatsApp number", where: "Settings → Basic Info" },
-      { text: "Set your location", where: "Settings → Location" },
+      { text: "Store name, description & WhatsApp number", where: "Store Setup → Store Settings → Basics" },
+      { text: "Upload logo, banner & favicon", where: "Store Settings → Logo & Images" },
+      { text: "Set address, pickup pincode & business hours", where: "Store Settings → Location & Hours" },
+      { text: "Choose what shows on the storefront", where: "Store Settings → Storefront Display" },
     ],
-    action: "Open Settings",
+    action: "Open Store Settings",
     route: "settings",
   },
   {
     icon: Package,
     title: "Add Your Products",
     items: [
-      { text: "Create products with name, price & images", where: "Products → Create" },
-      { text: "Use CSV bulk upload for many products", where: "Products → Bulk Upload" },
-      { text: "Organize with categories", where: "Products page" },
-      { text: "Mark best sellers for homepage carousel", where: "Edit Product → toggle" },
+      { text: "Create products with price, images & variants", where: "Catalog → Products → Create" },
+      { text: "Import many at once from CSV or a supplier link", where: "Catalog → More → Bulk Upload" },
+      { text: "Group items into collections (can be hidden too)", where: "Catalog → More → Categories" },
+      { text: "Pick the Best Sellers row for your homepage", where: "Catalog → More → Best Sellers" },
+      { text: "Collect and reply to product reviews", where: "Catalog → Reviews" },
     ],
     action: "Add Product",
     route: "products/create",
@@ -72,40 +82,57 @@ const STEPS: OnboardingStep[] = [
     icon: CreditCard,
     title: "Payments & Shipping",
     items: [
-      { text: "Connect Razorpay for UPI, cards & wallets", where: "Payments page" },
-      { text: "Enable Cash on Delivery", where: "Payments page" },
-      { text: "Set flat shipping rate or free above ₹X", where: "Shipping page" },
-      { text: "Configure tax (GST) if needed", where: "Tax Settings page" },
+      { text: "Turn on UPI / cards (Razorpay, Cashfree, PayU)", where: "Payments & Shipping → Payments" },
+      { text: "Enable COD, partial COD advance & prepaid discount", where: "Payments & Shipping → Payments" },
+      { text: "Delivery charge, free-shipping limit & delivery days", where: "Payments & Shipping → Shipping Rates" },
+      { text: "Connect Delhivery / Blue Dart for AWB & tracking", where: "Payments & Shipping → More → Courier Partners" },
+      { text: "GST number and tax on invoices", where: "Payments & Shipping → More → Tax / GST" },
+      { text: "Platform fee is 2% per order — keep wallet recharged", where: "Payments & Shipping → Wallet" },
     ],
     action: "Set Up Payments",
     route: "payments",
   },
   {
     icon: Palette,
-    title: "Customize Look & Feel",
+    title: "Design Your Storefront",
     items: [
-      { text: "Pick from 10+ storefront themes", where: "Theme page" },
-      { text: "Choose brand colors & fonts", where: "Theme page" },
-      { text: "Preview live on mobile", where: "Theme page → Preview" },
-      { text: "Add SEO title & description", where: "Settings → SEO" },
+      { text: "Pick a layout from 20+ storefront themes", where: "Store Setup → Theme & Design" },
+      { text: "Brand colours, fonts and header colour", where: "Theme & Design" },
+      { text: "Write About Us, Return, Shipping & Privacy pages", where: "Store Setup → Pages & Policies" },
+      { text: "Add SEO title & description for Google", where: "Store Settings → SEO" },
+      { text: "Add bundles, upsells & shop-by-video add-ons", where: "Store Setup → App Store" },
     ],
     action: "Customize Theme",
     route: "theme",
   },
   {
     icon: Rocket,
-    title: "Launch & Grow 🚀",
+    title: "Sell More",
     items: [
-      { text: "Share store link on WhatsApp & Instagram", where: "Dashboard → Share" },
-      { text: "Connect a custom domain", where: "Settings → Domain" },
-      { text: "Set up Facebook Pixel for ad tracking", where: "Tracking page" },
-      { text: "Create discount coupons", where: "Coupons page" },
-      { text: "Track analytics & orders", where: "Analytics page" },
+      { text: "Auto order updates & cart-recovery messages", where: "Marketing & Growth → WhatsApp" },
+      { text: "Discount codes and auto-apply offers", where: "Marketing & Growth → Coupons" },
+      { text: "Nudge shoppers who left without paying", where: "Marketing & Growth → Abandoned Carts" },
+      { text: "Meta Pixel, Conversions API & GA4 for ads", where: "Marketing & Growth → Tracking Pixels" },
+      { text: "See where shoppers drop off before payment", where: "Marketing & Growth → More → Sales Funnel" },
+    ],
+    action: "Open WhatsApp",
+    route: "whatsapp",
+  },
+  {
+    icon: Globe,
+    title: "Launch & Track 🚀",
+    items: [
+      { text: "Copy your store link and share on WhatsApp / Instagram", where: "Overview → store link strip" },
+      { text: "Connect your own .com / .in domain", where: "Store Setup → Domain" },
+      { text: "Confirm, pack and ship orders as they arrive", where: "Orders & Customers → Orders" },
+      { text: "Save buyer contacts and enquiries", where: "Orders & Customers → Customers / More → Leads" },
+      { text: "Watch visitors, revenue & top products", where: "Marketing & Growth → Analytics" },
     ],
     action: "View Dashboard",
     route: "",
   },
 ];
+
 
 interface OnboardingWalkthroughProps {
   storeId: string;
