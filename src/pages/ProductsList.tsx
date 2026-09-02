@@ -77,6 +77,7 @@ export default function ProductsList() { // v2
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   useRealtimeStore(storeId, "products");
 
   // Search, filter & sort state
