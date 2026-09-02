@@ -83,14 +83,16 @@ export default function StoreWallet() {
     <div className="space-y-4">
       <h1 className="text-xl font-bold tracking-tight">Wallet</h1>
 
-      <WalletAccountCard
-        storeId={storeId}
-        storeSlug={(store as any)?.slug}
-        variant="full"
-      />
+      <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
+        <WalletAccountCard
+          storeId={storeId}
+          storeSlug={(store as any)?.slug}
+          variant="full"
+        />
 
+        <WhatsAppUsageCard storeId={storeId} />
+      </div>
 
-      <WhatsAppUsageCard storeId={storeId} />
 
       <Card>
         <CardContent className="p-4">

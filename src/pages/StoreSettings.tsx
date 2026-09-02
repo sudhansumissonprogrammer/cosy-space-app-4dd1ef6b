@@ -321,7 +321,7 @@ export default function StoreSettings() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-2xl xl:max-w-4xl space-y-6">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" asChild>
           <Link to={`/dashboard/stores/${storeSlug}/products`}>
