@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useDashboardStore } from "@/contexts/DashboardStoreContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Package, ShoppingBag, Eye, TrendingUp, HelpCircle, Plus, Copy, Check, Share2 } from "lucide-react";
+import { Package, Eye, HelpCircle, Plus, Copy, Check, Share2 } from "lucide-react";
 import OnboardingWalkthrough from "@/components/OnboardingWalkthrough";
 import { useNavigateTransition } from "@/hooks/useNavigateTransition";
 import HeroRevenue from "@/components/dashboard/HeroRevenue";
@@ -18,6 +18,7 @@ import QueryErrorState from "@/components/QueryErrorState";
 import ShareStoreDialog from "@/components/ShareStoreDialog";
 import WalletAccountCard from "@/components/billing/WalletAccountCard";
 
+import { cn } from "@/lib/utils";
 import { useCountUp } from "@/hooks/useCountUp";
 import { useRealtimeStore } from "@/hooks/useRealtimeStore";
 import { endOfMonth, startOfMonth, subMonths } from "date-fns";
@@ -41,18 +42,16 @@ function DashboardSkeleton() {
   return (
     <div className="space-y-4">
       <ShimmerBlock className="h-24 w-full rounded-2xl" />
-      <div className="flex gap-2.5 overflow-hidden">
-        {[1, 2, 3, 4].map((i) => (
-          <ShimmerBlock key={i} className="h-16 w-32 shrink-0 rounded-lg" />
+      <div className="grid grid-cols-2 gap-2.5">
+        {[1, 2].map((i) => (
+          <ShimmerBlock key={i} className="h-16 w-full rounded-lg" />
         ))}
       </div>
-      <ShimmerBlock className="h-[180px] w-full" />
+      <ShimmerBlock className="h-[280px] w-full rounded-xl" />
+      <ShimmerBlock className="h-32 w-full rounded-xl" />
+      <ShimmerBlock className="h-40 w-full rounded-xl" />
     </div>
   );
-}
-
-function cn(...classes: (string | undefined | false)[]) {
-  return classes.filter(Boolean).join(" ");
 }
 
 function AnimatedStatValue({ value }: { value: number | string }) {
@@ -345,8 +344,6 @@ export default function Dashboard() {
         </>
       )}
 
-        </>
-      )}
     </div>
   );
 }
