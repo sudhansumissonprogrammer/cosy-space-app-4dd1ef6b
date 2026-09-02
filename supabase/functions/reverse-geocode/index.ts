@@ -18,13 +18,63 @@ async function timedFetch(url: string, init: RequestInit = {}, ms = 4500): Promi
   }
 }
 
+// Per-IP rate limit: guest shoppers legitimately call this from checkout, so we
+// cannot require a login — instead we cap Google Maps API spend per client.
+const RL_MAX = 30; // calls
+const RL_WINDOW_MS = 60 * 60 * 1000; // per hour
+
+async function overRateLimit(req: Request): Promise<boolean> {
+  try {
+    const url = Deno.env.get("SUPABASE_URL");
+    const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!url || !key) return false;
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const admin = createClient(url, key, { auth: { persistSession: false } });
+
+    const ip = (req.headers.get("cf-connecting-ip") ||
+      req.headers.get("x-forwarded-for") ||
+      "unknown").split(",")[0].trim();
+    const rlKey = `reverse-geocode:${ip}`;
+    const windowStart = new Date(Date.now() - RL_WINDOW_MS).toISOString();
+
+    const { data: rl } = await admin
+      .from("edge_rate_limits")
+      .select("key,count,window_start")
+      .eq("key", rlKey)
+      .maybeSingle();
+
+    if (rl && rl.window_start > windowStart) {
+      if ((rl.count ?? 0) >= RL_MAX) return true;
+      await admin
+        .from("edge_rate_limits")
+        .update({ count: (rl.count ?? 0) + 1 })
+        .eq("key", rlKey);
+    } else {
+      await admin
+        .from("edge_rate_limits")
+        .upsert({ key: rlKey, count: 1, window_start: new Date().toISOString() }, { onConflict: "key" });
+    }
+    return false;
+  } catch {
+    return false; // never break checkout on a rate-limit bookkeeping error
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    if (await overRateLimit(req)) {
+      return new Response(
+        JSON.stringify({ error: "Too many location lookups, please try again later" }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const { lat, lng, accuracy } = await req.json();
+
 
     if (typeof lat !== "number" || typeof lng !== "number" || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
       return new Response(

@@ -3,7 +3,7 @@
 // supabase function: mcp
 // Bundled from src/lib/mcp/index.ts by @lovable.dev/mcp-js.
 // src/lib/mcp/index.ts
-import { defineMcp } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { defineMcp, auth } from "npm:@lovable.dev/mcp-js@0.20.0";
 
 // src/lib/mcp/tools/list-stores.ts
 import { defineTool } from "npm:@lovable.dev/mcp-js@0.20.0";
@@ -94,11 +94,20 @@ var list_products_default = defineTool3({
 });
 
 // src/lib/mcp/index.ts
+var SUPABASE_URL = "https://dqepeywgftbpxeeqfuwt.supabase.co";
 var mcp_default = defineMcp({
   name: "shopbanao-mcp",
   title: "ShopBanao MCP",
   version: "0.1.0",
   instructions: "Read-only tools for exploring public ShopBanao storefronts. Use `list_stores` to discover shops, `get_store` for details by slug, and `list_products` to browse a shop's catalog.",
+  // Require a verified OAuth bearer token (issued by our own auth server) before
+  // any tool can be invoked — the server is no longer anonymously callable.
+  auth: auth.oauth.issuer({
+    issuer: `${SUPABASE_URL}/auth/v1`,
+    resource: `${SUPABASE_URL}/functions/v1/mcp`,
+    resourceName: "ShopBanao MCP",
+    acceptedAudiences: ["authenticated"]
+  }),
   tools: [list_stores_default, get_store_default, list_products_default]
 });
 
