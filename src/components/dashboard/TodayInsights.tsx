@@ -74,7 +74,7 @@ export default function TodayInsights({ storeId, storeSlug, currencySymbol }: Pr
     { label: "Orders", value: data?.orders ?? 0, icon: ShoppingBag, color: "text-success" },
     { label: "Revenue", value: `${currencySymbol}${(data?.revenue ?? 0).toFixed(0)}`, icon: TrendingUp, color: "text-warning" },
     { label: "Sessions", value: data?.sessions ?? 0, icon: Eye, color: "text-primary" },
-    { label: "Conv.", value: `${(data?.conversion ?? 0).toFixed(1)}%`, icon: ArrowUpRight, color: "text-purple-600" },
+    { label: "Conv.", value: `${(data?.conversion ?? 0).toFixed(1)}%`, icon: ArrowUpRight, color: "text-accent-foreground" },
   ];
 
   return (

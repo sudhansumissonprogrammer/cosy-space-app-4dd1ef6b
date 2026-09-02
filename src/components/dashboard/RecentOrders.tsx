@@ -49,7 +49,31 @@ const RecentOrders = React.forwardRef<HTMLDivElement, RecentOrdersProps>(functio
     enabled: !!storeId,
   });
 
-  if (!orders || orders.length === 0) return null;
+  if (isLoading) {
+    return (
+      <Card className="border shadow-none">
+        <CardContent className="p-3 space-y-2">
+          <div className="h-3 w-24 rounded bg-muted animate-pulse" />
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-9 rounded bg-muted/60 animate-pulse" />
+          ))}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!orders || orders.length === 0) {
+    return (
+      <Card className="border shadow-none">
+        <CardContent className="p-4 text-center">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Recent Orders</p>
+          <p className="text-sm text-muted-foreground">
+            No orders yet. Share your store link to get your first sale.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const timeAgo = (dateStr: string) => {
     const diff = Date.now() - new Date(dateStr).getTime();
