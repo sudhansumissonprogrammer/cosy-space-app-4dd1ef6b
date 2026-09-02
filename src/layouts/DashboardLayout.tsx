@@ -1,3 +1,4 @@
+import { IS_WHATSAPP_ONLY_STORE } from "@/config/storeMode";
 import { useState, useEffect, useMemo, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { prefetchDashboardRoutes } from "@/lib/prefetchDashboardRoutes";
@@ -217,7 +218,7 @@ export default function DashboardLayout() {
 
   const storeId = store?.id;
   const storeSlug = store?.slug ?? (isAdminView ? routeStoreSlug : ownStore?.slug);
-  const isWhatsAppOnly = false;
+  const isWhatsAppOnly = IS_WHATSAPP_ONLY_STORE;
   const adminViewValue = useMemo(() => ({ isAdminView }), [isAdminView]);
   const dashboardStoreValue = useMemo(() => ({
     store,

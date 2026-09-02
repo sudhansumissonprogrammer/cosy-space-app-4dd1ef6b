@@ -1,3 +1,4 @@
+import { IS_WHATSAPP_ONLY_STORE } from "@/config/storeMode";
 import React from "react";
 import { useNavigateTransition } from "@/hooks/useNavigateTransition";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
@@ -28,7 +29,7 @@ const StoreChecklist = React.forwardRef<HTMLDivElement, StoreChecklistProps>(fun
   const checks = React.useMemo<CheckItem[] | null>(() => {
     if (!stats) return null;
     const store = stats.setup;
-    const isWhatsAppOnly = false;
+    const isWhatsAppOnly = IS_WHATSAPP_ONLY_STORE;
 
     const items: CheckItem[] = [
         {

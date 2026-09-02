@@ -1,3 +1,4 @@
+import { IS_WHATSAPP_ONLY_STORE } from "@/config/storeMode";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { LogOut, Store, Plus, Search, X, ChevronDown } from "lucide-react";
@@ -44,7 +45,7 @@ export function AppSidebar() {
 
   const storeId = store?.id;
   const storeSlug = store?.slug ?? (routeNeedsAdminStore ? routeStoreSlug : ownStore?.slug);
-  const isWhatsAppOnly = false;
+  const isWhatsAppOnly = IS_WHATSAPP_ONLY_STORE;
   const { isVisible, isComingSoon } = useMenuConfig();
 
   // Pending order count — replaces raw setInterval. React Query dedupes

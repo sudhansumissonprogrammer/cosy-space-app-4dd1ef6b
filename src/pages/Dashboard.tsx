@@ -1,3 +1,4 @@
+import { IS_WHATSAPP_ONLY_STORE } from "@/config/storeMode";
 import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
@@ -72,7 +73,7 @@ export default function Dashboard() {
   useRealtimeStore(storeId, "dashboard");
 
   const customDomain = store?.custom_domain;
-  const isWhatsAppOnly = false;
+  const isWhatsAppOnly = IS_WHATSAPP_ONLY_STORE;
   const currency = store?.currency || "USD";
   const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
 
