@@ -31,6 +31,8 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { useMenuConfig } from "@/hooks/useMenuConfig";
 import { buildDashboardNav, filterNavGroups, searchNav } from "@/config/dashboardNav";
+import { useDashboardStats } from "@/hooks/useDashboardStats";
+import { useStoreWallet, isCommissionBilling } from "@/hooks/useStoreWallet";
 
 function MobileMenu({
   open,
@@ -226,18 +228,8 @@ export default function DashboardLayout() {
   // Commission-only model: no subscription paywall. Wallet low-balance lock only.
   const ownStoreId = !isAdminView ? ownStore?.id : undefined;
   const showPaywall = false;
-  const { data: walletSummary } = useQuery({
-    queryKey: ["store-wallet", storeId],
-    enabled: !!storeId,
-    staleTime: 5 * 60_000,
-    gcTime: 10 * 60_000,
-    refetchOnWindowFocus: false,
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_store_wallet_summary", { _store_id: storeId! });
-      if (error) throw error;
-      return data as any;
-    },
-  });
+  const { data: walletSummary } = useStoreWallet(storeId);
+  const isCommissionMode = isCommissionBilling(store, walletSummary);
   const walletBalance = Number((walletSummary as any)?.wallet?.balance ?? 0);
   const isWalletRoute = location.pathname.includes("/wallet");
   // Allow the user's profile/settings page through the low-balance gate so
@@ -260,23 +252,11 @@ export default function DashboardLayout() {
     !isAccountRoute;
 
 
-  // Pending orders count — shared with PendingActions via React Query
-  const { data: pendingCount } = useQuery({
-    queryKey: ["pending-actions", storeId],
-    staleTime: 2 * 60 * 1000,
-    queryFn: async () => {
-      const [pendingOrders, carts] = await Promise.all([
-        supabase.from("orders").select("id", { count: "estimated", head: true }).eq("store_id", storeId!).eq("status", "pending"),
-        supabase.from("abandoned_carts").select("id", { count: "estimated", head: true }).eq("store_id", storeId!).eq("recovered", false),
-      ]);
-      return {
-        pendingOrders: pendingOrders.count ?? 0,
-        abandonedCarts: carts.count ?? 0,
-      };
-    },
-    enabled: !!storeId && !isWhatsAppOnly,
-  });
-  const pendingOrders = pendingCount?.pendingOrders ?? 0;
+  // Pending-orders badge reads the SAME get_dashboard_stats cache the Overview
+  // page uses, so the nav badge and the Pending Actions card can never disagree
+  // and no extra head-count round trips are fired.
+  const { data: dashboardStats } = useDashboardStats(storeId);
+  const pendingOrders = dashboardStats?.pending_orders ?? 0;
 
   // Clear app badge when visiting orders page
   useEffect(() => {
@@ -329,7 +309,7 @@ export default function DashboardLayout() {
             <AppSidebar />
             <div className="flex-1 flex flex-col min-w-0">
               {isAdminView && (
-                <div className="bg-amber-500 text-amber-950 text-center text-xs font-semibold py-1.5 px-4">
+                <div className="bg-warning text-warning-foreground text-center text-xs font-semibold py-1.5 px-4">
                   ⚡ Admin View — Editing "{store?.name}" dashboard (full access)
                 </div>
               )}
@@ -393,7 +373,7 @@ export default function DashboardLayout() {
           open={cmdOpen}
           onOpenChange={setCmdOpen}
           storeSlug={storeSlug}
-          isCommissionMode={(store as any)?.billing_mode === "commission"}
+          isCommissionMode={isCommissionMode}
           isWhatsAppOnly={isWhatsAppOnly}
         />
         </DashboardStoreProvider>
@@ -405,8 +385,8 @@ export default function DashboardLayout() {
   const bottomNav = storeSlug
     ? [
         { label: "Home", icon: LayoutDashboard, path: "/dashboard", exact: true },
-        ...(!isWhatsAppOnly ? [{ label: "Orders", icon: ShoppingBag, path: `/dashboard/stores/${storeSlug}/orders`, exact: false, badge: pendingOrders }] : []),
-        { label: "Products", icon: Package, path: `/dashboard/stores/${storeSlug}/products`, exact: false },
+        ...(!isWhatsAppOnly && isVisible("orders") ? [{ label: "Orders", icon: ShoppingBag, path: `/dashboard/stores/${storeSlug}/orders`, exact: false, badge: pendingOrders }] : []),
+        ...(isVisible("products") ? [{ label: "Products", icon: Package, path: `/dashboard/stores/${storeSlug}/products`, exact: false }] : []),
         { label: "More", icon: Menu, path: "__menu__", exact: false },
         { label: "Profile", icon: User, path: "/dashboard/settings", exact: true },
       ]
@@ -427,7 +407,7 @@ export default function DashboardLayout() {
       
     >
       {isAdminView && (
-        <div className="bg-amber-500 text-amber-950 text-center text-xs font-semibold py-1.5 px-4">
+        <div className="bg-warning text-warning-foreground text-center text-xs font-semibold py-1.5 px-4">
           ⚡ Admin View — Editing "{store?.name}" (full access)
         </div>
       )}
@@ -552,7 +532,7 @@ export default function DashboardLayout() {
         storeSlug={storeSlug}
         pendingOrders={pendingOrders}
         isWhatsAppOnly={isWhatsAppOnly}
-        isCommissionMode={true}
+        isCommissionMode={isCommissionMode}
       />
     </div>
     {showLowBalance && <LowBalanceDialog open={true} balance={walletBalance} storeSlug={storeSlug || ""} />}
