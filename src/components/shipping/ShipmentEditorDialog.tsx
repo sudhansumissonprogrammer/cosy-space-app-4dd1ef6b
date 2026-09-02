@@ -104,7 +104,9 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
             </Select>
             {!meta.api && (
               <p className="text-[11px] text-muted-foreground">
-                This courier has no API — update the status here and customers see the same timeline.
+                This courier has no live API (India Post is captcha-gated) — set the status here
+                and customers see the same timeline. Use "Returned to seller (RTO)" when the parcel
+                comes back, and "Cancelled" only when the shipment never went out.
               </p>
             )}
           </div>
@@ -116,6 +118,9 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
 
           <div className="space-y-1.5">
             <Label>Current status</Label>
+            <p className="text-[11px] text-muted-foreground">
+              This also updates the order: Delivered → delivered, RTO / Cancelled → cancelled.
+            </p>
             <Select value={status} onValueChange={setStatus}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>

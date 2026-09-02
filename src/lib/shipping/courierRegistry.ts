@@ -14,7 +14,7 @@ export const SHIPMENT_STATUS_LABEL: Record<ShipmentStatus, string> = {
   reached_hub: "Reached Hub",
   out_for_delivery: "Out for Delivery",
   delivered: "Delivered",
-  returned: "Returned",
+  returned: "Returned to seller (RTO)",
   cancelled: "Cancelled",
   exception: "Delivery Exception",
 };
@@ -46,7 +46,7 @@ export const COURIERS: CourierMeta[] = [
   { slug: "shiprocket", name: "Shiprocket", api: true, domain: "shiprocket.in" },
   { slug: "delhivery", name: "Delhivery", api: true, domain: "delhivery.com" },
   { slug: "ekart", name: "Ekart Logistics", api: true, domain: "ekartlogistics.com" },
-  { slug: "india_post", name: "India Post", api: true, domain: "indiapost.gov.in" },
+  { slug: "india_post", name: "India Post", api: false, domain: "indiapost.gov.in" },
   { slug: "bluedart", name: "Blue Dart", api: true, domain: "bluedart.com" },
   { slug: "dtdc", name: "DTDC", api: false, domain: "dtdc.in" },
   { slug: "xpressbees", name: "Xpressbees", api: false, domain: "xpressbees.com" },
