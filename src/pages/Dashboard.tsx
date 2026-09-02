@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,20 +6,13 @@ import { useDashboardStore } from "@/contexts/DashboardStoreContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Package, ShoppingBag, Eye, TrendingUp, HelpCircle, Plus, Copy, Check, Share2 } from "lucide-react";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, LineChart, Line,
-} from "recharts";
 import OnboardingWalkthrough from "@/components/OnboardingWalkthrough";
 import { useNavigateTransition } from "@/hooks/useNavigateTransition";
-import QuickActions from "@/components/dashboard/QuickActions";
 import HeroRevenue from "@/components/dashboard/HeroRevenue";
 import TodayInsights from "@/components/dashboard/TodayInsights";
 import LiveVisitors from "@/components/dashboard/LiveVisitors";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import PendingActions from "@/components/dashboard/PendingActions";
-import RecentOrders from "@/components/dashboard/RecentOrders";
-import TopProducts from "@/components/dashboard/TopProducts";
 import StoreChecklist from "@/components/dashboard/StoreChecklist";
 import QueryErrorState from "@/components/QueryErrorState";
 import ShareStoreDialog from "@/components/ShareStoreDialog";
@@ -28,6 +21,12 @@ import WalletAccountCard from "@/components/billing/WalletAccountCard";
 import { useCountUp } from "@/hooks/useCountUp";
 import { useRealtimeStore } from "@/hooks/useRealtimeStore";
 import { endOfMonth, startOfMonth, subMonths } from "date-fns";
+
+// Below-the-fold widgets — kept out of the Overview entry chunk.
+const RecentOrders = lazy(() => import("@/components/dashboard/RecentOrders"));
+const TopProducts = lazy(() => import("@/components/dashboard/TopProducts"));
+const OverviewChart = lazy(() => import("@/components/dashboard/OverviewChart"));
+
 
 
 function ShimmerBlock({ className }: { className?: string }) {
