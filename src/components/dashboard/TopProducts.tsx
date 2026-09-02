@@ -9,7 +9,7 @@ interface TopProductsProps {
 }
 
 const TopProducts = React.forwardRef<HTMLDivElement, TopProductsProps>(function TopProducts({ storeId, currencySymbol }, ref) {
-  const { data: topProducts } = useQuery({
+  const { data: topProducts, isLoading } = useQuery({
     queryKey: ["top-products-dashboard", storeId],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
@@ -28,7 +28,31 @@ const TopProducts = React.forwardRef<HTMLDivElement, TopProductsProps>(function 
     enabled: !!storeId,
   });
 
-  if (!topProducts || topProducts.length === 0) return null;
+  if (isLoading) {
+    return (
+      <Card className="border shadow-none">
+        <CardContent className="p-3 space-y-2">
+          <div className="h-3 w-20 rounded bg-muted animate-pulse" />
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-8 rounded bg-muted/60 animate-pulse" />
+          ))}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!topProducts || topProducts.length === 0) {
+    return (
+      <Card className="border shadow-none">
+        <CardContent className="p-4 text-center">
+          <p className="mb-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">Top Products</p>
+          <p className="text-sm text-muted-foreground">
+            No sales yet — your best performers will show up here.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="border shadow-none">

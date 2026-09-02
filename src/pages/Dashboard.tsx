@@ -12,6 +12,7 @@ import HeroRevenue from "@/components/dashboard/HeroRevenue";
 import TodayInsights from "@/components/dashboard/TodayInsights";
 import LiveVisitors from "@/components/dashboard/LiveVisitors";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
+import { useStoreWallet, isCommissionBilling } from "@/hooks/useStoreWallet";
 import PendingActions from "@/components/dashboard/PendingActions";
 import StoreChecklist from "@/components/dashboard/StoreChecklist";
 import QueryErrorState from "@/components/QueryErrorState";
@@ -66,8 +67,6 @@ export default function Dashboard() {
   const { navigate } = useNavigateTransition();
 
   const { store, storeId, storeSlug, isLoading: storeLoading } = useDashboardStore();
-  const storeError = false;
-  const refetchStore = () => {};
 
   // Realtime: instantly refresh revenue, orders list, today counters, stock changes
   useRealtimeStore(storeId, "dashboard");
@@ -107,7 +106,7 @@ export default function Dashboard() {
 
   // One shared query — PendingActions and StoreChecklist read the same cache
   // entry instead of firing their own counts/config reads.
-  const { data: stats, isLoading } = useDashboardStats(storeId);
+  const { data: stats, isLoading, isError: statsError, refetch: refetchStats } = useDashboardStats(storeId);
 
 
   const { data: ordersByMonth = [] } = useQuery({
@@ -132,25 +131,18 @@ export default function Dashboard() {
   });
 
 
-  const { data: walletSummary } = useQuery({
-    queryKey: ["store-wallet", storeId],
-    enabled: !!storeId,
-    staleTime: 5 * 60_000,
-    gcTime: 10 * 60_000,
-    refetchOnWindowFocus: false,
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_store_wallet_summary", { _store_id: storeId! });
-      if (error) throw error;
-      return data as any;
-    },
-  });
-
-  const isCommissionMode = (store as any)?.billing_mode === "commission" || (walletSummary as any)?.billing_mode === "commission";
+  const { data: walletSummary } = useStoreWallet(storeId);
+  const isCommissionMode = isCommissionBilling(store, walletSummary);
 
   if (storeLoading) return <DashboardSkeleton />;
 
-  if (storeError) {
-    return <QueryErrorState message="Failed to load your store" onRetry={() => refetchStore()} />;
+  if (statsError) {
+    return (
+      <QueryErrorState
+        message="Couldn't load your dashboard stats"
+        onRetry={() => refetchStats()}
+      />
+    );
   }
 
   if (!storeId) {
