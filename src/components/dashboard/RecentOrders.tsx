@@ -33,7 +33,7 @@ const RecentOrders = React.forwardRef<HTMLDivElement, RecentOrdersProps>(functio
 ) {
   const { navigate } = useNavigateTransition();
 
-  const { data: orders } = useQuery({
+  const { data: orders, isLoading } = useQuery({
     queryKey: ["recent-orders-dashboard", storeId],
     staleTime: 2 * 60 * 1000,
     queryFn: async () => {

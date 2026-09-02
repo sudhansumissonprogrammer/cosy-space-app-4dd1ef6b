@@ -9,7 +9,7 @@ interface TopProductsProps {
 }
 
 const TopProducts = React.forwardRef<HTMLDivElement, TopProductsProps>(function TopProducts({ storeId, currencySymbol }, ref) {
-  const { data: topProducts } = useQuery({
+  const { data: topProducts, isLoading } = useQuery({
     queryKey: ["top-products-dashboard", storeId],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
