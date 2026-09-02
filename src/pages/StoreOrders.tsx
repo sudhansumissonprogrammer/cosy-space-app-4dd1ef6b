@@ -799,7 +799,7 @@ export default function StoreOrders() {
                                 )}
                               </TableCell>
                               <TableCell className="text-xs uppercase">{order.payment_method || "cod"}</TableCell>
-                              <TableCell>
+                              <TableCell onClick={(e) => e.stopPropagation()}>
                                 <Select value={order.status} onValueChange={(v) => handleStatusChange(order, v)}>
                                   <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
                                   <SelectContent>
@@ -816,7 +816,7 @@ export default function StoreOrders() {
                                 )}
                               </TableCell>
                               <TableCell className="text-sm text-muted-foreground">{format(new Date(order.created_at), "h:mm a")}</TableCell>
-                              <TableCell>
+                              <TableCell onClick={(e) => e.stopPropagation()}>
                                 <div className="flex items-center gap-1">
                                   <Button variant="ghost" size="sm" className="text-xs h-9" onClick={() => setInvoiceOrder(order)}>Invoice</Button>
                                   {order.customer_phone && (
