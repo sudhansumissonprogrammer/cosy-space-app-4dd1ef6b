@@ -87,7 +87,9 @@ export default function CreateStore() {
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
+  const [businessType, setBusinessType] = useState("");
   const [currency, setCurrency] = useState("INR");
+
   const orderMode: "website" = "website";
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
