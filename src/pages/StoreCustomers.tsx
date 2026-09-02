@@ -144,36 +144,53 @@ export default function StoreCustomers() {
         </div>
       ) : customers && customers.length > 0 ? (
         <>
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead className="text-center">Orders</TableHead>
-                    <TableHead>Joined</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {customers.map((customer) => (
-                    <TableRow
-                      key={customer.id}
-                      className="cursor-pointer hover:bg-accent/50 transition-colors"
-                      onClick={() => setSelectedCustomer(customer)}
-                    >
-                      <TableCell className="font-medium text-foreground">{customer.name || "—"}</TableCell>
-                      <TableCell className="text-muted-foreground">{customer.phone || "—"}</TableCell>
-                      <TableCell className="text-muted-foreground">{customer.email?.endsWith("@whatsapp") ? "—" : customer.email}</TableCell>
-                      <TableCell className="text-center"><Badge variant="secondary">{customer.order_count}</Badge></TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{format(new Date(customer.created_at), "MMM d, yyyy")}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <DataTableCard>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>
+                    <SortableHead
+                      label="Name" asc="name-asc" desc="name-desc"
+                      sort={sort}
+                      onSort={(v) => { setSort(v); pagination.setPage(1); }}
+                    />
+                  </TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead className="text-center">
+                    <SortableHead
+                      label="Orders" asc="orders-low" desc="orders-high"
+                      sort={sort}
+                      onSort={(v) => { setSort(v); pagination.setPage(1); }}
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <SortableHead
+                      label="Joined" asc="joined-old" desc="joined-new"
+                      sort={sort}
+                      onSort={(v) => { setSort(v); pagination.setPage(1); }}
+                    />
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {customers.map((customer) => (
+                  <DataTableRow
+                    key={customer.id}
+                    clickable
+                    active={selectedCustomer?.id === customer.id}
+                    onClick={() => setSelectedCustomer(customer)}
+                  >
+                    <TableCell className="font-medium text-foreground">{customer.name || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">{customer.phone || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">{customer.email?.endsWith("@whatsapp") ? "—" : customer.email}</TableCell>
+                    <TableCell className="text-center"><Badge variant="secondary">{customer.order_count}</Badge></TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{format(new Date(customer.created_at), "MMM d, yyyy")}</TableCell>
+                  </DataTableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </DataTableCard>
           <PaginationControls page={pagination.page} totalPages={pagination.totalPages} onPageChange={pagination.setPage} />
         </>
       ) : (
