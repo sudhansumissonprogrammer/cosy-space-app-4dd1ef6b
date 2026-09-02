@@ -456,6 +456,7 @@ export default function DashboardLayout() {
               className="h-9 w-9 text-muted-foreground hover:text-foreground"
               onClick={handlePurgeCache}
               disabled={isPurging}
+              aria-label="Purge store cache"
               title="Purge cache"
             >
               <RefreshCw className={cn("h-5 w-5", isPurging && "animate-spin")} />
@@ -475,6 +476,7 @@ export default function DashboardLayout() {
             variant="ghost"
             size="icon"
             className="h-9 w-9 rounded-full"
+            aria-label="Account settings"
             onClick={() => go("/dashboard/settings")}
           >
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary">
@@ -485,9 +487,11 @@ export default function DashboardLayout() {
       </header>
 
       <main className="flex-1 overflow-auto px-3 py-4 pb-24">
-        <Suspense fallback={<ContentSkeleton />}>
-          <Outlet />
-        </Suspense>
+        <ErrorBoundary>
+          <Suspense fallback={<ContentSkeleton />}>
+            <Outlet />
+          </Suspense>
+        </ErrorBoundary>
       </main>
 
 
