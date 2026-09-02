@@ -939,7 +939,7 @@ export default function ProductsList() { // v2
                         <TableCell>
                           <Badge variant={product.is_active ? "default" : "secondary"}>{product.is_active ? "Active" : "Draft"}</Badge>
                         </TableCell>
-                        <TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
                           <div className="flex gap-1">
                             <Button
                               variant="ghost"
