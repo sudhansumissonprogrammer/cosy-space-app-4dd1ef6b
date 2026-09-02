@@ -45,6 +45,7 @@ import { cleanImageUrl } from "@/lib/imageOptimize";
 import { useDashboardStore } from "@/contexts/DashboardStoreContext";
 import { useRealtimeStore } from "@/hooks/useRealtimeStore";
 import SortableHead from "@/components/dashboard/SortableHead";
+import { DataTableCard, DataTableRow, DataTableActionCell } from "@/components/dashboard/DataTable";
 
 type SortOption =
   | "title-asc"
@@ -846,8 +847,7 @@ export default function ProductsList() { // v2
               ))}
             </div>
           ) : (
-            <Card>
-              <CardContent className="p-0">
+            <DataTableCard>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -888,21 +888,19 @@ export default function ProductsList() { // v2
                   </TableHeader>
                   <TableBody>
                     {paginatedProducts.map((product) => (
-                      <TableRow
+                      <DataTableRow
                         key={product.id}
-                        className={cn(
-                          "cursor-pointer transition-colors hover:bg-accent/40",
-                          bulkSelected.has(product.id) && "bg-accent/30"
-                        )}
+                        clickable
+                        selected={bulkSelected.has(product.id)}
                         onClick={() => {
                           if (bulkMode) { toggleBulkSelect(product.id); return; }
                           navigate(`/dashboard/stores/${storeSlug}/products/${product.id}/edit`);
                         }}
                       >
                         {bulkMode && (
-                          <TableCell onClick={(e) => e.stopPropagation()}>
+                          <DataTableActionCell>
                             <Checkbox checked={bulkSelected.has(product.id)} onCheckedChange={() => toggleBulkSelect(product.id)} />
-                          </TableCell>
+                          </DataTableActionCell>
                         )}
                         <TableCell>
                           {product.image_url ? (
@@ -940,7 +938,7 @@ export default function ProductsList() { // v2
                         <TableCell>
                           <Badge variant={product.is_active ? "default" : "secondary"}>{product.is_active ? "Active" : "Draft"}</Badge>
                         </TableCell>
-                        <TableCell onClick={(e) => e.stopPropagation()}>
+                        <DataTableActionCell>
                           <div className="flex gap-1">
                             <Button
                               variant="ghost"
@@ -1007,13 +1005,12 @@ export default function ProductsList() { // v2
                               </AlertDialogContent>
                             </AlertDialog>
                           </div>
-                        </TableCell>
-                      </TableRow>
+                        </DataTableActionCell>
+                      </DataTableRow>
                     ))}
                   </TableBody>
                 </Table>
-              </CardContent>
-            </Card>
+            </DataTableCard>
           )}
           <PaginationControls page={pagination.page} totalPages={pagination.totalPages} onPageChange={pagination.setPage} />
           <p className="text-center text-xs text-muted-foreground">

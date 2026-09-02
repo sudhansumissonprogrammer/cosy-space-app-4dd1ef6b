@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { DataTableCard, DataTableRow } from "@/components/dashboard/DataTable";
+import SortableHead from "@/components/dashboard/SortableHead";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
@@ -26,6 +28,8 @@ export default function StoreCustomers() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  type CustomerSort = "orders-high" | "orders-low" | "name-asc" | "name-desc" | "joined-new" | "joined-old";
+  const [sort, setSort] = useState<CustomerSort>("orders-high");
 
   const { data: store, isLoading: storeLoading } = useStoreData(storeId);
 
@@ -54,12 +58,22 @@ export default function StoreCustomers() {
 
   const pagination = usePagination(countData ?? undefined);
 
+  const SORT_COLUMNS: Record<CustomerSort, { column: string; ascending: boolean }> = {
+    "orders-high": { column: "order_count", ascending: false },
+    "orders-low": { column: "order_count", ascending: true },
+    "name-asc": { column: "name", ascending: true },
+    "name-desc": { column: "name", ascending: false },
+    "joined-new": { column: "created_at", ascending: false },
+    "joined-old": { column: "created_at", ascending: true },
+  };
+
   const { data: customers, isLoading } = useQuery({
-    queryKey: ["store-customers", storeId, pagination.page],
+    queryKey: ["store-customers", storeId, pagination.page, sort],
     queryFn: async () => {
+      const { column, ascending } = SORT_COLUMNS[sort];
       const { data, error } = await (supabase as any)
         .from("merchant_customers_v").select("*").eq("store_id", storeId!)
-        .order("order_count", { ascending: false })
+        .order(column, { ascending, nullsFirst: false })
         .range(pagination.from, pagination.to);
       if (error) throw error;
       return data;
@@ -130,36 +144,53 @@ export default function StoreCustomers() {
         </div>
       ) : customers && customers.length > 0 ? (
         <>
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead className="text-center">Orders</TableHead>
-                    <TableHead>Joined</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {customers.map((customer) => (
-                    <TableRow
-                      key={customer.id}
-                      className="cursor-pointer hover:bg-accent/50 transition-colors"
-                      onClick={() => setSelectedCustomer(customer)}
-                    >
-                      <TableCell className="font-medium text-foreground">{customer.name || "—"}</TableCell>
-                      <TableCell className="text-muted-foreground">{customer.phone || "—"}</TableCell>
-                      <TableCell className="text-muted-foreground">{customer.email?.endsWith("@whatsapp") ? "—" : customer.email}</TableCell>
-                      <TableCell className="text-center"><Badge variant="secondary">{customer.order_count}</Badge></TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{format(new Date(customer.created_at), "MMM d, yyyy")}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <DataTableCard>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>
+                    <SortableHead
+                      label="Name" asc="name-asc" desc="name-desc"
+                      sort={sort}
+                      onSort={(v) => { setSort(v); pagination.setPage(1); }}
+                    />
+                  </TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead className="text-center">
+                    <SortableHead
+                      label="Orders" asc="orders-low" desc="orders-high"
+                      sort={sort}
+                      onSort={(v) => { setSort(v); pagination.setPage(1); }}
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <SortableHead
+                      label="Joined" asc="joined-old" desc="joined-new"
+                      sort={sort}
+                      onSort={(v) => { setSort(v); pagination.setPage(1); }}
+                    />
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {customers.map((customer) => (
+                  <DataTableRow
+                    key={customer.id}
+                    clickable
+                    active={selectedCustomer?.id === customer.id}
+                    onClick={() => setSelectedCustomer(customer)}
+                  >
+                    <TableCell className="font-medium text-foreground">{customer.name || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">{customer.phone || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">{customer.email?.endsWith("@whatsapp") ? "—" : customer.email}</TableCell>
+                    <TableCell className="text-center"><Badge variant="secondary">{customer.order_count}</Badge></TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{format(new Date(customer.created_at), "MMM d, yyyy")}</TableCell>
+                  </DataTableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </DataTableCard>
           <PaginationControls page={pagination.page} totalPages={pagination.totalPages} onPageChange={pagination.setPage} />
         </>
       ) : (
