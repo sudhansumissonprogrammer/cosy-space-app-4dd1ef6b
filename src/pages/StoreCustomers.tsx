@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { DataTableCard, DataTableRow } from "@/components/dashboard/DataTable";
+import SortableHead from "@/components/dashboard/SortableHead";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
