@@ -58,12 +58,22 @@ export default function StoreCustomers() {
 
   const pagination = usePagination(countData ?? undefined);
 
+  const SORT_COLUMNS: Record<CustomerSort, { column: string; ascending: boolean }> = {
+    "orders-high": { column: "order_count", ascending: false },
+    "orders-low": { column: "order_count", ascending: true },
+    "name-asc": { column: "name", ascending: true },
+    "name-desc": { column: "name", ascending: false },
+    "joined-new": { column: "created_at", ascending: false },
+    "joined-old": { column: "created_at", ascending: true },
+  };
+
   const { data: customers, isLoading } = useQuery({
-    queryKey: ["store-customers", storeId, pagination.page],
+    queryKey: ["store-customers", storeId, pagination.page, sort],
     queryFn: async () => {
+      const { column, ascending } = SORT_COLUMNS[sort];
       const { data, error } = await (supabase as any)
         .from("merchant_customers_v").select("*").eq("store_id", storeId!)
-        .order("order_count", { ascending: false })
+        .order(column, { ascending, nullsFirst: false })
         .range(pagination.from, pagination.to);
       if (error) throw error;
       return data;
