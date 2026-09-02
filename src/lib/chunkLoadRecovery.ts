@@ -183,10 +183,14 @@ function readAttempts(signature: string, now: number): number {
 
 export function clearChunkLoadRecoveryState() {
   if (typeof window === "undefined") return;
+  clearRecoveryCookie();
   try {
     sessionStorage.removeItem(RECOVERY_STORAGE_KEY);
     sessionStorage.removeItem(LEGACY_RECOVERY_STORAGE_KEY);
-
+  } catch {
+    // Ignore storage access failures.
+  }
+  try {
     const url = new URL(window.location.href);
     if (url.searchParams.has("__r")) {
       url.searchParams.delete("__r");
@@ -195,7 +199,7 @@ export function clearChunkLoadRecoveryState() {
       window.history.replaceState(window.history.state, "", nextUrl);
     }
   } catch {
-    // Ignore storage access failures.
+    // Ignore history failures.
   }
 }
 
@@ -203,11 +207,7 @@ function hasActiveRecoveryContext() {
   if (typeof window === "undefined") return false;
 
   try {
-    const state = readRecoveryState();
-    const hasRecentState = !!state && Date.now() - state.ts < RECOVERY_COOLDOWN_MS;
-    if (hasRecentState) return true;
-
-    return false;
+    return readAttempts(getRecoverySignature(), Date.now()) > 0;
   } catch {
     return false;
   }
@@ -228,36 +228,46 @@ export function recoverFromChunkLoadError(error: unknown): boolean {
   // one of them should consume an attempt and initiate navigation.
   if (recoveryNavigationStarted) return true;
 
+  const now = Date.now();
+  let signature = "";
+  let attempts = MAX_RECOVERY_ATTEMPTS + 1;
+
   try {
-    const now = Date.now();
-    const signature = getRecoverySignature();
-    const previous = readRecoveryState();
-    const isSameRecoveryFlow = !!previous && previous.signature === signature && now - previous.ts < RECOVERY_COOLDOWN_MS;
-    const attempts = isSameRecoveryFlow ? previous.attempts + 1 : 1;
-
-    if (attempts > MAX_RECOVERY_ATTEMPTS) {
-      // Keep an exhausted marker for the cooldown window. Clearing it here
-      // made the next chunk error start a brand-new recovery flow, producing
-      // an endless cycle of three reloads whenever the shared origin stayed
-      // unavailable.
-      writeRecoveryState({ attempts: MAX_RECOVERY_ATTEMPTS, signature, ts: previous?.ts || now });
-      return false;
-    }
-
-    writeRecoveryState({ attempts, signature, ts: now });
+    signature = getRecoverySignature();
+    attempts = readAttempts(signature, now) + 1;
+  } catch {
+    // If we cannot even read the counter, refuse to navigate. A blind reload
+    // here is exactly what produced the 2-second refresh loop.
     recoveryNavigationStarted = true;
+    return false;
+  }
 
+  if (attempts > MAX_RECOVERY_ATTEMPTS) {
+    // Budget exhausted: stop reloading and let the error boundary render.
+    // Keep the marker for the cooldown window so a later chunk error in the
+    // same session cannot restart the cycle.
+    writeRecoveryState({ attempts: MAX_RECOVERY_ATTEMPTS, signature, ts: now });
+    recoveryNavigationStarted = true;
+    return false;
+  }
+
+  writeRecoveryState({ attempts, signature, ts: now });
+  recoveryNavigationStarted = true;
+
+  try {
     const nextUrl = new URL(window.location.href);
     nextUrl.searchParams.delete("__sb_heal");
     nextUrl.searchParams.delete("__sh");
+    // The attempt number rides in the URL so the counter survives blocked
+    // storage (FB/IG in-app browsers, private mode).
     nextUrl.searchParams.set("__r", `${now.toString(36)}-${attempts}`);
     notifyShellBroken("chunk", () => window.location.replace(nextUrl.toString()));
-    return true;
   } catch {
-    recoveryNavigationStarted = true;
-    notifyShellBroken("chunk-fallback", () => window.location.reload());
-    return true;
+    return false;
   }
+  return true;
+}
+
 }
 
 export function installChunkLoadRecovery() {
