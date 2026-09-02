@@ -294,3 +294,17 @@ export function installChunkLoadRecovery() {
     recoverFromChunkLoadError(rejectionEvent.reason);
   });
 }
+/**
+ * True while a reload is still allowed for this recovery flow. When the
+ * budget is spent we must render the error UI instead of silently retrying —
+ * otherwise the boundary keeps re-rendering a broken tree forever.
+ */
+export function hasRecoveryBudget(): boolean {
+  if (typeof window === "undefined") return false;
+  if (recoveryNavigationStarted) return true;
+  try {
+    return readAttempts(getRecoverySignature(), Date.now()) < MAX_RECOVERY_ATTEMPTS;
+  } catch {
+    return false;
+  }
+}

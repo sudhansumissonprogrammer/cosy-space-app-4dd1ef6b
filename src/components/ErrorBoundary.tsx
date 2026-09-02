@@ -1,6 +1,6 @@
 import React from "react";
 import { logError } from "@/lib/logError";
-import { isRecoverableChunkLoadError, recoverFromChunkLoadError } from "@/lib/chunkLoadRecovery";
+import { clearChunkLoadRecoveryState, hasRecoveryBudget, isRecoverableChunkLoadError, recoverFromChunkLoadError } from "@/lib/chunkLoadRecovery";
 
 interface Props {
   children: React.ReactNode;
@@ -25,7 +25,10 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   static getDerivedStateFromError(error: Error): State {
-    if (isRecoverableChunkLoadError(error)) {
+    // Only swallow the error while a reload is still allowed. Once the
+    // recovery budget is spent we must show the error UI — swallowing it
+    // forever is what made storefronts look like they refresh endlessly.
+    if (isRecoverableChunkLoadError(error) && hasRecoveryBudget()) {
       return { hasError: false, error: null };
     }
     return { hasError: true, error };
@@ -47,7 +50,9 @@ export class ErrorBoundary extends React.Component<Props, State> {
   };
 
   handleReload = () => {
-    if (recoverFromChunkLoadError(this.state.error)) return;
+    // Explicit user action — always allowed, but strip the recovery marker so
+    // the fresh load starts from a clean URL.
+    clearChunkLoadRecoveryState();
     window.location.reload();
   };
 
