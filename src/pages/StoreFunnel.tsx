@@ -193,6 +193,7 @@ export default function StoreFunnel() {
   });
 
   const loading = pvQ.isLoading || evQ.isLoading || ordQ.isLoading;
+  const hasError = pvQ.isError || evQ.isError || ordQ.isError;
 
   // --- Aggregations ---
   const sessions = useMemo(() => {
