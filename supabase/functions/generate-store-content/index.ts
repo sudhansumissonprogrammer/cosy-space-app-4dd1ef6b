@@ -12,7 +12,11 @@ const SYSTEM_PROMPT = `You are an e-commerce copywriter. You will receive a stor
 - store_description: 2-3 short lines describing the store
 - meta_title: max 60 chars, SEO-friendly
 - meta_description: max 150 chars, SEO-friendly
-- about_us: 3-4 lines welcome paragraph about the store. Friendly tone, mention what makes them special. Include 1-2 emojis. This is ONLY a short welcome intro, NOT the full about page.
+- about_us: 4-6 short paragraphs for the store's About Us page. Friendly tone, clearly state WHAT the store sells (use the business type / products given), who it is for, quality and delivery promise, and a thank-you line. Include 1-2 emojis. Plain text with \n\n between paragraphs.
+
+Accuracy rules:
+- Never claim anything the merchant did not say (no fake awards, years in business, customer counts or certifications)
+- If the products are imitation/artificial/plated, say so plainly — never imply real gold/silver/diamond
 
 Rules:
 - Keep everything concise
@@ -22,7 +26,7 @@ Rules:
 - Return ONLY valid JSON`;
 
 function buildUserPrompt(storeName: string, storeDesc: string): string {
-  return `Store Name: ${storeName}\nStore Description: ${storeDesc}\n\nReturn JSON:\n{"store_description":"","meta_title":"","meta_description":"","about_us":""}`;
+  return `Store Name: ${storeName}\nWhat the store sells: ${storeDesc}\n\nReturn JSON:\n{"store_description":"","meta_title":"","meta_description":"","about_us":""}`;
 }
 
 // --- Provider health tracking ---
@@ -148,14 +152,18 @@ serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { store_name, store_description } = await req.json();
+    const { store_name, store_description, business_type, owner_name } = await req.json();
     if (!store_name || typeof store_name !== "string" || !store_name.trim()) {
       return new Response(JSON.stringify({ error: "store_name is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const trimmedName = store_name.trim().substring(0, 200);
-    const trimmedDesc = (store_description || "").trim().substring(0, 500);
+    const trimmedDesc = [
+      business_type ? `Business type: ${String(business_type).trim()}` : "",
+      (store_description || "").trim(),
+      owner_name ? `Founder: ${String(owner_name).trim()}` : "",
+    ].filter(Boolean).join(". ").substring(0, 600);
 
     let rawResponse = "";
     let provider = "";
