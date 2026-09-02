@@ -846,8 +846,7 @@ export default function ProductsList() { // v2
               ))}
             </div>
           ) : (
-            <Card>
-              <CardContent className="p-0">
+            <DataTableCard>
                 <Table>
                   <TableHeader>
                     <TableRow>
