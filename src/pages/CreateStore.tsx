@@ -229,6 +229,8 @@ export default function CreateStore() {
         name: storeName,
         slug: finalSlug,
         description: description.trim() || null,
+        business_type: businessType.trim() || null,
+
         whatsapp_number: whatsappNumber.trim() || null,
         currency,
         order_mode: "website",
