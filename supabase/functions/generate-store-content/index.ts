@@ -71,9 +71,9 @@ async function callNvidia(storeName: string, storeDesc: string): Promise<string>
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: buildUserPrompt(storeName, storeDesc) },
       ],
-      max_tokens: 400, temperature: 0.7,
+      max_tokens: 800, temperature: 0.7,
     }),
-  }, 5000);
+  }, 9000);
   if (!res.ok) { const t = await res.text(); console.error("NVIDIA error:", res.status, t); throw new Error(`NVIDIA ${res.status}`); }
   const data = await res.json();
   return data.choices?.[0]?.message?.content?.trim() || "";
@@ -92,7 +92,7 @@ async function callLovableAI(storeName: string, storeDesc: string): Promise<stri
         { role: "user", content: buildUserPrompt(storeName, storeDesc) },
       ],
     }),
-  }, 3000);
+  }, 9000);
   if (!res.ok) { const t = await res.text(); console.error("Lovable error:", res.status, t); throw new Error(`Lovable ${res.status}`); }
   const data = await res.json();
   return data.choices?.[0]?.message?.content?.trim() || "";
@@ -108,9 +108,9 @@ async function callGemini(storeName: string, storeDesc: string): Promise<string>
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [{ parts: [{ text: `${SYSTEM_PROMPT}\n\n${buildUserPrompt(storeName, storeDesc)}` }] }],
-        generationConfig: { maxOutputTokens: 400, temperature: 0.7 },
+        generationConfig: { maxOutputTokens: 800, temperature: 0.7 },
       }),
-    }, 4000);
+    }, 9000);
   if (!res.ok) { const t = await res.text(); console.error("Gemini error:", res.status, t); throw new Error(`Gemini ${res.status}`); }
   const data = await res.json();
   return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
