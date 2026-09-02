@@ -179,7 +179,7 @@ function WalletActivityList({ ledger, invoiceFor }: { ledger: any[]; invoiceFor:
                 onClick={() => setExpanded((s) => ({ ...s, [it.dayKey]: !isOpen }))}
                 className="flex w-full items-center gap-3 text-left"
               >
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success/10 text-success">
                   <MessageCircle className="h-4 w-4" />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -192,7 +192,7 @@ function WalletActivityList({ ledger, invoiceFor }: { ledger: any[]; invoiceFor:
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold tabular-nums text-rose-600">−₹{it.total.toFixed(2)}</p>
+                  <p className="text-sm font-bold tabular-nums text-destructive">−₹{it.total.toFixed(2)}</p>
                   <p className="text-[10px] text-muted-foreground tabular-nums">bal ₹{Number(it.balance_after).toFixed(2)}</p>
                 </div>
               </button>
@@ -219,7 +219,7 @@ function WalletActivityList({ ledger, invoiceFor }: { ledger: any[]; invoiceFor:
           (l.kind === "admin_adjustment" && l.direction === "credit");
         return (
           <div key={l.id} className="flex items-center gap-3 border-b pb-2 last:border-0">
-            <div className={`flex h-8 w-8 items-center justify-center rounded-full ${l.direction === "credit" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
+            <div className={`flex h-8 w-8 items-center justify-center rounded-full ${l.direction === "credit" ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
               {l.direction === "credit" ? <ArrowDownCircle className="h-4 w-4" /> : <ArrowUpCircle className="h-4 w-4" />}
             </div>
             <div className="min-w-0 flex-1">
@@ -227,7 +227,7 @@ function WalletActivityList({ ledger, invoiceFor }: { ledger: any[]; invoiceFor:
               <p className="text-[10px] text-muted-foreground">{new Date(l.created_at).toLocaleString()}</p>
             </div>
             <div className="text-right">
-              <p className={`text-sm font-bold tabular-nums ${l.direction === "credit" ? "text-emerald-600" : "text-rose-600"}`}>
+              <p className={`text-sm font-bold tabular-nums ${l.direction === "credit" ? "text-success" : "text-destructive"}`}>
                 {l.direction === "credit" ? "+" : "−"}₹{Number(l.amount).toFixed(2)}
               </p>
               <p className="text-[10px] text-muted-foreground tabular-nums">bal ₹{Number(l.balance_after).toFixed(2)}</p>

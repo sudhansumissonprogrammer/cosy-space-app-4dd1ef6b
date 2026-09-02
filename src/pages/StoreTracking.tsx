@@ -298,7 +298,7 @@ export default function StoreTracking() {
                 <div className="flex items-center justify-between rounded-lg border p-3">
                   <div className="flex items-center gap-2">
                     <span
-                      className={`h-2.5 w-2.5 rounded-full ${pixelOk ? "bg-emerald-500" : "bg-amber-500"}`}
+                      className={`h-2.5 w-2.5 rounded-full ${pixelOk ? "bg-success" : "bg-warning"}`}
                     />
                     <span className="text-sm font-medium">Facebook Pixel</span>
                   </div>
@@ -310,13 +310,13 @@ export default function StoreTracking() {
                   <div className="flex items-center gap-2">
                     <span
                       className={`h-2.5 w-2.5 rounded-full ${
-                        capiOk ? "bg-emerald-500" : pixelOk ? "bg-amber-500" : "bg-muted-foreground/40"
+                        capiOk ? "bg-success" : pixelOk ? "bg-warning" : "bg-muted-foreground/40"
                       }`}
                     />
                     <div>
                       <div className="text-sm font-medium">Conversions API</div>
                       {pixelOk && !capiOk && (
-                        <div className="text-[11px] text-amber-700 dark:text-amber-400">
+                        <div className="text-[11px] text-warning">
                           Pixel-only mode — add token below for ~30% better ROAS
                         </div>
                       )}
@@ -330,7 +330,7 @@ export default function StoreTracking() {
                   <div className="flex items-center gap-2">
                     <span
                       className={`h-2.5 w-2.5 rounded-full ${
-                        lastFiredAgo ? "bg-emerald-500" : "bg-muted-foreground/40"
+                        lastFiredAgo ? "bg-success" : "bg-muted-foreground/40"
                       }`}
                     />
                     <span className="text-sm font-medium">Last server Purchase</span>
@@ -406,7 +406,7 @@ export default function StoreTracking() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <ShieldOff className="h-5 w-5 text-amber-600" />
+                <ShieldOff className="h-5 w-5 text-warning" />
                 Pause Server-Side CAPI
               </CardTitle>
               <CardDescription>

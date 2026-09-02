@@ -348,7 +348,7 @@ export default function StorePayments() {
       {showPaymentConfig && (
         <div className={`rounded-xl border p-3 text-sm ${
           gatewayMismatch
-            ? "border-amber-400 bg-amber-50 text-amber-900 dark:bg-amber-950/30 dark:text-amber-200"
+            ? "border-warning/50 bg-warning/10 text-warning-foreground dark:text-warning"
             : "border-primary/30 bg-primary/5 text-foreground"
         }`}>
           <div className="flex items-start gap-2">
@@ -394,7 +394,7 @@ export default function StorePayments() {
                 <RadioGroupItem value="whatsapp" className="mt-0.5" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
-                    <MessageCircle className="h-4 w-4 text-green-600" /> WhatsApp Orders
+                    <MessageCircle className="h-4 w-4 text-success" /> WhatsApp Orders
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     Customers order via WhatsApp message. No online payment needed.
@@ -489,7 +489,7 @@ export default function StorePayments() {
                 </label>
                 <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-3 py-2.5 transition-[transform,opacity,colors,box-shadow] ${onlineGateway === "payu" ? "border-primary bg-primary/5" : "border-input"}`}>
                   <RadioGroupItem value="payu" />
-                  <CreditCard className="h-4 w-4 text-emerald-600" />
+                  <CreditCard className="h-4 w-4 text-success" />
                   <span className="text-sm font-medium">PayU</span>
                 </label>
               </RadioGroup>
@@ -501,7 +501,7 @@ export default function StorePayments() {
                 <div className="rounded-xl border">
                   <div className="flex items-center justify-between p-4">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                         <CreditCard className="h-5 w-5 text-blue-600" />
                       </div>
                       <div>
@@ -699,8 +699,8 @@ export default function StorePayments() {
                 <div className="rounded-xl border">
                   <div className="flex items-center justify-between p-4">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950">
-                        <CreditCard className="h-5 w-5 text-emerald-600" />
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10">
+                        <CreditCard className="h-5 w-5 text-success" />
                       </div>
                       <div>
                         <p className="text-sm font-medium text-foreground">PayU</p>
@@ -823,7 +823,7 @@ export default function StorePayments() {
           </CardHeader>
           <CardContent className="space-y-4">
             {!onlineEnabled && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+              <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs text-warning-foreground dark:text-warning">
                 Select an online gateway (Razorpay, Cashfree or PayU) above for partial payment to take effect at checkout.
               </div>
             )}
@@ -909,7 +909,7 @@ export default function StorePayments() {
           </CardHeader>
           <CardContent className="space-y-4">
             {!onlineEnabled && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+              <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs text-warning-foreground dark:text-warning">
                 Turn on an online gateway (Razorpay / Cashfree / PayU) above so the prepaid discount can be applied at checkout.
               </div>
             )}
@@ -993,7 +993,7 @@ export default function StorePayments() {
                       </div>
                     </div>
                     {(prepaidDiscountTier2Min && Number(prepaidDiscountTier2Min) > 0) !== (prepaidDiscountTier2Value && Number(prepaidDiscountTier2Value) > 0) && (
-                      <p className="text-xs text-amber-600">Set both fields to enable the bigger discount tier.</p>
+                      <p className="text-xs text-warning">Set both fields to enable the bigger discount tier.</p>
                     )}
                   </div>
                 )}
@@ -1044,7 +1044,7 @@ export default function StorePayments() {
               <Switch checked={checkoutV2Enabled} onCheckedChange={setCheckoutV2Enabled} />
             </div>
             {checkoutV2Enabled && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+              <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs text-warning-foreground dark:text-warning">
                 Fast Checkout will be shown to <b>all</b> customers on this store. Make sure you've tested it end-to-end (place a real ₹1 order) before saving.
               </div>
             )}

@@ -79,7 +79,7 @@ export default function StoreWhatsAppSimple() {
     <div className="space-y-5">
       <div>
         <h1 className="text-xl font-bold flex items-center gap-2">
-          <MessageSquare className="h-6 w-6 text-green-600" />
+          <MessageSquare className="h-6 w-6 text-success" />
           WhatsApp
         </h1>
         <p className="text-sm text-muted-foreground mt-0.5">
@@ -141,14 +141,14 @@ export default function StoreWhatsAppSimple() {
               const effectiveOn = on && master;
               return (
                 <li key={a.key} className="flex items-start gap-3 py-3">
-                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-green-100 text-green-700">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-success/10 text-success">
                     <a.icon className="h-4 w-4" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium">{a.label}</p>
                     <p className="text-xs text-muted-foreground">{a.desc}</p>
                     {on && !master && (
-                      <p className="text-[11px] text-amber-600 mt-1">Master switch is OFF — this won&apos;t send until you enable it above.</p>
+                      <p className="text-[11px] text-warning mt-1">Master switch is OFF — this won&apos;t send until you enable it above.</p>
                     )}
                   </div>
                   <div className="flex flex-col items-end gap-1">

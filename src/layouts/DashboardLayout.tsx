@@ -110,7 +110,7 @@ function MobileMenu({
           </Badge>
         )}
         {!comingSoon && item.badge !== undefined && item.badge > 0 && (
-          <Badge className="h-5 min-w-5 px-1.5 text-[10px] font-bold rounded-full bg-red-500 text-white border-0">
+          <Badge className="h-5 min-w-5 px-1.5 text-[10px] font-bold rounded-full bg-destructive text-destructive-foreground border-0">
             {item.badge > 99 ? "99+" : item.badge}
           </Badge>
         )}
@@ -507,7 +507,7 @@ export default function DashboardLayout() {
                     )}
                   />
                   {item.badge !== undefined && item.badge > 0 && (
-                    <span className="absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                    <span className="absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
                       {item.badge > 99 ? "99+" : item.badge}
                     </span>
                   )}

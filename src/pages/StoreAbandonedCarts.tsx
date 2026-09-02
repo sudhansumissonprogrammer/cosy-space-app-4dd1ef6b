@@ -217,7 +217,7 @@ export default function StoreAbandonedCarts() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: "Total Abandoned", value: stats.total, icon: ShoppingCart, color: "text-orange-500" },
-          { label: "Recovered", value: stats.recovered, icon: CheckCircle2, color: "text-green-500" },
+          { label: "Recovered", value: stats.recovered, icon: CheckCircle2, color: "text-success" },
           { label: "Recoverable", value: stats.withPhone, icon: MessageSquare, color: "text-blue-500" },
           { label: "Today", value: stats.today, icon: Clock, color: "text-primary" },
         ].map((s) => (
@@ -332,7 +332,7 @@ export default function StoreAbandonedCarts() {
               <div className="mt-2 space-y-1">
                 <Progress value={progressPercent} className="h-2" />
                 <div className="flex justify-between text-[11px] text-muted-foreground">
-                  <span className="inline-flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-emerald-600" aria-hidden="true" /> {bulkProgress.sent} sent</span>
+                  <span className="inline-flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-success" aria-hidden="true" /> {bulkProgress.sent} sent</span>
                   <span className="inline-flex items-center gap-1"><XCircle className="h-3 w-3 text-destructive" aria-hidden="true" /> {bulkProgress.failed} failed</span>
                   <span>{bulkProgress.sent + bulkProgress.failed}/{bulkProgress.total}</span>
                 </div>
