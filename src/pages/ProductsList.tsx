@@ -852,17 +852,52 @@ export default function ProductsList() { // v2
                     <TableRow>
                       {bulkMode && <TableHead className="w-10"><Checkbox checked={bulkSelected.size === paginatedProducts.length && paginatedProducts.length > 0} onCheckedChange={toggleSelectAll} /></TableHead>}
                       <TableHead className="w-16"></TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Category</TableHead>
+                      <TableHead>
+                        <SortableHead
+                          label="Name"
+                          asc="title-asc"
+                          desc="title-desc"
+                          sort={sort}
+                          onSort={(v) => { setSort(v); pagination.setPage(1); }}
+                        />
+                      </TableHead>
+                      <TableHead>
+                        <SortableHead
+                          label="Category"
+                          asc="category-asc"
+                          desc="category-desc"
+                          sort={sort}
+                          onSort={(v) => { setSort(v); pagination.setPage(1); }}
+                        />
+                      </TableHead>
                       <TableHead className="text-right">Price</TableHead>
-                      <TableHead className="text-right">Stock</TableHead>
+                      <TableHead className="text-right">
+                        <SortableHead
+                          className="justify-end w-full"
+                          label="Stock"
+                          asc="stock-low"
+                          desc="stock-high"
+                          sort={sort}
+                          onSort={(v) => { setSort(v); pagination.setPage(1); }}
+                        />
+                      </TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="w-24"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {paginatedProducts.map((product) => (
-                      <TableRow key={product.id} className={cn(bulkSelected.has(product.id) && "bg-accent/30")}>
+                      <TableRow
+                        key={product.id}
+                        className={cn(
+                          "cursor-pointer transition-colors hover:bg-accent/40",
+                          bulkSelected.has(product.id) && "bg-accent/30"
+                        )}
+                        onClick={() => {
+                          if (bulkMode) { toggleBulkSelect(product.id); return; }
+                          navigate(`/dashboard/stores/${storeSlug}/products/${product.id}/edit`);
+                        }}
+                      >
                         {bulkMode && (
                           <TableCell>
                             <Checkbox checked={bulkSelected.has(product.id)} onCheckedChange={() => toggleBulkSelect(product.id)} />
