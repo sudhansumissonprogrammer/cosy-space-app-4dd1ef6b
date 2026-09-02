@@ -268,7 +268,6 @@ export function recoverFromChunkLoadError(error: unknown): boolean {
   return true;
 }
 
-}
 
 export function installChunkLoadRecovery() {
   if (typeof window === "undefined") return;
