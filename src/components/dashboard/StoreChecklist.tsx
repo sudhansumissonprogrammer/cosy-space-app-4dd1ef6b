@@ -138,7 +138,7 @@ const StoreChecklist = React.forwardRef<HTMLDivElement, StoreChecklistProps>(fun
               }`}
             >
               <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
-                item.done ? "bg-emerald-100 text-emerald-600" : "border border-muted-foreground/30 text-muted-foreground"
+                item.done ? "bg-success/15 text-success" : "border border-muted-foreground/30 text-muted-foreground"
               }`}>
                 {item.done ? <Check className="h-3 w-3" /> : <item.icon className="h-3 w-3" />}
               </div>

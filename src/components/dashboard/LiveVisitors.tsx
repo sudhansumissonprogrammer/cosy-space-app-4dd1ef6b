@@ -69,8 +69,8 @@ export default function LiveVisitors({ storeId }: Props) {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <span className="relative inline-flex h-2.5 w-2.5">
-              <span className={`absolute inline-flex h-full w-full rounded-full ${isLive ? "bg-emerald-500 animate-ping opacity-75" : "bg-muted"}`} />
-              <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${isLive ? "bg-emerald-500" : "bg-muted-foreground/40"}`} />
+              <span className={`absolute inline-flex h-full w-full rounded-full ${isLive ? "bg-success animate-ping opacity-75" : "bg-muted"}`} />
+              <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${isLive ? "bg-success" : "bg-muted-foreground/40"}`} />
             </span>
             <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.1em]">
               Live visitors

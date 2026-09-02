@@ -77,7 +77,7 @@ export default function HeroRevenue({ storeId, currencySymbol }: HeroRevenueProp
               {animatedOrders} order{data?.orders !== 1 ? "s" : ""}
             </span>
             {(data?.revenue ?? 0) > 0 || (data?.yesterdayRevenue ?? 0) > 0 ? (
-              <span className={`inline-flex items-center gap-0.5 text-[11px] font-bold ${isUp ? "text-emerald-600" : "text-red-500"}`}>
+              <span className={`inline-flex items-center gap-0.5 text-[11px] font-bold ${isUp ? "text-success" : "text-destructive"}`}>
                 {isUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
                 {Math.abs(change)}% vs yesterday
               </span>

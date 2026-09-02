@@ -215,7 +215,7 @@ export default function EditReviewDialog({ storeId, review, onClose, onSaved }: 
                     aria-label={`${n} stars`}
                   >
                     <Star
-                      className={`h-6 w-6 ${n <= rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`}
+                      className={`h-6 w-6 ${n <= rating ? "fill-warning text-warning" : "text-muted-foreground"}`}
                     />
                   </button>
                 ))}

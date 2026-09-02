@@ -43,9 +43,9 @@ export default function TodaySummary({ storeId, currencySymbol }: TodaySummaryPr
   });
 
   const items = [
-    { label: "Today's Orders", value: data?.orders ?? 0, icon: ShoppingBag, color: "text-emerald-600" },
-    { label: "Today's Revenue", value: `${currencySymbol}${(data?.revenue ?? 0).toFixed(0)}`, icon: TrendingUp, color: "text-amber-600" },
-    { label: "New Customers", value: data?.customers ?? 0, icon: Users, color: "text-blue-600" },
+    { label: "Today's Orders", value: data?.orders ?? 0, icon: ShoppingBag, color: "text-success" },
+    { label: "Today's Revenue", value: `${currencySymbol}${(data?.revenue ?? 0).toFixed(0)}`, icon: TrendingUp, color: "text-warning" },
+    { label: "New Customers", value: data?.customers ?? 0, icon: Users, color: "text-primary" },
   ];
 
   return (

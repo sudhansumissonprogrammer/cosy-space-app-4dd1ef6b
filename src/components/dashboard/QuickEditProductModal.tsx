@@ -146,7 +146,7 @@ export default function QuickEditProductModal({ open, onOpenChange, product, sto
               </div>
             </div>
             {salePrice && Number(salePrice) > 0 && Number(price) > 0 && Number(salePrice) < Number(price) && (
-              <p className="text-[11px] text-emerald-600 font-medium">
+              <p className="text-[11px] text-success font-medium">
                 {Math.round(((Number(price) - Number(salePrice)) / Number(price)) * 100)}% off
               </p>
             )}

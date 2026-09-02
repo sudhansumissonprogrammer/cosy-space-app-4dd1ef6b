@@ -126,7 +126,7 @@ export default function SwipeableOrderRow({
       {showRight && (
         <div
           className={`absolute inset-y-0 left-0 flex items-center pl-4 transition-colors ${
-            committed ? "bg-emerald-500 text-white" : "bg-emerald-100 text-emerald-700"
+            committed ? "bg-success text-success-foreground" : "bg-success/15 text-success"
           }`}
           style={{ width: Math.abs(dx) }}
         >
@@ -139,7 +139,7 @@ export default function SwipeableOrderRow({
       {showLeft && (
         <div
           className={`absolute inset-y-0 right-0 flex items-center justify-end pr-4 transition-colors ${
-            committed ? "bg-emerald-600 text-white" : "bg-emerald-50 text-emerald-700"
+            committed ? "bg-success text-success-foreground" : "bg-success/10 text-success"
           }`}
           style={{ width: Math.abs(dx) }}
         >

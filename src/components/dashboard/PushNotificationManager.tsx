@@ -188,7 +188,7 @@ export default function PushNotificationManager({ storeId }: Props) {
               <p className="text-sm font-semibold">This device</p>
               <p className="text-xs text-muted-foreground">
                 {thisDeviceSubscribed ? (
-                  <span className="inline-flex items-center gap-1 text-emerald-600">
+                  <span className="inline-flex items-center gap-1 text-success">
                     <CheckCircle2 className="h-3 w-3" /> Receiving notifications
                   </span>
                 ) : permission === "denied" ? (

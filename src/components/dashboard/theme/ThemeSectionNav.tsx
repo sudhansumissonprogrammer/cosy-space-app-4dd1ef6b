@@ -59,7 +59,7 @@ export default function ThemeSectionNav({ sections, active, onSelect, configured
                 <div className="flex items-center gap-1.5">
                   <span className="text-sm font-semibold">{s.label}</span>
                   {isConfigured && (
-                    <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" title="Customized" />
+                    <span className="inline-flex h-1.5 w-1.5 rounded-full bg-success" title="Customized" />
                   )}
                 </div>
                 <p className="text-[11px] leading-tight text-muted-foreground line-clamp-1">{s.description}</p>
@@ -89,7 +89,7 @@ export default function ThemeSectionNav({ sections, active, onSelect, configured
                 <Icon className="h-3.5 w-3.5" />
                 <span>{s.label}</span>
                 {isConfigured && !isActive && (
-                  <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  <span className="inline-flex h-1.5 w-1.5 rounded-full bg-success" />
                 )}
               </button>
             );
