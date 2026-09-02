@@ -267,7 +267,14 @@ export default function StoreCoupons() {
                         />
                       </TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(c.id)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Delete coupon ${c.code}`}
+                          onClick={() => {
+                            if (window.confirm(`Delete coupon ${c.code}? This cannot be undone.`)) deleteMutation.mutate(c.id);
+                          }}
+                        >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </TableCell>
