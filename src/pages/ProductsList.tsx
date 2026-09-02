@@ -887,21 +887,19 @@ export default function ProductsList() { // v2
                   </TableHeader>
                   <TableBody>
                     {paginatedProducts.map((product) => (
-                      <TableRow
+                      <DataTableRow
                         key={product.id}
-                        className={cn(
-                          "cursor-pointer transition-colors hover:bg-accent/40",
-                          bulkSelected.has(product.id) && "bg-accent/30"
-                        )}
+                        clickable
+                        selected={bulkSelected.has(product.id)}
                         onClick={() => {
                           if (bulkMode) { toggleBulkSelect(product.id); return; }
                           navigate(`/dashboard/stores/${storeSlug}/products/${product.id}/edit`);
                         }}
                       >
                         {bulkMode && (
-                          <TableCell onClick={(e) => e.stopPropagation()}>
+                          <DataTableActionCell>
                             <Checkbox checked={bulkSelected.has(product.id)} onCheckedChange={() => toggleBulkSelect(product.id)} />
-                          </TableCell>
+                          </DataTableActionCell>
                         )}
                         <TableCell>
                           {product.image_url ? (
