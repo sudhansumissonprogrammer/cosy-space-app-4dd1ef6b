@@ -447,8 +447,8 @@ export default function ProductsList() { // v2
   return (
     <div className="space-y-3">
       <PullToRefreshIndicator pull={pull} refreshing={refreshing} />
-      {/* Mobile FAB to add a new product (hidden in bulk-mode) */}
-      {!bulkMode && (
+      {/* Mobile FAB to add a new product (hidden in bulk-mode and on desktop) */}
+      {isMobile && !bulkMode && (
         <FAB
           onClick={() => setMobileProductId(null)}
           label="Product"

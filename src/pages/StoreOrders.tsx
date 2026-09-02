@@ -859,9 +859,17 @@ export default function StoreOrders() {
         </Card>
       )}
 
-      {/* ── MOBILE ORDER DETAIL SHEET ── */}
+      {/* ── ORDER DETAIL PANEL ── bottom sheet on mobile, side panel on desktop ── */}
       <Sheet open={!!mobileDetailOrder} onOpenChange={(v) => { if (!v) setMobileDetailOrder(null); }}>
-        <SheetContent side="bottom" className="h-[92vh] rounded-t-2xl px-0 overflow-hidden flex flex-col">
+        <SheetContent
+          side={isMobile ? "bottom" : "right"}
+          className={cn(
+            "px-0 overflow-hidden flex flex-col",
+            isMobile
+              ? "h-[92vh] rounded-t-2xl"
+              : "h-full w-full sm:max-w-xl lg:max-w-2xl",
+          )}
+        >
           {mobileDetailOrder && (
             <MobileOrderDetail
               order={withItems(mobileDetailOrder)}
