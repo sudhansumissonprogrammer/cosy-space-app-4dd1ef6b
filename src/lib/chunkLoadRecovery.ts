@@ -105,16 +105,92 @@ function readRecoveryState(): RecoveryState | null {
 }
 
 function writeRecoveryState(state: RecoveryState) {
-  sessionStorage.setItem(RECOVERY_STORAGE_KEY, JSON.stringify(state));
-  sessionStorage.removeItem(LEGACY_RECOVERY_STORAGE_KEY);
+  // sessionStorage can throw (Safari private mode, in-app browsers with
+  // storage blocked, quota). It MUST never be the only place the attempt
+  // counter lives — see readAttemptsFromUrl/cookie below.
+  try {
+    sessionStorage.setItem(RECOVERY_STORAGE_KEY, JSON.stringify(state));
+    sessionStorage.removeItem(LEGACY_RECOVERY_STORAGE_KEY);
+  } catch {
+    /* storage blocked — URL + cookie carry the counter */
+  }
+  writeRecoveryCookie(state.attempts);
 }
+
+/* ------------------------------------------------------------------ *
+ * Storage-independent attempt counters
+ *
+ * Root cause of the "site refreshes every 2 seconds" reports: the attempt
+ * counter lived ONLY in sessionStorage. Facebook / Instagram in-app
+ * browsers and private mode can block or wipe it, so every reload read
+ * `attempts = 0`, incremented to 1, reloaded again → endless loop that
+ * burns ad spend and kills the customer journey.
+ *
+ * Now the counter is carried in three places; the highest one wins:
+ *   1. the `__r=<ts>-<attempt>` query param (survives everything)
+ *   2. a short-lived cookie (survives a URL cleanup)
+ *   3. sessionStorage (best-effort, as before)
+ * ------------------------------------------------------------------ */
+
+const RECOVERY_COOKIE = "sb_chunk_recovery";
+
+function writeRecoveryCookie(attempts: number) {
+  try {
+    const maxAge = Math.round(RECOVERY_COOLDOWN_MS / 1000);
+    document.cookie = `${RECOVERY_COOKIE}=${attempts}; Path=/; Max-Age=${maxAge}; SameSite=Lax`;
+  } catch {
+    /* cookies blocked — URL still carries the counter */
+  }
+}
+
+function clearRecoveryCookie() {
+  try {
+    document.cookie = `${RECOVERY_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
+  } catch {
+    /* ignore */
+  }
+}
+
+function readRecoveryCookie(): number {
+  try {
+    const m = document.cookie.match(new RegExp(`(?:^|; )${RECOVERY_COOKIE}=(\\d+)`));
+    return m ? Number(m[1]) || 0 : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/** `__r=<base36 ts>-<attempt>` — set by the previous recovery navigation. */
+function readAttemptsFromUrl(): number {
+  try {
+    const raw = new URL(window.location.href).searchParams.get("__r");
+    if (!raw) return 0;
+    const m = raw.match(/-(\d+)$/);
+    return m ? Number(m[1]) || 0 : 1;
+  } catch {
+    return 0;
+  }
+}
+
+/** Highest attempt count from any surviving source. */
+function readAttempts(signature: string, now: number): number {
+  const state = readRecoveryState();
+  const fromStorage =
+    state && state.signature === signature && now - state.ts < RECOVERY_COOLDOWN_MS ? state.attempts : 0;
+  return Math.max(fromStorage, readRecoveryCookie(), readAttemptsFromUrl());
+}
+
 
 export function clearChunkLoadRecoveryState() {
   if (typeof window === "undefined") return;
+  clearRecoveryCookie();
   try {
     sessionStorage.removeItem(RECOVERY_STORAGE_KEY);
     sessionStorage.removeItem(LEGACY_RECOVERY_STORAGE_KEY);
-
+  } catch {
+    // Ignore storage access failures.
+  }
+  try {
     const url = new URL(window.location.href);
     if (url.searchParams.has("__r")) {
       url.searchParams.delete("__r");
@@ -123,7 +199,7 @@ export function clearChunkLoadRecoveryState() {
       window.history.replaceState(window.history.state, "", nextUrl);
     }
   } catch {
-    // Ignore storage access failures.
+    // Ignore history failures.
   }
 }
 
@@ -131,11 +207,7 @@ function hasActiveRecoveryContext() {
   if (typeof window === "undefined") return false;
 
   try {
-    const state = readRecoveryState();
-    const hasRecentState = !!state && Date.now() - state.ts < RECOVERY_COOLDOWN_MS;
-    if (hasRecentState) return true;
-
-    return false;
+    return readAttempts(getRecoverySignature(), Date.now()) > 0;
   } catch {
     return false;
   }
@@ -156,37 +228,46 @@ export function recoverFromChunkLoadError(error: unknown): boolean {
   // one of them should consume an attempt and initiate navigation.
   if (recoveryNavigationStarted) return true;
 
+  const now = Date.now();
+  let signature = "";
+  let attempts = MAX_RECOVERY_ATTEMPTS + 1;
+
   try {
-    const now = Date.now();
-    const signature = getRecoverySignature();
-    const previous = readRecoveryState();
-    const isSameRecoveryFlow = !!previous && previous.signature === signature && now - previous.ts < RECOVERY_COOLDOWN_MS;
-    const attempts = isSameRecoveryFlow ? previous.attempts + 1 : 1;
-
-    if (attempts > MAX_RECOVERY_ATTEMPTS) {
-      // Keep an exhausted marker for the cooldown window. Clearing it here
-      // made the next chunk error start a brand-new recovery flow, producing
-      // an endless cycle of three reloads whenever the shared origin stayed
-      // unavailable.
-      writeRecoveryState({ attempts: MAX_RECOVERY_ATTEMPTS, signature, ts: previous?.ts || now });
-      return false;
-    }
-
-    writeRecoveryState({ attempts, signature, ts: now });
+    signature = getRecoverySignature();
+    attempts = readAttempts(signature, now) + 1;
+  } catch {
+    // If we cannot even read the counter, refuse to navigate. A blind reload
+    // here is exactly what produced the 2-second refresh loop.
     recoveryNavigationStarted = true;
+    return false;
+  }
 
+  if (attempts > MAX_RECOVERY_ATTEMPTS) {
+    // Budget exhausted: stop reloading and let the error boundary render.
+    // Keep the marker for the cooldown window so a later chunk error in the
+    // same session cannot restart the cycle.
+    writeRecoveryState({ attempts: MAX_RECOVERY_ATTEMPTS, signature, ts: now });
+    recoveryNavigationStarted = true;
+    return false;
+  }
+
+  writeRecoveryState({ attempts, signature, ts: now });
+  recoveryNavigationStarted = true;
+
+  try {
     const nextUrl = new URL(window.location.href);
     nextUrl.searchParams.delete("__sb_heal");
     nextUrl.searchParams.delete("__sh");
+    // The attempt number rides in the URL so the counter survives blocked
+    // storage (FB/IG in-app browsers, private mode).
     nextUrl.searchParams.set("__r", `${now.toString(36)}-${attempts}`);
     notifyShellBroken("chunk", () => window.location.replace(nextUrl.toString()));
-    return true;
   } catch {
-    recoveryNavigationStarted = true;
-    notifyShellBroken("chunk-fallback", () => window.location.reload());
-    return true;
+    return false;
   }
+  return true;
 }
+
 
 export function installChunkLoadRecovery() {
   if (typeof window === "undefined") return;
@@ -212,4 +293,18 @@ export function installChunkLoadRecovery() {
     const rejectionEvent = event as PromiseRejectionEvent;
     recoverFromChunkLoadError(rejectionEvent.reason);
   });
+}
+/**
+ * True while a reload is still allowed for this recovery flow. When the
+ * budget is spent we must render the error UI instead of silently retrying —
+ * otherwise the boundary keeps re-rendering a broken tree forever.
+ */
+export function hasRecoveryBudget(): boolean {
+  if (typeof window === "undefined") return false;
+  if (recoveryNavigationStarted) return true;
+  try {
+    return readAttempts(getRecoverySignature(), Date.now()) < MAX_RECOVERY_ATTEMPTS;
+  } catch {
+    return false;
+  }
 }
