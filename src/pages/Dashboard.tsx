@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,20 +6,13 @@ import { useDashboardStore } from "@/contexts/DashboardStoreContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Package, ShoppingBag, Eye, TrendingUp, HelpCircle, Plus, Copy, Check, Share2 } from "lucide-react";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, LineChart, Line,
-} from "recharts";
 import OnboardingWalkthrough from "@/components/OnboardingWalkthrough";
 import { useNavigateTransition } from "@/hooks/useNavigateTransition";
-import QuickActions from "@/components/dashboard/QuickActions";
 import HeroRevenue from "@/components/dashboard/HeroRevenue";
 import TodayInsights from "@/components/dashboard/TodayInsights";
 import LiveVisitors from "@/components/dashboard/LiveVisitors";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import PendingActions from "@/components/dashboard/PendingActions";
-import RecentOrders from "@/components/dashboard/RecentOrders";
-import TopProducts from "@/components/dashboard/TopProducts";
 import StoreChecklist from "@/components/dashboard/StoreChecklist";
 import QueryErrorState from "@/components/QueryErrorState";
 import ShareStoreDialog from "@/components/ShareStoreDialog";
@@ -28,6 +21,12 @@ import WalletAccountCard from "@/components/billing/WalletAccountCard";
 import { useCountUp } from "@/hooks/useCountUp";
 import { useRealtimeStore } from "@/hooks/useRealtimeStore";
 import { endOfMonth, startOfMonth, subMonths } from "date-fns";
+
+// Below-the-fold widgets — kept out of the Overview entry chunk.
+const RecentOrders = lazy(() => import("@/components/dashboard/RecentOrders"));
+const TopProducts = lazy(() => import("@/components/dashboard/TopProducts"));
+const OverviewChart = lazy(() => import("@/components/dashboard/OverviewChart"));
+
 
 
 function ShimmerBlock({ className }: { className?: string }) {
@@ -170,13 +169,13 @@ export default function Dashboard() {
     );
   }
 
+  // Orders / revenue live in the chart + Recent Orders below, so they are not
+  // repeated as stat cards here.
   const statCards = [
-    { label: "Products", value: stats?.total_products ?? 0, icon: Package, color: "text-blue-600" },
-    ...(!isWhatsAppOnly ? [
-      { label: "Orders", value: stats?.total_orders ?? 0, icon: ShoppingBag, color: "text-emerald-600" },
-    ] : []),
-    { label: "Views", value: stats?.total_views ?? 0, icon: Eye, color: "text-purple-600" },
+    { label: "Products", value: stats?.total_products ?? 0, icon: Package },
+    { label: "Views", value: stats?.total_views ?? 0, icon: Eye },
   ];
+
 
   return (
     <div className="space-y-4">
@@ -190,10 +189,17 @@ export default function Dashboard() {
         />
       )}
 
-      {/* Greeting + guide */}
-      <div className="flex items-center justify-between">
+      {/* Header — page title + the only primary actions on this page */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-bold tracking-tight text-foreground">Overview</h1>
         <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            className="gap-1.5 text-xs h-9 font-semibold"
+            onClick={() => navigate(`/dashboard/stores/${storeSlug}/products/create`)}
+          >
+            <Plus className="h-3.5 w-3.5" /> Add product
+          </Button>
           {store?.slug && (
             <Button
               variant="outline"
@@ -202,7 +208,7 @@ export default function Dashboard() {
               asChild
             >
               <a href={storeUrl!} target="_blank" rel="noopener noreferrer">
-                <Eye className="h-3 w-3" /> View Store
+                <Eye className="h-3.5 w-3.5" /> View store
               </a>
             </Button>
           )}
@@ -247,15 +253,17 @@ export default function Dashboard() {
           <p className="text-xs font-medium text-foreground truncate flex-1">
             {customDomain || `${store.slug}.shopbanao.in`}
           </p>
-          <Button variant="ghost" size="sm" className="h-9 w-9 p-0" onClick={handleCopy} title="Copy link">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9 w-9 p-0"
+            onClick={handleCopy}
+            aria-label={copied ? "Store link copied" : "Copy store link"}
+            title="Copy link"
+          >
             {copied ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
           </Button>
         </div>
-      )}
-
-      {/* Quick Actions */}
-      {storeId && (
-        <QuickActions storeId={storeId} storeSlug={store?.slug || ""} storeName={store?.name} isWhatsAppOnly={isWhatsAppOnly} showWallet={isCommissionMode} />
       )}
 
       {/* Wallet card — commission-mode stores only */}
@@ -267,16 +275,16 @@ export default function Dashboard() {
         <DashboardSkeleton />
       ) : (
         <>
-          {/* Stat cards — horizontal scrollable on mobile, grid on desktop */}
-          <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-hide md:grid md:grid-cols-3 md:overflow-visible">
+          {/* Stat cards — catalog counters not covered by the chart below */}
+          <div className="grid grid-cols-2 gap-2.5">
             {statCards.map((card) => (
-              <Card key={card.label} className="border shadow-none hover:shadow-md transition-shadow duration-200 shrink-0 min-w-[120px] md:min-w-0">
+              <Card key={card.label} className="border shadow-none hover:shadow-md transition-shadow duration-200">
                 <CardContent className="flex items-center gap-2.5 p-3">
-                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/50 ${card.color}`}>
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/50 text-muted-foreground">
                     <card.icon className="h-4 w-4" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">{card.label}</p>
+                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{card.label}</p>
                     <p className="text-base font-bold text-foreground truncate tracking-tight tabular-nums">
                       <AnimatedStatValue value={card.value} />
                     </p>
@@ -286,47 +294,15 @@ export default function Dashboard() {
             ))}
           </div>
 
-          {/* Store Checklist — promoted above Pending Actions so new owners see setup tasks first */}
-          {storeId && <StoreChecklist storeId={storeId} storeSlug={store?.slug || ""} />}
-
-          {/* Pending Actions */}
-          {storeId && !isWhatsAppOnly && <PendingActions storeId={storeId} storeSlug={store?.slug || ""} />}
-
-          {/* Recent Orders */}
-          {storeId && !isWhatsAppOnly && (
-            <RecentOrders
-              storeId={storeId}
-              storeSlug={store?.slug || ""}
-              currencySymbol={currencySymbol}
-              whatsappNumber={store?.whatsapp_number || ""}
-              storeName={store?.name || ""}
-            />
-          )}
-
-          {/* Top Products */}
-          {storeId && !isWhatsAppOnly && <TopProducts storeId={storeId} currencySymbol={currencySymbol} />}
-
-          {/* Revenue chart */}
+          {/* Single chart — Revenue / Orders toggle + 3M / 6M / 12M range */}
           {!isWhatsAppOnly && (
-            <Card className="border shadow-none">
-              <CardContent className="p-3 pt-4">
-                <p className="mb-3 text-sm font-bold tracking-tight text-foreground">Revenue</p>
-                {ordersByMonth.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={180}>
-                    <LineChart data={ordersByMonth}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                      <XAxis dataKey="month" className="text-[10px]" tick={{ fontSize: 10 }} />
-                      <YAxis className="text-[10px]" tick={{ fontSize: 10 }} width={40} />
-                      <Tooltip
-                        contentStyle={{ fontSize: 12 }}
-                        formatter={(value: number) => `${currencySymbol}${value.toFixed(0)}`}
-                      />
-                      <Line type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="flex flex-col items-center gap-2 py-8">
-                    <p className="text-xs text-muted-foreground">No revenue data yet</p>
+            <Suspense fallback={<ShimmerBlock className="h-[280px] w-full rounded-xl" />}>
+              <OverviewChart
+                data={ordersByMonth}
+                currencySymbol={currencySymbol}
+                emptyState={
+                  <>
+                    <p className="text-xs text-muted-foreground">No sales data yet</p>
                     {store?.slug && store?.name && (
                       <ShareStoreDialog
                         storeSlug={store.slug}
@@ -339,44 +315,36 @@ export default function Dashboard() {
                         }
                       />
                     )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                  </>
+                }
+              />
+            </Suspense>
           )}
 
-          {/* Orders chart */}
-          {!isWhatsAppOnly && (
-            <Card className="border shadow-none">
-              <CardContent className="p-3 pt-4">
-                <p className="mb-3 text-sm font-bold tracking-tight text-foreground">Orders</p>
-                {ordersByMonth.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={180}>
-                    <BarChart data={ordersByMonth}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                      <XAxis dataKey="month" className="text-[10px]" tick={{ fontSize: 10 }} />
-                      <YAxis className="text-[10px]" tick={{ fontSize: 10 }} width={30} />
-                      <Tooltip contentStyle={{ fontSize: 12 }} />
-                      <Bar dataKey="orders" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="flex flex-col items-center gap-2 py-8">
-                    <p className="text-xs text-muted-foreground">No orders yet</p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-1.5 text-xs h-9"
-                      onClick={() => navigate(`/dashboard/stores/${storeSlug}/products/create`)}
-                    >
-                      <Plus className="h-3 w-3" />
-                      Add your first product
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
+          {/* Store Checklist — promoted above Pending Actions so new owners see setup tasks first */}
+          {storeId && <StoreChecklist storeId={storeId} storeSlug={store?.slug || ""} />}
+
+          {/* Pending Actions */}
+          {storeId && !isWhatsAppOnly && <PendingActions storeId={storeId} storeSlug={store?.slug || ""} />}
+
+          <Suspense fallback={<ShimmerBlock className="h-40 w-full rounded-xl" />}>
+            {/* Recent Orders */}
+            {storeId && !isWhatsAppOnly && (
+              <RecentOrders
+                storeId={storeId}
+                storeSlug={store?.slug || ""}
+                currencySymbol={currencySymbol}
+                whatsappNumber={store?.whatsapp_number || ""}
+                storeName={store?.name || ""}
+              />
+            )}
+
+            {/* Top Products */}
+            {storeId && !isWhatsAppOnly && <TopProducts storeId={storeId} currencySymbol={currencySymbol} />}
+          </Suspense>
+        </>
+      )}
+
         </>
       )}
     </div>
