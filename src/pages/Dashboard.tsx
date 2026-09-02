@@ -169,13 +169,13 @@ export default function Dashboard() {
     );
   }
 
+  // Orders / revenue live in the chart + Recent Orders below, so they are not
+  // repeated as stat cards here.
   const statCards = [
-    { label: "Products", value: stats?.total_products ?? 0, icon: Package, color: "text-blue-600" },
-    ...(!isWhatsAppOnly ? [
-      { label: "Orders", value: stats?.total_orders ?? 0, icon: ShoppingBag, color: "text-emerald-600" },
-    ] : []),
-    { label: "Views", value: stats?.total_views ?? 0, icon: Eye, color: "text-purple-600" },
+    { label: "Products", value: stats?.total_products ?? 0, icon: Package },
+    { label: "Views", value: stats?.total_views ?? 0, icon: Eye },
   ];
+
 
   return (
     <div className="space-y-4">
