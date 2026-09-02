@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStoreData } from "@/hooks/useStoreData";
@@ -44,6 +44,7 @@ import PullToRefreshIndicator from "@/components/dashboard/PullToRefreshIndicato
 import { cleanImageUrl } from "@/lib/imageOptimize";
 import { useDashboardStore } from "@/contexts/DashboardStoreContext";
 import { useRealtimeStore } from "@/hooks/useRealtimeStore";
+import SortableHead from "@/components/dashboard/SortableHead";
 
 type SortOption =
   | "title-asc"
@@ -77,6 +78,7 @@ export default function ProductsList() { // v2
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   useRealtimeStore(storeId, "products");
 
   // Search, filter & sort state
@@ -851,19 +853,54 @@ export default function ProductsList() { // v2
                     <TableRow>
                       {bulkMode && <TableHead className="w-10"><Checkbox checked={bulkSelected.size === paginatedProducts.length && paginatedProducts.length > 0} onCheckedChange={toggleSelectAll} /></TableHead>}
                       <TableHead className="w-16"></TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Category</TableHead>
+                      <TableHead>
+                        <SortableHead
+                          label="Name"
+                          asc="title-asc"
+                          desc="title-desc"
+                          sort={sort}
+                          onSort={(v) => { setSort(v); pagination.setPage(1); }}
+                        />
+                      </TableHead>
+                      <TableHead>
+                        <SortableHead
+                          label="Category"
+                          asc="category-asc"
+                          desc="category-desc"
+                          sort={sort}
+                          onSort={(v) => { setSort(v); pagination.setPage(1); }}
+                        />
+                      </TableHead>
                       <TableHead className="text-right">Price</TableHead>
-                      <TableHead className="text-right">Stock</TableHead>
+                      <TableHead className="text-right">
+                        <SortableHead
+                          className="justify-end w-full"
+                          label="Stock"
+                          asc="stock-low"
+                          desc="stock-high"
+                          sort={sort}
+                          onSort={(v) => { setSort(v); pagination.setPage(1); }}
+                        />
+                      </TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="w-24"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {paginatedProducts.map((product) => (
-                      <TableRow key={product.id} className={cn(bulkSelected.has(product.id) && "bg-accent/30")}>
+                      <TableRow
+                        key={product.id}
+                        className={cn(
+                          "cursor-pointer transition-colors hover:bg-accent/40",
+                          bulkSelected.has(product.id) && "bg-accent/30"
+                        )}
+                        onClick={() => {
+                          if (bulkMode) { toggleBulkSelect(product.id); return; }
+                          navigate(`/dashboard/stores/${storeSlug}/products/${product.id}/edit`);
+                        }}
+                      >
                         {bulkMode && (
-                          <TableCell>
+                          <TableCell onClick={(e) => e.stopPropagation()}>
                             <Checkbox checked={bulkSelected.has(product.id)} onCheckedChange={() => toggleBulkSelect(product.id)} />
                           </TableCell>
                         )}
@@ -874,7 +911,7 @@ export default function ProductsList() { // v2
                               alt=""
                               className="h-10 w-10 rounded-md border object-cover cursor-pointer hover:opacity-80 transition-opacity"
                               loading="lazy"
-                              onClick={() => setPreviewImage(cleanImageUrl(product.image_url))}
+                              onClick={(e) => { e.stopPropagation(); setPreviewImage(cleanImageUrl(product.image_url)); }}
                             />
                           ) : (
                             <div className="flex h-10 w-10 items-center justify-center rounded-md bg-accent"><Package className="h-4 w-4 text-muted-foreground" /></div>
@@ -903,7 +940,7 @@ export default function ProductsList() { // v2
                         <TableCell>
                           <Badge variant={product.is_active ? "default" : "secondary"}>{product.is_active ? "Active" : "Draft"}</Badge>
                         </TableCell>
-                        <TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
                           <div className="flex gap-1">
                             <Button
                               variant="ghost"
