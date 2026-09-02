@@ -72,7 +72,7 @@ export function MetaCapiSetupWizard({ storeId, pixelId, accessToken, tokenLoadin
   }
 
   return (
-    <Card className="border-emerald-200 dark:border-emerald-900">
+    <Card className="border-success/30">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <Server className="h-5 w-5 text-success" />
