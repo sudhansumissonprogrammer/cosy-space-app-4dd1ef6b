@@ -105,9 +105,81 @@ function readRecoveryState(): RecoveryState | null {
 }
 
 function writeRecoveryState(state: RecoveryState) {
-  sessionStorage.setItem(RECOVERY_STORAGE_KEY, JSON.stringify(state));
-  sessionStorage.removeItem(LEGACY_RECOVERY_STORAGE_KEY);
+  // sessionStorage can throw (Safari private mode, in-app browsers with
+  // storage blocked, quota). It MUST never be the only place the attempt
+  // counter lives — see readAttemptsFromUrl/cookie below.
+  try {
+    sessionStorage.setItem(RECOVERY_STORAGE_KEY, JSON.stringify(state));
+    sessionStorage.removeItem(LEGACY_RECOVERY_STORAGE_KEY);
+  } catch {
+    /* storage blocked — URL + cookie carry the counter */
+  }
+  writeRecoveryCookie(state.attempts);
 }
+
+/* ------------------------------------------------------------------ *
+ * Storage-independent attempt counters
+ *
+ * Root cause of the "site refreshes every 2 seconds" reports: the attempt
+ * counter lived ONLY in sessionStorage. Facebook / Instagram in-app
+ * browsers and private mode can block or wipe it, so every reload read
+ * `attempts = 0`, incremented to 1, reloaded again → endless loop that
+ * burns ad spend and kills the customer journey.
+ *
+ * Now the counter is carried in three places; the highest one wins:
+ *   1. the `__r=<ts>-<attempt>` query param (survives everything)
+ *   2. a short-lived cookie (survives a URL cleanup)
+ *   3. sessionStorage (best-effort, as before)
+ * ------------------------------------------------------------------ */
+
+const RECOVERY_COOKIE = "sb_chunk_recovery";
+
+function writeRecoveryCookie(attempts: number) {
+  try {
+    const maxAge = Math.round(RECOVERY_COOLDOWN_MS / 1000);
+    document.cookie = `${RECOVERY_COOKIE}=${attempts}; Path=/; Max-Age=${maxAge}; SameSite=Lax`;
+  } catch {
+    /* cookies blocked — URL still carries the counter */
+  }
+}
+
+function clearRecoveryCookie() {
+  try {
+    document.cookie = `${RECOVERY_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
+  } catch {
+    /* ignore */
+  }
+}
+
+function readRecoveryCookie(): number {
+  try {
+    const m = document.cookie.match(new RegExp(`(?:^|; )${RECOVERY_COOKIE}=(\\d+)`));
+    return m ? Number(m[1]) || 0 : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/** `__r=<base36 ts>-<attempt>` — set by the previous recovery navigation. */
+function readAttemptsFromUrl(): number {
+  try {
+    const raw = new URL(window.location.href).searchParams.get("__r");
+    if (!raw) return 0;
+    const m = raw.match(/-(\d+)$/);
+    return m ? Number(m[1]) || 0 : 1;
+  } catch {
+    return 0;
+  }
+}
+
+/** Highest attempt count from any surviving source. */
+function readAttempts(signature: string, now: number): number {
+  const state = readRecoveryState();
+  const fromStorage =
+    state && state.signature === signature && now - state.ts < RECOVERY_COOLDOWN_MS ? state.attempts : 0;
+  return Math.max(fromStorage, readRecoveryCookie(), readAttemptsFromUrl());
+}
+
 
 export function clearChunkLoadRecoveryState() {
   if (typeof window === "undefined") return;
