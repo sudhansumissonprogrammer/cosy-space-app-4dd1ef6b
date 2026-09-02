@@ -44,6 +44,7 @@ import PullToRefreshIndicator from "@/components/dashboard/PullToRefreshIndicato
 import { cleanImageUrl } from "@/lib/imageOptimize";
 import { useDashboardStore } from "@/contexts/DashboardStoreContext";
 import { useRealtimeStore } from "@/hooks/useRealtimeStore";
+import SortableHead from "@/components/dashboard/SortableHead";
 
 type SortOption =
   | "title-asc"
