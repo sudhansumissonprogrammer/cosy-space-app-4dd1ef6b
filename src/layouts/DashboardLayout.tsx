@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { prefetchDashboardRoutes } from "@/lib/prefetchDashboardRoutes";
 import { Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ContentSkeleton } from "@/components/ContentSkeleton";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import DashboardCommandPalette from "@/components/dashboard/DashboardCommandPalette";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMyStore } from "@/hooks/useMyStore";
 import { useAdminStoreView } from "@/hooks/useAdminStoreView";
@@ -192,6 +194,7 @@ function MobileMenu({
 
 export default function DashboardLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [cmdOpen, setCmdOpen] = useState(false);
   const [isPurging, setIsPurging] = useState(false);
 
   const location = useLocation();
@@ -338,6 +341,15 @@ export default function DashboardLayout() {
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setCmdOpen(true)}
+                    className="inline-flex items-center gap-2 h-8 px-3 rounded-md border bg-background text-xs text-muted-foreground hover:bg-accent"
+                    aria-label="Search dashboard pages"
+                  >
+                    <Search className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Search…</span>
+                    <kbd className="hidden md:inline ml-2 text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded">⌘K</kbd>
+                  </button>
                   {store?.slug && (
                     <Button
                       variant="ghost"
@@ -356,6 +368,7 @@ export default function DashboardLayout() {
                       variant="ghost"
                       size="icon"
                       className="h-9 w-9"
+                      aria-label="Open your live store in a new tab"
                       onClick={() => window.open(`/store/${store.slug}`, "_blank")}
                     >
                       <ExternalLink className="h-4 w-4" />
@@ -365,15 +378,24 @@ export default function DashboardLayout() {
                 </div>
               </header>
               <main className="flex-1 overflow-auto p-6">
-                <Suspense fallback={<ContentSkeleton />}>
-                  <Outlet />
-                </Suspense>
+                <ErrorBoundary>
+                  <Suspense fallback={<ContentSkeleton />}>
+                    <Outlet />
+                  </Suspense>
+                </ErrorBoundary>
               </main>
 
             </div>
           </div>
         </SidebarProvider>
         {showLowBalance && <LowBalanceDialog open={true} balance={walletBalance} storeSlug={storeSlug || ""} />}
+        <DashboardCommandPalette
+          open={cmdOpen}
+          onOpenChange={setCmdOpen}
+          storeSlug={storeSlug}
+          isCommissionMode={(store as any)?.billing_mode === "commission"}
+          isWhatsAppOnly={isWhatsAppOnly}
+        />
         </DashboardStoreProvider>
       </AdminViewProvider>
     );
