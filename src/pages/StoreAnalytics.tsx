@@ -430,6 +430,18 @@ export default function StoreAnalytics() {
     );
   }
 
+  if (isError) {
+    return (
+      <div className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-6 text-center">
+        <p className="text-sm font-medium text-foreground">Couldn&apos;t load analytics</p>
+        <p className="text-xs text-muted-foreground">Check your connection and try again.</p>
+        <Button size="sm" variant="outline" onClick={() => refetch()}>Retry</Button>
+      </div>
+    );
+  }
+
+
+
   return (
     <div className="space-y-4">
       {/* Header */}
