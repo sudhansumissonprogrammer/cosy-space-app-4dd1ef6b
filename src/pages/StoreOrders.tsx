@@ -765,21 +765,25 @@ export default function StoreOrders() {
                             </TableCell>
                           </TableRow>
                           {group.orders.map((order: any) => (
-                            <TableRow key={order.id} className={selectedOrders.has(order.id) ? "bg-primary/5" : ""}>
-                              <TableCell>
+                            <TableRow
+                              key={order.id}
+                              onClick={() => setMobileDetailOrder(order)}
+                              className={cn(
+                                "cursor-pointer",
+                                selectedOrders.has(order.id) && "bg-primary/5",
+                                mobileDetailOrder?.id === order.id && "bg-primary/10",
+                              )}
+                            >
+                              <TableCell onClick={(e) => e.stopPropagation()}>
                                 <Checkbox
                                   checked={selectedOrders.has(order.id)}
                                   onCheckedChange={() => toggleOrderSelection(order.id)}
                                 />
                               </TableCell>
                               <TableCell className="font-mono text-xs text-muted-foreground">
-                                <button
-                                  type="button"
-                                  onClick={() => setMobileDetailOrder(order)}
-                                  className="hover:text-foreground hover:underline"
-                                >
+                                <span className="hover:text-foreground hover:underline">
                                   {getOrderDisplayId(order)}
-                                </button>
+                                </span>
                               </TableCell>
                               <TableCell className="font-medium text-foreground">{order.customer_name || "—"}</TableCell>
                               <TableCell className="text-sm text-muted-foreground">{order.customer_phone || "—"}</TableCell>
@@ -795,7 +799,7 @@ export default function StoreOrders() {
                                 )}
                               </TableCell>
                               <TableCell className="text-xs uppercase">{order.payment_method || "cod"}</TableCell>
-                              <TableCell>
+                              <TableCell onClick={(e) => e.stopPropagation()}>
                                 <Select value={order.status} onValueChange={(v) => handleStatusChange(order, v)}>
                                   <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
                                   <SelectContent>
@@ -812,7 +816,7 @@ export default function StoreOrders() {
                                 )}
                               </TableCell>
                               <TableCell className="text-sm text-muted-foreground">{format(new Date(order.created_at), "h:mm a")}</TableCell>
-                              <TableCell>
+                              <TableCell onClick={(e) => e.stopPropagation()}>
                                 <div className="flex items-center gap-1">
                                   <Button variant="ghost" size="sm" className="text-xs h-9" onClick={() => setInvoiceOrder(order)}>Invoice</Button>
                                   {order.customer_phone && (
@@ -859,9 +863,17 @@ export default function StoreOrders() {
         </Card>
       )}
 
-      {/* ── MOBILE ORDER DETAIL SHEET ── */}
+      {/* ── ORDER DETAIL PANEL ── bottom sheet on mobile, side panel on desktop ── */}
       <Sheet open={!!mobileDetailOrder} onOpenChange={(v) => { if (!v) setMobileDetailOrder(null); }}>
-        <SheetContent side="bottom" className="h-[92vh] rounded-t-2xl px-0 overflow-hidden flex flex-col">
+        <SheetContent
+          side={isMobile ? "bottom" : "right"}
+          className={cn(
+            "px-0 overflow-hidden flex flex-col",
+            isMobile
+              ? "h-[92vh] rounded-t-2xl"
+              : "h-full w-full sm:max-w-xl lg:max-w-2xl",
+          )}
+        >
           {mobileDetailOrder && (
             <MobileOrderDetail
               order={withItems(mobileDetailOrder)}

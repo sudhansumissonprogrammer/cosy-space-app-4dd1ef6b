@@ -174,7 +174,7 @@ export default function StoreCustomers() {
 
       {/* Customer Detail Sheet */}
       <Sheet open={!!selectedCustomer} onOpenChange={(v) => { if (!v) setSelectedCustomer(null); }}>
-        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+        <SheetContent side="right" className="w-full sm:max-w-md lg:max-w-lg overflow-y-auto">
           {selectedCustomer && (
             <>
               <SheetHeader>
