@@ -134,7 +134,7 @@ export default function StoreAnalytics() {
     priorStart = startOfDay(subDays(now, days * 2 - 1));
     priorEnd = startOfDay(subDays(now, days - 1));
   }
-  const { data: salesAnalytics, isLoading } = useQuery({
+  const { data: salesAnalytics, isLoading, isError, refetch } = useQuery({
     queryKey: [
       "analytics-sales-exact",
       storeId,
