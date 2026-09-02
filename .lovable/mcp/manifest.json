@@ -3,7 +3,13 @@
   "sdk_version": "0.20.0",
   "path": "/functions/v1/mcp",
   "auth": {
-    "type": "none"
+    "type": "oauth",
+    "issuer": "https://dqepeywgftbpxeeqfuwt.supabase.co/auth/v1",
+    "resource": "https://dqepeywgftbpxeeqfuwt.supabase.co/functions/v1/mcp",
+    "resource_name": "ShopBanao MCP",
+    "accepted_audiences": [
+      "authenticated"
+    ]
   },
   "mcp": {
     "server": {
