@@ -81,7 +81,7 @@ export default function LiveVisitors({ storeId }: Props) {
           </span>
         </div>
 
-        <div className="flex items-end gap-3 mb-3">
+        <div className="flex items-end gap-3 mb-3" aria-live="polite" aria-atomic="true">
           <p className="text-4xl font-bold tabular-nums leading-none text-foreground">
             {activeSessions}
           </p>
