@@ -9,19 +9,13 @@ import { Button } from "@/components/ui/button";
 import {
   Package,
   CreditCard,
-  Truck,
   Palette,
-  Share2,
   Rocket,
   ChevronRight,
   ChevronLeft,
   CheckCircle2,
   Store,
-  Image,
-  FileText,
-  Phone,
   Settings,
-  BarChart3,
   Globe,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
