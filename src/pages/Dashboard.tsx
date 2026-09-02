@@ -106,7 +106,7 @@ export default function Dashboard() {
 
   // One shared query — PendingActions and StoreChecklist read the same cache
   // entry instead of firing their own counts/config reads.
-  const { data: stats, isLoading } = useDashboardStats(storeId);
+  const { data: stats, isLoading, isError: statsError, refetch: refetchStats } = useDashboardStats(storeId);
 
 
   const { data: ordersByMonth = [] } = useQuery({
@@ -136,8 +136,13 @@ export default function Dashboard() {
 
   if (storeLoading) return <DashboardSkeleton />;
 
-  if (storeError) {
-    return <QueryErrorState message="Failed to load your store" onRetry={() => refetchStore()} />;
+  if (statsError) {
+    return (
+      <QueryErrorState
+        message="Couldn't load your dashboard stats"
+        onRetry={() => refetchStats()}
+      />
+    );
   }
 
   if (!storeId) {
