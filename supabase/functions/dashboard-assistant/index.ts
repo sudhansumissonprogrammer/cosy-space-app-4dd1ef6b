@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { HELP_ARTICLES, type HelpArticle } from "./knowledge.ts";
 import { buildStoreInsights, type StoreInsights } from "./insights.ts";
+import { ANALYTICS_TOOLS, runAnalyticsTool } from "./analytics.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -205,8 +206,9 @@ HOW TO ANSWER — FOLLOW STRICTLY
 - Reply in the same language the merchant used (English, Hindi or Hinglish). Match their tone.
 - Use STORE STATUS and STORE PERFORMANCE to personalise: if something is already set up, say so; if missing, start there. Quote the merchant's real numbers (orders, revenue, cancel rate, best seller) instead of generic advice.
 - SALES / GROWTH QUESTIONS ("sale kaise badhaye", "why no orders", "what should I do"): answer using PRIORITY ACTIONS. Give the top 1 finding in one line, then the top 2-3 actions as a numbered list, each one line with the exact page path. Never give generic marketing theory.
-- Never state a number that is not in STORE STATUS or STORE PERFORMANCE. If the data is not there, say you cannot see it.
-- Use STORE STATUS to personalise: if something is already set up, say so; if missing, start there. Prefer the merchant's actual store name and current page.
+- LIVE DATA TOOLS: you can query this store's real analytics before answering — get_funnel, get_daily_trend, get_cancellations, get_monthly_summary, get_traffic_sources, get_product_performance. Call the right one whenever the merchant asks about conversion, funnel, drop-off, traffic, why sales/orders fell, why orders get cancelled, monthly or weekly summary, which channel works, or which product to push. Never guess these numbers — fetch them.
+- When a tool result is present, answer from it: one line with the key number, one line with the cause, then max 3 fix actions with exact paths. Round numbers. Never dump the raw JSON or list every day.
+- Never state a number that is not in STORE STATUS, STORE PERFORMANCE or a tool result. If the data is not there, say you cannot see it.
 - Money, refunds, payouts and policy: be exact and never guess numbers. Commission is a flat 2% per order and there is no monthly subscription. Gateway money goes to the merchant's own gateway account.
 - COMMISSION REFUNDS — HARD RULE: never promise, confirm, estimate or explain that any commission will be refunded, reversed or credited back. Never say "it will be refunded automatically" or describe the conditions for a refund. For ANY commission refund, wrong-commission, RTO-commission, cancelled-order-commission or commission-dispute question, reply in one or two lines: this needs the customer care team, and they will check the order and settle it. Point them to the Help/contact option and stop — no steps, no reasoning, no policy detail.
 - Never ask for, show or repeat API keys, passwords or tokens. If a step needs a key, say where to paste it — never to type it in chat.
@@ -310,7 +312,7 @@ serve(async (req) => {
       }),
     ]);
 
-    const messages = [
+    const messages: any[] = [
       { role: "system", content: systemPrompt(snapshot, insights, articles, storeRow.slug, page) },
       ...history
         .slice(-MAX_TURNS)
@@ -318,6 +320,58 @@ serve(async (req) => {
         .map((m) => ({ role: m.role, content: m.content.slice(0, 4000) })),
       { role: "user", content: message },
     ];
+
+    const model = await pickModel();
+
+    // Tool phase — the assistant can query this store's live analytics before
+    // answering (funnel, trend, cancellations, monthly, sources, products).
+    // Non-streaming, max 2 rounds, then the final answer is streamed.
+    for (let round = 0; round < 2; round++) {
+      const planRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "X-Lovable-AIG-SDK": "fetch",
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          tools: ANALYTICS_TOOLS,
+          tool_choice: "auto",
+          max_tokens: 300,
+          temperature: 0,
+        }),
+      });
+      if (!planRes.ok) {
+        console.error("tool phase failed", planRes.status, await planRes.text().catch(() => ""));
+        break;
+      }
+      const plan = await planRes.json().catch(() => null);
+      const choice = plan?.choices?.[0]?.message;
+      const calls = choice?.tool_calls;
+      if (!Array.isArray(calls) || calls.length === 0) break;
+
+      messages.push({ role: "assistant", content: choice.content ?? "", tool_calls: calls } as any);
+      for (const call of calls.slice(0, 3)) {
+        let args: Record<string, unknown> = {};
+        try {
+          args = JSON.parse(call?.function?.arguments || "{}");
+        } catch (_) { /* model sent malformed args — use defaults */ }
+        let result: unknown;
+        try {
+          result = await runAnalyticsTool(admin, storeId, call?.function?.name, args);
+        } catch (e) {
+          console.error("tool error", call?.function?.name, e);
+          result = { error: "Could not read this data right now." };
+        }
+        messages.push({
+          role: "tool",
+          tool_call_id: call.id,
+          content: JSON.stringify(result).slice(0, 12000),
+        } as any);
+      }
+    }
 
     const upstream = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -327,14 +381,15 @@ serve(async (req) => {
         "X-Lovable-AIG-SDK": "fetch",
       },
       body: JSON.stringify({
-        model: await pickModel(),
+        model,
         messages,
         stream: true,
         service_tier: "priority",
-        max_tokens: 520,
+        max_tokens: 640,
         temperature: 0.45,
       }),
     });
+
 
     if (!upstream.ok || !upstream.body) {
       const text = await upstream.text().catch(() => "");

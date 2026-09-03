@@ -12,7 +12,7 @@ export function starterQuestions(pathname: string): string[] {
   if (p.includes("/orders")) {
     return [
       "How do I add a tracking number to an order?",
-      "Why are so many orders pending or cancelled?",
+      "Why are so many orders getting cancelled?",
       "How do I cancel an order and refund the customer?",
       "Analyse my store and tell me what to fix for more sales",
     ];
@@ -45,12 +45,14 @@ export function starterQuestions(pathname: string): string[] {
       "How do I add the Meta Pixel step by step?",
       "How do I add the CAPI token?",
       "Where are people dropping off in my funnel?",
+      "Why did my conversion rate drop?",
     ];
   }
   if (p.includes("/analytics")) {
     return [
-      "Why doesn't my revenue match my bank?",
-      "Which numbers should I check daily?",
+      "Give me this month's summary",
+      "Why did my conversion rate drop?",
+      "Which traffic source is actually bringing sales?",
       "I get visitors but no sales — what should I fix?",
     ];
   }
@@ -86,6 +88,7 @@ export function starterQuestions(pathname: string): string[] {
   }
   return [
     "Check my store and tell me what to fix to get more sales",
+    "Give me this month's summary",
     "Set up my store step by step",
     "How do I add a payment gateway?",
     "How do I add the Meta Pixel and CAPI?",
