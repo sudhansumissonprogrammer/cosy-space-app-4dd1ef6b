@@ -87,6 +87,7 @@ export function starterQuestions(pathname: string): string[] {
     ];
   }
   return [
+    "What's left to complete my store setup?",
     "Check my store and tell me what to fix to get more sales",
     "Give me this month's summary",
     "Set up my store step by step",

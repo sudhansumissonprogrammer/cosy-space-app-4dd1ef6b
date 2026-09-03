@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { HELP_ARTICLES, type HelpArticle } from "./knowledge.ts";
 import { buildStoreInsights, type StoreInsights } from "./insights.ts";
 import { ANALYTICS_TOOLS, runAnalyticsTool } from "./analytics.ts";
+import { buildSetupReadiness, type SetupReadiness } from "./setup.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -178,7 +179,7 @@ async function buildStoreSnapshot(admin: any, storeId: string) {
 
 /* ------------------------------------------------------------------ */
 
-function systemPrompt(snapshot: unknown, insights: StoreInsights | null, articles: HelpArticle[], slug: string, page?: string) {
+function systemPrompt(snapshot: unknown, insights: StoreInsights | null, setup: SetupReadiness | null, articles: HelpArticle[], slug: string, page?: string) {
   const s = `/dashboard/stores/${slug}`;
   const context = articles
     .map((a) => `### ${a.title}\nPage: ${a.route.replace("{s}", s)}\n${a.body}`)
@@ -205,6 +206,8 @@ HOW TO ANSWER — FOLLOW STRICTLY
 - If the question is vague ("it's not working"), ask exactly ONE short clarifying question — never a list.
 - Reply in the same language the merchant used (English, Hindi or Hinglish). Match their tone.
 - Use STORE STATUS and STORE PERFORMANCE to personalise: if something is already set up, say so; if missing, start there. Quote the merchant's real numbers (orders, revenue, cancel rate, best seller) instead of generic advice.
+- SETUP / ONBOARDING QUESTIONS ("what is left", "how do I complete my store", "store setup", "kya baaki hai", "kaise shuru karu", "am I ready to launch"): answer only from SETUP READINESS. First line: setup percent and whether the store can take a real order. Then the top 3 pending items as a numbered list, each one line: what to do, the exact page path, and the first click. Never list items already done unless asked. If nothing is pending, say the setup is complete and move to traffic.
+- New store with 0 orders: assume onboarding, not analytics. Lead with the pending setup item, not funnel data.
 - SALES / GROWTH QUESTIONS ("sale kaise badhaye", "why no orders", "what should I do"): answer using PRIORITY ACTIONS. Give the top 1 finding in one line, then the top 2-3 actions as a numbered list, each one line with the exact page path. Never give generic marketing theory.
 - LIVE DATA TOOLS: you can query this store's real analytics before answering — get_funnel, get_daily_trend, get_cancellations, get_monthly_summary, get_traffic_sources, get_product_performance. Call the right one whenever the merchant asks about conversion, funnel, drop-off, traffic, why sales/orders fell, why orders get cancelled, monthly or weekly summary, which channel works, or which product to push. Never guess these numbers — fetch them.
 - When a tool result is present, answer from it: one line with the key number, one line with the cause, then max 3 fix actions with exact paths. Round numbers. Never dump the raw JSON or list every day.
@@ -226,6 +229,16 @@ ${insights?.findings.length ? insights.findings.map((x) => `- ${x}`).join("\n") 
 
 PRIORITY ACTIONS (ranked, use these for any sales/growth question)
 ${insights?.actions.length ? insights.actions.map((x, n) => `${n + 1}. ${x}`).join("\n") : "1. Keep adding products and driving traffic; nothing is broken in the setup."}
+
+SETUP READINESS (this store's real onboarding progress)
+${setup ? [
+  `Setup complete: ${setup.percent_complete}%`,
+  `Can accept a real order: ${setup.can_accept_orders ? "yes" : "no"}`,
+  `Launch blockers: ${setup.launch_blockers.length ? setup.launch_blockers.join(", ") : "none"}`,
+  `Already done: ${setup.done.join(", ") || "nothing yet"}`,
+  "Still pending (in priority order):",
+  ...setup.pending.map((t, n) => `${n + 1}. ${t.title} — ${t.why} Page: ${t.path.replace("{s}", s)}. How: ${t.steps.join(" ")}`),
+].join("\n") : "unavailable"}
 
 CURRENT PAGE: ${page || "unknown"}
 
@@ -304,16 +317,20 @@ serve(async (req) => {
     }
 
     const articles = retrieve(message, page);
-    const [snapshot, insights] = await Promise.all([
+    const [snapshot, insights, setup] = await Promise.all([
       buildStoreSnapshot(admin, storeId),
       buildStoreInsights(admin, storeId).catch((e) => {
         console.error("insights failed", e);
         return null;
       }),
+      buildSetupReadiness(admin, storeId).catch((e) => {
+        console.error("setup readiness failed", e);
+        return null;
+      }),
     ]);
 
     const messages: any[] = [
-      { role: "system", content: systemPrompt(snapshot, insights, articles, storeRow.slug, page) },
+      { role: "system", content: systemPrompt(snapshot, insights, setup, articles, storeRow.slug, page) },
       ...history
         .slice(-MAX_TURNS)
         .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
