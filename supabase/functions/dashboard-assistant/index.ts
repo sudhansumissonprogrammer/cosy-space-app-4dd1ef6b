@@ -80,9 +80,34 @@ function scoreArticle(a: HelpArticle, q: string, qTokens: string[]): number {
   return score;
 }
 
-function retrieve(question: string, page?: string, limit = 6): HelpArticle[] {
-  const q = question.toLowerCase();
-  const qTokens = tokens(question);
+// Hindi / Hinglish → English hints. Merchants type "pixel kaise lagaye",
+// "paisa kab milega", "delivery charge kaise set kare" — without this the
+// keyword scorer only matched the few English words in the sentence.
+const SYNONYMS: Record<string, string> = {
+  lagaye: "add", lagana: "add", jode: "add", jodna: "add", banaye: "create",
+  banana: "create", banaun: "create", karu: "do", kare: "do", karna: "do",
+  dukan: "store", dukaan: "store", saman: "product", samaan: "product",
+  daam: "price", keemat: "price", paisa: "payment money", paise: "payment money",
+  rupaye: "payment", bhugtan: "payment", grahak: "customer", grahak_: "customer",
+  order_: "order", delivery: "shipping", courier: "shipping",
+  vapas: "return refund", wapas: "return refund", refund_: "refund",
+  chhut: "discount", chhoot: "discount", vigyapan: "ads pixel",
+  ad: "ads pixel", ads: "pixel meta facebook", fb: "facebook meta pixel",
+  domain_: "domain", website: "domain store", link: "share link",
+  photo: "image", tasveer: "image", nahi: "not", dikh: "showing",
+  raha: "", rahi: "", kaise: "how", kyu: "why", kyun: "why", kab: "when",
+};
+
+function expand(question: string): string {
+  const extra = tokens(question).map((t) => SYNONYMS[t] ?? "").filter(Boolean);
+  return extra.length ? `${question} ${extra.join(" ")}` : question;
+}
+
+function retrieve(question: string, page?: string, limit = 8): HelpArticle[] {
+  const expanded = expand(question);
+  const q = expanded.toLowerCase();
+  const qTokens = tokens(expanded);
+
   const ranked = HELP_ARTICLES
     .map((a) => {
       let score = scoreArticle(a, q, qTokens);
