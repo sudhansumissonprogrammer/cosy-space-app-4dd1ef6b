@@ -498,7 +498,11 @@ export default function DashboardLayout() {
       </main>
 
 
+      {/* Floating assistant */}
+      <AssistantFab onClick={() => setAssistantOpen(true)} hidden={menuOpen || assistantOpen} />
+
       {/* Shopify-style bottom nav */}
+
       <nav className="fixed bottom-0 inset-x-0 z-30 bg-card border-t safe-area-pb">
         <div className="flex items-center justify-around h-16 px-1">
           {bottomNav.map((item) => {
