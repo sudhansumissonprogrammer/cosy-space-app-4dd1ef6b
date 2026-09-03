@@ -390,6 +390,7 @@ export default function DashboardLayout() {
           storeSlug={storeSlug}
           isCommissionMode={isCommissionMode}
           isWhatsAppOnly={isWhatsAppOnly}
+          onAskAssistant={() => setAssistantOpen(true)}
         />
         <Suspense fallback={null}>
           {assistantOpen && (
