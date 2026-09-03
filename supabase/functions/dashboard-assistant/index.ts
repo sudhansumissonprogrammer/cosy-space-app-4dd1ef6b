@@ -13,9 +13,43 @@ const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 
-const MODEL = "google/gemini-3.7-flash";
+// Model is discovered from the live gateway listing on first use, so the
+// assistant follows the current model generation instead of a pinned id that
+// silently ages out. FALLBACK_MODEL is only used if the listing is unreachable.
+const FALLBACK_MODEL = "google/gemini-3.7-flash";
+const MODEL_PREFERENCE = [
+  "google/gemini-3.7-flash",
+  "google/gemini-3.6-flash",
+  "google/gemini-3.1-flash-lite",
+];
+let cachedModel: string | null = null;
+
+async function pickModel(): Promise<string> {
+  if (cachedModel) return cachedModel;
+  try {
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/models", {
+      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}` },
+    });
+    if (res.ok) {
+      const list = await res.json();
+      const ids = new Set(
+        (list?.data ?? [])
+          .filter((m: any) => !m?.deprecated)
+          .map((m: any) => m?.id),
+      );
+      cachedModel = MODEL_PREFERENCE.find((id) => ids.has(id)) ?? FALLBACK_MODEL;
+      return cachedModel;
+    }
+  } catch (e) {
+    console.error("model listing failed", e);
+  }
+  cachedModel = FALLBACK_MODEL;
+  return cachedModel;
+}
+
 const MAX_TURNS = 12;
 const RATE_LIMIT_PER_HOUR = 60;
+
 
 /* ------------------------------------------------------------------ */
 /* Retrieval — keyword scoring over the bundled knowledge base         */
