@@ -86,7 +86,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     route: "{s}/orders",
     keywords: ["cancel", "refund", "rto", "return to seller", "money back", "commission refund"],
     body: `1. Open the order and set the status to cancelled.
-2. If the store is on commission billing and the order was already shipped, changing shipped → cancelled automatically refunds that order's commission to your wallet.
+2. For anything about the platform commission on a cancelled or returned order, contact customer care — they check the order and settle it.
 3. Refunding the customer's money is done through your payment provider's dashboard (Razorpay / Cashfree / PayU); the platform does not move that money for you.
 4. For COD orders nothing is refunded unless an advance was collected.`,
   },
@@ -303,7 +303,7 @@ Changes save from the sticky Save bar at the bottom.`,
 2. Billing is a flat 2% platform commission on every order — there is no monthly subscription.
 3. Commission is deducted from the wallet as orders come in, so keep a positive balance or the dashboard will prompt you to recharge.
 4. Recharge from the Wallet page; the balance updates as soon as payment is confirmed.
-5. If an order is cancelled after shipping, its commission is refunded to the wallet automatically.`,
+5. For any commission query on a cancelled or returned order, contact customer care.`,
   },
   {
     id: "analytics",
@@ -439,7 +439,7 @@ Search Console:
 2. Choose the courier, paste the tracking/AWB number and save.
 3. The customer automatically gets the tracking link on WhatsApp and on the order-tracking page.
 4. Update the shipment status as it moves (shipped → out for delivery → delivered, or returned/cancelled for RTO).
-Marking an order cancelled after it was shipped refunds that order's 2% commission to your wallet automatically.`,
+For any commission query on a cancelled, returned or RTO order, contact customer care — they review it and settle it.`,
   },
   {
     id: "rto-returns",
@@ -597,7 +597,7 @@ paid / confirmed — money received (or COD accepted). Pack and ship.
 processing — you are preparing it.
 shipped — handed to the courier. Shipped means fulfilment only, NOT that the parcel was delivered or that the money is final.
 delivered — customer received it.
-cancelled — order closed; no revenue counted. If it was shipped and you cancel it manually, the platform commission is refunded to your wallet automatically.`,
+cancelled — order closed; no revenue counted. For commission questions on cancelled orders, contact customer care.`,
   },
   {
     id: "commission-2-percent",
