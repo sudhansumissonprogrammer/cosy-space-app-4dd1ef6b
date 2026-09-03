@@ -96,23 +96,35 @@ export function usePaymentResumeGuard(storeId?: string | null, slug?: string | n
           return;
 
         }
-        // Bounce at most ONCE per order — for EVERY status, not just pending.
-        // Without a once-guard on `success` the shopper who presses Back from
-        // the confirmation screen is thrown straight back to it (history trap),
-        // and `failed` needs exactly one trip so CheckoutV2Page can render the
-        // retry screen instead of us silently dropping a recoverable sale.
-        // The flag is mirrored in localStorage because Instagram/Facebook
-        // webviews wipe sessionStorage between relaunches — a session-only flag
-        // would let the loop start over on the next cold open.
-        const onceKey = `sf_resume_done_${orderId}`;
+        // Bounce at most ONCE per order PER STATUS. A single per-order flag was
+        // the "paid but stuck on the store" bug: the shopper returns from the
+        // UPI app while the order is still `pending`, gets bounced once (flag
+        // set), taps back into a product page, and by the time the gateway
+        // reconciles to `success` the guard refuses to bounce again — so the
+        // confirmation screen is never shown and they re-launch payment on an
+        // already-paid order. Keying the flag by status lets each real state
+        // change through exactly once while still preventing Back-button loops.
+        const onceKey = `sf_resume_done_${orderId}_${status}`;
         try {
           if (sessionStorage.getItem(onceKey) || localStorage.getItem(onceKey)) return;
           sessionStorage.setItem(onceKey, "1");
           localStorage.setItem(onceKey, "1");
         } catch { /* noop */ }
+        // CheckoutV2Page restores its processing/confirmation screen from the
+        // wait marker. If only the legacy payu/cashfree key survived, write the
+        // v2 marker too so the restore effect can pick the order up instead of
+        // rendering a fresh, payable checkout for an order that is already paid.
+        try {
+          if (!read(waitKey)) {
+            const payload = JSON.stringify({ orderId, orderNumber: null, app: "any", label: "UPI", ts });
+            sessionStorage.setItem(waitKey, payload);
+            localStorage.setItem(waitKey, payload);
+          }
+        } catch { /* noop */ }
         // `replace` so the page we came from stays the Back target; pushing a
         // checkout entry on top of it made Back re-trigger this guard forever.
         navigate(storefrontPath(slug || "", "checkout"), { replace: true });
+
       })
       .catch(() => { /* offline / cold start — retry on the next pageload */ });
 
