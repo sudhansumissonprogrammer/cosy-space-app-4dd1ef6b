@@ -5440,6 +5440,13 @@ async function _resolveStoreSlugForDomain(domain, env) {
       }
     } catch {}
   }
+  // v8.93.0 FIX: KV-only lookup returned "unknown domain" for every /api/* call
+  // in the window right after a cache purge (or KV TTL expiry) until an HTML
+  // request happened to re-warm the mapping. Fall back to the full resolver,
+  // which reads Supabase and re-writes Cache API + KV.
+  try {
+    return await resolveDomain(cleanDomain, env);
+  } catch {}
   return null;
 }
 
