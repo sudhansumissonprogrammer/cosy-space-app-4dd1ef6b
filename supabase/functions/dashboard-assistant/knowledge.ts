@@ -338,4 +338,232 @@ Most changes appear within a minute even without purging.`,
     keywords: ["account", "password", "email", "login", "profile", "sign out"],
     body: `Open My Account to change your name, login email or password, and to sign out. Store details (name, logo, policies) live in Store Settings instead.`,
   },
+  {
+    id: "meta-pixel-step-by-step",
+    title: "Add Meta (Facebook) Pixel step by step",
+    route: "{s}/tracking",
+    keywords: ["meta pixel", "facebook pixel", "pixel id", "add pixel", "pixel kaise", "events manager", "instagram ads", "fb ads"],
+    body: `Getting the Pixel ID (in Meta, not here):
+1. Open business.facebook.com → Events Manager → Data sources.
+2. "Connect data source" → Web → name it after your store → Create.
+3. Copy the 15-16 digit Pixel ID (dataset ID).
+In the dashboard:
+4. Open Tracking Pixels, paste the ID into "Meta Pixel ID" and Save.
+5. Nothing else to install — the pixel is injected into every storefront page automatically.
+6. Test: open your store, add a product to cart, then check Events Manager → Test events / Overview. You should see PageView, ViewContent, AddToCart, InitiateCheckout and Purchase.
+Notes: the Purchase event fires only on a real confirmed order; manual/WhatsApp orders created inside the dashboard are intentionally not counted so ad reporting stays clean.`,
+  },
+  {
+    id: "meta-capi",
+    title: "Add the Conversions API (CAPI) token",
+    route: "{s}/tracking",
+    keywords: ["capi", "conversions api", "access token", "server side", "ios", "match quality", "dataset"],
+    body: `CAPI sends purchases from our server to Meta, so sales are still counted when the browser pixel is blocked (iOS, ad blockers).
+1. Events Manager → your dataset → Settings → Conversions API → "Generate access token".
+2. Copy the token.
+3. Open Tracking Pixels → Conversions API section → paste the token (and the same dataset/pixel ID) → Save.
+4. Use the built-in setup wizard on that page if you get stuck; it checks each field.
+5. Place a small test order and confirm in Events Manager that the Purchase event shows "Server" as a source and event deduplication is working.
+Never share this token with anyone; it is stored encrypted and is never shown again.`,
+  },
+  {
+    id: "google-analytics",
+    title: "Add Google Analytics (GA4) and Search Console",
+    route: "{s}/tracking",
+    keywords: ["google analytics", "ga4", "measurement id", "search console", "google verification", "gtag", "seo google"],
+    body: `GA4:
+1. analytics.google.com → Admin → Data streams → Web → add your store URL.
+2. Copy the Measurement ID (starts with G-).
+3. Tracking Pixels → paste into the GA4 field → Save. Check GA4 → Realtime after opening your store.
+Search Console:
+4. search.google.com/search-console → add your domain property and verify with the DNS TXT record at your registrar (same place you added the domain records).
+5. Submit your sitemap: https://yourdomain/sitemap.xml.`,
+  },
+  {
+    id: "variants",
+    title: "Add size / colour options (variants)",
+    route: "{s}/products",
+    keywords: ["variant", "size", "colour", "color", "options", "different price", "stock per size"],
+    body: `1. Open the product → Variants section.
+2. Add one row per option (e.g. S, M, L or Gold, Silver) with its own price and stock.
+3. Leave a variant's stock at 0 to show it as sold out instead of deleting it.
+4. Customers pick the option on the product page; the order shows exactly which variant was bought.`,
+  },
+  {
+    id: "media-library",
+    title: "Media Library — reuse and clean up images",
+    route: "{s}/media",
+    keywords: ["media", "images", "gallery", "photo", "upload", "delete image", "storage"],
+    body: `Media Library holds every image you have uploaded. Use it to re-use a photo across products, copy an image URL for banners, or delete unused files. Images are served from our CDN and are resized automatically — upload the best quality you have, square works best for products.`,
+  },
+  {
+    id: "best-sellers",
+    title: "Best Sellers — pick what shows first",
+    route: "{s}/best-sellers",
+    keywords: ["best seller", "featured", "top products", "homepage products", "order products", "sort"],
+    body: `Best Sellers controls which products get the "best seller" highlight and appear first on your storefront home. Drag to reorder or toggle products in/out. Use it after a week of sales — Analytics → Top products tells you what actually sells.`,
+  },
+  {
+    id: "leads",
+    title: "Leads — visitors who left their number",
+    route: "{s}/leads",
+    keywords: ["leads", "phone number", "enquiry", "spin wheel", "popup", "contact"],
+    body: `Leads collects phone numbers/emails captured by checkout drop-offs, spin-wheel and popup forms. Export them or message the list from WhatsApp → Campaigns. A lead is not an order — see Abandoned Carts for people who reached checkout.`,
+  },
+  {
+    id: "funnel",
+    title: "Sales Funnel — find where sales are lost",
+    route: "{s}/funnel",
+    keywords: ["funnel", "drop off", "conversion", "cart abandonment", "why no sales", "checkout drop"],
+    body: `The funnel shows Visitors → Product view → Add to cart → Checkout → Paid.
+- Big drop at Product view: your photos/price/ad audience.
+- Big drop at Add to cart → Checkout: delivery charge or trust; try free shipping above an amount and add reviews.
+- Big drop at Checkout → Paid: payment friction; enable COD or partial COD, and check the Payments page for a failing gateway.`,
+  },
+  {
+    id: "pickup-address",
+    title: "Pickup address and shipping labels",
+    route: "{s}/shipping-integrations",
+    keywords: ["pickup address", "warehouse", "label", "awb", "manifest", "print label", "pickup request"],
+    body: `1. Open Courier Partners and save your pickup address (this is where the courier collects the parcel and where RTO parcels come back).
+2. Connect a courier account with the credentials from that courier's panel.
+3. From an order → Ship, choose the courier, generate the AWB and print the label.
+4. Tracking updates then flow into the order automatically. India Post is manual-only — you must paste status updates yourself.`,
+  },
+  {
+    id: "manual-tracking",
+    title: "Add a tracking number manually",
+    route: "{s}/orders",
+    keywords: ["tracking id", "awb", "manual tracking", "india post", "courier number", "update status"],
+    body: `1. Open the order → Shipment.
+2. Choose the courier, paste the tracking/AWB number and save.
+3. The customer automatically gets the tracking link on WhatsApp and on the order-tracking page.
+4. Update the shipment status as it moves (shipped → out for delivery → delivered, or returned/cancelled for RTO).
+Marking an order cancelled after it was shipped refunds that order's 2% commission to your wallet automatically.`,
+  },
+  {
+    id: "rto-returns",
+    title: "RTO, returns and refunds",
+    route: "{s}/orders",
+    keywords: ["rto", "return", "refund", "returned to seller", "not delivered", "money back"],
+    body: `1. When a parcel comes back, set the shipment status to Returned/Cancelled on the order.
+2. The order status becomes cancelled and the platform commission for it is credited back to your wallet.
+3. Prepaid refunds are made by you from the payment gateway's own dashboard (Razorpay/Cashfree/PayU) — we never hold your money.
+4. Add your return window and any proof requirement (e.g. an unboxing video) in Pages & Policies → Return & Refund so it shows on every product page.`,
+  },
+  {
+    id: "export-orders",
+    title: "Export orders / customers to Excel",
+    route: "{s}/orders",
+    keywords: ["export", "excel", "csv", "download orders", "report", "accountant"],
+    body: `Use the Export button on the Orders page (and on Customers) to download the current filtered list as CSV. Filter by date range or status first, then export — that file opens directly in Excel or Google Sheets.`,
+  },
+  {
+    id: "notifications",
+    title: "Order alerts and push notifications",
+    route: "/dashboard/settings",
+    keywords: ["notification", "alert", "push", "new order sound", "install app", "pwa", "mobile app"],
+    body: `1. Open the dashboard on your phone in Chrome and choose "Add to Home screen" (or visit /install) — it works like an app.
+2. Allow notifications when asked, so you get a push for every new order.
+3. Order alerts also arrive on your WhatsApp number saved in Store Settings → Basic.
+If you stop getting alerts, re-open the installed app and allow notifications again in your phone's browser settings.`,
+  },
+  {
+    id: "spin-wheel",
+    title: "Spin wheel, popups and upsell apps",
+    route: "{s}/apps",
+    keywords: ["spin wheel", "popup", "upsell", "cross sell", "bundle", "offer wheel", "discount popup"],
+    body: `Open App Store and enable the app you want:
+- Spin wheel / popup: collects a phone number in exchange for a discount coupon (needs at least one active coupon).
+- Upsell & bundles: suggests add-ons on the product page and after checkout.
+- Shop by Video / card video: short videos on the home and product pages.
+Each app has its own settings screen after you enable it, and only affects the storefront when it is switched on.`,
+  },
+  {
+    id: "trust-videos",
+    title: "Shop by Video / trust videos",
+    route: "{s}/apps",
+    keywords: ["video", "shop by video", "reel", "trust video", "instagram video"],
+    body: `1. App Store → enable Shop by Video.
+2. Upload short vertical videos (like Instagram reels) and link each one to a product.
+3. They appear in a swipeable row on your storefront; tapping opens the product. Keep files under ~20MB so they load fast on mobile.`,
+  },
+  {
+    id: "prepaid-discount",
+    title: "Push prepaid orders (reduce COD/RTO)",
+    route: "{s}/payments",
+    keywords: ["prepaid discount", "cod charge", "rto", "advance", "partial cod", "reduce cod"],
+    body: `On the Payments page you can:
+- Give a prepaid discount (flat or %) so paying online is cheaper than COD.
+- Add a COD handling fee.
+- Turn on partial COD: the customer pays a small advance (e.g. ₹100) online and the rest on delivery. This cuts fake orders, but a high advance also increases drop-off at checkout — start low and watch the Sales Funnel.`,
+  },
+  {
+    id: "coupons-auto",
+    title: "Auto-apply and recovery coupons",
+    route: "{s}/coupons",
+    keywords: ["auto apply", "recovery coupon", "first order", "welcome code", "free shipping coupon"],
+    body: `1. Coupons → Create: set code, flat/% value, minimum cart value, usage limit and expiry.
+2. Mark a coupon "auto apply" so it is applied for every customer without typing a code (good for launch offers).
+3. Mark one as the recovery coupon — abandoned-cart WhatsApp messages and the spin wheel use it automatically.`,
+  },
+  {
+    id: "back-in-stock",
+    title: "Out of stock, back-in-stock and wishlist",
+    route: "{s}/products",
+    keywords: ["out of stock", "sold out", "back in stock", "waitlist", "wishlist", "inventory"],
+    body: `Set stock to 0 to show a product as sold out; customers can leave their number on the "notify me" form and appear in Leads / the back-in-stock list. Update the stock and message them from WhatsApp → Campaigns. Wishlist saves are visible per customer on the Customers page.`,
+  },
+  {
+    id: "hidden-categories",
+    title: "Hide a category or product from the storefront",
+    route: "{s}/categories",
+    keywords: ["hide", "hidden", "unpublish", "draft", "not visible", "remove from store"],
+    body: `1. Categories → toggle "hidden" on a category. Every product that only belongs to hidden categories disappears from the storefront automatically (links you share still work).
+2. To hide a single product, open it and turn its status to inactive/draft.
+Use hiding instead of deleting so past orders keep their product details.`,
+  },
+  {
+    id: "custom-pages",
+    title: "Create a custom page (FAQ, size guide, story)",
+    route: "{s}/pages",
+    keywords: ["custom page", "new page", "faq", "size guide", "blog", "footer link"],
+    body: `1. Pages & Policies → "New page".
+2. Give it a title and URL slug, write the content (AI can draft it), and save.
+3. Choose whether it appears in the storefront footer. The page is live at yourdomain/pages/your-slug.`,
+  },
+  {
+    id: "store-not-found",
+    title: "Store shows an error or \"store not found\"",
+    route: "{s}/domain",
+    keywords: ["store not found", "error", "not opening", "site down", "404", "blank"],
+    body: `1. Check the free address first (yourslug.shopbanao.in). If that works, the problem is your custom domain's DNS — re-check the records on the Domain page and press Verify again.
+2. Press "Purge Cache" in the dashboard header and hard-refresh (Ctrl/Cmd + Shift + R).
+3. Confirm your store is not paused and your wallet is not blocked in Wallet.
+4. Still broken? Contact support with the exact link — do not delete and recreate the store.`,
+  },
+  {
+    id: "partner-program",
+    title: "Partner / referral program",
+    route: "/partners",
+    keywords: ["partner", "referral", "affiliate", "commission earn", "refer"],
+    body: `The Partner program is for people who refer new sellers to the platform. Sign up at /partners, share your referral link, and earn commission on the stores you bring — tracked in the partner dashboard with its own wallet and withdrawals. It is separate from your store's wallet.`,
+  },
+  {
+    id: "launch-checklist",
+    title: "Launch checklist — what to finish before ads",
+    route: "/dashboard",
+    keywords: ["launch", "checklist", "go live", "ready", "start selling", "first order", "before ads"],
+    body: `Before you spend on ads, finish all of these:
+1. At least 5-10 products with good photos, price and description.
+2. Categories created and assigned.
+3. Payments: one online gateway working + COD decided (test with a ₹1-10 order).
+4. Shipping rates and free-shipping threshold set; courier or manual tracking ready.
+5. Pages & Policies: About, Contact, Return/Refund, Shipping, Privacy (gateways check these).
+6. Store Settings: name, logo, WhatsApp number, address, SEO title/description.
+7. Tracking Pixels: Meta Pixel + CAPI (and GA4) verified with a test order.
+8. Domain connected and verified; store link shared once on WhatsApp/Instagram.
+9. Wallet recharged so commission never blocks orders.`,
+  },
 ];
+
