@@ -566,6 +566,11 @@ export default function DashboardLayout() {
       />
     </div>
     {showLowBalance && <LowBalanceDialog open={true} balance={walletBalance} storeSlug={storeSlug || ""} />}
+    <Suspense fallback={null}>
+      {assistantOpen && (
+        <AssistantPanel open={assistantOpen} onOpenChange={setAssistantOpen} storeId={storeId} />
+      )}
+    </Suspense>
     </DashboardStoreProvider>
     </AdminViewProvider>
   );
