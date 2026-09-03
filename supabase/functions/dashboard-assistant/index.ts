@@ -85,7 +85,7 @@ async function buildStoreSnapshot(admin: any, storeId: string) {
 
   const s = store?.data ?? {};
   const p = pay?.data ?? {};
-  const has = (...keys: string[]) => keys.some((k) => !!p?.[k]);
+  const methods: string[] = Array.isArray(p?.payment_methods) ? p.payment_methods : [];
 
   return {
     store_name: s.name ?? null,
@@ -103,11 +103,12 @@ async function buildStoreSnapshot(admin: any, storeId: string) {
     meta_pixel_connected: !!s.facebook_pixel_id,
     partial_cod_enabled: !!s.partial_payment_enabled,
     payments: {
-      razorpay_configured: has("razorpay_key_id", "razorpay_enabled"),
-      cashfree_configured: has("cashfree_app_id", "cashfree_enabled"),
-      payu_configured: has("payu_merchant_key", "payu_enabled"),
-      upi_configured: has("upi_id", "upi_enabled"),
-      cod_enabled: !!p?.cod_enabled,
+      enabled_methods: methods,
+      razorpay_keys_saved: !!p?.razorpay_key_id,
+      cashfree_keys_saved: !!p?.cashfree_app_id,
+      payu_keys_saved: !!p?.payu_merchant_key,
+      cod_enabled: methods.includes("cod"),
+      prepaid_discount_enabled: !!p?.prepaid_discount_enabled,
     },
     shipping_configured: !!ship?.data,
     tax_configured: !!tax?.data,
@@ -195,8 +196,10 @@ serve(async (req) => {
     // Conversation
     if (conversationId) {
       const { data: conv } = await admin
-        .from("assistant_conversations").select("id, user_id").eq("id", conversationId).maybeSingle();
-      if (!conv || conv.user_id !== user.id) conversationId = null;
+        .from("assistant_conversations").select("id, user_id, store_id").eq("id", conversationId).maybeSingle();
+      // Must belong to this user AND this store — a conversation id from another
+      // store of the same user must not leak into this store's thread.
+      if (!conv || conv.user_id !== user.id || conv.store_id !== storeId) conversationId = null;
     }
     if (!conversationId) {
       const { data: created } = await admin

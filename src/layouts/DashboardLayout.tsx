@@ -1,11 +1,12 @@
 import { IS_WHATSAPP_ONLY_STORE } from "@/config/storeMode";
-import { useState, useEffect, useMemo, Suspense } from "react";
+import { useState, useEffect, useMemo, Suspense, lazy } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { prefetchDashboardRoutes } from "@/lib/prefetchDashboardRoutes";
 import { Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ContentSkeleton } from "@/components/ContentSkeleton";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import DashboardCommandPalette from "@/components/dashboard/DashboardCommandPalette";
+const AssistantPanel = lazy(() => import("@/components/dashboard/assistant/AssistantPanel"));
 import { useAuth } from "@/contexts/AuthContext";
 import { useMyStore } from "@/hooks/useMyStore";
 import { useAdminStoreView } from "@/hooks/useAdminStoreView";
@@ -20,7 +21,7 @@ import LowBalanceDialog from "@/components/billing/LowBalanceDialog";
 import {
   LayoutDashboard, Package, ShoppingBag, Menu, LogOut,
   Settings, Store, ExternalLink,
-  Search, User, X, RefreshCw,
+  Search, User, X, RefreshCw, Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -198,6 +199,7 @@ function MobileMenu({
 export default function DashboardLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
   const [isPurging, setIsPurging] = useState(false);
 
   const location = useLocation();
@@ -332,6 +334,17 @@ export default function DashboardLayout() {
                     <span className="hidden sm:inline">Search…</span>
                     <kbd className="hidden md:inline ml-2 text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded">⌘K</kbd>
                   </button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 gap-1.5 text-xs"
+                    onClick={() => setAssistantOpen(true)}
+                    aria-label="Ask the Store Assistant for help"
+                    title="Ask the Store Assistant"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span className="hidden lg:inline">Help</span>
+                  </Button>
                   {store?.slug && (
                     <Button
                       variant="ghost"
@@ -377,7 +390,13 @@ export default function DashboardLayout() {
           storeSlug={storeSlug}
           isCommissionMode={isCommissionMode}
           isWhatsAppOnly={isWhatsAppOnly}
+          onAskAssistant={() => setAssistantOpen(true)}
         />
+        <Suspense fallback={null}>
+          {assistantOpen && (
+            <AssistantPanel open={assistantOpen} onOpenChange={setAssistantOpen} storeId={storeId} />
+          )}
+        </Suspense>
         </DashboardStoreProvider>
       </AdminViewProvider>
     );
@@ -444,6 +463,16 @@ export default function DashboardLayout() {
               <RefreshCw className={cn("h-5 w-5", isPurging && "animate-spin")} />
             </Button>
           )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 text-muted-foreground hover:text-foreground"
+            onClick={() => setAssistantOpen(true)}
+            aria-label="Ask the Store Assistant for help"
+            title="Ask the Store Assistant"
+          >
+            <Sparkles className="h-5 w-5" />
+          </Button>
           <Button
             variant="ghost"
             size="icon"
@@ -538,6 +567,11 @@ export default function DashboardLayout() {
       />
     </div>
     {showLowBalance && <LowBalanceDialog open={true} balance={walletBalance} storeSlug={storeSlug || ""} />}
+    <Suspense fallback={null}>
+      {assistantOpen && (
+        <AssistantPanel open={assistantOpen} onOpenChange={setAssistantOpen} storeId={storeId} />
+      )}
+    </Suspense>
     </DashboardStoreProvider>
     </AdminViewProvider>
   );

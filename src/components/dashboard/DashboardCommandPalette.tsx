@@ -5,12 +5,14 @@ import {
   CommandItem, CommandList,
 } from "@/components/ui/command";
 import { buildDashboardNav, filterNavGroups } from "@/config/dashboardNav";
+import { Sparkles } from "lucide-react";
 import { useMenuConfig } from "@/hooks/useMenuConfig";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   storeSlug?: string;
+  onAskAssistant?: () => void;
   isCommissionMode?: boolean;
   isWhatsAppOnly?: boolean;
 }
@@ -20,7 +22,7 @@ interface Props {
  * navigation source of truth as the sidebar and mobile menu.
  */
 export default function DashboardCommandPalette({
-  open, onOpenChange, storeSlug, isCommissionMode, isWhatsAppOnly,
+  open, onOpenChange, storeSlug, isCommissionMode, isWhatsAppOnly, onAskAssistant,
 }: Props) {
   const navigate = useNavigate();
   const { isVisible, isComingSoon } = useMenuConfig();
@@ -47,6 +49,23 @@ export default function DashboardCommandPalette({
       <CommandInput placeholder="Jump to a page or setting…" />
       <CommandList>
         <CommandEmpty>No matching page.</CommandEmpty>
+        {onAskAssistant && (
+          <CommandGroup heading="Help">
+            <CommandItem
+              value="ask assistant ai help how do i guide support"
+              onSelect={() => {
+                onOpenChange(false);
+                onAskAssistant();
+              }}
+            >
+              <Sparkles className="mr-2 h-4 w-4 shrink-0 text-primary" />
+              <span className="flex-1 min-w-0 truncate">Ask the Store Assistant</span>
+              <span className="ml-2 hidden truncate text-xs text-muted-foreground sm:inline">
+                Step-by-step help for anything in the dashboard
+              </span>
+            </CommandItem>
+          </CommandGroup>
+        )}
         {groups.map((group) => (
           <CommandGroup key={group.id} heading={group.title}>
             {group.items
