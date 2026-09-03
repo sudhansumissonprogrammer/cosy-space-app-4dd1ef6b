@@ -13,9 +13,43 @@ const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 
-const MODEL = "google/gemini-3.7-flash";
+// Model is discovered from the live gateway listing on first use, so the
+// assistant follows the current model generation instead of a pinned id that
+// silently ages out. FALLBACK_MODEL is only used if the listing is unreachable.
+const FALLBACK_MODEL = "google/gemini-3.7-flash";
+const MODEL_PREFERENCE = [
+  "google/gemini-3.7-flash",
+  "google/gemini-3.6-flash",
+  "google/gemini-3.1-flash-lite",
+];
+let cachedModel: string | null = null;
+
+async function pickModel(): Promise<string> {
+  if (cachedModel) return cachedModel;
+  try {
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/models", {
+      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}` },
+    });
+    if (res.ok) {
+      const list = await res.json();
+      const ids = new Set(
+        (list?.data ?? [])
+          .filter((m: any) => !m?.deprecated)
+          .map((m: any) => m?.id),
+      );
+      cachedModel = MODEL_PREFERENCE.find((id) => ids.has(id)) ?? FALLBACK_MODEL;
+      return cachedModel;
+    }
+  } catch (e) {
+    console.error("model listing failed", e);
+  }
+  cachedModel = FALLBACK_MODEL;
+  return cachedModel;
+}
+
 const MAX_TURNS = 12;
 const RATE_LIMIT_PER_HOUR = 60;
+
 
 /* ------------------------------------------------------------------ */
 /* Retrieval — keyword scoring over the bundled knowledge base         */
@@ -46,9 +80,34 @@ function scoreArticle(a: HelpArticle, q: string, qTokens: string[]): number {
   return score;
 }
 
-function retrieve(question: string, page?: string, limit = 6): HelpArticle[] {
-  const q = question.toLowerCase();
-  const qTokens = tokens(question);
+// Hindi / Hinglish → English hints. Merchants type "pixel kaise lagaye",
+// "paisa kab milega", "delivery charge kaise set kare" — without this the
+// keyword scorer only matched the few English words in the sentence.
+const SYNONYMS: Record<string, string> = {
+  lagaye: "add", lagana: "add", jode: "add", jodna: "add", banaye: "create",
+  banana: "create", banaun: "create", karu: "do", kare: "do", karna: "do",
+  dukan: "store", dukaan: "store", saman: "product", samaan: "product",
+  daam: "price", keemat: "price", paisa: "payment money", paise: "payment money",
+  rupaye: "payment", bhugtan: "payment", grahak: "customer", grahak_: "customer",
+  order_: "order", delivery: "shipping", courier: "shipping",
+  vapas: "return refund", wapas: "return refund", refund_: "refund",
+  chhut: "discount", chhoot: "discount", vigyapan: "ads pixel",
+  ad: "ads pixel", ads: "pixel meta facebook", fb: "facebook meta pixel",
+  domain_: "domain", website: "domain store", link: "share link",
+  photo: "image", tasveer: "image", nahi: "not", dikh: "showing",
+  raha: "", rahi: "", kaise: "how", kyu: "why", kyun: "why", kab: "when",
+};
+
+function expand(question: string): string {
+  const extra = tokens(question).map((t) => SYNONYMS[t] ?? "").filter(Boolean);
+  return extra.length ? `${question} ${extra.join(" ")}` : question;
+}
+
+function retrieve(question: string, page?: string, limit = 8): HelpArticle[] {
+  const expanded = expand(question);
+  const q = expanded.toLowerCase();
+  const qTokens = tokens(expanded);
+
   const ranked = HELP_ARTICLES
     .map((a) => {
       let score = scoreArticle(a, q, qTokens);
@@ -122,25 +181,39 @@ function systemPrompt(snapshot: unknown, articles: HelpArticle[], slug: string, 
   const context = articles
     .map((a) => `### ${a.title}\nPage: ${a.route.replace("{s}", s)}\n${a.body}`)
     .join("\n\n");
+  // Full map of everything the dashboard can do. Even when keyword retrieval
+  // misses, the assistant can still point the merchant at the right page and
+  // offer to explain it, instead of answering "I don't know".
+  const siteMap = HELP_ARTICLES
+    .map((a) => `- ${a.title} → ${a.route.replace("{s}", s)}`)
+    .join("\n");
+
 
   return `You are the Store Assistant inside the ShopBanao merchant dashboard. You help shop owners in India run their online store.
 
 HOW TO ANSWER
-- Answer ONLY from the HELP CONTEXT below. If it does not cover the question, say you are not sure and suggest contacting support — never invent a setting, field or page.
-- Be short and practical: numbered steps, one action per step.
-- Always name the dashboard page and give its link path exactly as written in the context (e.g. ${s}/payments).
+- Answer from the HELP CONTEXT below. It is the ground truth for steps, field names and pages.
+- If the HELP CONTEXT does not cover it but the DASHBOARD MAP has a matching page, point the merchant to that page, say what it is for, and offer to explain further. Only say "I'm not sure, please contact support" when neither covers it — never invent a setting, field or page.
+- Be short and practical: numbered steps, one action per step. Bold nothing; plain text and numbers only.
+- Always name the dashboard page and give its link path exactly as written (e.g. ${s}/payments).
 - Use the STORE STATUS to personalise: if something is already set up say so; if it is missing, start the steps there.
+- If the question is vague ("it's not working"), ask ONE short clarifying question first.
 - Reply in the same language the merchant used (English, Hindi or Hinglish).
-- Never ask for, show or repeat API keys, passwords or tokens.
+- Never ask for, show or repeat API keys, passwords or tokens. If a step needs a key, tell them where to paste it — never to type it in chat.
 - You cannot change any setting yourself — you explain and link; the merchant clicks.
+- End with one short next step when it helps (e.g. "Then place a ₹10 test order to confirm").
 
 STORE STATUS (live)
 ${JSON.stringify(snapshot, null, 2)}
 
 CURRENT PAGE: ${page || "unknown"}
 
+DASHBOARD MAP (every page you can send the merchant to)
+${siteMap}
+
 HELP CONTEXT
 ${context}`;
+
 }
 
 serve(async (req) => {
@@ -228,7 +301,7 @@ serve(async (req) => {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "X-Lovable-AIG-SDK": "fetch",
       },
-      body: JSON.stringify({ model: MODEL, messages, stream: true, service_tier: "priority" }),
+      body: JSON.stringify({ model: await pickModel(), messages, stream: true, service_tier: "priority" }),
     });
 
     if (!upstream.ok || !upstream.body) {
