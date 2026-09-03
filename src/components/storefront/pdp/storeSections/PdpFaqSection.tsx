@@ -30,6 +30,14 @@ const FAQS: { q: string; a: string }[] = [
     q: "How long does delivery take?",
     a: "Orders are dispatched within 24 hours and usually delivered in 3–6 working days depending on your pincode.",
   },
+  {
+    q: "Is an unboxing video required for return or refund?",
+    a: "Yes — it is mandatory. Please record a clear, uncut unboxing video that shows the sealed parcel, the label and the complete opening of the box. Return, replacement or refund claims for damaged, defective, missing or wrong items cannot be approved without this video.",
+  },
+  {
+    q: "How do I raise a return or refund request?",
+    a: "Contact us on WhatsApp or call within 7 days of delivery with your order number and the unboxing video. Once verified, we arrange the pickup and process the refund to your original payment method within 5–7 business days after the item reaches us and passes inspection.",
+  },
 ];
 
 export default function PdpFaqSection() {
