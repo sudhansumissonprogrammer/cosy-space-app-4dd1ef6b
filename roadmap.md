@@ -7,3 +7,4 @@
 ## Open
 - [ ] Authenticated end-to-end test of the assistant panel (needs a signed-in preview session)
 - [ ] Deploy updated `docs/cloudflare-worker-current.js` (domain resolver DB fallback) to Cloudflare
+- [ ] Make Store Assistant answers shorter, more direct, and intelligent (no big paragraphs)
