@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { HELP_ARTICLES, type HelpArticle } from "./knowledge.ts";
 import { buildStoreInsights, type StoreInsights } from "./insights.ts";
+import { ANALYTICS_TOOLS, runAnalyticsTool } from "./analytics.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
