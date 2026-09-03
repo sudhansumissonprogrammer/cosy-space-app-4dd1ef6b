@@ -565,5 +565,253 @@ Use hiding instead of deleting so past orders keep their product details.`,
 8. Domain connected and verified; store link shared once on WhatsApp/Instagram.
 9. Wallet recharged so commission never blocks orders.`,
   },
+  {
+    id: "create-store",
+    title: "Create a new store / open another store",
+    route: "/dashboard/stores/create",
+    keywords: ["create store", "new store", "second store", "another store", "open store", "store banana", "switch store"],
+    body: `1. Go to Dashboard → Stores → "Create store".
+2. Enter the store name; the link (slug) is made from it — yourslug.shopbanao.in.
+3. Pick your business type (jewellery, clothing, watches, electronics, or type your own) and your name. The AI writes your About Us, store description and SEO text from this — you can edit it later in Store Settings.
+4. Save. You land on the new store's dashboard.
+To switch between stores use the store name at the top of the sidebar, or Dashboard → Stores.`,
+  },
+  {
+    id: "account-login",
+    title: "Login, password and account email",
+    route: "/dashboard/settings",
+    keywords: ["login", "password", "forgot password", "reset password", "email change", "sign in", "logout", "account"],
+    body: `Forgot your password: on the login page press "Forgot password", enter your account email and open the reset link sent to that email (check spam).
+Change password or profile name: Account settings (/dashboard/settings).
+Logging in on a new phone works with the same email/password — your stores follow the account, not the device.
+Never share your password. Our team will never ask for it, and this assistant cannot see or reset it.`,
+  },
+  {
+    id: "order-status-meaning",
+    title: "What each order status means",
+    route: "{s}/orders",
+    keywords: ["status meaning", "pending", "confirmed", "processing", "shipped", "delivered", "cancelled", "partially paid", "what does"],
+    body: `pending — order created, payment not completed yet. It is auto-closed if the customer never pays.
+partially_paid — partial COD: the advance is paid, the rest is collected at delivery. This is a real order, pack it.
+paid / confirmed — money received (or COD accepted). Pack and ship.
+processing — you are preparing it.
+shipped — handed to the courier. Shipped means fulfilment only, NOT that the parcel was delivered or that the money is final.
+delivered — customer received it.
+cancelled — order closed; no revenue counted. If it was shipped and you cancel it manually, the platform commission is refunded to your wallet automatically.`,
+  },
+  {
+    id: "commission-2-percent",
+    title: "How much the platform charges (2%)",
+    route: "{s}/wallet",
+    keywords: ["commission", "charges", "fee", "2%", "subscription", "monthly", "kitna charge", "cost", "pricing"],
+    body: `There is no monthly subscription. The platform takes a flat 2% of every order, including orders that come back as RTO. It is deducted from your store wallet, not from the customer.
+Payment gateway charges (Razorpay/Cashfree/PayU) are separate and charged by that gateway.
+Keep your wallet topped up — if the balance runs out, new orders can be blocked. See Wallet for the ledger of every deduction.`,
+  },
+  {
+    id: "payout-settlement",
+    title: "When do I get my money (settlement)",
+    route: "{s}/payments",
+    keywords: ["payout", "settlement", "when money", "paisa kab", "bank", "withdraw", "kab milega", "t+2"],
+    body: `Online payments go straight to YOUR gateway account (Razorpay/Cashfree/PayU/UPI), not to us. The gateway settles to your bank on its own cycle — usually T+2 working days. Check the payout schedule inside your gateway's own dashboard.
+COD money is collected by the courier and remitted by them, usually 7-10 days after delivery.
+The platform only deducts its 2% commission from your store wallet — it never holds your order money.`,
+  },
+  {
+    id: "test-order",
+    title: "Place a test order safely",
+    route: "{s}/orders",
+    keywords: ["test order", "trial order", "check payment", "10 rupees", "dummy order", "verify checkout"],
+    body: `1. Open your live store link in a normal (non-logged-in) browser or phone.
+2. Add any product, or temporarily create a ₹10 test product, and check out with your real number.
+3. Pay with UPI. Confirm you land on the order-success page and get the WhatsApp confirmation.
+4. Open Orders in the dashboard — the order should show paid/confirmed with the transaction id.
+5. Cancel/refund the test order and hide the test product.
+Do this after every payment, pixel or shipping change — it is the fastest way to prove the whole flow works.`,
+  },
+  {
+    id: "payment-stuck",
+    title: "Money deducted but order shows pending",
+    route: "{s}/orders",
+    keywords: ["money deducted", "payment stuck", "pending payment", "paisa kat gaya", "not confirmed", "failed but paid", "phonepe", "upi pending"],
+    body: `1. Open the order in Orders and check the transaction id / gateway reference.
+2. Wait 5-10 minutes — our reconciliation job re-checks the gateway and flips genuine payments to paid automatically, and the customer gets the WhatsApp confirmation.
+3. Still pending after that: open your gateway dashboard and search that reference. If the gateway shows SUCCESS, mark the order paid in the dashboard and ship it. If the gateway shows FAILED, the bank will auto-refund the customer in 3-5 working days — tell them that.
+4. Never ask the customer to pay twice before checking the gateway.`,
+  },
+  {
+    id: "why-cancelled-orders",
+    title: "Why do I see so many pending / cancelled orders",
+    route: "{s}/funnel",
+    keywords: ["too many cancelled", "cancel kyu", "pending orders many", "abandoned", "drop off", "failed checkout"],
+    body: `Most cancelled rows are not a broken checkout — they are customers who opened the payment screen and never paid. The system closes an unpaid order after a few minutes so your list stays clean.
+What to check: Sales Funnel shows where people drop. If a lot drop at the advance step, your partial-COD advance may be too high — lower it in Payments. If they drop at delivery charge, add a free-shipping threshold.
+What to fix instead of worrying: enable UPI + one card gateway, keep COD on, and turn on Abandoned Carts WhatsApp recovery.`,
+  },
+  {
+    id: "refund-customer",
+    title: "Refund money to a customer",
+    route: "{s}/orders",
+    keywords: ["refund", "return money", "paisa wapas", "money back", "reverse payment"],
+    body: `1. Cancel the order in Orders (open the order → Cancel) so revenue and stock are corrected.
+2. Refund the actual money from the gateway that took it — Razorpay/Cashfree/PayU dashboards each have a Refund button on that transaction. Refunds reach the customer in 3-7 working days.
+3. For UPI-direct payments you refund manually from your own UPI/bank app.
+4. If the order was already shipped and you cancel it, the platform's 2% commission is automatically credited back to your wallet.
+5. Tell the customer the refund reference on WhatsApp.`,
+  },
+  {
+    id: "invoice-gst-bill",
+    title: "Invoice / GST bill for an order",
+    route: "{s}/orders",
+    keywords: ["invoice", "bill", "gst bill", "receipt", "tax invoice", "print"],
+    body: `Open Orders → the order → Invoice to view and print/save the bill. It uses your store name, address and GSTIN from Store Settings and Tax settings, so fill those first or the invoice prints without them.
+Set GST rate and inclusive/exclusive pricing in Tax & GST before you generate invoices you plan to file.`,
+  },
+  {
+    id: "packing-slip-label",
+    title: "Packing slip and shipping label",
+    route: "{s}/orders",
+    keywords: ["label", "packing slip", "print label", "awb print", "shipping label"],
+    body: `For courier-integrated shipments (Shiprocket/Delhivery etc.), book the shipment from the order and the label/AWB is generated by the courier — print it from the order's shipment panel.
+For manual couriers (like India Post), there is no auto label: write the address from the order, then add the tracking number manually on the order so the customer's tracking page updates.`,
+  },
+  {
+    id: "pincode-serviceability",
+    title: "Pincode, delivery area and delivery time",
+    route: "{s}/shipping",
+    keywords: ["pincode", "serviceable", "delivery area", "kitne din", "delivery time", "eta", "cod pincode"],
+    body: `Shipping Rates decides where and how much you charge — set your zones/rates and the free-shipping threshold there.
+If you only ship to some states, keep COD limited and say so on your Shipping Policy page (Pages & Policies).
+Estimated delivery text shown on the product page comes from your shipping settings/policy — keep it realistic (e.g. 4-7 days) to reduce "where is my order" messages.`,
+  },
+  {
+    id: "low-stock",
+    title: "Stock, out-of-stock and low stock",
+    route: "{s}/products",
+    keywords: ["stock", "out of stock", "inventory", "sold out", "quantity", "restock"],
+    body: `Stock drops automatically as orders come in. At 0 the product shows "Out of stock" and cannot be bought.
+To restock: Products → edit the product (or the variant) → set the quantity.
+Turn on Back-in-stock alerts so customers leave their number and get a WhatsApp when you restock.
+If you never track stock for an item, set a large quantity rather than 0.`,
+  },
+  {
+    id: "delete-product-store",
+    title: "Delete or hide a product / delete a store",
+    route: "{s}/products",
+    keywords: ["delete product", "remove product", "hide product", "delete store", "close store", "unpublish"],
+    body: `Hide instead of delete when you may sell it again: edit the product and turn it inactive/hidden — old order history stays intact.
+Delete permanently: Products → the row's delete action. This cannot be undone and removes it from the catalog.
+To close a store, first stop ads and remove the domain; ask support before deleting a store that has orders — order and invoice history is lost.`,
+  },
+  {
+    id: "product-photos",
+    title: "Photos that sell (size, quality, speed)",
+    route: "{s}/media",
+    keywords: ["photo", "image size", "quality", "blurry", "slow images", "compress", "background"],
+    body: `Use square photos (1000x1000 or larger), plain/white background, product filling the frame.
+First image = the catalog thumbnail, so make it the clearest one. Add 3-5 angles plus one lifestyle/worn shot.
+Do not upload 5-10MB camera files — resize to under ~1MB; images are optimised and served from our CDN, but huge originals still slow the first upload.
+Reuse images across products from Media Library instead of uploading twice.`,
+  },
+  {
+    id: "seo-product",
+    title: "Get found on Google (store and product SEO)",
+    route: "{s}/settings#seo",
+    keywords: ["seo", "google", "rank", "search", "meta title", "keywords", "indexing"],
+    body: `1. Store Settings → SEO: set a title under 60 characters with your main keyword (e.g. "Gold-plated imitation jewellery online — MaVirat") and a description under 160 characters.
+2. Give every product a descriptive name (material + type + occasion), not "Item 12".
+3. Write 3-4 real sentences in each product description.
+4. Connect your own domain — it ranks better than a subdomain.
+5. Add Google Search Console from Tracking Pixels and submit your sitemap.
+Google usually takes 1-3 weeks to show a new store; run Meta ads meanwhile.`,
+  },
+  {
+    id: "whatsapp-campaign",
+    title: "Send a WhatsApp campaign to customers",
+    route: "{s}/whatsapp",
+    keywords: ["whatsapp campaign", "bulk whatsapp", "broadcast", "message customers", "template", "marketing message"],
+    body: `1. Open WhatsApp in the sidebar.
+2. Pick or create an approved template — marketing messages must use an approved template, plain free text is not allowed outside a 24-hour reply window.
+3. Choose the audience (all customers, buyers of a category, abandoned carts).
+4. Send or schedule. Delivery, reads and link clicks are shown per campaign.
+Rules that protect your number: never message people who opted out, keep sends relevant, and space out large blasts.`,
+  },
+  {
+    id: "order-notifications",
+    title: "Get alerted the moment an order comes",
+    route: "{s}/orders",
+    keywords: ["notification", "alert", "new order sound", "app install", "pwa", "push"],
+    body: `1. Allow notifications when the dashboard asks — you then get a push for every new order.
+2. Install the dashboard as an app: open /install (or your browser's "Add to home screen") so it opens like a normal app and keeps you logged in.
+3. Order confirmations to the customer go out on WhatsApp automatically.
+If pushes stop, re-allow notifications in your browser/phone site settings.`,
+  },
+  {
+    id: "find-anything",
+    title: "Find any page fast (search and shortcuts)",
+    route: "/dashboard",
+    keywords: ["search", "find page", "shortcut", "command palette", "menu", "where is", "navigation"],
+    body: `Press Ctrl/Cmd + K anywhere in the dashboard to search every page by name ("pixel", "coupon", "GST") and jump to it.
+The sidebar is grouped: Overview, Catalog, Orders & Customers, Payments & Shipping, Marketing & Growth, Store Setup, Account. Less-used pages sit under "More".
+On mobile the bottom bar has the five pages you use daily; everything else is under the More menu.
+Store Settings has jump-chips at the top (Basic, Location, Media, Display, Pages, SEO, AI, Domain) so you don't scroll.`,
+  },
+  {
+    id: "store-slow",
+    title: "My store loads slowly",
+    route: "{s}/theme",
+    keywords: ["slow", "speed", "loading", "performance", "lag", "page speed"],
+    body: `1. Oversized images are the usual cause — keep uploads under ~1MB each and 3-6 images per product.
+2. Avoid very long home pages; keep 4-6 sections in Theme & Design.
+3. Turn off apps/popups you are not actually using in App Store.
+4. Press Purge Cache after big changes, then test again on mobile data, not office wifi.
+The storefront is served from a global CDN, so after the first load repeat visits are fast.`,
+  },
+  {
+    id: "wallet-blocked",
+    title: "Wallet empty / store blocked",
+    route: "{s}/wallet",
+    keywords: ["wallet blocked", "recharge", "balance low", "negative", "orders blocked", "top up"],
+    body: `The 2% commission is deducted per order from the store wallet. If the balance goes to zero, order creation can be blocked so you don't run up dues.
+Fix: Wallet → Recharge → pay via UPI/gateway; the balance updates within a minute or two of a successful payment.
+Keep a buffer of at least a few hundred rupees when running ads, and check the ledger to see every deduction with its order number.`,
+  },
+  {
+    id: "grow-sales",
+    title: "I'm getting visitors but no sales",
+    route: "{s}/funnel",
+    keywords: ["no sales", "no orders", "traffic no order", "conversion", "sale nahi", "grow", "increase sales"],
+    body: `Work down the funnel in order:
+1. Sales Funnel — see where people stop (view → cart → checkout → paid).
+2. Trust: reviews on products, real photos, Return/Refund and Contact pages filled, trust videos on.
+3. Friction: enable UPI, keep COD or a small partial-COD advance, add a free-shipping threshold.
+4. Urgency: a first-order coupon (auto-apply), spin wheel, and abandoned-cart WhatsApp recovery.
+5. Ads: verify Meta Pixel + CAPI with a test order first, otherwise Meta cannot optimise.
+Change one thing at a time and compare a week against a week in Analytics.`,
+  },
+  {
+    id: "revenue-mismatch",
+    title: "Dashboard revenue doesn't match my bank",
+    route: "/dashboard/analytics",
+    keywords: ["revenue wrong", "mismatch", "sales figure", "not matching", "report", "total sales"],
+    body: `Dashboard revenue counts orders (paid, partially paid, confirmed), not bank credits, so it will always run ahead of your bank:
+- COD money arrives only after the courier remits it.
+- Gateway settlements land T+2, minus gateway fees.
+- Cancelled and RTO orders should be marked cancelled — until you do, they inflate revenue.
+- Partial-COD orders count the full order value; only the advance has actually reached the gateway.
+Reconcile monthly: Analytics for orders, your gateway report for settlements, courier statement for COD.`,
+  },
+  {
+    id: "customer-support-flow",
+    title: "Answering customer questions (where is my order etc.)",
+    route: "{s}/orders",
+    keywords: ["customer asking", "where is my order", "support", "complaint", "customer service", "reply"],
+    body: `1. Search the order by phone number or order id in Orders.
+2. Open it — you see items, payment, address and shipment status with the tracking link. Send that link on WhatsApp.
+3. No tracking yet? Say the honest dispatch date from your shipping policy instead of guessing.
+4. Damage/wrong item: ask for the unboxing video and photos before approving a return (some stores make the unboxing video mandatory — it is written on the product page).
+5. Log the outcome by updating the order status so your reports stay clean.`,
+  },
 ];
+
 
