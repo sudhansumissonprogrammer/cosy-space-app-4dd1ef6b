@@ -463,16 +463,8 @@ export default function DashboardLayout() {
               <RefreshCw className={cn("h-5 w-5", isPurging && "animate-spin")} />
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 text-muted-foreground hover:text-foreground"
-            onClick={() => setAssistantOpen(true)}
-            aria-label="Ask the Store Assistant for help"
-            title="Ask the Store Assistant"
-          >
-            <Sparkles className="h-5 w-5" />
-          </Button>
+          {/* Assistant lives in the floating "Ask AI" button above the bottom nav */}
+
           <Button
             variant="ghost"
             size="icon"
