@@ -7,6 +7,8 @@ import { ContentSkeleton } from "@/components/ContentSkeleton";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import DashboardCommandPalette from "@/components/dashboard/DashboardCommandPalette";
 const AssistantPanel = lazy(() => import("@/components/dashboard/assistant/AssistantPanel"));
+import AssistantFab from "@/components/dashboard/assistant/AssistantFab";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { useMyStore } from "@/hooks/useMyStore";
 import { useAdminStoreView } from "@/hooks/useAdminStoreView";
@@ -463,16 +465,8 @@ export default function DashboardLayout() {
               <RefreshCw className={cn("h-5 w-5", isPurging && "animate-spin")} />
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 text-muted-foreground hover:text-foreground"
-            onClick={() => setAssistantOpen(true)}
-            aria-label="Ask the Store Assistant for help"
-            title="Ask the Store Assistant"
-          >
-            <Sparkles className="h-5 w-5" />
-          </Button>
+          {/* Assistant lives in the floating "Ask AI" button above the bottom nav */}
+
           <Button
             variant="ghost"
             size="icon"
@@ -506,7 +500,11 @@ export default function DashboardLayout() {
       </main>
 
 
+      {/* Floating assistant */}
+      <AssistantFab onClick={() => setAssistantOpen(true)} hidden={menuOpen || assistantOpen} />
+
       {/* Shopify-style bottom nav */}
+
       <nav className="fixed bottom-0 inset-x-0 z-30 bg-card border-t safe-area-pb">
         <div className="flex items-center justify-around h-16 px-1">
           {bottomNav.map((item) => {
