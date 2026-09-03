@@ -76,30 +76,28 @@ export default function AssistantFab({ onClick, hidden }: Props) {
           onClick();
         }}
         aria-label="Ask the Store Assistant"
-        className="group relative flex h-[52px] items-center gap-2.5 overflow-hidden rounded-full pl-4 pr-5 text-primary-foreground shadow-[0_14px_34px_-10px_hsl(var(--primary)/0.65)] transition-transform duration-200 active:scale-[0.96]"
-        style={{
-          backgroundImage:
-            "linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.82) 45%, hsl(var(--primary)) 100%)",
-        }}
+        className="group relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-primary-foreground/20 bg-primary text-primary-foreground shadow-[0_10px_24px_-6px_hsl(var(--primary)/0.72),0_2px_8px_-2px_hsl(var(--foreground)/0.12)] transition-all duration-200 active:scale-[0.92] active:shadow-[0_6px_16px_-4px_hsl(var(--primary)/0.55)]"
       >
         {/* soft moving sheen */}
         <span
           aria-hidden
-          className="pointer-events-none absolute inset-0 -translate-x-full animate-shimmer"
+          className="pointer-events-none absolute inset-0 -translate-x-full animate-shimmer opacity-70"
           style={{
             backgroundImage:
-              "linear-gradient(110deg, transparent 35%, hsl(var(--primary-foreground) / 0.28) 50%, transparent 65%)",
+              "linear-gradient(110deg, transparent 38%, hsl(var(--primary-foreground) / 0.35) 50%, transparent 62%)",
           }}
         />
-        {/* breathing halo */}
+        {/* pop ring */}
         <span
           aria-hidden
-          className="pointer-events-none absolute -inset-[3px] -z-10 rounded-full bg-primary/25 blur-md"
+          className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-inset ring-primary-foreground/15"
         />
-        <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-primary-foreground/15 ring-1 ring-primary-foreground/25">
-          <Sparkles className="h-[18px] w-[18px]" />
-        </span>
-        <span className="relative text-[13.5px] font-semibold tracking-tight">Ask AI</span>
+        {/* subtle outer glow pulse */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -inset-1 -z-10 rounded-full bg-primary/30 blur-md animate-pulse"
+        />
+        <Sparkles className="relative h-5 w-5" strokeWidth={2.2} />
       </button>
     </div>
   );
