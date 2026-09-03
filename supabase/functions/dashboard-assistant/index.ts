@@ -321,6 +321,58 @@ serve(async (req) => {
       { role: "user", content: message },
     ];
 
+    const model = await pickModel();
+
+    // Tool phase — the assistant can query this store's live analytics before
+    // answering (funnel, trend, cancellations, monthly, sources, products).
+    // Non-streaming, max 2 rounds, then the final answer is streamed.
+    for (let round = 0; round < 2; round++) {
+      const planRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "X-Lovable-AIG-SDK": "fetch",
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          tools: ANALYTICS_TOOLS,
+          tool_choice: "auto",
+          max_tokens: 300,
+          temperature: 0,
+        }),
+      });
+      if (!planRes.ok) {
+        console.error("tool phase failed", planRes.status, await planRes.text().catch(() => ""));
+        break;
+      }
+      const plan = await planRes.json().catch(() => null);
+      const choice = plan?.choices?.[0]?.message;
+      const calls = choice?.tool_calls;
+      if (!Array.isArray(calls) || calls.length === 0) break;
+
+      messages.push({ role: "assistant", content: choice.content ?? "", tool_calls: calls } as any);
+      for (const call of calls.slice(0, 3)) {
+        let args: Record<string, unknown> = {};
+        try {
+          args = JSON.parse(call?.function?.arguments || "{}");
+        } catch (_) { /* model sent malformed args — use defaults */ }
+        let result: unknown;
+        try {
+          result = await runAnalyticsTool(admin, storeId, call?.function?.name, args);
+        } catch (e) {
+          console.error("tool error", call?.function?.name, e);
+          result = { error: "Could not read this data right now." };
+        }
+        messages.push({
+          role: "tool",
+          tool_call_id: call.id,
+          content: JSON.stringify(result).slice(0, 12000),
+        } as any);
+      }
+    }
+
     const upstream = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -329,14 +381,15 @@ serve(async (req) => {
         "X-Lovable-AIG-SDK": "fetch",
       },
       body: JSON.stringify({
-        model: await pickModel(),
+        model,
         messages,
         stream: true,
         service_tier: "priority",
-        max_tokens: 520,
+        max_tokens: 640,
         temperature: 0.45,
       }),
     });
+
 
     if (!upstream.ok || !upstream.body) {
       const text = await upstream.text().catch(() => "");
