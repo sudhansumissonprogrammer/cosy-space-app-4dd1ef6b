@@ -301,7 +301,7 @@ serve(async (req) => {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "X-Lovable-AIG-SDK": "fetch",
       },
-      body: JSON.stringify({ model: MODEL, messages, stream: true, service_tier: "priority" }),
+      body: JSON.stringify({ model: await pickModel(), messages, stream: true, service_tier: "priority" }),
     });
 
     if (!upstream.ok || !upstream.body) {
