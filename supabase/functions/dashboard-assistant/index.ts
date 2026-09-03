@@ -181,6 +181,13 @@ function systemPrompt(snapshot: unknown, articles: HelpArticle[], slug: string, 
   const context = articles
     .map((a) => `### ${a.title}\nPage: ${a.route.replace("{s}", s)}\n${a.body}`)
     .join("\n\n");
+  // Full map of everything the dashboard can do. Even when keyword retrieval
+  // misses, the assistant can still point the merchant at the right page and
+  // offer to explain it, instead of answering "I don't know".
+  const siteMap = HELP_ARTICLES
+    .map((a) => `- ${a.title} → ${a.route.replace("{s}", s)}`)
+    .join("\n");
+
 
   return `You are the Store Assistant inside the ShopBanao merchant dashboard. You help shop owners in India run their online store.
 
