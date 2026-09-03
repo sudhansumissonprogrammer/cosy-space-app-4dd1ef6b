@@ -5,6 +5,6 @@
 - Payment resume fix: per-status bounce in `usePaymentResumeGuard` so a paid order always reaches the confirmation screen
 
 ## Open
-- [ ] Authenticated end-to-end test of the assistant panel (needs a signed-in preview session)
+- [ ] Authenticated end-to-end test of the assistant panel + new analytics tools (needs a signed-in preview session)
 - [ ] Deploy updated `docs/cloudflare-worker-current.js` (domain resolver DB fallback) to Cloudflare
 - [x] Store Assistant: short direct answers + per-store business insights (30d orders/revenue/catalog/carts → findings + ranked actions)
