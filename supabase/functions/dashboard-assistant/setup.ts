@@ -32,7 +32,7 @@ export async function buildSetupReadiness(admin: any, storeId: string): Promise<
       admin
         .from("stores")
         .select(
-          "name, slug, logo_url, banner_url, description, about_us_text, meta_title, whatsapp_number, contact_email, custom_domain, domain_verified, return_policy, shipping_policy, privacy_policy, terms_conditions, facebook_pixel_id, theme",
+          "name, slug, logo_url, banner_url, description, about_us_text, meta_title, whatsapp_number, owner_email, custom_domain, domain_verified, return_policy, shipping_policy, facebook_pixel_id, theme",
         )
         .eq("id", storeId)
         .maybeSingle(),
@@ -161,8 +161,8 @@ export async function buildSetupReadiness(admin: any, storeId: string): Promise<
     }),
     T({
       id: "policies",
-      title: "Publish return, shipping and privacy policies",
-      done: !!s.return_policy && !!s.shipping_policy && !!s.privacy_policy && !!s.terms_conditions,
+      title: "Publish return, shipping and store policy pages",
+      done: !!s.return_policy && !!s.shipping_policy && (pagesRes?.count ?? 0) > 0,
       blocker: false,
       why: "Payment gateways and Meta ads reject stores without visible policies.",
       path: "{s}/pages",
