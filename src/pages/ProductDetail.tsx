@@ -1258,6 +1258,12 @@ export default function ProductDetail() {
                   <li>• 7-day easy return policy</li>
                   <li>• Product must be unused and in original packaging</li>
                   <li>• Refund processed within 5-7 business days</li>
+                  {hasCustomPdpSections(store) && (
+                    <li className="font-semibold text-foreground">
+                      • Mandatory: record a clear, uncut unboxing video while opening the sealed
+                      parcel. Return, replacement or refund claims cannot be approved without it.
+                    </li>
+                  )}
                 </ul>
               </AccordionItem>
             )}

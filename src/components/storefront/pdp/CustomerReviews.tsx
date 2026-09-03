@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Star, Check, ThumbsUp } from "lucide-react";
+import { hasCustomPdpSections } from "@/components/storefront/pdp/storeSections/config";
 
 interface FakeReview {
   id: string;
@@ -268,6 +269,12 @@ export default function CustomerReviews({
           <p>• Product must be unused and in original packaging</p>
           <p>• Refund processed within 5-7 business days</p>
           <p>• Exchange available for size/color variants</p>
+          {hasCustomPdpSections(storeId) && (
+            <p className="font-semibold text-foreground">
+              • Mandatory: a clear, uncut unboxing video of the sealed parcel is required to claim
+              any return, replacement or refund.
+            </p>
+          )}
         </div>
       )}
     </section>
