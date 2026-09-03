@@ -7,6 +7,8 @@ import { ContentSkeleton } from "@/components/ContentSkeleton";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import DashboardCommandPalette from "@/components/dashboard/DashboardCommandPalette";
 const AssistantPanel = lazy(() => import("@/components/dashboard/assistant/AssistantPanel"));
+import AssistantFab from "@/components/dashboard/assistant/AssistantFab";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { useMyStore } from "@/hooks/useMyStore";
 import { useAdminStoreView } from "@/hooks/useAdminStoreView";
