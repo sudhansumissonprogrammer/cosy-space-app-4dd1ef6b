@@ -71,16 +71,20 @@ export async function queryFunnel(admin: any, storeId: string, daysIn: unknown) 
   const bounce = daily.reduce((s: number, d: any) => s + Number(d.bounce_sessions || 0), 0);
 
   const pick = (...names: string[]) => names.reduce((s, n) => s + (events.get(n) || 0), 0);
-  const productViews = pick("view_item", "product_view", "ViewContent");
-  const addToCart = pick("add_to_cart", "AddToCart");
+  const productViews = pick("view_product", "view_item", "product_view", "ViewContent");
+  const addToCart = pick("add_to_cart", "buy_now_click", "AddToCart");
   const checkouts = pick("begin_checkout", "InitiateCheckout", "checkout_start");
+  const payClicks = pick("pay_click");
+  const payFailed = pick("payment_failed");
+  const fieldErrors = pick("checkout_field_error");
   const paid = orders.filter((o) => PAID.has(o.status)).length;
 
   const steps = [
     { step: "sessions", count: sessions },
     { step: "product_views", count: productViews },
-    { step: "add_to_cart", count: addToCart },
+    { step: "add_to_cart_or_buy_now", count: addToCart },
     { step: "checkout_started", count: checkouts },
+    { step: "pay_button_clicked", count: payClicks },
     { step: "orders_placed", count: orders.length },
     { step: "orders_paid", count: paid },
   ];
@@ -106,6 +110,8 @@ export async function queryFunnel(admin: any, storeId: string, daysIn: unknown) 
     session_to_order_conversion_pct: pct(paid, sessions),
     cart_to_order_conversion_pct: pct(paid, addToCart),
     biggest_drop_off: worst,
+    payment_failures: payFailed,
+    checkout_form_errors: fieldErrors,
     note: sessions === 0 ? "No traffic recorded in this window — the blocker is visitors, not the funnel." : null,
   };
 }
