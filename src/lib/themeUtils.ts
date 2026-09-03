@@ -203,14 +203,20 @@ const FONT_METRICS: Record<string, FontProfile> = {
     body: { tracking: "-0.002em", weight: 400, leading: "1.6", adjust: "0.546" },
   },
   "Montserrat": {
-    head: { tracking: "0.001em", weight: 600, leading: 1.2, adjust: "cap-height 0.636" },
-    body: { tracking: "-0.006em", weight: 400, leading: "1.6", adjust: "0.546" },
+    // adv 0.574 → runs wide; ex-normalizing alone still reads ~1 step larger
+    // than Inter, so shave the optical size a touch and tighten tracking.
+    head: { tracking: "-0.002em", weight: 600, leading: 1.2, adjust: "cap-height 0.630" },
+    body: { tracking: "-0.009em", weight: 400, leading: "1.58", adjust: "0.512" },
   },
   "Montserrat Alternates": {
-    // adv 0.588 = 2nd widest → no extra opening, slight body tightening.
-    head: { tracking: "0em", weight: 600, leading: 1.2, adjust: "cap-height 0.636" },
-    body: { tracking: "-0.007em", weight: 400, leading: "1.6", adjust: "0.546" },
+    // adv 0.588 = 2nd widest of the whole set. Matching x-height to Inter
+    // (0.546) made every line render ~4% larger AND ~10% wider, which is why
+    // prices/PDP copy looked oversized. Target a slightly smaller x-height
+    // (0.500 ≈ 0.95× its natural 0.525) so the block reads at Inter's size.
+    head: { tracking: "-0.004em", weight: 600, leading: 1.18, adjust: "cap-height 0.624" },
+    body: { tracking: "-0.011em", weight: 400, leading: "1.55", adjust: "0.500" },
   },
+
   "Rubik": {
     head: { tracking: "0.004em", weight: 600, leading: 1.2, adjust: "cap-height 0.636" },
     body: { tracking: "-0.002em", weight: 400, leading: "1.58", adjust: "0.546" },
