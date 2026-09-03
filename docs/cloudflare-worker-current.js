@@ -744,7 +744,7 @@ const SECURITY_HEADERS = {
     "frame-src 'self' https://www.facebook.com https://*.facebook.com https://td.doubleclick.net https://*.razorpay.com https://api.razorpay.com https://checkout.razorpay.com https://*.cashfree.com https://api.cashfree.com https://sandbox.cashfree.com https://sdk.cashfree.com https://payments.cashfree.com https://payments-test.cashfree.com https://*.on.aws https://*.run.app https://secure.payu.in https://test.payu.in https://api.payu.in https://jssdk.payu.in https://jssdk-uat.payu.in https://embed.tawk.to; " +
     "media-src 'self' data: blob: https://cdn.shopbanao.in https://*.supabase.co https://*.r2.dev https://*.r2.cloudflarestorage.com https:; " +
     "worker-src 'self' blob:; " +
-    "object-src 'none'; base-uri 'self'; form-action 'self' https://www.facebook.com https://*.razorpay.com https://api.razorpay.com https://checkout.razorpay.com https://*.cashfree.com https://api.cashfree.com https://sandbox.cashfree.com https://payments.cashfree.com https://payments-test.cashfree.com https://*.on.aws https://*.run.app https://secure.payu.in https://test.payu.in https://api.payu.in https://info.payu.in;",
+    "object-src 'none'; base-uri 'self'; form-action 'self' https://www.facebook.com https://*.facebook.com https://*.razorpay.com https://api.razorpay.com https://checkout.razorpay.com https://*.cashfree.com https://api.cashfree.com https://sandbox.cashfree.com https://payments.cashfree.com https://payments-test.cashfree.com https://*.on.aws https://*.run.app https://secure.payu.in https://test.payu.in https://api.payu.in https://info.payu.in;",
 };
 
 /* ============================================================
