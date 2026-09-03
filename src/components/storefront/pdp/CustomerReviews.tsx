@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Star, Check, ThumbsUp } from "lucide-react";
+import { hasCustomPdpSections } from "@/components/storefront/pdp/storeSections/config";
 
 interface FakeReview {
   id: string;
