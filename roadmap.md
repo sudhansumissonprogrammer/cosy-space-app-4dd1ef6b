@@ -1,8 +1,9 @@
 # Roadmap
 
-## In progress
-- [x] Store Assistant (dashboard AI help): DB tables, knowledge base, `dashboard-assistant` edge fn, assistant panel + hook, header/⌘K entry points
-- [ ] Investigate MaViratraimitation: ₹10 PhonePe/UPI order stayed "processing / complete payment in PhonePe" even though WhatsApp order-confirmed message was sent — no order success page shown
+## Done
+- Store Assistant (dashboard AI help): DB tables, 54-article knowledge base, `dashboard-assistant` edge fn (live model pick, Hinglish retrieval, dashboard map), assistant panel + hook, header/⌘K entry points
+- Payment resume fix: per-status bounce in `usePaymentResumeGuard` so a paid order always reaches the confirmation screen
 
-## Later
+## Open
+- [ ] Authenticated end-to-end test of the assistant panel (needs a signed-in preview session)
 - [ ] Deploy updated `docs/cloudflare-worker-current.js` (domain resolver DB fallback) to Cloudflare
