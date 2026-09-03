@@ -196,8 +196,10 @@ serve(async (req) => {
     // Conversation
     if (conversationId) {
       const { data: conv } = await admin
-        .from("assistant_conversations").select("id, user_id").eq("id", conversationId).maybeSingle();
-      if (!conv || conv.user_id !== user.id) conversationId = null;
+        .from("assistant_conversations").select("id, user_id, store_id").eq("id", conversationId).maybeSingle();
+      // Must belong to this user AND this store — a conversation id from another
+      // store of the same user must not leak into this store's thread.
+      if (!conv || conv.user_id !== user.id || conv.store_id !== storeId) conversationId = null;
     }
     if (!conversationId) {
       const { data: created } = await admin
