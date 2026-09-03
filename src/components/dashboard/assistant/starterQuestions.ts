@@ -6,6 +6,7 @@ export function starterQuestions(pathname: string): string[] {
       "How do I connect Razorpay?",
       "How do I enable COD with an advance payment?",
       "Which payment method should I turn on first?",
+      "Analyse my store and tell me what to fix for more sales",
     ];
   }
   if (p.includes("/orders")) {
@@ -13,6 +14,7 @@ export function starterQuestions(pathname: string): string[] {
       "How do I add a tracking number to an order?",
       "Why are so many orders pending or cancelled?",
       "How do I cancel an order and refund the customer?",
+      "Analyse my store and tell me what to fix for more sales",
     ];
   }
   if (p.includes("/products") || p.includes("/categories")) {
@@ -20,6 +22,7 @@ export function starterQuestions(pathname: string): string[] {
       "How do I add my first product?",
       "How do I upload many products at once?",
       "How do I create a category?",
+      "Analyse my store and tell me what to fix for more sales",
     ];
   }
   if (p.includes("/shipping")) {
@@ -27,6 +30,7 @@ export function starterQuestions(pathname: string): string[] {
       "How do I set free shipping above a cart value?",
       "How do I connect Delhivery for tracking?",
       "Why is India Post tracking not updating?",
+      "Analyse my store and tell me what to fix for more sales",
     ];
   }
   if (p.includes("/domain")) {
@@ -69,6 +73,7 @@ export function starterQuestions(pathname: string): string[] {
       "How do I recover abandoned carts?",
       "How do I create a discount coupon?",
       "How do I send a WhatsApp campaign to my customers?",
+      "Analyse my store and tell me what to fix for more sales",
     ];
   }
   if (p.includes("/customers") || p.includes("/leads") || p.includes("/reviews")) {
@@ -76,9 +81,11 @@ export function starterQuestions(pathname: string): string[] {
       "How do I export my customers to Excel?",
       "A customer is asking where their order is — what do I do?",
       "How do I collect more product reviews?",
+      "Analyse my store and tell me what to fix for more sales",
     ];
   }
   return [
+    "Check my store and tell me what to fix to get more sales",
     "Set up my store step by step",
     "How do I add a payment gateway?",
     "How do I add the Meta Pixel and CAPI?",
