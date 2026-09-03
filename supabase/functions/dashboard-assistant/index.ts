@@ -312,7 +312,7 @@ serve(async (req) => {
       }),
     ]);
 
-    const messages = [
+    const messages: any[] = [
       { role: "system", content: systemPrompt(snapshot, insights, articles, storeRow.slug, page) },
       ...history
         .slice(-MAX_TURNS)
