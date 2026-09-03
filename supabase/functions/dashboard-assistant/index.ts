@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { HELP_ARTICLES, type HelpArticle } from "./knowledge.ts";
+import { buildStoreInsights, type StoreInsights } from "./insights.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -176,7 +177,7 @@ async function buildStoreSnapshot(admin: any, storeId: string) {
 
 /* ------------------------------------------------------------------ */
 
-function systemPrompt(snapshot: unknown, articles: HelpArticle[], slug: string, page?: string) {
+function systemPrompt(snapshot: unknown, insights: StoreInsights | null, articles: HelpArticle[], slug: string, page?: string) {
   const s = `/dashboard/stores/${slug}`;
   const context = articles
     .map((a) => `### ${a.title}\nPage: ${a.route.replace("{s}", s)}\n${a.body}`)
@@ -202,6 +203,9 @@ HOW TO ANSWER — FOLLOW STRICTLY
 - For problem reports, give: most likely cause (one line), the check that proves it (one line), the fix (one line). Optional second cause in one extra line max.
 - If the question is vague ("it's not working"), ask exactly ONE short clarifying question — never a list.
 - Reply in the same language the merchant used (English, Hindi or Hinglish). Match their tone.
+- Use STORE STATUS and STORE PERFORMANCE to personalise: if something is already set up, say so; if missing, start there. Quote the merchant's real numbers (orders, revenue, cancel rate, best seller) instead of generic advice.
+- SALES / GROWTH QUESTIONS ("sale kaise badhaye", "why no orders", "what should I do"): answer using PRIORITY ACTIONS. Give the top 1 finding in one line, then the top 2-3 actions as a numbered list, each one line with the exact page path. Never give generic marketing theory.
+- Never state a number that is not in STORE STATUS or STORE PERFORMANCE. If the data is not there, say you cannot see it.
 - Use STORE STATUS to personalise: if something is already set up, say so; if missing, start there. Prefer the merchant's actual store name and current page.
 - Money, refunds, payouts and policy: be exact and never guess numbers. Commission is a flat 2% per order and there is no monthly subscription. Gateway money goes to the merchant's own gateway account.
 - COMMISSION REFUNDS — HARD RULE: never promise, confirm, estimate or explain that any commission will be refunded, reversed or credited back. Never say "it will be refunded automatically" or describe the conditions for a refund. For ANY commission refund, wrong-commission, RTO-commission, cancelled-order-commission or commission-dispute question, reply in one or two lines: this needs the customer care team, and they will check the order and settle it. Point them to the Help/contact option and stop — no steps, no reasoning, no policy detail.
@@ -209,8 +213,17 @@ HOW TO ANSWER — FOLLOW STRICTLY
 - You cannot change any setting yourself — you explain and link; the merchant clicks. Never claim you did something.
 - End with one short next step or a natural follow-up offer only when useful. Keep it under one line.
 
-STORE STATUS (live)
+STORE STATUS (live setup)
 ${JSON.stringify(snapshot, null, 2)}
+
+STORE PERFORMANCE (last ${insights?.window_days ?? 30} days, real data for this store)
+${insights ? JSON.stringify({ orders: insights.orders, revenue: insights.revenue, mix: insights.mix, catalog: insights.catalog, carts: insights.carts, coupons: insights.coupons, top_states: insights.top_states }, null, 2) : "unavailable"}
+
+WHAT I SEE (findings from this store's own numbers)
+${insights?.findings.length ? insights.findings.map((x) => `- ${x}`).join("\n") : "- Nothing unusual detected."}
+
+PRIORITY ACTIONS (ranked, use these for any sales/growth question)
+${insights?.actions.length ? insights.actions.map((x, n) => `${n + 1}. ${x}`).join("\n") : "1. Keep adding products and driving traffic; nothing is broken in the setup."}
 
 CURRENT PAGE: ${page || "unknown"}
 
@@ -289,10 +302,16 @@ serve(async (req) => {
     }
 
     const articles = retrieve(message, page);
-    const snapshot = await buildStoreSnapshot(admin, storeId);
+    const [snapshot, insights] = await Promise.all([
+      buildStoreSnapshot(admin, storeId),
+      buildStoreInsights(admin, storeId).catch((e) => {
+        console.error("insights failed", e);
+        return null;
+      }),
+    ]);
 
     const messages = [
-      { role: "system", content: systemPrompt(snapshot, articles, storeRow.slug, page) },
+      { role: "system", content: systemPrompt(snapshot, insights, articles, storeRow.slug, page) },
       ...history
         .slice(-MAX_TURNS)
         .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
@@ -312,7 +331,7 @@ serve(async (req) => {
         messages,
         stream: true,
         service_tier: "priority",
-        max_tokens: 420,
+        max_tokens: 520,
         temperature: 0.45,
       }),
     });
