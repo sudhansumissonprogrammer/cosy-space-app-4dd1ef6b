@@ -1,5 +1,13 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.76.0 — chunk-hash regex fix (PDP cold load)
+ * SHOPBANAO PRODUCTION ROUTER v8.77.0 — CSP allowlist + CSS preload crossorigin fix
+ *
+ * v8.77.0 — Console-error cleanup on live storefronts:
+ *            (1) script-src/connect-src now allow static.cloudflareinsights.com
+ *                (Cloudflare Web Analytics beacon was fully blocked).
+ *            (2) frame-src/form-action allow www.facebook.com so the Meta Pixel
+ *                iframe/form fallback stops being blocked (ad tracking loss).
+ *            (3) CSS <link rel=preload as=style> now carries crossorigin so it
+ *                matches Vite's crossorigin stylesheet request (double download).
  *
  * v8.76.0 — ROOT-CAUSE FIX for 5s PDP cold load on ad clicks.
  *           The chunk-discovery regex required Vite hashes to be pure
