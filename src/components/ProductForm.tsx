@@ -80,7 +80,11 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
   const [generatingDesc, setGeneratingDesc] = useState(false);
 
   // Product video state
+  const [sourcePlatformInput, setSourcePlatformInput] = useState("");
+  const [sourceIdInput, setSourceIdInput] = useState("");
+  const [sourcePathInput, setSourcePathInput] = useState("");
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+
   const [videoPosterUrl, setVideoPosterUrl] = useState<string | null>(null);
   const [videoUploading, setVideoUploading] = useState(false);
   const [videoProgress, setVideoProgress] = useState(0);
@@ -298,8 +302,12 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
       const ep = existingProduct as any;
       if (ep.video_url) setVideoUrl(ep.video_url);
       if (ep.video_poster_url) setVideoPosterUrl(ep.video_poster_url);
+      setSourcePlatformInput(ep.source_platform || "");
+      setSourceIdInput(ep.source_id || "");
+      setSourcePathInput(ep.source_path || "");
     }
   }, [existingProduct]);
+
 
   // Seed extra categories once links + category list are loaded (skip primary).
   useEffect(() => {
