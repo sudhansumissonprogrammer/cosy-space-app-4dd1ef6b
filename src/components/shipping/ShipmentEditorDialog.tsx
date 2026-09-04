@@ -162,11 +162,16 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
           )}
 
           <label className="flex items-start gap-2.5 rounded-lg border p-3 cursor-pointer">
-            <Checkbox checked={notify} onCheckedChange={(v) => setNotify(v === true)} className="mt-0.5" />
+            <Checkbox checked={notify} onCheckedChange={(v) => setNotifyPref(v === true)} className="mt-0.5" />
             <span className="text-sm">
               Notify customer on WhatsApp
               <span className="block text-[11px] text-muted-foreground">
-                Sends the tracking number, courier and expected delivery date. Sent only once per order.
+                {notify
+                  ? "Sends the tracking number, courier and expected delivery date. Sent only once per order."
+                  : "Off — no shipping message will be sent for this order, including later automatic tracking updates."}
+              </span>
+              <span className="mt-1 block text-[11px] text-muted-foreground">
+                Your choice is saved with the shipment and used as the default next time.
               </span>
             </span>
           </label>
