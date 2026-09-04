@@ -47,9 +47,31 @@ const n = (v: unknown) => {
   return Number.isFinite(x) ? x : 0;
 };
 
+/**
+ * COD detection must be exact. A naive /cod|cash/ substring match treated
+ * "cashfree" (an ONLINE gateway) as cash-on-delivery, which made every
+ * Cashfree-paid order show "Paid online 0 / Due on delivery <total>".
+ */
+const ONLINE_GATEWAYS = new Set([
+  "cashfree",
+  "razorpay",
+  "payu",
+  "phonepe",
+  "paytm",
+  "upi",
+  "stripe",
+  "online",
+  "prepaid",
+  "card",
+  "netbanking",
+  "wallet",
+]);
+
 export function isCodMethod(method?: string | null) {
-  const m = String(method || "").toLowerCase();
-  return !m || /cod|cash/.test(m);
+  const m = String(method || "").trim().toLowerCase();
+  if (!m) return true; // unknown method on a legacy order → assume COD
+  if (ONLINE_GATEWAYS.has(m)) return false;
+  return /\bcod\b|cash[\s_-]*on[\s_-]*delivery|^cash$/.test(m);
 }
 
 export function buildOrderBreakdown(order: OrderLike, itemsSubtotal: number): OrderBreakdown {
