@@ -22,6 +22,7 @@ export function starterQuestions(pathname: string): string[] {
       "How do I add my first product?",
       "How do I upload many products at once?",
       "How do I create a category?",
+      "Generate a festive campaign image for one of my products",
       "Analyse my store and tell me what to fix for more sales",
     ];
   }
