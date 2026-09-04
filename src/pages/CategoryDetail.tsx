@@ -67,6 +67,13 @@ export default function CategoryDetail() {
   // Utkal Watches / Hopknock: no category strip, no sort-filter bar.
   const hideFilters = hidesCategoryFilters({ id: store.id, slug: store.slug });
 
+  // Brand-grouped carousels instead of a flat grid (opt-in store + category).
+  const useBrandCarousels = !!(
+    categorySlug && BRAND_CAROUSEL_CATEGORIES[store.id]?.includes(categorySlug)
+  );
+
+
+
   const [sort, setSort] = useState<SortKey>("default");
 
   // Worker-inlined category payload (Phase A): { category, products, total }
