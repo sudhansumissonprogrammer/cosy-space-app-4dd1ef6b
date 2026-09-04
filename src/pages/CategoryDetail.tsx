@@ -25,6 +25,15 @@ import { fireMetaCAPI } from "@/lib/metaCapi";
 import { hidesCategoryFilters } from "@/components/storefront/pdp/storeSections/config";
 
 /**
+ * Brand-grouped carousels: opt-in per store + category only. Lazy so no other
+ * storefront (or any other category page) downloads this chunk.
+ */
+const LazyBrandCarousels = lazy(() => import("@/components/storefront/BrandCarouselGroups"));
+const BRAND_CAROUSEL_CATEGORIES: Record<string, string[]> = {
+  "ab19143d-87a9-490e-90b7-837313522782": ["sale"], // Utkal Watches
+};
+
+/**
  * The edge/RPC category payload returns up to CATEGORY_PAGE_LIMIT (50) products,
  * but the infinite query paginates in PAGE_SIZE (20) chunks to match the Worker
  * /api/products offsets. Seeding one 50-item page broke `hasNextPage`
