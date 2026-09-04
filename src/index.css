@@ -1431,3 +1431,12 @@ body:has(.storefront-font) {
 }
 
 
+
+/* Brand carousels (category rails): cards sit in a horizontal scroller, so the
+   grid's offscreen `content-visibility:auto` reservation (380px) would leave a
+   tall empty band under every rail. Rails hold few cards, so rendering them
+   normally costs nothing and keeps row height exact. */
+.brand-rail [style*="content-visibility"] {
+  content-visibility: visible !important;
+  contain-intrinsic-size: auto !important;
+}

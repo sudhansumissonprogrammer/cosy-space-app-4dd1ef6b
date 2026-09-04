@@ -71,7 +71,7 @@ export default function BrandCarouselGroups({ products, slug, store, cardStyle =
           </div>
 
           <div
-            className="-mx-3 flex items-start snap-x snap-mandatory gap-2 overflow-x-auto scroll-px-3 px-3 pb-1 scrollbar-hide sm:mx-0 sm:px-0 sm:scroll-px-0 sm:gap-4"
+            className="brand-rail -mx-3 flex items-start snap-x snap-mandatory gap-2 overflow-x-auto scroll-px-3 px-3 pb-1 scrollbar-hide sm:mx-0 sm:px-0 sm:scroll-px-0 sm:gap-4"
             style={{ overscrollBehaviorX: "contain", WebkitOverflowScrolling: "touch" }}
           >
             {group.items.map((product, idx) => (
