@@ -294,6 +294,20 @@ export default function CategoryDetail() {
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage, pageCount]);
 
+  // Carousel mode groups by brand, so every product must be present — but only
+  // AFTER first paint (idle), so cold-load speed is untouched.
+  useEffect(() => {
+    if (!useBrandCarousels || !hasNextPage || isFetchingNextPage || productsLoading) return;
+    const run = () => fetchNextPage();
+    const w = window as any;
+    if (typeof w.requestIdleCallback === "function") {
+      const id = w.requestIdleCallback(run, { timeout: 2500 });
+      return () => w.cancelIdleCallback?.(id);
+    }
+    const t = window.setTimeout(run, 900);
+    return () => window.clearTimeout(t);
+  }, [useBrandCarousels, hasNextPage, isFetchingNextPage, productsLoading, fetchNextPage, pageCount]);
+
   if (!categoryLoading && !category) {
     return (
       <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 py-6">
