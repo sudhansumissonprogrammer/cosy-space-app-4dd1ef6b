@@ -28,7 +28,8 @@ import { hidesCategoryFilters } from "@/components/storefront/pdp/storeSections/
  * Brand-grouped carousels: opt-in per store + category only. Lazy so no other
  * storefront (or any other category page) downloads this chunk.
  */
-const LazyBrandCarousels = lazy(() => import("@/components/storefront/BrandCarouselGroups"));
+const importBrandCarousels = () => import("@/components/storefront/BrandCarouselGroups");
+const LazyBrandCarousels = lazy(importBrandCarousels);
 const BRAND_CAROUSEL_CATEGORIES: Record<string, string[]> = {
   "ab19143d-87a9-490e-90b7-837313522782": ["sale"], // Utkal Watches
 };
@@ -44,14 +45,20 @@ const BRAND_CAROUSEL_CATEGORIES: Record<string, string[]> = {
 function seedInfinitePages(products: any[]) {
   const pages: { products: any[]; page: number }[] = [];
   const pageParams: number[] = [];
+  // If the payload came back SHORT of the edge limit, it already contains the
+  // whole category — keep the remainder as a final partial page so
+  // `hasNextPage` turns false and we never fire a second network roundtrip
+  // (that extra fetch was what made cards trickle in after the skeletons).
+  const complete = products.length < CATEGORY_PAGE_LIMIT;
   const full = Math.floor(products.length / PAGE_SIZE);
-  const count = full > 0 ? full : 1; // keep short (<20) results as a single final page
+  const count = complete ? Math.max(1, Math.ceil(products.length / PAGE_SIZE)) : (full > 0 ? full : 1);
   for (let i = 0; i < count; i++) {
     pages.push({ products: products.slice(i * PAGE_SIZE, (i + 1) * PAGE_SIZE), page: i });
     pageParams.push(i);
   }
   return { pages, pageParams };
 }
+
 
 export default function CategoryDetail() {
   const store = useOutletContext<StoreData>();
@@ -294,6 +301,12 @@ export default function CategoryDetail() {
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage, pageCount]);
 
+  // Start the carousel chunk the moment we know this route uses it, so the
+  // rows paint with the first product payload instead of after a second RTT.
+  useEffect(() => {
+    if (useBrandCarousels) importBrandCarousels();
+  }, [useBrandCarousels]);
+
   // Carousel mode groups by brand, so every product must be present — but only
   // AFTER first paint (idle), so cold-load speed is untouched.
   useEffect(() => {
@@ -375,15 +388,7 @@ export default function CategoryDetail() {
         ) : products.length > 0 ? (
           <>
             {useBrandCarousels ? (
-              <Suspense
-                fallback={
-                  <div className={gridClass}>
-                    {products.slice(0, 4).map((product, idx) => (
-                      <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 4} cardStyle={cardStyle} index={idx} />
-                    ))}
-                  </div>
-                }
-              >
+              <Suspense fallback={<div className="min-h-[280px]" />}>
                 <LazyBrandCarousels products={products} slug={slug!} store={store} cardStyle={cardStyle} />
               </Suspense>
             ) : (

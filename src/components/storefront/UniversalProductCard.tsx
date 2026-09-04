@@ -85,9 +85,11 @@ interface Props {
   priority?: boolean;
   cardStyle?: string;
   index?: number;
+  /** Horizontal carousels must not skip paint — set false there. */
+  deferOffscreen?: boolean;
 }
 
-function UniversalProductCardImpl({ product, slug, store, priority = false, cardStyle = "style-1", index = 0 }: Props) {
+function UniversalProductCardImpl({ product, slug, store, priority = false, cardStyle = "style-1", index = 0, deferOffscreen = true }: Props) {
   preloadCardStyle(store?.theme === "theme-19" || store?.theme === "theme-20" ? store.theme : cardStyle);
   const [variantOpen, setVariantOpen] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -187,7 +189,7 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
   // rows opt into content-visibility so the browser skips their layout/paint
   // while far offscreen. contain-intrinsic-size reserves the real height so
   // the scrollbar never jumps. The first rows are excluded to protect LCP.
-  const deferPaint = !priority && index >= 8;
+  const deferPaint = deferOffscreen && !priority && index >= 8;
 
   return (
     <div

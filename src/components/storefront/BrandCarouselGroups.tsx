@@ -85,7 +85,9 @@ export default function BrandCarouselGroups({ products, slug, store, cardStyle =
                   store={store}
                   cardStyle={cardStyle}
                   index={idx}
-                  priority={gi === 0 && idx < 2}
+                  priority={gi === 0 ? idx < 3 : idx < 2}
+                  deferOffscreen={false}
+
                 />
               </div>
             ))}
