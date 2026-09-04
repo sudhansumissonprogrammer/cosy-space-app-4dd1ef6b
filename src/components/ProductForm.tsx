@@ -771,6 +771,47 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
         </div>
       )}
 
+      {isEditing && (
+        <Card className={cn("mb-4", onClose && "border-0 shadow-none")}>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Supplier</CardTitle>
+            <CardDescription>
+              Where this product is sourced from. Used for the supplier link and stock sync.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="source-platform">Supplier</Label>
+              <Input
+                id="source-platform"
+                value={sourcePlatformInput}
+                onChange={(e) => setSourcePlatformInput(e.target.value)}
+                placeholder="jdwebship / cartpe"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="source-id">Supplier SKU / ID</Label>
+              <Input
+                id="source-id"
+                value={sourceIdInput}
+                onChange={(e) => setSourceIdInput(e.target.value)}
+                placeholder="SKU1768899006980586"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="source-path">Supplier product URL / path</Label>
+              <Input
+                id="source-path"
+                value={sourcePathInput}
+                onChange={(e) => setSourcePathInput(e.target.value)}
+                placeholder="https://supplier.com/product-page"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+
 
 
       <form onSubmit={handleSubmit}>
