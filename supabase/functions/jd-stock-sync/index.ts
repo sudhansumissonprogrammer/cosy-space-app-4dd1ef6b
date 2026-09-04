@@ -43,6 +43,15 @@ const SOURCE_ORIGIN = "https://shodfedf.jdwebshop.com";
  *  failures stay harmless (403/timeout → product skipped, never zeroed). */
 const CHUNK_SIZE = 150;
 const CONCURRENCY = 2;
+/** Lookups per throttle-check batch. */
+const THROTTLE_BATCH = 30;
+/** Abort the run when a batch fails above this rate — the supplier quota is
+ *  exhausted, so the remaining products keep their old timestamp and are
+ *  retried first next run instead of being burned on guaranteed 403s. */
+const THROTTLE_ABORT_RATE = 0.6;
+/** Failed lookups are pushed back only this far (minutes) instead of a whole
+ *  rotation, so throttled products get re-checked quickly. */
+const RETRY_BACKOFF_MIN = 240;
 
 /** Minimum gap between requests inside one worker — politeness throttle. */
 const REQ_GAP_MS = 250;
@@ -282,7 +291,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    }
+
 
     // 5) Purge the storefront edge cache only when something actually changed.
     let purged = false;
@@ -309,6 +318,8 @@ Deno.serve(async (req) => {
     report.push({
       store: store.slug,
       targeted: list.length,
+      attempted: results.length,
+      throttled,
       hot: hotIds.length,
       checked,
       failed,
