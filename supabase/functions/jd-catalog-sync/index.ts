@@ -350,6 +350,45 @@ Deno.serve(async (req) => {
         ? { ...(stateRow.extra_cursor as Record<string, number>) }
         : {};
 
+    // ── Deep sweep (steady phase only) ───────────────────────────────────
+    // Steady runs re-scan only the newest STEADY_PAGES pages, so any product
+    // deeper in the catalog that never made it in during backfill stayed
+    // invisible forever. A rotating cursor walks DEEP_PAGES pages per run and
+    // wraps at the end of the catalog, so the whole source list is re-checked
+    // continuously (~1,200 pages / 10 per run at a 15-min cron ≈ daily).
+    let deepCursor = Math.max(1, Number(extraCursor.__deep) || 1);
+    let deepPagesWalked = 0;
+    let deepFound = 0;
+    if (phase === "steady") {
+      for (let n = 0; n < DEEP_PAGES; n++) {
+        if (candidates.length >= importBudget) break;
+        if (Date.now() - started > TIME_BUDGET_MS) break;
+        const items = await fetchListPage(deepCursor);
+        if (items === null) break; // throttled — retry the same page next run
+        deepPagesWalked++;
+        if (items.length === 0) { deepCursor = 1; break; } // past the end → wrap
+        for (const it of items) {
+          if (knownSku.has(it.id)) continue;
+          const key = norm(it.name);
+          const match = byName.get(key);
+          if (match && !match.source_id) {
+            linked.push({ productId: match.id, sku: it.id });
+            knownSku.add(it.id);
+            byName.delete(key);
+            continue;
+          }
+          knownSku.add(it.id);
+          candidates.push({ ...it, deepPage: deepCursor });
+          deepFound++;
+        }
+        deepCursor++;
+        await new Promise((r) => setTimeout(r, REQ_GAP_MS));
+      }
+    }
+    extraCursor.__deep = deepCursor;
+
+
+
     for (const origin of EXTRA_ORIGINS) {
       if (candidates.length >= importBudget) break;
       if (Date.now() - started > TIME_BUDGET_MS) break;
