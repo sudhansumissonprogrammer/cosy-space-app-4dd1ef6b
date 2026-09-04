@@ -267,6 +267,19 @@ export default function StoreOrders() {
             : result.status === "shipped" ? "shipping_update"
             : result.status === "delivered" ? "delivery_confirmation"
             : null;
+          // 🔕 Respect the seller's per-shipment "Notify customer on WhatsApp"
+          // choice: if it was unticked when tracking was saved, no shipping
+          // message goes out from the status flip either.
+          const shippingMuted = async () => {
+            if (result.status !== "shipped") return false;
+            const { data } = await (supabase as any)
+              .from("order_shipments")
+              .select("notify_customer")
+              .eq("order_id", result.orderId)
+              .order("updated_at", { ascending: false })
+              .limit(1).maybeSingle();
+            return data?.notify_customer === false;
+          };
           if (msgType) {
             const orderItems = (order as any).order_items || [];
             const productNames = orderItems.map((i: any) => i.product_name).filter(Boolean).join(", ");
