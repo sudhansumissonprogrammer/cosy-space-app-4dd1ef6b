@@ -107,6 +107,21 @@ Deno.serve(async (req) => {
     return json({ skipped: true, reason: "no_tracking_number" });
   }
 
+  // 🔕 Seller opt-out is authoritative: if the "Notify customer on WhatsApp"
+  // box was unticked while saving the tracking, the shipping message must NOT
+  // go out — no matter which path (dashboard, status flip, courier sync) fires.
+  if (body.event === "order_shipped") {
+    const { data: shipRow } = await admin
+      .from("order_shipments")
+      .select("notify_customer")
+      .eq("order_id", o.id)
+      .order("updated_at", { ascending: false })
+      .limit(1).maybeSingle();
+    if (shipRow && (shipRow as any).notify_customer === false) {
+      return json({ skipped: true, reason: "seller_muted_notification" });
+    }
+  }
+
   // 🔒 Idempotency: at most one active row per (order_id, message_type).
   const { data: existing } = await admin
     .from("wa_send_queue")
