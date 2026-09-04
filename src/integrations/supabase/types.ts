@@ -2888,6 +2888,73 @@ export type Database = {
           },
         ]
       }
+      store_ai_creatives: {
+        Row: {
+          aspect: string | null
+          attached: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          image_url: string
+          preset: string | null
+          product_id: string | null
+          product_image_id: string | null
+          prompt: string | null
+          source_image_url: string | null
+          store_id: string
+        }
+        Insert: {
+          aspect?: string | null
+          attached?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_url: string
+          preset?: string | null
+          product_id?: string | null
+          product_image_id?: string | null
+          prompt?: string | null
+          source_image_url?: string | null
+          store_id: string
+        }
+        Update: {
+          aspect?: string | null
+          attached?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_url?: string
+          preset?: string | null
+          product_id?: string | null
+          product_image_id?: string | null
+          prompt?: string | null
+          source_image_url?: string | null
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_ai_creatives_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_ai_creatives_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_ai_creatives_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_app_leads: {
         Row: {
           app_id: string
