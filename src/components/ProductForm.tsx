@@ -80,7 +80,11 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
   const [generatingDesc, setGeneratingDesc] = useState(false);
 
   // Product video state
+  const [sourcePlatformInput, setSourcePlatformInput] = useState("");
+  const [sourceIdInput, setSourceIdInput] = useState("");
+  const [sourcePathInput, setSourcePathInput] = useState("");
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+
   const [videoPosterUrl, setVideoPosterUrl] = useState<string | null>(null);
   const [videoUploading, setVideoUploading] = useState(false);
   const [videoProgress, setVideoProgress] = useState(0);
@@ -298,8 +302,12 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
       const ep = existingProduct as any;
       if (ep.video_url) setVideoUrl(ep.video_url);
       if (ep.video_poster_url) setVideoPosterUrl(ep.video_poster_url);
+      setSourcePlatformInput(ep.source_platform || "");
+      setSourceIdInput(ep.source_id || "");
+      setSourcePathInput(ep.source_path || "");
     }
   }, [existingProduct]);
+
 
   // Seed extra categories once links + category list are loaded (skip primary).
   useEffect(() => {
@@ -464,6 +472,9 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
         image_url: imageUrl,
         video_url: videoUrl,
         video_poster_url: videoPosterUrl,
+        source_platform: sourcePlatformInput.trim() || null,
+        source_id: sourceIdInput.trim() || null,
+        source_path: sourcePathInput.trim() || null,
       } as any;
 
       let savedProductId = productId;
@@ -759,6 +770,47 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
           )}
         </div>
       )}
+
+      {isEditing && (
+        <Card className={cn("mb-4", onClose && "border-0 shadow-none")}>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Supplier</CardTitle>
+            <CardDescription>
+              Where this product is sourced from. Used for the supplier link and stock sync.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="source-platform">Supplier</Label>
+              <Input
+                id="source-platform"
+                value={sourcePlatformInput}
+                onChange={(e) => setSourcePlatformInput(e.target.value)}
+                placeholder="jdwebship / cartpe"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="source-id">Supplier SKU / ID</Label>
+              <Input
+                id="source-id"
+                value={sourceIdInput}
+                onChange={(e) => setSourceIdInput(e.target.value)}
+                placeholder="SKU1768899006980586"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="source-path">Supplier product URL / path</Label>
+              <Input
+                id="source-path"
+                value={sourcePathInput}
+                onChange={(e) => setSourcePathInput(e.target.value)}
+                placeholder="https://supplier.com/product-page"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
 
 
 
