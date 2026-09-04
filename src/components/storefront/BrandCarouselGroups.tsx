@@ -27,6 +27,7 @@ const BRANDS: { key: string; label: string; match: (n: string) => boolean }[] = 
   { key: "tissot", label: "Tissot", match: (n) => n.includes("tisso") },
   { key: "rado", label: "Rado", match: (n) => n.includes("rado") || n.includes("raddo") },
   { key: "fossil", label: "Fossil", match: (n) => n.includes("fossil") || n.includes("fossiil") },
+  { key: "hublot", label: "Hublot", match: (n) => n.includes("hublot") || n.includes("hublo") },
 ];
 
 const normalize = (s: string) => (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
