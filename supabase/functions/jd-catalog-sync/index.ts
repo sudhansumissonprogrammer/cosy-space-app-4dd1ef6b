@@ -437,7 +437,13 @@ Deno.serve(async (req) => {
         retryFromPage = retryFromPage == null
           ? result.candidate.sourcePage
           : Math.min(retryFromPage, result.candidate.sourcePage);
+      } else if (result.candidate.deepPage != null) {
+        // A throttled detail lookup must not make the deep sweep skip past
+        // that page — rewind the rotating cursor so it is walked again.
+        deepCursor = Math.min(deepCursor, result.candidate.deepPage);
+        extraCursor.__deep = deepCursor;
       }
+
     }
 
     // ── Create any missing categories ────────────────────────────────────
