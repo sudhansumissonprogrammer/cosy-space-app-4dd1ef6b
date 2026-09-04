@@ -56,6 +56,11 @@ const PAGE_BUDGET = 10;
 const PAGE_CONCURRENCY = 2;
 /** Newest pages re-scanned every run once backfill is done. */
 const STEADY_PAGES = 8;
+/** Deep-sweep pages walked per steady run from a rotating cursor. The newest
+ *  pages alone can never recover products that were missed during backfill
+ *  (listing 403s, name-match skips, supplier re-inserts), so every run also
+ *  walks a moving window deeper into the catalog and wraps at the end. */
+const DEEP_PAGES = 10;
 /** Max new products imported in one run (each costs 1 detail request). */
 const IMPORT_BUDGET = 30;
 const CONCURRENCY = 3;
@@ -108,6 +113,8 @@ interface ListItem {
   name: string;
   quantity: number;
   sourcePage?: number;
+  /** Page this item came from during the steady-phase deep sweep. */
+  deepPage?: number;
 }
 
 async function fetchListPage(page: number, origin: string = SOURCE_ORIGIN): Promise<ListItem[] | null> {
@@ -343,6 +350,45 @@ Deno.serve(async (req) => {
         ? { ...(stateRow.extra_cursor as Record<string, number>) }
         : {};
 
+    // ── Deep sweep (steady phase only) ───────────────────────────────────
+    // Steady runs re-scan only the newest STEADY_PAGES pages, so any product
+    // deeper in the catalog that never made it in during backfill stayed
+    // invisible forever. A rotating cursor walks DEEP_PAGES pages per run and
+    // wraps at the end of the catalog, so the whole source list is re-checked
+    // continuously (~1,200 pages / 10 per run at a 15-min cron ≈ daily).
+    let deepCursor = Math.max(1, Number(extraCursor.__deep) || 1);
+    let deepPagesWalked = 0;
+    let deepFound = 0;
+    if (phase === "steady") {
+      for (let n = 0; n < DEEP_PAGES; n++) {
+        if (candidates.length >= importBudget) break;
+        if (Date.now() - started > TIME_BUDGET_MS) break;
+        const items = await fetchListPage(deepCursor);
+        if (items === null) break; // throttled — retry the same page next run
+        deepPagesWalked++;
+        if (items.length === 0) { deepCursor = 1; break; } // past the end → wrap
+        for (const it of items) {
+          if (knownSku.has(it.id)) continue;
+          const key = norm(it.name);
+          const match = byName.get(key);
+          if (match && !match.source_id) {
+            linked.push({ productId: match.id, sku: it.id });
+            knownSku.add(it.id);
+            byName.delete(key);
+            continue;
+          }
+          knownSku.add(it.id);
+          candidates.push({ ...it, deepPage: deepCursor });
+          deepFound++;
+        }
+        deepCursor++;
+        await new Promise((r) => setTimeout(r, REQ_GAP_MS));
+      }
+    }
+    extraCursor.__deep = deepCursor;
+
+
+
     for (const origin of EXTRA_ORIGINS) {
       if (candidates.length >= importBudget) break;
       if (Date.now() - started > TIME_BUDGET_MS) break;
@@ -391,7 +437,13 @@ Deno.serve(async (req) => {
         retryFromPage = retryFromPage == null
           ? result.candidate.sourcePage
           : Math.min(retryFromPage, result.candidate.sourcePage);
+      } else if (result.candidate.deepPage != null) {
+        // A throttled detail lookup must not make the deep sweep skip past
+        // that page — rewind the rotating cursor so it is walked again.
+        deepCursor = Math.min(deepCursor, result.candidate.deepPage);
+        extraCursor.__deep = deepCursor;
       }
+
     }
 
     // ── Create any missing categories ────────────────────────────────────
@@ -508,6 +560,9 @@ Deno.serve(async (req) => {
       next_phase: nextPhase,
       from_page: startPage,
       pages_walked: pagesWalked,
+      deep_pages_walked: deepPagesWalked,
+      deep_cursor: deepCursor,
+      deep_found: deepFound,
       list_errors: listErrors,
       candidates: candidates.length,
       details_ok: details.length,
