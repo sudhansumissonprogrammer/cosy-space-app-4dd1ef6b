@@ -62,9 +62,6 @@ export default function StoreOrders() {
   const isMobile = useIsMobile();
   useRealtimeStore(storeId, "orders");
   const [trackingOrder, setTrackingOrder] = useState<any>(null);
-  const [trackingNumber, setTrackingNumber] = useState("");
-  const [trackingUrl, setTrackingUrl] = useState("");
-  const [pendingStatus, setPendingStatus] = useState("");
   const [invoiceOrder, setInvoiceOrder] = useState<any>(null);
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [bulkStatus, setBulkStatus] = useState<string>("");
@@ -398,9 +395,6 @@ export default function StoreOrders() {
   const handleStatusChange = (order: any, v: string) => {
     if (v === "shipped" && !order.tracking_number) {
       setTrackingOrder(order);
-      setTrackingNumber(order.tracking_number || "");
-      setTrackingUrl(order.tracking_url || "");
-      setPendingStatus(v);
       return;
     }
     if (v === "cancelled" && order.payment_verified) {
@@ -894,8 +888,8 @@ export default function StoreOrders() {
         </SheetContent>
       </Sheet>
 
-      {/* Ship dialog — creates a real shipment row (courier + AWB) so live
-          tracking and the customer WhatsApp both work, then flips the order. */}
+      {/* Ship dialog — saving the new courier + AWB atomically marks the order
+          shipped, enables tracking, and sends the customer notification. */}
       {trackingOrder && (
         <ShipmentEditorDialog
           key={trackingOrder.id}

@@ -17,7 +17,7 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   orderId: string;
   shipment?: ShipmentTracking | null;
-  /** Fired after a successful save — used to flip the order to "shipped". */
+  /** Fired after a successful save so parent views can close or refresh. */
   onSaved?: (status: string) => void;
 }
 
