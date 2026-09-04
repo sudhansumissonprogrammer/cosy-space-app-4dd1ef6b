@@ -205,11 +205,23 @@ Deno.serve(async (req) => {
     const list = [...targets.values()].filter((p) => !!(p.source_id || p.slug));
 
     // 3) Fetch source stock with capped concurrency + throttle.
-    const results = await mapLimit(list, CONCURRENCY, async (p) => {
-      const src = await fetchSourceStock(p.source_id || p.slug);
-      await new Promise((r) => setTimeout(r, REQ_GAP_MS));
-      return { p, src };
-    });
+    //    Batched so a throttled window (their 200 req / 15 min quota is shared
+    //    with jd-catalog-sync) can abort the run early instead of burning the
+    //    whole chunk on 403s — products left untouched keep their old
+    //    source_synced_at and are retried first on the very next run.
+    const results: { p: typeof list[number]; src: SourceStock | null }[] = [];
+    let throttled = false;
+    for (let i = 0; i < list.length; i += THROTTLE_BATCH) {
+      const batch = list.slice(i, i + THROTTLE_BATCH);
+      const out = await mapLimit(batch, CONCURRENCY, async (p) => {
+        const src = await fetchSourceStock(p.source_id || p.slug);
+        await new Promise((r) => setTimeout(r, REQ_GAP_MS));
+        return { p, src };
+      });
+      results.push(...out);
+      const batchFailed = out.filter((r) => !r.src).length;
+      if (batchFailed / out.length > THROTTLE_ABORT_RATE) { throttled = true; break; }
+    }
 
     // 3b) One retry pass for throttled lookups (403s come in bursts), run
     // slowly and sequentially so we never make the throttling worse.
@@ -223,16 +235,19 @@ Deno.serve(async (req) => {
 
     // 4) Apply — only verified rows.
     let checked = 0, failed = 0, changed = 0, nowOos = 0, backInStock = 0, delisted = 0;
-    const touchedIds: string[] = [];
+    const okIds: string[] = [];
+    const failIds: string[] = [];
     const nowIso = new Date().toISOString();
+    // Failed lookups still move forward, otherwise permanently-404 products
+    // (removed at source) clog the rotation. But they are only pushed back
+    // PARTIALLY: a throttled product must not wait a whole rotation with stale
+    // stock, so it re-enters the queue after RETRY_BACKOFF_MIN minutes.
+    const retryIso = new Date(Date.now() - RETRY_BACKOFF_MIN * 60_000).toISOString();
 
     for (const { p, src } of results) {
-      // Timestamp is bumped for failures too, otherwise permanently-404
-      // products (removed at source) would clog the rotation forever and
-      // starve the rest of the catalog. Their stock is left untouched.
-      touchedIds.push(p.id);
-      if (!src) { failed++; continue; }
+      if (!src) { failed++; failIds.push(p.id); continue; }
       checked++;
+      okIds.push(p.id);
 
       // Delisted / unavailable at source → keep the product visible but Sold
       // Out, so it reappears automatically the moment the source restocks it.
@@ -256,13 +271,17 @@ Deno.serve(async (req) => {
       if (activeChanged && !nextActive) delisted++;
     }
 
-    // Bump the sync timestamp for every product we attempted (batched) so the
-    // rotation always moves forward, including failures (stock untouched).
-    for (let i = 0; i < touchedIds.length; i += 200) {
-      await admin
-        .from("products")
-        .update({ source_synced_at: nowIso })
-        .in("id", touchedIds.slice(i, i + 200));
+    // Bump the sync timestamp (batched): verified rows to now, failed rows to a
+    // shorter backoff so the rotation moves forward without hiding stale stock.
+    for (const [ids, stamp] of [[okIds, nowIso], [failIds, retryIso]] as const) {
+      for (let i = 0; i < ids.length; i += 200) {
+        await admin
+          .from("products")
+          .update({ source_synced_at: stamp })
+          .in("id", ids.slice(i, i + 200));
+      }
+    }
+
     }
 
     // 5) Purge the storefront edge cache only when something actually changed.
