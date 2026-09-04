@@ -472,6 +472,9 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
         image_url: imageUrl,
         video_url: videoUrl,
         video_poster_url: videoPosterUrl,
+        source_platform: sourcePlatformInput.trim() || null,
+        source_id: sourceIdInput.trim() || null,
+        source_path: sourcePathInput.trim() || null,
       } as any;
 
       let savedProductId = productId;
