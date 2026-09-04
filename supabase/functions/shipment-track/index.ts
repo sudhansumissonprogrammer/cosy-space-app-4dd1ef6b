@@ -174,7 +174,11 @@ Deno.serve(async (req) => {
   const minutes = SYNC_MINUTES[next] ?? 240;
 
   const notified: string[] = shipment.notified_statuses ?? [];
-  const shouldNotify = changed && NOTIFY_STATUSES.includes(next) && !notified.includes(next);
+  // 🔕 Seller opt-out: if "Notify customer on WhatsApp" was unticked when the
+  // tracking was saved, no customer notification goes out for this shipment —
+  // not now, and not on any later automatic courier sync.
+  const notifyCustomer = (shipment as any).notify_customer !== false;
+  const shouldNotify = notifyCustomer && changed && NOTIFY_STATUSES.includes(next) && !notified.includes(next);
 
   await admin.from("order_shipments").update({
     normalized_status: next,
