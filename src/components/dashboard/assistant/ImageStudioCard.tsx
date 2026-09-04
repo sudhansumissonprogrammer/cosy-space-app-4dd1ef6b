@@ -297,7 +297,7 @@ export default function ImageStudioCard({ storeId, data }: Props) {
                   key={p.id}
                   type="button"
                   onClick={() => chooseProduct(p)}
-                  className="group overflow-hidden rounded-xl border border-border/70 bg-background text-left transition-colors hover:border-primary/50"
+                  className="group overflow-hidden rounded-xl border border-border/70 bg-background text-left transition-colors hh:hover:border-primary/50"
                 >
                   <div className="aspect-square bg-muted">
                     {p.image_url ? (
@@ -357,7 +357,7 @@ export default function ImageStudioCard({ storeId, data }: Props) {
                 onClick={() => setPreset(p.id)}
                 className={cn(
                   "rounded-xl border px-2.5 py-2 text-left transition-colors",
-                  preset === p.id ? "border-primary/60 bg-primary/10" : "border-border/70 hover:bg-accent",
+                  preset === p.id ? "border-primary/60 bg-primary/10" : "border-border/70 hh:hover:bg-accent",
                 )}
               >
                 <span className="block text-[12px] font-medium leading-tight">{p.label}</span>
