@@ -78,7 +78,7 @@ function isBotUA(ua: string | null | undefined): boolean {
 
 // PDP packaging add-ons (mirrors src/lib/packagingOptions.ts). Server is the
 // single source of truth for the surcharge amount.
-const PACKAGING_SURCHARGE: Record<string, number> = { complimentary: 0, signature: 200, brandkit: 400 };
+const PACKAGING_SURCHARGE: Record<string, number> = { complimentary: 0, signature: 100, brandkit: 200 };
 const PACKAGING_LABEL: Record<string, string> = {
   signature: "Utkal Signature Box",
   brandkit: "OG Brand Kit",

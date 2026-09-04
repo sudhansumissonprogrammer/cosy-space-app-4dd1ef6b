@@ -19,8 +19,8 @@ export interface PackagingOption {
 
 export const PACKAGING_OPTIONS: PackagingOption[] = [
   { key: "complimentary", label: "Complimentary Box", surcharge: 0, note: "Standard gift packaging — free" },
-  { key: "signature", label: "Utkal Signature Box", surcharge: 200, note: "Premium magnetic box + ribbon" },
-  { key: "brandkit", label: "With OG Brand Kit", surcharge: 400, note: "Brand box, card, pouch & tools" },
+  { key: "signature", label: "Utkal Signature Box", surcharge: 100, note: "Premium magnetic box + ribbon" },
+  { key: "brandkit", label: "With OG Brand Kit", surcharge: 200, note: "Brand box, card, pouch & tools" },
 ];
 
 export const DEFAULT_PACKAGING: PackagingKey = "complimentary";
