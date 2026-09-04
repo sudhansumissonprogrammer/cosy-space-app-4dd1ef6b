@@ -56,6 +56,11 @@ const PAGE_BUDGET = 10;
 const PAGE_CONCURRENCY = 2;
 /** Newest pages re-scanned every run once backfill is done. */
 const STEADY_PAGES = 8;
+/** Deep-sweep pages walked per steady run from a rotating cursor. The newest
+ *  pages alone can never recover products that were missed during backfill
+ *  (listing 403s, name-match skips, supplier re-inserts), so every run also
+ *  walks a moving window deeper into the catalog and wraps at the end. */
+const DEEP_PAGES = 10;
 /** Max new products imported in one run (each costs 1 detail request). */
 const IMPORT_BUDGET = 30;
 const CONCURRENCY = 3;
@@ -108,6 +113,8 @@ interface ListItem {
   name: string;
   quantity: number;
   sourcePage?: number;
+  /** Page this item came from during the steady-phase deep sweep. */
+  deepPage?: number;
 }
 
 async function fetchListPage(page: number, origin: string = SOURCE_ORIGIN): Promise<ListItem[] | null> {
