@@ -44,14 +44,20 @@ const BRAND_CAROUSEL_CATEGORIES: Record<string, string[]> = {
 function seedInfinitePages(products: any[]) {
   const pages: { products: any[]; page: number }[] = [];
   const pageParams: number[] = [];
+  // If the payload came back SHORT of the edge limit, it already contains the
+  // whole category — keep the remainder as a final partial page so
+  // `hasNextPage` turns false and we never fire a second network roundtrip
+  // (that extra fetch was what made cards trickle in after the skeletons).
+  const complete = products.length < CATEGORY_PAGE_LIMIT;
   const full = Math.floor(products.length / PAGE_SIZE);
-  const count = full > 0 ? full : 1; // keep short (<20) results as a single final page
+  const count = complete ? Math.max(1, Math.ceil(products.length / PAGE_SIZE)) : (full > 0 ? full : 1);
   for (let i = 0; i < count; i++) {
     pages.push({ products: products.slice(i * PAGE_SIZE, (i + 1) * PAGE_SIZE), page: i });
     pageParams.push(i);
   }
   return { pages, pageParams };
 }
+
 
 export default function CategoryDetail() {
   const store = useOutletContext<StoreData>();
