@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import { storefrontPath } from "@/lib/subdomain";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from "react";
 import { useProductListJsonLd } from "@/hooks/useJsonLd";
 import { useCanonical } from "@/hooks/useCanonical";
 import { getStoreBaseUrl } from "@/lib/storeUrl";
