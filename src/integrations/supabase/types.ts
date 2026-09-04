@@ -2458,6 +2458,30 @@ export type Database = {
           },
         ]
       }
+      product_desc_backup_serdiya_20260904: {
+        Row: {
+          description: string | null
+          id: string | null
+          meta_description: string | null
+          name: string | null
+          store_id: string | null
+        }
+        Insert: {
+          description?: string | null
+          id?: string | null
+          meta_description?: string | null
+          name?: string | null
+          store_id?: string | null
+        }
+        Update: {
+          description?: string | null
+          id?: string | null
+          meta_description?: string | null
+          name?: string | null
+          store_id?: string | null
+        }
+        Relationships: []
+      }
       product_images: {
         Row: {
           created_at: string
