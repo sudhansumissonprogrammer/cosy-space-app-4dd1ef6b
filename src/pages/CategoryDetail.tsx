@@ -28,7 +28,8 @@ import { hidesCategoryFilters } from "@/components/storefront/pdp/storeSections/
  * Brand-grouped carousels: opt-in per store + category only. Lazy so no other
  * storefront (or any other category page) downloads this chunk.
  */
-const LazyBrandCarousels = lazy(() => import("@/components/storefront/BrandCarouselGroups"));
+const importBrandCarousels = () => import("@/components/storefront/BrandCarouselGroups");
+const LazyBrandCarousels = lazy(importBrandCarousels);
 const BRAND_CAROUSEL_CATEGORIES: Record<string, string[]> = {
   "ab19143d-87a9-490e-90b7-837313522782": ["sale"], // Utkal Watches
 };
@@ -300,6 +301,12 @@ export default function CategoryDetail() {
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage, pageCount]);
 
+  // Start the carousel chunk the moment we know this route uses it, so the
+  // rows paint with the first product payload instead of after a second RTT.
+  useEffect(() => {
+    if (useBrandCarousels) importBrandCarousels();
+  }, [useBrandCarousels]);
+
   // Carousel mode groups by brand, so every product must be present — but only
   // AFTER first paint (idle), so cold-load speed is untouched.
   useEffect(() => {
@@ -381,15 +388,7 @@ export default function CategoryDetail() {
         ) : products.length > 0 ? (
           <>
             {useBrandCarousels ? (
-              <Suspense
-                fallback={
-                  <div className={gridClass}>
-                    {products.slice(0, 4).map((product, idx) => (
-                      <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 4} cardStyle={cardStyle} index={idx} />
-                    ))}
-                  </div>
-                }
-              >
+              <Suspense fallback={<div className="min-h-[280px]" />}>
                 <LazyBrandCarousels products={products} slug={slug!} store={store} cardStyle={cardStyle} />
               </Suspense>
             ) : (
