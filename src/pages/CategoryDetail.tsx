@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import { storefrontPath } from "@/lib/subdomain";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from "react";
 import { useProductListJsonLd } from "@/hooks/useJsonLd";
 import { useCanonical } from "@/hooks/useCanonical";
 import { getStoreBaseUrl } from "@/lib/storeUrl";
@@ -23,6 +23,15 @@ import CategoryQuickJump from "@/components/storefront/CategoryQuickJump";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 import { hidesCategoryFilters } from "@/components/storefront/pdp/storeSections/config";
+
+/**
+ * Brand-grouped carousels: opt-in per store + category only. Lazy so no other
+ * storefront (or any other category page) downloads this chunk.
+ */
+const LazyBrandCarousels = lazy(() => import("@/components/storefront/BrandCarouselGroups"));
+const BRAND_CAROUSEL_CATEGORIES: Record<string, string[]> = {
+  "ab19143d-87a9-490e-90b7-837313522782": ["sale"], // Utkal Watches
+};
 
 /**
  * The edge/RPC category payload returns up to CATEGORY_PAGE_LIMIT (50) products,
@@ -57,6 +66,13 @@ export default function CategoryDetail() {
 
   // Utkal Watches / Hopknock: no category strip, no sort-filter bar.
   const hideFilters = hidesCategoryFilters({ id: store.id, slug: store.slug });
+
+  // Brand-grouped carousels instead of a flat grid (opt-in store + category).
+  const useBrandCarousels = !!(
+    categorySlug && BRAND_CAROUSEL_CATEGORIES[store.id]?.includes(categorySlug)
+  );
+
+
 
   const [sort, setSort] = useState<SortKey>("default");
 
@@ -278,6 +294,20 @@ export default function CategoryDetail() {
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage, pageCount]);
 
+  // Carousel mode groups by brand, so every product must be present — but only
+  // AFTER first paint (idle), so cold-load speed is untouched.
+  useEffect(() => {
+    if (!useBrandCarousels || !hasNextPage || isFetchingNextPage || productsLoading) return;
+    const run = () => fetchNextPage();
+    const w = window as any;
+    if (typeof w.requestIdleCallback === "function") {
+      const id = w.requestIdleCallback(run, { timeout: 2500 });
+      return () => w.cancelIdleCallback?.(id);
+    }
+    const t = window.setTimeout(run, 900);
+    return () => window.clearTimeout(t);
+  }, [useBrandCarousels, hasNextPage, isFetchingNextPage, productsLoading, fetchNextPage, pageCount]);
+
   if (!categoryLoading && !category) {
     return (
       <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 py-6">
@@ -344,21 +374,36 @@ export default function CategoryDetail() {
           </div>
         ) : products.length > 0 ? (
           <>
-            <div className={gridClass}>
-              {products.map((product, idx) => (
-                <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 4} cardStyle={cardStyle} index={idx} />
-              ))}
-            </div>
+            {useBrandCarousels ? (
+              <Suspense
+                fallback={
+                  <div className={gridClass}>
+                    {products.slice(0, 4).map((product, idx) => (
+                      <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 4} cardStyle={cardStyle} index={idx} />
+                    ))}
+                  </div>
+                }
+              >
+                <LazyBrandCarousels products={products} slug={slug!} store={store} cardStyle={cardStyle} />
+              </Suspense>
+            ) : (
+              <div className={gridClass}>
+                {products.map((product, idx) => (
+                  <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 4} cardStyle={cardStyle} index={idx} />
+                ))}
+              </div>
+            )}
 
             <div ref={sentinelRef} className="flex justify-center py-8">
               {isFetchingNextPage && (
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               )}
-              {!hasNextPage && rawProducts.length > PAGE_SIZE && (
+              {!hasNextPage && !useBrandCarousels && rawProducts.length > PAGE_SIZE && (
                 <p className="text-sm text-muted-foreground">You've seen all products</p>
               )}
             </div>
           </>
+
         ) : (
           <ShopEmptyState
             slug={slug!}
