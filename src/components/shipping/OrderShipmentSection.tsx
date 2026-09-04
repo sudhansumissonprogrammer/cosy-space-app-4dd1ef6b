@@ -10,7 +10,7 @@ import ShipmentEditorDialog from "./ShipmentEditorDialog";
  * lets the owner add / edit the tracking number. Saving optionally fires the
  * customer WhatsApp "order shipped" notification.
  */
-export default function OrderShipmentSection({ orderId }: { orderId: string }) {
+export default function OrderShipmentSection({ orderId, orderStatus }: { orderId: string; orderStatus: string }) {
   const { data } = useShipmentTracking(orderId);
   const [editing, setEditing] = useState<any | null>(null);
   const [open, setOpen] = useState(false);
@@ -21,20 +21,24 @@ export default function OrderShipmentSection({ orderId }: { orderId: string }) {
     <section>
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Shipment tracking</h3>
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 gap-1 text-xs"
-          onClick={() => { setEditing(null); setOpen(true); }}
-        >
-          <Plus className="h-3 w-3" /> Add shipment
-        </Button>
+        {orderStatus === "shipped" && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 gap-1 text-xs"
+            onClick={() => { setEditing(null); setOpen(true); }}
+          >
+            <Plus className="h-3 w-3" /> Add shipment
+          </Button>
+        )}
       </div>
 
       {shipments.length === 0 ? (
         <div className="flex items-center gap-2.5 rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
           <Truck className="h-4 w-4 shrink-0" />
-          Add the courier and tracking number to show live tracking to the customer.
+          {orderStatus === "shipped"
+            ? "Add the courier and tracking number to show live tracking to the customer."
+            : "Choose Shipped as the order status to add courier tracking."}
         </div>
       ) : (
         <div className="space-y-3">

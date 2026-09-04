@@ -62,9 +62,6 @@ export default function StoreOrders() {
   const isMobile = useIsMobile();
   useRealtimeStore(storeId, "orders");
   const [trackingOrder, setTrackingOrder] = useState<any>(null);
-  const [trackingNumber, setTrackingNumber] = useState("");
-  const [trackingUrl, setTrackingUrl] = useState("");
-  const [pendingStatus, setPendingStatus] = useState("");
   const [invoiceOrder, setInvoiceOrder] = useState<any>(null);
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [bulkStatus, setBulkStatus] = useState<string>("");
@@ -252,8 +249,8 @@ export default function StoreOrders() {
         for (const [key, data] of ctx.snapshots) queryClient.setQueryData(key as any, data);
       }
       toast.error(
-        /cannot_cancel_paid_order/.test(String(err?.message || ""))
-          ? "This order is already paid online — it can't be cancelled. Refund at the payment gateway first."
+        /cannot_cancel_paid_(?:unshipped_)?order/.test(String(err?.message || ""))
+          ? "A paid order can be cancelled here only after it is marked shipped with tracking."
           : err.message,
       );
     },
@@ -318,14 +315,14 @@ export default function StoreOrders() {
 
   const bulkUpdateStatus = useMutation({
     mutationFn: async ({ orderIds, status }: { orderIds: string[]; status: string }) => {
-      // Never bulk-cancel orders that are already paid online — the DB rejects
-      // those rows, which would fail the whole batch. Skip them instead.
+      // A paid order may be cancelled only after shipping. Skip paid orders
+      // with no shipped/tracked history so one unsafe row cannot fail the batch.
       let ids = orderIds;
       let skipped = 0;
       if (status === "cancelled") {
         const paid = new Set(
           (allOrders || [])
-            .filter((o: any) => o?.payment_verified)
+            .filter((o: any) => o?.payment_verified && o?.status !== "shipped" && !o?.tracking_number)
             .map((o: any) => o.id as string),
         );
         ids = orderIds.filter((id) => !paid.has(id));
@@ -347,7 +344,7 @@ export default function StoreOrders() {
       queryClient.invalidateQueries({ queryKey: ["website-orders-count", storeId] });
       toast.success(`${res.updated} orders updated to ${vars.status}`);
       if (res.skipped > 0) {
-        toast.error(`${res.skipped} paid order(s) skipped — refund at the gateway before cancelling.`);
+        toast.error(`${res.skipped} paid unshipped order(s) skipped.`);
       }
       setSelectedOrders(new Set());
       setBulkStatus("");
@@ -398,18 +395,18 @@ export default function StoreOrders() {
   const handleStatusChange = (order: any, v: string) => {
     if (v === "shipped" && !order.tracking_number) {
       setTrackingOrder(order);
-      setTrackingNumber(order.tracking_number || "");
-      setTrackingUrl(order.tracking_url || "");
-      setPendingStatus(v);
       return;
     }
-    // Money guard: this dropdown sits inside the table row, so a single misclick
-    // used to cancel an order the shopper had already paid for online — the
-    // merchant then saw "Cancelled / ₹0 paid" on real money. The database now
-    // rejects that update; warn before we even try.
     if (v === "cancelled" && order.payment_verified) {
-      toast.error("This order is already paid online — it can't be cancelled. Refund at the payment gateway first.");
-      return;
+      const wasShipped = order.status === "shipped" || !!order.tracking_number;
+      if (!wasShipped) {
+        toast.error("A paid order can be cancelled here only after it is marked shipped with tracking.");
+        return;
+      }
+      const ok = window.confirm(
+        "Cancel this shipped order? ShopBanao commission will be refunded to the wallet. This does not refund the customer's gateway payment.",
+      );
+      if (!ok) return;
     }
     // Reverse guard: confirming a prepaid order the gateway never captured makes
     // an unpaid order look paid (it then ships for free). Ask first.
@@ -876,10 +873,7 @@ export default function StoreOrders() {
             <MobileOrderDetail
               order={withItems(mobileDetailOrder)}
               store={store}
-              onStatusChange={(v) => {
-                handleStatusChange(mobileDetailOrder, v);
-                setMobileDetailOrder((prev: any) => prev ? { ...prev, status: v } : null);
-              }}
+              onStatusChange={(v) => handleStatusChange(mobileDetailOrder, v)}
               onInvoice={() => { setInvoiceOrder(mobileDetailOrder); }}
               onSendInvoice={() => handleSendInvoice(mobileDetailOrder)}
               isSendingInvoice={sendingInvoiceId === mobileDetailOrder.id}
@@ -891,18 +885,15 @@ export default function StoreOrders() {
         </SheetContent>
       </Sheet>
 
-      {/* Ship dialog — creates a real shipment row (courier + AWB) so live
-          tracking and the customer WhatsApp both work, then flips the order. */}
+      {/* Ship dialog — saving the new courier + AWB atomically marks the order
+          shipped, enables tracking, and sends the customer notification. */}
       {trackingOrder && (
         <ShipmentEditorDialog
           key={trackingOrder.id}
           open={!!trackingOrder}
           onOpenChange={(v) => { if (!v) setTrackingOrder(null); }}
           orderId={trackingOrder.id}
-          onSaved={() => {
-            updateWebStatus.mutate({ orderId: trackingOrder.id, status: pendingStatus || "shipped" });
-            setTrackingOrder(null);
-          }}
+          onSaved={() => setTrackingOrder(null)}
         />
       )}
 
@@ -1124,7 +1115,7 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
 
         <Separator />
 
-        <OrderShipmentSection orderId={order.id} />
+        <OrderShipmentSection orderId={order.id} orderStatus={order.status} />
 
 
 
