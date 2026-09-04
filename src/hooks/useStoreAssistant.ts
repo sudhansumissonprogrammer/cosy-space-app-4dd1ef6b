@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 export interface AssistantMessage {
   role: "user" | "assistant";
   content: string;
+  /** Rich in-chat card (e.g. the AI image studio) attached to this answer. */
+  card?: any;
 }
 
 export interface AssistantSource {
@@ -105,6 +107,15 @@ export function useStoreAssistant(storeId?: string) {
               if (parsed.conversation_id !== undefined) {
                 conversationId.current = parsed.conversation_id ?? conversationId.current;
                 if (Array.isArray(parsed.sources)) setSources(parsed.sources);
+                const card = Array.isArray(parsed.cards) ? parsed.cards[0] : null;
+                if (card) {
+                  setMessages((m) => {
+                    const next = [...m];
+                    const last = next[next.length - 1];
+                    if (last?.role === "assistant") next[next.length - 1] = { ...last, card };
+                    return next;
+                  });
+                }
                 continue;
               }
               const delta = parsed?.choices?.[0]?.delta?.content;

@@ -8,6 +8,9 @@ import { useStoreAssistant } from "@/hooks/useStoreAssistant";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { starterQuestions } from "./starterQuestions";
 import { cn } from "@/lib/utils";
+import { lazy, Suspense } from "react";
+
+const ImageStudioCard = lazy(() => import("./ImageStudioCard"));
 
 interface Props {
   open: boolean;
@@ -181,13 +184,24 @@ export default function AssistantPanel({ open, onOpenChange, storeId }: Props) {
             ) : (
               <div key={i} className="flex gap-2.5">
                 <AssistantMark className="mt-0.5 h-7 w-7 shrink-0" />
-                <div className="min-w-0 flex-1 whitespace-pre-wrap text-[14px] leading-relaxed text-foreground">
-                  {m.content ? (
-                    <AnswerText text={m.content} onNavigate={go} />
-                  ) : (
-                    <span className="inline-block animate-pulse text-muted-foreground">
-                      Thinking…
-                    </span>
+                <div className="min-w-0 flex-1 space-y-3">
+                  <div className="whitespace-pre-wrap text-[14px] leading-relaxed text-foreground">
+                    {m.content ? (
+                      <AnswerText text={m.content} onNavigate={go} />
+                    ) : (
+                      <span className="inline-block animate-pulse text-muted-foreground">
+                        Thinking…
+                      </span>
+                    )}
+                  </div>
+                  {m.card?.type === "image_studio" && (
+                    <Suspense
+                      fallback={
+                        <div className="h-40 animate-pulse rounded-2xl border border-border/60 bg-muted/40" />
+                      }
+                    >
+                      <ImageStudioCard storeId={storeId} data={m.card} />
+                    </Suspense>
                   )}
                 </div>
               </div>
