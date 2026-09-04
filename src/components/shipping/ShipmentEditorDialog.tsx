@@ -24,13 +24,27 @@ interface Props {
 
 const STATUS_OPTIONS = [...SHIPMENT_STEPS, "returned", "cancelled", "exception"] as const;
 
+/** The seller's last "notify customer" choice sticks for the next shipment. */
+const NOTIFY_PREF_KEY = "sb:shipment-notify-customer";
+
+function readNotifyPref(): boolean {
+  try { return localStorage.getItem(NOTIFY_PREF_KEY) !== "0"; } catch { return true; }
+}
+
 export default function ShipmentEditorDialog({ open, onOpenChange, orderId, shipment, onSaved }: Props) {
   const qc = useQueryClient();
   const [slug, setSlug] = useState(shipment?.tracking_slug || "delhivery");
   const [awb, setAwb] = useState(shipment?.awb || "");
   const isNewShipment = !shipment;
   const [status, setStatus] = useState<string>(shipment?.status || "shipped");
-  const [notify, setNotify] = useState(true);
+  const [notify, setNotify] = useState<boolean>(() =>
+    (shipment as any)?.notify_customer === false ? false : readNotifyPref(),
+  );
+
+  const setNotifyPref = (v: boolean) => {
+    setNotify(v);
+    try { localStorage.setItem(NOTIFY_PREF_KEY, v ? "1" : "0"); } catch { /* ignore */ }
+  };
 
   const meta = courierMeta(slug);
 
