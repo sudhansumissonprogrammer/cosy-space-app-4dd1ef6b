@@ -28,6 +28,7 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
   const qc = useQueryClient();
   const [slug, setSlug] = useState(shipment?.tracking_slug || "delhivery");
   const [awb, setAwb] = useState(shipment?.awb || "");
+  const isNewShipment = !shipment;
   const [status, setStatus] = useState<string>(shipment?.status || "shipped");
   const [notify, setNotify] = useState(true);
 
@@ -41,7 +42,9 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
         _courier_name: meta.name,
         _awb: awb.trim(),
         _tracking_url: officialTrackingUrl(slug, awb.trim()),
-        _status: status,
+        // A new AWB always starts as shipped. RTO/cancelled are outcomes that
+        // can only be recorded later while editing the existing shipment.
+        _status: isNewShipment ? "shipped" : status,
         _shipment_id: shipment?.id ?? null,
       });
       if (error) throw error;
@@ -54,7 +57,8 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
       // messages. wa-order-event handles template choice, branding and
       // idempotency (one row per order + event), so a re-save never spams.
       let waResult: any = null;
-      if (notify && (status === "shipped" || status === "in_transit")) {
+      const savedStatus = isNewShipment ? "shipped" : status;
+      if (notify && (savedStatus === "shipped" || savedStatus === "in_transit")) {
         const { data: waData } = await supabase.functions.invoke("wa-order-event", {
           body: { event: "order_shipped", order_id: orderId },
         });
@@ -71,7 +75,7 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
       qc.invalidateQueries({ queryKey: ["shipment-tracking", orderId] });
       qc.invalidateQueries({ queryKey: ["store-orders"] });
       qc.invalidateQueries({ queryKey: ["website-orders-all"] });
-      onSaved?.(status);
+      onSaved?.(isNewShipment ? "shipped" : status);
       onOpenChange(false);
 
     },
@@ -116,20 +120,29 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
             <Input value={awb} onChange={(e) => setAwb(e.target.value)} placeholder="e.g. 1234567890" autoComplete="off" />
           </div>
 
-          <div className="space-y-1.5">
-            <Label>Current status</Label>
-            <p className="text-[11px] text-muted-foreground">
-              This also updates the order: Delivered → delivered, RTO / Cancelled → cancelled.
-            </p>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {STATUS_OPTIONS.map((s) => (
-                  <SelectItem key={s} value={s}>{SHIPMENT_STATUS_LABEL[s as keyof typeof SHIPMENT_STATUS_LABEL]}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {isNewShipment ? (
+            <div className="rounded-md border bg-muted/40 px-3 py-2.5">
+              <p className="text-sm font-medium">Status: Shipped</p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                Adding this tracking number marks the order as shipped. You can record delivery or RTO later.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <Label>Current status</Label>
+              <p className="text-[11px] text-muted-foreground">
+                Delivered updates the order to delivered. RTO or Cancelled updates it to cancelled.
+              </p>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {STATUS_OPTIONS.map((s) => (
+                    <SelectItem key={s} value={s}>{SHIPMENT_STATUS_LABEL[s as keyof typeof SHIPMENT_STATUS_LABEL]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <label className="flex items-start gap-2.5 rounded-lg border p-3 cursor-pointer">
             <Checkbox checked={notify} onCheckedChange={(v) => setNotify(v === true)} className="mt-0.5" />
