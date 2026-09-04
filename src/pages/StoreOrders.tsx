@@ -873,10 +873,7 @@ export default function StoreOrders() {
             <MobileOrderDetail
               order={withItems(mobileDetailOrder)}
               store={store}
-              onStatusChange={(v) => {
-                handleStatusChange(mobileDetailOrder, v);
-                setMobileDetailOrder((prev: any) => prev ? { ...prev, status: v } : null);
-              }}
+              onStatusChange={(v) => handleStatusChange(mobileDetailOrder, v)}
               onInvoice={() => { setInvoiceOrder(mobileDetailOrder); }}
               onSendInvoice={() => handleSendInvoice(mobileDetailOrder)}
               isSendingInvoice={sendingInvoiceId === mobileDetailOrder.id}
