@@ -4,6 +4,7 @@ import { HELP_ARTICLES, type HelpArticle } from "./knowledge.ts";
 import { buildStoreInsights, type StoreInsights } from "./insights.ts";
 import { ANALYTICS_TOOLS, runAnalyticsTool } from "./analytics.ts";
 import { buildSetupReadiness, type SetupReadiness } from "./setup.ts";
+import { CREATIVE_TOOLS, runCreativeTool, type StudioCard } from "./creative.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -214,6 +215,7 @@ HOW TO ANSWER — FOLLOW STRICTLY
 - Never state a number that is not in STORE STATUS, STORE PERFORMANCE or a tool result. If the data is not there, say you cannot see it.
 - Money, refunds, payouts and policy: be exact and never guess numbers. Commission is a flat 2% per order and there is no monthly subscription. Gateway money goes to the merchant's own gateway account.
 - COMMISSION REFUNDS — HARD RULE: never promise, confirm, estimate or explain that any commission will be refunded, reversed or credited back. Never say "it will be refunded automatically" or describe the conditions for a refund. For ANY commission refund, wrong-commission, RTO-commission, cancelled-order-commission or commission-dispute question, reply in one or two lines: this needs the customer care team, and they will check the order and settle it. Point them to the Help/contact option and stop — no steps, no reasoning, no policy detail.
+- PRODUCT IMAGE STUDIO: you can create marketing/product images. When the merchant asks to generate, make, design, improve or restyle a product photo, poster, banner, ad creative or campaign post, call open_image_studio immediately (pass the product words, category and their brief). Then reply in max 3 short lines: say the studio is open below, tell them to pick the product and photo, and that they can add the result to the product page with one tap. Never say you cannot make images. Never paste an image URL yourself.
 - Never ask for, show or repeat API keys, passwords or tokens. If a step needs a key, say where to paste it — never to type it in chat.
 - You cannot change any setting yourself — you explain and link; the merchant clicks. Never claim you did something.
 - End with one short next step or a natural follow-up offer only when useful. Keep it under one line.
@@ -340,6 +342,8 @@ serve(async (req) => {
 
     const model = await pickModel();
 
+    const cards: StudioCard[] = [];
+
     // Tool phase — the assistant can query this store's live analytics before
     // answering (funnel, trend, cancellations, monthly, sources, products).
     // Non-streaming, max 2 rounds, then the final answer is streamed.
@@ -354,7 +358,7 @@ serve(async (req) => {
         body: JSON.stringify({
           model,
           messages,
-          tools: ANALYTICS_TOOLS,
+          tools: [...ANALYTICS_TOOLS, ...CREATIVE_TOOLS],
           tool_choice: "auto",
           max_tokens: 300,
           temperature: 0,
@@ -377,7 +381,13 @@ serve(async (req) => {
         } catch (_) { /* model sent malformed args — use defaults */ }
         let result: unknown;
         try {
-          result = await runAnalyticsTool(admin, storeId, call?.function?.name, args);
+          const creative = await runCreativeTool(admin, storeId, call?.function?.name, args);
+          if (creative) {
+            cards.push(creative.card);
+            result = creative.result;
+          } else {
+            result = await runAnalyticsTool(admin, storeId, call?.function?.name, args);
+          }
         } catch (e) {
           console.error("tool error", call?.function?.name, e);
           result = { error: "Could not read this data right now." };
@@ -439,7 +449,7 @@ serve(async (req) => {
     const stream = new ReadableStream({
       async start(controller) {
         controller.enqueue(
-          encoder.encode(`event: meta\ndata: ${JSON.stringify({ conversation_id: conversationId, sources })}\n\n`),
+          encoder.encode(`event: meta\ndata: ${JSON.stringify({ conversation_id: conversationId, sources, cards })}\n\n`),
         );
         const reader = upstream.body!.getReader();
         let buffer = "";
