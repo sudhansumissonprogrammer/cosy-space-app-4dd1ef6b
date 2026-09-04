@@ -267,30 +267,48 @@ export default function StoreOrders() {
             : result.status === "shipped" ? "shipping_update"
             : result.status === "delivered" ? "delivery_confirmation"
             : null;
-          if (msgType) {
-            const orderItems = (order as any).order_items || [];
-            const productNames = orderItems.map((i: any) => i.product_name).filter(Boolean).join(", ");
-            sendOrderWhatsApp(storeId, result.orderId, msgType as any, {
-              customer_phone: (order as any).customer_phone,
-              customer_name: (order as any).customer_name,
-              total: (order as any).total,
-              currency: (order as any).currency,
-              tracking_url: result.tracking_url || (order as any).tracking_url,
-              tracking_number: result.tracking_number || (order as any).tracking_number,
-              product_names: productNames,
-              store_name: (store as any)?.name,
-            });
-          }
+          // 🔕 Respect the seller's per-shipment "Notify customer on WhatsApp"
+          // choice: if it was unticked when tracking was saved, no shipping
+          // message goes out from the status flip either.
+          const shippingMuted = async () => {
+            if (result.status !== "shipped") return false;
+            const { data } = await (supabase as any)
+              .from("order_shipments")
+              .select("notify_customer")
+              .eq("order_id", result.orderId)
+              .order("updated_at", { ascending: false })
+              .limit(1).maybeSingle();
+            return data?.notify_customer === false;
+          };
+          void (async () => {
+            const muted = await shippingMuted().catch(() => false);
+            if (muted) return;
 
-          // 📲 Shared ShopBanao platform — fire order_shipped via wa-order-event
-          // (handles correct v2 template + full variable set + idempotency).
-          // Order confirmation is sent from notify-order at placement time, so
-          // we only invoke this on the shipped transition (with tracking).
-          if (result.status === "shipped" && (result.tracking_number || (order as any).tracking_number)) {
-            supabase.functions.invoke("wa-order-event", {
-              body: { event: "order_shipped", order_id: result.orderId },
-            }).catch(() => { /* best-effort */ });
-          }
+            if (msgType) {
+              const orderItems = (order as any).order_items || [];
+              const productNames = orderItems.map((i: any) => i.product_name).filter(Boolean).join(", ");
+              sendOrderWhatsApp(storeId, result.orderId, msgType as any, {
+                customer_phone: (order as any).customer_phone,
+                customer_name: (order as any).customer_name,
+                total: (order as any).total,
+                currency: (order as any).currency,
+                tracking_url: result.tracking_url || (order as any).tracking_url,
+                tracking_number: result.tracking_number || (order as any).tracking_number,
+                product_names: productNames,
+                store_name: (store as any)?.name,
+              });
+            }
+
+            // 📲 Shared ShopBanao platform — fire order_shipped via wa-order-event
+            // (handles correct v2 template + full variable set + idempotency).
+            // Order confirmation is sent from notify-order at placement time, so
+            // we only invoke this on the shipped transition (with tracking).
+            if (result.status === "shipped" && (result.tracking_number || (order as any).tracking_number)) {
+              supabase.functions.invoke("wa-order-event", {
+                body: { event: "order_shipped", order_id: result.orderId },
+              }).catch(() => { /* best-effort */ });
+            }
+          })();
         }
       }
 

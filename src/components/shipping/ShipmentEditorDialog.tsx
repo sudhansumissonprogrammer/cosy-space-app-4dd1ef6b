@@ -24,13 +24,27 @@ interface Props {
 
 const STATUS_OPTIONS = [...SHIPMENT_STEPS, "returned", "cancelled", "exception"] as const;
 
+/** The seller's last "notify customer" choice sticks for the next shipment. */
+const NOTIFY_PREF_KEY = "sb:shipment-notify-customer";
+
+function readNotifyPref(): boolean {
+  try { return localStorage.getItem(NOTIFY_PREF_KEY) !== "0"; } catch { return true; }
+}
+
 export default function ShipmentEditorDialog({ open, onOpenChange, orderId, shipment, onSaved }: Props) {
   const qc = useQueryClient();
   const [slug, setSlug] = useState(shipment?.tracking_slug || "delhivery");
   const [awb, setAwb] = useState(shipment?.awb || "");
   const isNewShipment = !shipment;
   const [status, setStatus] = useState<string>(shipment?.status || "shipped");
-  const [notify, setNotify] = useState(true);
+  const [notify, setNotify] = useState<boolean>(() =>
+    (shipment as any)?.notify_customer === false ? false : readNotifyPref(),
+  );
+
+  const setNotifyPref = (v: boolean) => {
+    setNotify(v);
+    try { localStorage.setItem(NOTIFY_PREF_KEY, v ? "1" : "0"); } catch { /* ignore */ }
+  };
 
   const meta = courierMeta(slug);
 
@@ -46,7 +60,10 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
         // can only be recorded later while editing the existing shipment.
         _status: isNewShipment ? "shipped" : status,
         _shipment_id: shipment?.id ?? null,
-      });
+        // 🔕 Persisted with the shipment so every later path (courier auto-sync,
+        // status flips) also respects this choice — not just this save.
+        _notify: notify,
+      } as any);
       if (error) throw error;
       // Kick an immediate sync for API-backed couriers (best effort).
       if (meta.api && data) {
@@ -145,11 +162,16 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
           )}
 
           <label className="flex items-start gap-2.5 rounded-lg border p-3 cursor-pointer">
-            <Checkbox checked={notify} onCheckedChange={(v) => setNotify(v === true)} className="mt-0.5" />
+            <Checkbox checked={notify} onCheckedChange={(v) => setNotifyPref(v === true)} className="mt-0.5" />
             <span className="text-sm">
               Notify customer on WhatsApp
               <span className="block text-[11px] text-muted-foreground">
-                Sends the tracking number, courier and expected delivery date. Sent only once per order.
+                {notify
+                  ? "Sends the tracking number, courier and expected delivery date. Sent only once per order."
+                  : "Off — no shipping message will be sent for this order, including later automatic tracking updates."}
+              </span>
+              <span className="mt-1 block text-[11px] text-muted-foreground">
+                Your choice is saved with the shipment and used as the default next time.
               </span>
             </span>
           </label>

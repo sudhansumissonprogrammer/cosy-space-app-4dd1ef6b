@@ -1202,6 +1202,7 @@ export type Database = {
           next_sync_at: string | null
           normalized_status: string
           notified_statuses: string[]
+          notify_customer: boolean
           order_id: string
           payment_mode: string | null
           pickup_address_id: string | null
@@ -1240,6 +1241,7 @@ export type Database = {
           next_sync_at?: string | null
           normalized_status?: string
           notified_statuses?: string[]
+          notify_customer?: boolean
           order_id: string
           payment_mode?: string | null
           pickup_address_id?: string | null
@@ -1278,6 +1280,7 @@ export type Database = {
           next_sync_at?: string | null
           normalized_status?: string
           notified_statuses?: string[]
+          notify_customer?: boolean
           order_id?: string
           payment_mode?: string | null
           pickup_address_id?: string | null
@@ -6038,6 +6041,7 @@ export type Database = {
         Args: {
           _awb: string
           _courier_name: string
+          _notify?: boolean
           _order_id: string
           _shipment_id?: string
           _slug: string
