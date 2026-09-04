@@ -60,7 +60,10 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
         // can only be recorded later while editing the existing shipment.
         _status: isNewShipment ? "shipped" : status,
         _shipment_id: shipment?.id ?? null,
-      });
+        // 🔕 Persisted with the shipment so every later path (courier auto-sync,
+        // status flips) also respects this choice — not just this save.
+        _notify: notify,
+      } as any);
       if (error) throw error;
       // Kick an immediate sync for API-backed couriers (best effort).
       if (meta.api && data) {
