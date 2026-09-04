@@ -135,7 +135,7 @@ export default function StoreOrders() {
         .select(
           // Slim list payload: only product names are shown in the list; full
           // line-items are fetched on demand when a detail/invoice view opens.
-          "id, order_number, created_at, status, total, currency, customer_name, customer_phone, payment_method, tracking_number, tracking_url, street_address, city, state, pincode, notes, storefront_customer_id, payment_type, advance_paid, balance_due, payment_verified, order_items(product_name, quantity)",
+          "id, order_number, created_at, status, total, currency, customer_name, customer_phone, payment_method, tracking_number, tracking_url, street_address, city, state, pincode, notes, storefront_customer_id, payment_type, advance_paid, balance_due, payment_verified, coupon_discount, order_items(product_name, quantity)",
           { count: "estimated" }
 
         )
