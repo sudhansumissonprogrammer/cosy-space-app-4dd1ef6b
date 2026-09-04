@@ -360,21 +360,36 @@ export default function CategoryDetail() {
           </div>
         ) : products.length > 0 ? (
           <>
-            <div className={gridClass}>
-              {products.map((product, idx) => (
-                <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 4} cardStyle={cardStyle} index={idx} />
-              ))}
-            </div>
+            {useBrandCarousels ? (
+              <Suspense
+                fallback={
+                  <div className={gridClass}>
+                    {products.slice(0, 4).map((product, idx) => (
+                      <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 4} cardStyle={cardStyle} index={idx} />
+                    ))}
+                  </div>
+                }
+              >
+                <LazyBrandCarousels products={products} slug={slug!} store={store} cardStyle={cardStyle} />
+              </Suspense>
+            ) : (
+              <div className={gridClass}>
+                {products.map((product, idx) => (
+                  <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 4} cardStyle={cardStyle} index={idx} />
+                ))}
+              </div>
+            )}
 
             <div ref={sentinelRef} className="flex justify-center py-8">
               {isFetchingNextPage && (
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               )}
-              {!hasNextPage && rawProducts.length > PAGE_SIZE && (
+              {!hasNextPage && !useBrandCarousels && rawProducts.length > PAGE_SIZE && (
                 <p className="text-sm text-muted-foreground">You've seen all products</p>
               )}
             </div>
           </>
+
         ) : (
           <ShopEmptyState
             slug={slug!}
