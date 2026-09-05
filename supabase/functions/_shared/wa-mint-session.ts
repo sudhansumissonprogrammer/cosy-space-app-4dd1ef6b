@@ -51,7 +51,17 @@ export async function mintSessionForPhone(
         user_metadata: { phone, user_type: "customer" },
       });
       userId = newUser?.user?.id ?? null;
+      // Concurrent signup for the same phone → unique violation surfaced as a
+      // generic DB error. Re-look-up instead of failing the login.
+      for (let attempt = 0; attempt < 3 && !userId; attempt++) {
+        await new Promise((r) => setTimeout(r, 150 * (attempt + 1)));
+        try {
+          const { data } = await admin.rpc("get_auth_user_id_by_email", { _email: phoneEmail });
+          if (data && typeof data === "string") userId = data;
+        } catch { /* ignore */ }
+      }
     }
+
     if (!userId) return null;
 
     const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({

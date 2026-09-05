@@ -78,6 +78,17 @@ Deno.serve(async (req) => {
       });
       userId = newUser?.user?.id ?? null;
 
+      // Concurrent request for the same phone → duplicate-email failure.
+      // Re-look-up the existing account instead of erroring out.
+      for (let attempt = 0; attempt < 3 && !userId; attempt++) {
+        await new Promise((r) => setTimeout(r, 150 * (attempt + 1)));
+        try {
+          const { data: existing } = await admin.rpc("get_auth_user_id_by_email", { _email: phoneEmail });
+          if (existing && typeof existing === "string") userId = existing;
+        } catch { /* ignore */ }
+      }
+
+
       // Re-run the bundle so we upsert the customer row + get the address for
       // this brand-new user. Address will typically be null (new shopper).
       if (userId && storeIdArg) {
