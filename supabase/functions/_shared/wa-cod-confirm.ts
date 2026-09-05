@@ -128,7 +128,26 @@ export async function handleCodReply(
     return true;
   }
 
+  if (intent === "cancel") {
+    // Record the customer's cancellation request and alert the store.
+    // We never change orders.status automatically — the seller decides.
+    await admin.from("orders").update({
+      cod_confirm_status: "cancelled",
+      cod_confirm_reply: opts.text.slice(0, 500),
+    } as any).eq("id", order.id);
+    await notifyStore(
+      admin, order, "Customer asked to cancel COD order",
+      `Customer replied CANCEL on order ${order.order_number || order.id}. Review and cancel it in Orders if you agree.`,
+    );
+    await sendSessionText(
+      admin, cronSecret, order.store_id, opts.phone,
+      "Got it 🙏 We have passed your cancellation request to the store team. They will confirm shortly.",
+    );
+    return true;
+  }
+
   if (intent === "confirm") {
+
     await admin.from("orders").update({
       cod_confirm_status: "confirmed",
       cod_confirmed_at: new Date().toISOString(),
