@@ -283,10 +283,12 @@ function VideoTile({ product, slug, active, muted, onToggleMute, aspectClass, sh
     }
   }, []);
 
-  // Pause when this slide is no longer the active one.
+  // Pause only when the carousel actually scrolls away from this slide.
+  // NOTE: this must not depend on `playing` — otherwise tapping play on a
+  // non-selected tile immediately re-ran the effect and stopped it again.
   useEffect(() => {
-    if (!active && playing) stop();
-  }, [active, playing, stop]);
+    if (!active) stopRef.current();
+  }, [active]);
 
   // Keep muted state in sync without restarting playback.
   useEffect(() => {
@@ -305,25 +307,29 @@ function VideoTile({ product, slug, active, muted, onToggleMute, aspectClass, sh
     setPlaying(true);
   }, [stop, failed]);
 
+  // Start playback only when `playing` flips on. Muting is handled by the
+  // effect above — including `muted` here would call v.load() on every sound
+  // toggle, restarting the clip from 0.
   useEffect(() => {
     if (!playing) return;
     const v = videoRef.current;
     if (!v) return;
     retries.current = 0;
-    v.muted = muted;
     v.playsInline = true;
     v.load();
     const attempt = v.play();
     if (attempt && typeof attempt.catch === "function") {
       attempt.catch(() => {
+        // Autoplay policy rejection — retry silently muted on this element
+        // only (never flip the shared sound preference).
         v.muted = true;
-        onToggleMute();
         const retry = v.play();
         if (retry && typeof retry.catch === "function") retry.catch(() => {});
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playing, muted, onToggleMute]);
+  }, [playing]);
+
 
   const currency = product.currency || "INR";
   const displayPrice = product.sale_price ?? product.price;
