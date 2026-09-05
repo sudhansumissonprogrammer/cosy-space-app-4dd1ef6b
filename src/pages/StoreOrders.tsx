@@ -171,8 +171,18 @@ export default function StoreOrders() {
     enabled: !!storeId,
   });
 
+  // Keep the open detail sheet in sync with the live orders query — the sheet
+  // used to render a snapshot taken when the row was tapped, so status changes
+  // (e.g. marking shipped from the shipment dialog) never appeared.
+  const liveDetailOrder = useMemo(() => {
+    if (!mobileDetailOrder) return null;
+    const fresh = (allOrders ?? []).find((o: any) => o.id === mobileDetailOrder.id);
+    return fresh ? { ...mobileDetailOrder, ...fresh } : mobileDetailOrder;
+  }, [mobileDetailOrder, allOrders]);
+
   // Lazily load full line-items for whichever order is open (detail sheet or invoice)
   const detailOrderId = mobileDetailOrder?.id || invoiceOrder?.id || null;
+
   const { data: detailItems } = useQuery({
     queryKey: ["order-items", detailOrderId],
     enabled: !!detailOrderId,
