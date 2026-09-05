@@ -897,19 +897,20 @@ export default function StoreOrders() {
               : "h-full w-full sm:max-w-xl lg:max-w-2xl",
           )}
         >
-          {mobileDetailOrder && (
+          {liveDetailOrder && (
             <MobileOrderDetail
-              order={withItems(mobileDetailOrder)}
+              order={withItems(liveDetailOrder)}
               store={store}
-              onStatusChange={(v) => handleStatusChange(mobileDetailOrder, v)}
-              onInvoice={() => { setInvoiceOrder(mobileDetailOrder); }}
-              onSendInvoice={() => handleSendInvoice(mobileDetailOrder)}
-              isSendingInvoice={sendingInvoiceId === mobileDetailOrder.id}
-              onDelete={() => deleteOrder.mutate(mobileDetailOrder.id)}
+              onStatusChange={(v) => handleStatusChange(liveDetailOrder, v)}
+              onInvoice={() => { setInvoiceOrder(liveDetailOrder); }}
+              onSendInvoice={() => handleSendInvoice(liveDetailOrder)}
+              isSendingInvoice={sendingInvoiceId === liveDetailOrder.id}
+              onDelete={() => deleteOrder.mutate(liveDetailOrder.id)}
               isDeleting={deleteOrder.isPending}
               onClose={() => setMobileDetailOrder(null)}
             />
           )}
+
         </SheetContent>
       </Sheet>
 

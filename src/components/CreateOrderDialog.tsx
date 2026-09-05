@@ -128,6 +128,17 @@ export default function CreateOrderDialog({ open, onOpenChange, storeId, storeCu
       toast.error("Customer name and phone are required");
       return;
     }
+    // The server refuses to create an order without a deliverable address, so
+    // catch it here with a clear message instead of a generic red toast.
+    if (!streetAddress.trim()) {
+      toast.error("Delivery address is required");
+      return;
+    }
+    if (!/^\d{6}$/.test(pincode.trim())) {
+      toast.error("Enter a valid 6-digit pincode");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const { data, error } = await supabase.functions.invoke("place-order", {
