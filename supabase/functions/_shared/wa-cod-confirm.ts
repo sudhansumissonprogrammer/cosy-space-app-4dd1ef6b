@@ -10,16 +10,26 @@
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-export type CodIntent = "confirm" | "edit" | null;
+export type CodIntent = "confirm" | "edit" | "cancel" | null;
 
-/** Classify a quick-reply button / free text into a COD intent. */
+/**
+ * Classify a quick-reply button / free text into a COD intent.
+ *
+ * Short words like "ok"/"yes"/"haan" are matched as WHOLE WORDS only —
+ * a substring match turned everyday chat ("I want to b-ok-", "l-ook-s good")
+ * into an order confirmation.
+ */
 export function classifyCodReply(text: string): CodIntent {
-  const t = String(text || "").toLowerCase().trim();
+  const t = String(text || "").toLowerCase().trim().replace(/[.!,]+$/g, "");
   if (!t) return null;
-  if (/confirm|✅|haan|yes|ok|okay|ship it|dispatch|ha ji|thik/.test(t)) return "confirm";
-  if (/edit|address|✏️|change address|correct|galat|wrong address/.test(t)) return "edit";
+  const word = (w: string) => new RegExp(`(^|[^a-z0-9])${w}([^a-z0-9]|$)`, "i").test(t);
+  // Cancellation must win over everything else.
+  if (word("cancel") || word("cancle") || /rad+ ?kar|nahi chahiye|nahin chahiye|don'?t want|do not want/.test(t)) return "cancel";
+  if (word("confirm") || word("confirmed") || t.includes("✅") || word("yes") || word("ok") || word("okay") || word("haan") || word("ha ji") || word("thik") || word("theek") || /ship it|dispatch/.test(t)) return "confirm";
+  if (word("edit") || word("address") || t.includes("✏️") || /change address|wrong address|galat/.test(t) || word("correct")) return "edit";
   return null;
 }
+
 
 async function sendSessionText(
   admin: any,
@@ -118,7 +128,26 @@ export async function handleCodReply(
     return true;
   }
 
+  if (intent === "cancel") {
+    // Record the customer's cancellation request and alert the store.
+    // We never change orders.status automatically — the seller decides.
+    await admin.from("orders").update({
+      cod_confirm_status: "cancelled",
+      cod_confirm_reply: opts.text.slice(0, 500),
+    } as any).eq("id", order.id);
+    await notifyStore(
+      admin, order, "Customer asked to cancel COD order",
+      `Customer replied CANCEL on order ${order.order_number || order.id}. Review and cancel it in Orders if you agree.`,
+    );
+    await sendSessionText(
+      admin, cronSecret, order.store_id, opts.phone,
+      "Got it 🙏 We have passed your cancellation request to the store team. They will confirm shortly.",
+    );
+    return true;
+  }
+
   if (intent === "confirm") {
+
     await admin.from("orders").update({
       cod_confirm_status: "confirmed",
       cod_confirmed_at: new Date().toISOString(),

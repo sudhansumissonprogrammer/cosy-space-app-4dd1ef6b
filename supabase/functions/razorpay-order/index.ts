@@ -135,11 +135,21 @@ Deno.serve(async (req) => {
     if (!rzpRes.ok) {
       const errBody = await rzpRes.text();
       console.error("Razorpay error:", errBody);
-      return new Response(JSON.stringify({ error: "Failed to create Razorpay order" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      // 401 / "Authentication failed" means the store's saved Razorpay Key ID
+      // or Key Secret is wrong, expired, or mixes test + live keys. Surface a
+      // message the merchant can act on instead of a bare server error.
+      const isAuth = rzpRes.status === 401 || /authentication failed/i.test(errBody);
+      return new Response(
+        JSON.stringify({
+          error: isAuth
+            ? "Razorpay rejected the store's API keys. Update the Razorpay Key ID and Key Secret in Settings → Payments (make sure both are live keys)."
+            : "Failed to create Razorpay order",
+          code: isAuth ? "razorpay_auth_failed" : "razorpay_error",
+        }),
+        { status: isAuth ? 400 : 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
+
 
     const rzpOrder = await rzpRes.json();
 
