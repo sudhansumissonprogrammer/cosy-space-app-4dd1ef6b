@@ -97,25 +97,26 @@ Deno.serve(async (req) => {
         userId = newUser.user.id;
         isNewUser = true;
       } else {
-        // Race: another request created it between lookup and create.
-        const errMsg = (createErr?.message || "").toLowerCase();
-        const isDuplicate =
-          errMsg.includes("already") ||
-          errMsg.includes("registered") ||
-          errMsg.includes("exists") ||
-          (createErr as any)?.code === "email_exists";
-        if (isDuplicate) {
+        // ANY createUser failure can be a concurrent-signup race. GoTrue often
+        // surfaces the duplicate as a generic "Database error creating new
+        // user" (unique violation on users_email_partial_key), so we never
+        // rely on the message — we simply re-look-up the account, with a short
+        // retry to cover replication/commit lag of the winning request.
+        for (let attempt = 0; attempt < 3 && !userId; attempt++) {
+          if (attempt > 0) await new Promise((r) => setTimeout(r, 150 * attempt));
           const { data: id2 } = await adminClient
             .rpc("get_auth_user_id_by_email", { _email: phoneEmail });
           if (id2 && typeof id2 === "string") userId = id2;
         }
         if (!userId) {
+          console.error("[phone-login] createUser failed:", createErr?.message);
           return new Response(
             JSON.stringify({ error: createErr?.message || "Could not create user" }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
       }
+
     }
 
     // 3) Ensure storefront_customers row exists for this store (if given).
