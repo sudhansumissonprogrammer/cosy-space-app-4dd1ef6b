@@ -160,12 +160,19 @@ export default function CategoryDetail() {
           // burst, so on 4x-throttled mobile it landed at ~4.6s and competed
           // with the render-critical chunks + hero images. Deferring it to idle
           // keeps freshness while taking it off the first-paint critical path.
+          // Hold the refresh until well after first paint: invalidating the
+          // seeded pages refetches EVERY page (3 RPCs for a 41-product
+          // category) and, on the carousel route, re-groups the rails — which
+          // showed up as a large late layout shift. 2.5s puts it clear of the
+          // LCP window; idle callback only trims further if the tab is calm.
           const refresh = () => queryClient.invalidateQueries({ queryKey: qKey });
-          if (typeof (window as any).requestIdleCallback === "function") {
-            (window as any).requestIdleCallback(refresh, { timeout: 3000 });
-          } else {
-            setTimeout(refresh, 1200);
-          }
+          setTimeout(() => {
+            if (typeof (window as any).requestIdleCallback === "function") {
+              (window as any).requestIdleCallback(refresh, { timeout: 2000 });
+            } else {
+              refresh();
+            }
+          }, 2500);
         }
         return inline.category;
       }
@@ -365,7 +372,9 @@ export default function CategoryDetail() {
         />
       )}
 
-      <div style={{ minHeight: 600 }} className={hideFilters ? "mt-1" : "mt-3"}>
+      {/* Reserve the product area so the footer does not jump up the page
+          while the app boots (carousel rails are far taller than a grid page). */}
+      <div style={{ minHeight: useBrandCarousels ? 2200 : 600 }} className={hideFilters ? "mt-1" : "mt-3"}>
         {categoryLoading || productsLoading ? (
           <div className={gridClass}>
             {Array.from({ length: 8 }).map((_, i) => (
@@ -392,7 +401,7 @@ export default function CategoryDetail() {
         ) : products.length > 0 ? (
           <>
             {useBrandCarousels ? (
-              <Suspense fallback={<div className="min-h-[280px]" />}>
+              <Suspense fallback={<div className="min-h-[2200px]" />}>
                 <LazyBrandCarousels products={products} slug={slug!} store={store} cardStyle={cardStyle} />
               </Suspense>
             ) : (
