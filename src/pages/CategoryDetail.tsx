@@ -23,6 +23,7 @@ import CategoryQuickJump from "@/components/storefront/CategoryQuickJump";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 import { hidesCategoryFilters } from "@/components/storefront/pdp/storeSections/config";
+import UtkalPricePromise from "@/components/storefront/UtkalPricePromise";
 
 /**
  * Brand-grouped carousels: opt-in per store + category only. Lazy so no other
@@ -33,6 +34,7 @@ const LazyBrandCarousels = lazy(importBrandCarousels);
 const BRAND_CAROUSEL_CATEGORIES: Record<string, string[]> = {
   "ab19143d-87a9-490e-90b7-837313522782": ["sale"], // Utkal Watches
 };
+const UTKAL_WATCH_STORE_ID = "ab19143d-87a9-490e-90b7-837313522782";
 
 /**
  * The edge/RPC category payload returns up to CATEGORY_PAGE_LIMIT (50) products,
@@ -78,6 +80,7 @@ export default function CategoryDetail() {
   const useBrandCarousels = !!(
     categorySlug && BRAND_CAROUSEL_CATEGORIES[store.id]?.includes(categorySlug)
   );
+  const showUtkalPricePromise = store.id === UTKAL_WATCH_STORE_ID;
 
 
 
@@ -342,6 +345,7 @@ export default function CategoryDetail() {
     <div className={`mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 ${hideFilters ? "py-1" : "py-5"}`}>
       <h1 className="sr-only">{category?.name || "Category"} — {store.name}</h1>
       {!hideFilters && <CategoryQuickJump storeId={store.id} slug={slug!} activeCategory={categorySlug} />}
+      {showUtkalPricePromise && <UtkalPricePromise />}
 
       {hideFilters ? null : (
         <ShopFilterBar
