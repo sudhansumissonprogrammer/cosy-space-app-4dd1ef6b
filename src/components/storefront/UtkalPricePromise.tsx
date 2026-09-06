@@ -47,7 +47,7 @@ export default function UtkalPricePromise() {
   return (
     <>
       <section
-        aria-label="Utkal Watches low price promise"
+        aria-label="Utkal Watches lowest price guarantee"
         className="mb-3 overflow-hidden border"
         style={{
           borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 16%, transparent)",
@@ -75,7 +75,7 @@ export default function UtkalPricePromise() {
 
           <span className="min-w-0 flex-1 whitespace-normal">
             <span className="flex items-center gap-2">
-              <span className="text-[13px] font-extrabold leading-tight sm:text-sm">Lowest Margin Price Promise</span>
+              <span className="text-[13px] font-extrabold leading-tight sm:text-sm">Lowest Price Guarantee</span>
               <span
                 className="hidden rounded-full px-2 py-0.5 text-[9px] font-extrabold uppercase sm:inline"
                 style={{
@@ -101,9 +101,10 @@ export default function UtkalPricePromise() {
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           side={isMobile ? "bottom" : "right"}
+          style={{ fontFamily: "var(--storefront-heading-font)" }}
           className={isMobile
-            ? "max-h-[85vh] overflow-y-auto rounded-t-lg px-0 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-0 font-sans"
-            : "w-full max-w-sm overflow-y-auto px-0 pt-0 font-sans sm:max-w-sm"}
+            ? "max-h-[85vh] overflow-y-auto rounded-t-lg px-0 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-0"
+            : "w-full max-w-sm overflow-y-auto px-0 pt-0 sm:max-w-sm"}
         >
           <div
             className="border-b px-5 pb-4 pt-6"
