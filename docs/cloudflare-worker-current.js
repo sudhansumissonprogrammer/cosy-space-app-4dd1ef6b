@@ -233,7 +233,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.92.0-splash-logo-fast";
+const WORKER_VERSION = "8.93.0-supplier-image-resize";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -3214,11 +3214,19 @@ function _toRenderUrl(rawUrl, width, quality) {
  * This helper mirrors the client transform exactly so the preload is a hit.
  */
 function _toGalleryUrl(rawUrl, width, quality) {
-  // v8.88.0 — /cf-img removed. Supplier CDNs are requested directly by the
-  // client (imageOptimize.ts), so the preload must emit the RAW url to stay
-  // byte-identical. Supabase storage still goes through the free render API.
+  // v8.93.0 — /cf-img restored for supplier CDNs (CF_IMG_HOSTS). Supplier
+  // originals are 300-660KB with no resize params; the resize route returns a
+  // ~28KB WebP and is edge-cached immutable. Must mirror imageOptimize.ts
+  // exactly so the preload URL is byte-identical to what React requests.
+  try {
+    const u = new URL(rawUrl);
+    if (CF_IMG_HOSTS.has(u.hostname)) {
+      return `/cf-img?url=${encodeURIComponent(rawUrl)}&w=${width}&q=${quality}`;
+    }
+  } catch { /* fall through */ }
   return _toRenderUrl(rawUrl, width, quality);
 }
+
 
 /** True when _toGalleryUrl is a no-op for this url (raw passthrough). */
 function _isRawPassthrough(rawUrl) {
@@ -3282,9 +3290,10 @@ function _buildProductPreloaderGrid(inlineProductsStr, count = 8) {
   if (!items.length) return "";
   let imgs = "";
   for (let i = 0; i < items.length; i++) {
-    // v8.88.0 — /cf-img removed: the client now requests supplier originals
-    // directly, so warming them here IS the real request (cache hit later).
-    const u = escapeHtml(items[i].url);
+    // v8.93.0 — warm the SAME url the client will request (resized for
+    // supplier CDNs), otherwise we'd download the 600KB original for nothing.
+    const u = escapeHtml(_toGalleryUrl(items[i].url, 400, 75));
+
     const eager = i < 4 ? ' loading="eager"' : ' loading="lazy"';
     const fp = i < 2 ? ' fetchpriority="high"' : "";
     imgs += `<img src="${u}" alt=""${eager}${fp} decoding="async" width="1" height="1" />`;

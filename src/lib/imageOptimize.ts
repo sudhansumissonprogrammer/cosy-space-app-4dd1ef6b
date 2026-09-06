@@ -28,14 +28,49 @@ const ENABLE_EDGE_IMAGE_PROXY = import.meta.env.VITE_ENABLE_EDGE_IMAGE_PROXY ===
 const PIPELINE_WIDTHS: number[] = [400, 800];
 
 /**
- * v8.88 — `/cf-img` removed entirely.
- * Supplier catalog CDNs (JD / Cartpe / …) are now requested DIRECTLY.
- * Rationale: the Worker resize hop added a full extra RTT + cold-transform
- * latency (300-900ms) on the LCP image and burned a paid Worker event per
- * image, while the origins already sit behind their own CDN with
- * cache-friendly, immutable URLs. Direct = fewer hops, preload-scanner
- * friendly, and byte-identical to what the edge can preload.
+ * v8.93 — `/cf-img` restored for supplier catalog CDNs.
+ *
+ * v8.88 sent supplier originals straight to the browser. Those origins serve
+ * multi-thousand-pixel files (measured: 660KB / 540KB / 480KB each on
+ * utkalwatch.in/category/sale → 21MB of images per page) with NO resize
+ * params, which destroys LCP on mobile. The Worker resize route returns a
+ * ~28KB WebP for the same file at w=400 and is edge-cached
+ * (`immutable`, 1 year, cf-cache HIT), so the extra hop is paid once per
+ * variant per PoP.
+ *
+ * MUST stay in sync with CF_IMG_HOSTS in docs/cloudflare-worker-current.js.
  */
+const EDGE_RESIZE_HOSTS = new Set([
+  "assets.jdwebnship.in",
+  "assets.jdwebnship.com",
+  "cdn.cartpe.in",
+  "assets.mycatalog.io",
+  "watchtrade.in",
+  "www.watchtrade.in",
+  "overlaysnow.com",
+  "www.overlaysnow.com",
+]);
+
+/** True when the host is a supplier CDN we resize at the edge. */
+export function isEdgeResizeHost(url: string): boolean {
+  try {
+    return EDGE_RESIZE_HOSTS.has(new URL(url).hostname);
+  } catch {
+    return false;
+  }
+}
+
+/** True only where the Cloudflare Worker (and thus `/cf-img`) is in front. */
+function isWorkerHost(): boolean {
+  if (typeof window === "undefined") return false;
+  const h = window.location.hostname;
+  if (h === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(h)) return false;
+  if (h.endsWith(".lovable.app") || h.endsWith(".lovableproject.com")) return false;
+  return true;
+}
+
+
+
 
 
 
@@ -129,14 +164,19 @@ export function optimizeImageUrl(
     }
   }
 
-  // ── 5. Any other external URL: serve DIRECTLY (no Worker /cf-img hop) ──
-  // v8.88: supplier CDNs (JD / Cartpe / …) are fetched straight from origin.
+  // ── 5. Supplier catalog CDNs: resize at the edge (`/cf-img`) ──
+  // Only on Worker-served hosts (production). Localhost / lovable previews
+  // have no Worker, so they keep the raw origin URL.
   if (url.startsWith("https://") || url.startsWith("http://")) {
     if (ENABLE_EDGE_IMAGE_PROXY && SUPABASE_PROJECT_ID) {
       return `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/image-ops?action=resize&url=${encodeURIComponent(url)}&w=${width}&q=${quality}`;
     }
+    if (isEdgeResizeHost(url) && isWorkerHost()) {
+      return `${window.location.origin}/cf-img?url=${encodeURIComponent(url)}&w=${width}&q=${quality}`;
+    }
     return url;
   }
+
 
 
 
