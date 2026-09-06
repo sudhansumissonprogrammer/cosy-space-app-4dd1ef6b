@@ -4,9 +4,8 @@ import {
   ChevronRight,
   Globe2,
   HandCoins,
-  PackageCheck,
-  Scale,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,30 +21,28 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 const PROMISES = [
   {
-    icon: Scale,
-    title: "Compare our price",
-    text: "Check the same model and quality with other sellers before you buy.",
+    icon: Globe2,
+    title: "Direct sourcing",
+    text: "We source our watches directly from trusted suppliers, reducing unnecessary middlemen and extra markups.",
   },
   {
-    icon: Globe2,
-    title: "Direct importer",
-    text: "We source master-quality watches directly, including from Japan, with fewer middlemen.",
+    icon: Sparkles,
+    title: "Quality comes first",
+    text: "We don't cut quality to lower the price. We carefully select watches for their design, finish and overall quality.",
   },
   {
     icon: HandCoins,
-    title: "Lowest possible margin",
-    text: "A lean margin helps us offer stronger value on every watch.",
-  },
-  {
-    icon: PackageCheck,
-    title: "₹100 advance, rest on delivery",
-    text: "The small advance confirms your order and reduces fake bookings. Pay the balance on delivery.",
+    title: "Why ₹100 upfront?",
+    text: "We offer COD, but ask for ₹100 to confirm your order. With full COD, some orders are never accepted at delivery. A failed order can cost us delivery + return shipping + advertising costs, while the watch can remain tied up for 14–15 days. The ₹100 confirmation helps us reduce these unnecessary costs — so we can keep our prices lower.",
   },
 ];
 
 export default function UtkalPricePromise() {
   const [open, setOpen] = useState(false);
   const isMobile = useIsMobile();
+
+  const storefrontText = "var(--storefront-text, hsl(var(--foreground)))";
+  const storefrontBg = "var(--storefront-bg, hsl(var(--background)))";
 
   return (
     <>
@@ -69,8 +66,8 @@ export default function UtkalPricePromise() {
           <span
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
             style={{
-              backgroundColor: "var(--storefront-text, hsl(var(--foreground)))",
-              color: "var(--storefront-bg, hsl(var(--background)))",
+              backgroundColor: storefrontText,
+              color: storefrontBg,
             }}
           >
             <BadgeIndianRupee className="h-[18px] w-[18px]" strokeWidth={2.2} />
@@ -82,15 +79,15 @@ export default function UtkalPricePromise() {
               <span
                 className="hidden rounded-full px-2 py-0.5 text-[9px] font-extrabold uppercase sm:inline"
                 style={{
-                  backgroundColor: "var(--storefront-text, hsl(var(--foreground)))",
-                  color: "var(--storefront-bg, hsl(var(--background)))",
+                  backgroundColor: storefrontText,
+                  color: storefrontBg,
                 }}
               >
-                Compare &amp; see
+                See why
               </span>
             </span>
             <span className="mt-0.5 block text-[10px] font-medium leading-snug opacity-65 sm:text-xs">
-              Direct importer · Low margin · ₹100 advance, rest COD
+              Direct sourcing · Low margin · ₹100 advance, rest COD
             </span>
           </span>
 
@@ -105,7 +102,7 @@ export default function UtkalPricePromise() {
         <SheetContent
           side={isMobile ? "bottom" : "right"}
           className={isMobile
-            ? "max-h-[82vh] overflow-y-auto rounded-t-lg px-0 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-0 font-sans"
+            ? "max-h-[85vh] overflow-y-auto rounded-t-lg px-0 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-0 font-sans"
             : "w-full max-w-sm overflow-y-auto px-0 pt-0 font-sans sm:max-w-sm"}
         >
           <div
@@ -118,16 +115,16 @@ export default function UtkalPricePromise() {
             <div
               className="mb-3 flex h-10 w-10 items-center justify-center rounded-full"
               style={{
-                backgroundColor: "var(--storefront-text, hsl(var(--foreground)))",
-                color: "var(--storefront-bg, hsl(var(--background)))",
+                backgroundColor: storefrontText,
+                color: storefrontBg,
               }}
             >
               <ShieldCheck className="h-[18px] w-[18px]" strokeWidth={2.1} />
             </div>
             <SheetHeader className="pr-10 text-left">
-              <SheetTitle className="text-lg font-extrabold leading-snug">How we keep prices lower</SheetTitle>
+              <SheetTitle className="text-lg font-extrabold leading-snug">How we keep our prices lower</SheetTitle>
               <SheetDescription className="text-xs leading-relaxed">
-                Direct sourcing, low margins and fewer fake orders.
+                We source directly and reduce unnecessary costs — so you get better prices without compromising on quality.
               </SheetDescription>
             </SheetHeader>
           </div>
@@ -144,6 +141,21 @@ export default function UtkalPricePromise() {
                 </div>
               </div>
             ))}
+
+            <div
+              className="mt-3 rounded-lg border p-3.5"
+              style={{
+                borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 14%, transparent)",
+                backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 6%, var(--storefront-bg, hsl(var(--background))))",
+              }}
+            >
+              <p className="text-[12px] font-extrabold leading-snug text-foreground">
+                Your ₹100 is adjusted against your order total — it's not an extra charge.
+              </p>
+              <p className="mt-1 text-[11px] leading-[1.55] text-muted-foreground">
+                Pay the remaining amount when your watch is delivered.
+              </p>
+            </div>
           </div>
 
           <SheetFooter className="px-5 pt-2 sm:justify-stretch sm:space-x-0">
