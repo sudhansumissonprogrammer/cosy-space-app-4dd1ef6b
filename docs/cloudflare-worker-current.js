@@ -233,7 +233,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.92.0-splash-logo-fast";
+const WORKER_VERSION = "8.93.0-supplier-image-resize";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
