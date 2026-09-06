@@ -3290,9 +3290,10 @@ function _buildProductPreloaderGrid(inlineProductsStr, count = 8) {
   if (!items.length) return "";
   let imgs = "";
   for (let i = 0; i < items.length; i++) {
-    // v8.88.0 — /cf-img removed: the client now requests supplier originals
-    // directly, so warming them here IS the real request (cache hit later).
-    const u = escapeHtml(items[i].url);
+    // v8.93.0 — warm the SAME url the client will request (resized for
+    // supplier CDNs), otherwise we'd download the 600KB original for nothing.
+    const u = escapeHtml(_toGalleryUrl(items[i].url, 400, 75));
+
     const eager = i < 4 ? ' loading="eager"' : ' loading="lazy"';
     const fp = i < 2 ? ' fetchpriority="high"' : "";
     imgs += `<img src="${u}" alt=""${eager}${fp} decoding="async" width="1" height="1" />`;
