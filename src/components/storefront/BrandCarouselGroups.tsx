@@ -74,23 +74,24 @@ export default function BrandCarouselGroups({ products, slug, store, cardStyle =
           <div
             className={`brand-rail -mx-3 grid grid-flow-col ${
               group.items.length > 2 ? "grid-rows-2" : "grid-rows-1"
-            } auto-cols-[44%] snap-x snap-mandatory gap-x-2 gap-y-3 overflow-x-auto scroll-px-3 px-3 pb-1 scrollbar-hide sm:mx-0 sm:auto-cols-[31%] sm:gap-x-4 sm:px-0 sm:scroll-px-0 md:auto-cols-[23.5%] lg:auto-cols-[19%]`}
+            } auto-rows-fr auto-cols-[44%] snap-x snap-mandatory gap-x-2 gap-y-3 overflow-x-auto scroll-px-3 px-3 pb-1 scrollbar-hide sm:mx-0 sm:auto-cols-[31%] sm:gap-x-4 sm:px-0 sm:scroll-px-0 md:auto-cols-[23.5%] lg:auto-cols-[19%]`}
             style={{ overscrollBehaviorX: "contain", WebkitOverflowScrolling: "touch" }}
           >
             {group.items.map((product, idx) => (
-              <div key={product.id} className="snap-start self-start">
+              <div key={product.id} className="h-full snap-start">
                 <UniversalProductCard
                   product={product}
                   slug={slug}
                   store={store}
                   cardStyle={cardStyle}
                   index={idx}
-                  priority={gi === 0 ? idx < 4 : idx < 2}
+                  priority={gi === 0 && idx < 2}
                   deferOffscreen={false}
                 />
               </div>
             ))}
           </div>
+
         </section>
       ))}
     </div>
