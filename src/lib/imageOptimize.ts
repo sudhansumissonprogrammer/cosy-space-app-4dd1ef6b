@@ -154,14 +154,19 @@ export function optimizeImageUrl(
     }
   }
 
-  // ── 5. Any other external URL: serve DIRECTLY (no Worker /cf-img hop) ──
-  // v8.88: supplier CDNs (JD / Cartpe / …) are fetched straight from origin.
+  // ── 5. Supplier catalog CDNs: resize at the edge (`/cf-img`) ──
+  // Only on Worker-served hosts (production). Localhost / lovable previews
+  // have no Worker, so they keep the raw origin URL.
   if (url.startsWith("https://") || url.startsWith("http://")) {
     if (ENABLE_EDGE_IMAGE_PROXY && SUPABASE_PROJECT_ID) {
       return `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/image-ops?action=resize&url=${encodeURIComponent(url)}&w=${width}&q=${quality}`;
     }
+    if (isEdgeResizeHost(url) && isWorkerHost()) {
+      return `${window.location.origin}/cf-img?url=${encodeURIComponent(url)}&w=${width}&q=${quality}`;
+    }
     return url;
   }
+
 
 
 
