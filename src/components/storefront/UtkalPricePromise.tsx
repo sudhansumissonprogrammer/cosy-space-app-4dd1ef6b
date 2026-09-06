@@ -28,12 +28,12 @@ const PROMISES = [
   {
     icon: Sparkles,
     title: "Quality comes first",
-    text: "We don't cut quality to lower the price. We carefully select watches for their design, finish and overall quality.",
+    text: "We don't cut quality to lower the price. Every watch is selected for its design, finish and overall quality.",
   },
   {
     icon: HandCoins,
     title: "Why ₹100 upfront?",
-    text: "We offer COD, but ask for ₹100 to confirm your order. With full COD, some orders are never accepted at delivery. A failed order can cost us delivery + return shipping + advertising costs, while the watch can remain tied up for 14–15 days. The ₹100 confirmation helps us reduce these unnecessary costs — so we can keep our prices lower.",
+    text: "We offer COD, but ask for ₹100 to confirm your order.\n\nA failed COD order can cost us delivery + return shipping + advertising costs, while the watch may remain tied up for 14–15 days.\n\nThis small confirmation amount helps us reduce these losses — so we can keep our prices lower for everyone.",
   },
 ];
 
