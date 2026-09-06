@@ -3214,11 +3214,19 @@ function _toRenderUrl(rawUrl, width, quality) {
  * This helper mirrors the client transform exactly so the preload is a hit.
  */
 function _toGalleryUrl(rawUrl, width, quality) {
-  // v8.88.0 — /cf-img removed. Supplier CDNs are requested directly by the
-  // client (imageOptimize.ts), so the preload must emit the RAW url to stay
-  // byte-identical. Supabase storage still goes through the free render API.
+  // v8.93.0 — /cf-img restored for supplier CDNs (CF_IMG_HOSTS). Supplier
+  // originals are 300-660KB with no resize params; the resize route returns a
+  // ~28KB WebP and is edge-cached immutable. Must mirror imageOptimize.ts
+  // exactly so the preload URL is byte-identical to what React requests.
+  try {
+    const u = new URL(rawUrl);
+    if (CF_IMG_HOSTS.has(u.hostname)) {
+      return `/cf-img?url=${encodeURIComponent(rawUrl)}&w=${width}&q=${quality}`;
+    }
+  } catch { /* fall through */ }
   return _toRenderUrl(rawUrl, width, quality);
 }
+
 
 /** True when _toGalleryUrl is a no-op for this url (raw passthrough). */
 function _isRawPassthrough(rawUrl) {
