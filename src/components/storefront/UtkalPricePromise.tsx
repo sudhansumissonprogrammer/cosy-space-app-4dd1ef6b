@@ -125,7 +125,7 @@ export default function UtkalPricePromise() {
             <SheetHeader className="pr-10 text-left">
               <SheetTitle className="text-lg font-extrabold leading-snug">How we keep our prices lower</SheetTitle>
               <SheetDescription className="text-xs leading-relaxed">
-                We source directly and reduce unnecessary costs — so you get better prices without compromising on quality.
+                We source directly and cut unnecessary costs — so you get better prices without compromising on quality.
               </SheetDescription>
             </SheetHeader>
           </div>
