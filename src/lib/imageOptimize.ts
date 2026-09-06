@@ -60,6 +60,16 @@ export function isEdgeResizeHost(url: string): boolean {
   }
 }
 
+/** True only where the Cloudflare Worker (and thus `/cf-img`) is in front. */
+function isWorkerHost(): boolean {
+  if (typeof window === "undefined") return false;
+  const h = window.location.hostname;
+  if (h === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(h)) return false;
+  if (h.endsWith(".lovable.app") || h.endsWith(".lovableproject.com")) return false;
+  return true;
+}
+
+
 
 
 
