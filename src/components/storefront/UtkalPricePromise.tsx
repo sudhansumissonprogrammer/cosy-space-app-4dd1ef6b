@@ -138,22 +138,33 @@ export default function UtkalPricePromise() {
                 </div>
                 <div>
                   <h3 className="text-[13px] font-bold leading-5 text-foreground">{title}</h3>
-                  <p className="mt-0.5 text-[11px] leading-[1.55] text-muted-foreground">{text}</p>
+                  <p className="mt-0.5 whitespace-pre-line text-[11px] leading-[1.55] text-muted-foreground">
+                    {text}
+                  </p>
                 </div>
               </div>
             ))}
 
             <div
-              className="mt-3 rounded-lg border p-3.5"
+              className="mt-4 rounded-xl border p-4"
               style={{
                 borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 14%, transparent)",
                 backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 6%, var(--storefront-bg, hsl(var(--background))))",
               }}
             >
-              <p className="text-[12px] font-extrabold leading-snug text-foreground">
-                Your ₹100 is adjusted against your order total — it's not an extra charge.
+              <p className="text-[13px] font-extrabold leading-snug text-foreground">
+                ₹100 is adjusted against your order total
               </p>
-              <p className="mt-1 text-[11px] leading-[1.55] text-muted-foreground">
+              <p
+                className="mt-1 inline-block rounded px-1.5 py-0.5 text-[11px] font-extrabold uppercase tracking-wide"
+                style={{
+                  backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 12%, transparent)",
+                  color: "var(--storefront-text, hsl(var(--foreground)))",
+                }}
+              >
+                It's NOT an extra charge.
+              </p>
+              <p className="mt-2 text-[11px] leading-[1.55] text-muted-foreground">
                 Pay the remaining amount when your watch is delivered.
               </p>
             </div>
