@@ -71,7 +71,7 @@ export default function TrustVideoReel({ slides, onClose, storeName, whatsappNum
             // Only the on-screen clip is allowed to buffer.
             v.preload = "auto";
             if (v.readyState < 3) setBuffering(true);
-            v.muted = false;
+            v.muted = muted;
             const attempt = v.play();
             if (attempt && typeof attempt.catch === "function") {
               attempt.catch(() => {
