@@ -85,6 +85,7 @@ export default function CategoryDetail() {
 
 
   const [sort, setSort] = useState<SortKey>("default");
+  const [categorySearchOpen, setCategorySearchOpen] = useState(false);
 
   // Worker-inlined category payload (Phase A): { category, products, total }
   const getInlineCategory = () => {
