@@ -91,7 +91,7 @@ export default function TrustVideoReel({ slides, onClose, storeName, whatsappNum
     );
     root.querySelectorAll("[data-idx]").forEach((el) => io.observe(el));
     return () => io.disconnect();
-  }, [slides.length, muted]);
+  }, [slides.length]);
 
 
   useEffect(() => {
