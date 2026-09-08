@@ -101,13 +101,25 @@ export default function ShopByVideoConfig() {
     return list;
   }, [videoProducts, cfg.order]);
 
+  const applyOrder = (list: VideoProduct[]) =>
+    setCfg((c) => ({ ...c, order: list.map((p) => p.id) }));
+
   const move = (idx: number, dir: -1 | 1) => {
     const next = [...orderedProducts];
     const j = idx + dir;
     if (j < 0 || j >= next.length) return;
     [next[idx], next[j]] = [next[j], next[idx]];
-    setCfg((c) => ({ ...c, order: next.map((p) => p.id) }));
+    applyOrder(next);
   };
+
+  const moveToTop = (idx: number) => {
+    if (idx <= 0) return;
+    const next = [...orderedProducts];
+    const [item] = next.splice(idx, 1);
+    next.unshift(item);
+    applyOrder(next);
+  };
+
 
   const upsert = useMutation({
     mutationFn: async (payload: { enabled: boolean; config: Config }) => {
