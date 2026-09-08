@@ -47,6 +47,17 @@ async function compressImage(file: File): Promise<File> {
   if (!src || !src.width || !src.height) {
     throw new Error("This image format isn't supported. Please try a JPG or PNG photo.");
   }
+  // Already web-sized and light? Upload the original bytes — re-encoding a
+  // small JPG/WebP only degrades it.
+  if (
+    file.size <= PASSTHROUGH_BYTES &&
+    Math.max(src.width, src.height) <= MAX_IMAGE_DIM &&
+    /^image\/(jpeg|webp|png)$/.test(file.type)
+  ) {
+    (src as any).close?.();
+    return file;
+  }
+
   const scale = Math.min(1, MAX_IMAGE_DIM / Math.max(src.width, src.height));
   const w = Math.max(1, Math.round(src.width * scale));
   const h = Math.max(1, Math.round(src.height * scale));
