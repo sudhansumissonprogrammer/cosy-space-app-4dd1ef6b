@@ -360,6 +360,7 @@ export default function CategoryDetail() {
           showing={products.length}
           sort={sort}
           onSortChange={setSort}
+          onSearchClick={() => setCategorySearchOpen(true)}
           leading={
             <button
               onClick={() => navigate(storefrontPath(slug!, ""))}
@@ -370,6 +371,18 @@ export default function CategoryDetail() {
             </button>
           }
         />
+      )}
+
+      {categorySearchOpen && (
+        <Suspense fallback={null}>
+          <LazySearchOverlay
+            open={categorySearchOpen}
+            onClose={() => setCategorySearchOpen(false)}
+            products={rawProducts as any}
+            slug={slug!}
+            storeId={store.id}
+          />
+        </Suspense>
       )}
 
       {/* Reserve the product area so the footer does not jump up the page
