@@ -168,7 +168,7 @@ export default function TrustVideoReel({ slides, onClose, storeName, whatsappNum
               poster={s.posterUrl || undefined}
               className="h-full w-full object-contain"
               playsInline
-              muted
+              muted={muted}
               loop
               // Only the visible clip buffers (the observer flips this to
               // "auto"). Everything else stays at zero bytes.
