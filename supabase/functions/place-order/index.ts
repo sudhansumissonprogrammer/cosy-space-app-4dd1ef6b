@@ -315,6 +315,13 @@ Deno.serve(async (req) => {
             });
           }
         }
+        // Subtotal of the PAID lines — a free-gift offer with a cart_value
+        // trigger only applies when the rest of the cart really reaches the
+        // threshold, otherwise the shopper is charged the normal price.
+        const paidSubtotal = (items as any[])
+          .filter((it: any) => it?.meta?.kind !== "upsell")
+          .reduce((s: number, it: any) => s + (Number(it.price) || 0) * (Number(it.quantity) || 0), 0);
+
         for (const it of items as any[]) {
           if (it?.meta?.kind !== "upsell") continue;
           const offer = enabledUpsell ? offerById.get(String(it.meta.offer_id)) : null;
@@ -323,7 +330,14 @@ Deno.serve(async (req) => {
           const base = p.sale != null && p.sale < p.price ? p.sale : p.price;
           let finalPrice = base;
           const inc = offer?.incentive;
-          if (offer && offer.active !== false && inc && inc.type && inc.type !== "none") {
+          const trig = offer?.trigger;
+          const thresholdOk =
+            !trig || trig.type !== "cart_value" || paidSubtotal >= (Number(trig.min_cart_value) || 0);
+          if (inc?.type === "free_gift") {
+            // A free gift is always a single unit.
+            it.quantity = 1;
+          }
+          if (offer && offer.active !== false && thresholdOk && inc && inc.type && inc.type !== "none") {
             if (inc.type === "percent_off") {
               const v = Math.max(0, Math.min(100, Number(inc.value) || 0));
               finalPrice = Math.max(0, Math.round(base * (100 - v)) / 100);
