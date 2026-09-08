@@ -101,13 +101,25 @@ export default function ShopByVideoConfig() {
     return list;
   }, [videoProducts, cfg.order]);
 
+  const applyOrder = (list: VideoProduct[]) =>
+    setCfg((c) => ({ ...c, order: list.map((p) => p.id) }));
+
   const move = (idx: number, dir: -1 | 1) => {
     const next = [...orderedProducts];
     const j = idx + dir;
     if (j < 0 || j >= next.length) return;
     [next[idx], next[j]] = [next[j], next[idx]];
-    setCfg((c) => ({ ...c, order: next.map((p) => p.id) }));
+    applyOrder(next);
   };
+
+  const moveToTop = (idx: number) => {
+    if (idx <= 0) return;
+    const next = [...orderedProducts];
+    const [item] = next.splice(idx, 1);
+    next.unshift(item);
+    applyOrder(next);
+  };
+
 
   const upsert = useMutation({
     mutationFn: async (payload: { enabled: boolean; config: Config }) => {
@@ -264,6 +276,16 @@ export default function ShopByVideoConfig() {
                   </div>
                   <div className="flex items-center gap-1">
                     <button
+                      type="button"
+                      onClick={() => moveToTop(i)}
+                      disabled={i === 0}
+                      className="h-8 px-2 inline-flex items-center justify-center rounded-md border border-input bg-background text-[11px] font-semibold disabled:opacity-40 hover:bg-accent transition-colors"
+                      aria-label="Move to first position"
+                    >
+                      Top
+                    </button>
+                    <button
+
                       type="button"
                       onClick={() => move(i, -1)}
                       disabled={i === 0}

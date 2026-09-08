@@ -95,6 +95,9 @@ export default function ShopByVideoCarousel({ storeSlug: storeSlugProp, storeId,
     let cancelled = false;
     (async () => {
       const max = Math.max(2, Math.min(30, config.max_items ?? 10));
+      // Fetch a wider window than `max`: a product pinned to the top from the
+      // dashboard can be an older upload, so limiting to `max` newest rows
+      // before applying the manual order would silently drop it.
       const { data, error } = await supabase
         .from("products")
         .select("id,slug,name,price,sale_price,currency,image_url,video_url,video_poster_url")
@@ -102,13 +105,13 @@ export default function ShopByVideoCarousel({ storeSlug: storeSlugProp, storeId,
         .eq("is_active", true)
         .not("video_url", "is", null)
         .order("created_at", { ascending: false })
-        .limit(max);
+        .limit(60);
       if (error || cancelled) return;
       let list = (data as any[] as Product[]) || [];
       const orderIds = config.order || [];
       if (orderIds.length) {
         const idx = new Map(orderIds.map((id, i) => [id, i]));
-        list = list.sort((a, b) => {
+        list = list.slice().sort((a, b) => {
           const ai = idx.has(a.id) ? (idx.get(a.id) as number) : Number.MAX_SAFE_INTEGER;
           const bi = idx.has(b.id) ? (idx.get(b.id) as number) : Number.MAX_SAFE_INTEGER;
           return ai - bi;
@@ -116,6 +119,7 @@ export default function ShopByVideoCarousel({ storeSlug: storeSlugProp, storeId,
       }
       setProducts(list.slice(0, max));
     })();
+
     return () => { cancelled = true; };
   }, [config, storeId, previewProducts]);
 
