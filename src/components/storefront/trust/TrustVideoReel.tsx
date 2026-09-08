@@ -32,7 +32,7 @@ export default function TrustVideoReel({ slides, onClose, storeName, whatsappNum
   const [failed, setFailed] = useState<Record<string, boolean>>({});
   const [buffering, setBuffering] = useState(true);
 
-  const [muted, setMuted] = useState(true);
+  const [muted, setMuted] = useState(false);
 
   const waPhone = waPhoneNumber(whatsappNumber);
   const waMessage = encodeURIComponent(
