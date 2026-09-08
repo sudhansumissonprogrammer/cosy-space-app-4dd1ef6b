@@ -1,4 +1,4 @@
-import { ArrowDownAZ, ArrowUpAZ, IndianRupee, BadgePercent, PackageCheck, Filter, Clock } from "lucide-react";
+import { ArrowDownAZ, ArrowUpAZ, IndianRupee, BadgePercent, PackageCheck, Filter, Clock, Search } from "lucide-react";
 
 
 export type SortKey = "default" | "recent" | "price-asc" | "price-desc" | "discount" | "in-stock";
@@ -12,6 +12,8 @@ interface ShopFilterBarProps {
   topOffset?: number;
   /** Optional leading node (e.g. back button) rendered inside the same sticky row. */
   leading?: React.ReactNode;
+  /** When provided, a search pill shares the row with the sort pills. */
+  onSearchClick?: () => void;
 }
 
 const PILLS: { key: SortKey; label: string; icon: any }[] = [
