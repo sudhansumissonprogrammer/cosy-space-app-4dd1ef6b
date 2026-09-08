@@ -31,6 +31,7 @@ import UtkalPricePromise from "@/components/storefront/UtkalPricePromise";
  */
 const importBrandCarousels = () => import("@/components/storefront/BrandCarouselGroups");
 const LazyBrandCarousels = lazy(importBrandCarousels);
+const LazySearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
 const BRAND_CAROUSEL_CATEGORIES: Record<string, string[]> = {
   "ab19143d-87a9-490e-90b7-837313522782": ["sale"], // Utkal Watches
 };
@@ -85,6 +86,7 @@ export default function CategoryDetail() {
 
 
   const [sort, setSort] = useState<SortKey>("default");
+  const [categorySearchOpen, setCategorySearchOpen] = useState(false);
 
   // Worker-inlined category payload (Phase A): { category, products, total }
   const getInlineCategory = () => {
@@ -360,6 +362,7 @@ export default function CategoryDetail() {
           showing={products.length}
           sort={sort}
           onSortChange={setSort}
+          onSearchClick={() => setCategorySearchOpen(true)}
           leading={
             <button
               onClick={() => navigate(storefrontPath(slug!, ""))}
@@ -370,6 +373,18 @@ export default function CategoryDetail() {
             </button>
           }
         />
+      )}
+
+      {categorySearchOpen && (
+        <Suspense fallback={null}>
+          <LazySearchOverlay
+            open={categorySearchOpen}
+            onClose={() => setCategorySearchOpen(false)}
+            products={rawProducts as any}
+            slug={slug!}
+            storeId={store.id}
+          />
+        </Suspense>
       )}
 
       {/* Reserve the product area so the footer does not jump up the page
