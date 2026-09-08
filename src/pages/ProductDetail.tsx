@@ -1284,11 +1284,14 @@ export default function ProductDetail() {
 
 
         {/* Customer Reviews — shown above "Complete the look" */}
-        <DeferUntilVisible rootMargin="600px" minHeight={240}>
-          <Suspense fallback={null}>
-            <ReviewsShowcase productId={product.id} storeId={store.id} storeSlug={store.slug} productName={product.name} />
-          </Suspense>
-        </DeferUntilVisible>
+        <div id="reviews-anchor">
+          <DeferUntilVisible rootMargin="600px" minHeight={240}>
+            <Suspense fallback={null}>
+              <ReviewsShowcase productId={product.id} storeId={store.id} storeSlug={store.slug} productName={product.name} />
+            </Suspense>
+          </DeferUntilVisible>
+        </div>
+
 
         {/* Complete the Look — deferred until near viewport */}
         <DeferUntilVisible rootMargin="600px" minHeight={320}>
