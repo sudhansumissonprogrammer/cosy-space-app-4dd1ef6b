@@ -12,8 +12,11 @@ export interface ReviewMedia {
   type: "image" | "video";
 }
 
-const MAX_IMAGE_DIM = 1400;
-const WEBP_QUALITY = 0.8;
+/** Review photos keep near-original detail — only very large phone shots shrink. */
+const MAX_IMAGE_DIM = 2200;
+const WEBP_QUALITY = 0.92;
+/** Small originals are uploaded untouched (no re-encode = no quality loss). */
+const PASSTHROUGH_BYTES = 2 * 1024 * 1024;
 /** Hard cap enforced server-side for images */
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 
@@ -44,6 +47,17 @@ async function compressImage(file: File): Promise<File> {
   if (!src || !src.width || !src.height) {
     throw new Error("This image format isn't supported. Please try a JPG or PNG photo.");
   }
+  // Already web-sized and light? Upload the original bytes — re-encoding a
+  // small JPG/WebP only degrades it.
+  if (
+    file.size <= PASSTHROUGH_BYTES &&
+    Math.max(src.width, src.height) <= MAX_IMAGE_DIM &&
+    /^image\/(jpeg|webp|png)$/.test(file.type)
+  ) {
+    (src as any).close?.();
+    return file;
+  }
+
   const scale = Math.min(1, MAX_IMAGE_DIM / Math.max(src.width, src.height));
   const w = Math.max(1, Math.round(src.width * scale));
   const h = Math.max(1, Math.round(src.height * scale));
@@ -52,20 +66,22 @@ async function compressImage(file: File): Promise<File> {
   canvas.height = h;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Could not process this photo. Please try another one.");
+  ctx.imageSmoothingEnabled = true;
+  (ctx as any).imageSmoothingQuality = "high";
   ctx.drawImage(src as any, 0, 0, w, h);
   (src as any).close?.();
 
   let quality = WEBP_QUALITY;
   let blob: Blob | null = null;
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 5; i++) {
     blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/webp", quality));
     // Safari <14 returns PNG when webp is unsupported — accept it if small enough
     if (!blob) break;
     if (blob.size <= MAX_IMAGE_BYTES) break;
-    quality -= 0.15;
+    quality -= 0.08;
   }
   if (!blob) {
-    blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.82));
+    blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92));
   }
   if (!blob) throw new Error("Could not process this photo. Please try another one.");
   if (blob.size > MAX_IMAGE_BYTES) throw new Error("Photo is too large. Please pick a smaller one.");
