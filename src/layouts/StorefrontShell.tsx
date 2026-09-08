@@ -5,6 +5,7 @@ import { CartProvider } from "@/contexts/CartContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
 import { StorefrontAuthProvider } from "@/contexts/StorefrontAuthContext";
 import StorefrontAutoLogin from "@/components/storefront/StorefrontAutoLogin";
+const AutoFreeGift = lazy(() => import("@/components/storefront/AutoFreeGift"));
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useThemePreview } from "@/hooks/useThemePreview";
 import { useMetaTags } from "@/hooks/useMetaTags";
@@ -495,6 +496,7 @@ export default function StorefrontShell({
         <WishlistProvider slug={store.slug}>
           <StorefrontAuthProvider storeId={store.id}>
             <StorefrontAutoLogin storeId={store.id} />
+            <Suspense fallback={null}><AutoFreeGift storeSlug={store.slug} /></Suspense>
             {content}
           </StorefrontAuthProvider>
         </WishlistProvider>
@@ -507,6 +509,7 @@ export default function StorefrontShell({
     <CartProvider slug={store.slug} storeId={store.id} currency={store.currency || "INR"}>
       <StorefrontAuthProvider storeId={store.id}>
         <StorefrontAutoLogin storeId={store.id} />
+        <Suspense fallback={null}><AutoFreeGift storeSlug={store.slug} /></Suspense>
         {content}
       </StorefrontAuthProvider>
     </CartProvider>
