@@ -277,6 +277,16 @@ export default function ShopByVideoConfig() {
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
+                      onClick={() => moveToTop(i)}
+                      disabled={i === 0}
+                      className="h-8 px-2 inline-flex items-center justify-center rounded-md border border-input bg-background text-[11px] font-semibold disabled:opacity-40 hover:bg-accent transition-colors"
+                      aria-label="Move to first position"
+                    >
+                      Top
+                    </button>
+                    <button
+
+                      type="button"
                       onClick={() => move(i, -1)}
                       disabled={i === 0}
                       className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-input bg-background disabled:opacity-40 hover:bg-accent transition-colors"
