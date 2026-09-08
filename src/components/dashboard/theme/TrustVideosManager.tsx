@@ -43,7 +43,8 @@ export default function TrustVideosManager({ storeId }: { storeId?: string }) {
         .from("store_trust_videos")
         .select("id,video_url,poster_url,title,cta_label,cta_target,sort_order,is_active")
         .eq("store_id", storeId!)
-        .order("sort_order", { ascending: true });
+        .order("sort_order", { ascending: true })
+        .order("id", { ascending: true });
       if (error) throw error;
       return (data || []) as Row[];
     },
