@@ -55,6 +55,8 @@ export default function TrustVideoReel({ slides, onClose, storeName, whatsappNum
   }, [onClose]);
 
   // Play only the visible slide; everything else stays paused + unbuffered.
+  // Sound is ON by default; if the browser blocks unmuted autoplay, we fall
+  // back to muted playback so the reel still starts immediately.
   useEffect(() => {
     const root = scrollerRef.current;
     if (!root) return;
@@ -69,7 +71,15 @@ export default function TrustVideoReel({ slides, onClose, storeName, whatsappNum
             // Only the on-screen clip is allowed to buffer.
             v.preload = "auto";
             if (v.readyState < 3) setBuffering(true);
-            v.play().catch(() => {});
+            v.muted = false;
+            const attempt = v.play();
+            if (attempt && typeof attempt.catch === "function") {
+              attempt.catch(() => {
+                v.muted = true;
+                setMuted(true);
+                v.play().catch(() => {});
+              });
+            }
             // Warm just the next clip's header so the swipe feels instant.
             const nxt = videoRefs.current[idx + 1];
             if (nxt && nxt.preload === "none") nxt.preload = "metadata";
