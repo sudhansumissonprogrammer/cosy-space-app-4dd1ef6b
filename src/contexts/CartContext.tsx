@@ -24,6 +24,11 @@ interface CartContextType {
   openCart: () => void;
   closeCart: () => void;
   cartBounce: boolean;
+  /**
+   * Add/remove an automatic ₹0 gift line WITHOUT firing add-to-cart analytics.
+   * Passing `null` removes the gift line for that product.
+   */
+  syncGiftLine: (productId: string, line: CartItem | null) => void;
 }
 
 const CartContext = createContext<CartContextType | null>(null);
@@ -292,11 +297,25 @@ export function CartProvider({ slug, storeId, currency = "INR", children }: { sl
 
   const clearCart = useCallback(() => setItems([]), []);
 
+  // Free-gift line sync (threshold reached / dropped). Silent by design: a ₹0
+  // auto-added gift is not a shopper add-to-cart action, so no pixel events.
+  const syncGiftLine = useCallback((productId: string, line: CartItem | null) => {
+    setItems((prev) => {
+      const isGift = (i: CartItem) => i.productId === productId && i.meta?.kind === "upsell" && i.meta?.auto_gift === true;
+      const existing = prev.find(isGift);
+      if (!line) return existing ? prev.filter((i) => !isGift(i)) : prev;
+      if (existing) return prev;
+      // Never duplicate a product the shopper already bought at full price.
+      if (prev.some((i) => i.productId === productId && !isGift(i))) return prev;
+      return [...prev, line];
+    });
+  }, []);
+
   const cartTotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const cartCount = items.reduce((sum, i) => sum + i.quantity, 0);
 
   return (
-    <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal, cartCount, isCartOpen, openCart, closeCart, cartBounce }}>
+    <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal, cartCount, isCartOpen, openCart, closeCart, cartBounce, syncGiftLine }}>
       {children}
     </CartContext.Provider>
   );
@@ -314,6 +333,7 @@ const CART_FALLBACK: CartContextType = {
   openCart: () => {},
   closeCart: () => {},
   cartBounce: false,
+  syncGiftLine: () => {},
 };
 
 export function useCart() {
