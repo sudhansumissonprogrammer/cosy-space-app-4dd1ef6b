@@ -30,7 +30,7 @@ const PILLS: { key: SortKey; label: string; icon: any }[] = [
  * intentionally NOT sticky, so only the store header pins to the top.
  * `topOffset` is accepted for backwards compatibility and ignored.
  */
-export default function ShopFilterBar({ total, showing, sort, onSortChange, topOffset: _topOffset = 0, leading }: ShopFilterBarProps) {
+export default function ShopFilterBar({ total, showing, sort, onSortChange, topOffset: _topOffset = 0, leading, onSearchClick }: ShopFilterBarProps) {
   return (
 
     <div
@@ -40,9 +40,20 @@ export default function ShopFilterBar({ total, showing, sort, onSortChange, topO
     >
       <div className="flex items-center gap-2">
         {leading}
-        <div className="text-[11px] font-semibold text-muted-foreground whitespace-nowrap shrink-0">
-          {showing} of {total}
-        </div>
+        {onSearchClick ? (
+          <button
+            onClick={onSearchClick}
+            aria-label="Search products"
+            className="flex min-w-0 flex-[1_1_45%] max-w-[52%] sm:max-w-[240px] items-center gap-2 rounded-full border border-border bg-card px-3 h-8 text-[12px] font-medium text-muted-foreground hover:bg-accent transition-colors"
+          >
+            <Search className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">Search products</span>
+          </button>
+        ) : (
+          <div className="text-[11px] font-semibold text-muted-foreground whitespace-nowrap shrink-0">
+            {showing} of {total}
+          </div>
+        )}
         <div className="h-4 w-px bg-border shrink-0" />
         <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mr-3 sm:-mr-4 lg:-mr-6 pr-3 sm:pr-4 lg:pr-6">
           {PILLS.map((p) => {
