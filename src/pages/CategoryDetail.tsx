@@ -31,6 +31,7 @@ import UtkalPricePromise from "@/components/storefront/UtkalPricePromise";
  */
 const importBrandCarousels = () => import("@/components/storefront/BrandCarouselGroups");
 const LazyBrandCarousels = lazy(importBrandCarousels);
+const LazySearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
 const BRAND_CAROUSEL_CATEGORIES: Record<string, string[]> = {
   "ab19143d-87a9-490e-90b7-837313522782": ["sale"], // Utkal Watches
 };
