@@ -1037,9 +1037,15 @@ export default function ProductDetail() {
           )}
 
           {/* Packaging upgrade (wristlife / hopknock) */}
-          {showPackaging && !isOutOfStock && (
+          {!isOutOfStock && (
             <Suspense fallback={null}>
-              <CodAssuranceStrip />
+              <CodAssuranceStrip
+                codLabel={
+                  (store as any)?.partial_payment_enabled
+                    ? "Partial COD\nAvailable"
+                    : undefined
+                }
+              />
             </Suspense>
           )}
           {showPackaging && !isOutOfStock && (
