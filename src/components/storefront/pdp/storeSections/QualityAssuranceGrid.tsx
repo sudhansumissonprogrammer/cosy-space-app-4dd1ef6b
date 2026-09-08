@@ -15,7 +15,7 @@ import { ShieldCheck, Gem, Heart } from "lucide-react";
 const ITEMS = [
   { icon: steelIcon.url, title: "Premium Stainless Steel Build", sub: "High quality steel that's made to last" },
   { icon: waterIcon.url, title: "Water Resistant", sub: "Wear it worry-free, rain or shine" },
-  { icon: scratchIcon.url, title: "Scratch Resistant Finish", sub: "Keeps your jewellery flawless every day" },
+  { icon: scratchIcon.url, title: "Scratch Resistant Finish", sub: "Keeps your watch flawless every day" },
   { icon: warrantyIcon.url, title: "6 Months Warranty", sub: "Guaranteed quality you can trust" },
   { icon: qualityIcon.url, title: "Quality Checked Before Dispatch", sub: "Every piece is carefully inspected" },
   { icon: realphotoIcon.url, title: "Real Product Images", sub: "What you see is what you get" },
