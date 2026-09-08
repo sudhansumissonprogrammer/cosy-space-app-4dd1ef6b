@@ -43,7 +43,8 @@ export default function TrustVideosManager({ storeId }: { storeId?: string }) {
         .from("store_trust_videos")
         .select("id,video_url,poster_url,title,cta_label,cta_target,sort_order,is_active")
         .eq("store_id", storeId!)
-        .order("sort_order", { ascending: true });
+        .order("sort_order", { ascending: true })
+        .order("id", { ascending: true });
       if (error) throw error;
       return (data || []) as Row[];
     },
@@ -136,12 +137,31 @@ export default function TrustVideosManager({ storeId }: { storeId?: string }) {
     refresh();
   };
 
+  // Swapping the two sort_order values silently does nothing when several rows
+  // share the same value (everything uploaded in one batch can end up at 0).
+  // Reindex the whole list instead so the position always sticks.
   const move = async (index: number, dir: -1 | 1) => {
-    const a = rows[index];
-    const b = rows[index + dir];
-    if (!a || !b) return;
-    await (supabase as any).from("store_trust_videos").update({ sort_order: b.sort_order }).eq("id", a.id);
-    await (supabase as any).from("store_trust_videos").update({ sort_order: a.sort_order }).eq("id", b.id);
+    const target = index + dir;
+    if (!rows[index] || !rows[target]) return;
+
+    const next = [...rows];
+    [next[index], next[target]] = [next[target], next[index]];
+
+    // Optimistic: the card jumps immediately instead of after the round-trip.
+    qc.setQueryData(["store-trust-videos", storeId], next.map((r, i) => ({ ...r, sort_order: i })));
+
+    try {
+      for (let i = 0; i < next.length; i++) {
+        if (next[i].sort_order === i) continue;
+        const { error } = await (supabase as any)
+          .from("store_trust_videos")
+          .update({ sort_order: i })
+          .eq("id", next[i].id);
+        if (error) throw error;
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "Could not change the order");
+    }
     refresh();
   };
 
