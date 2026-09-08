@@ -12,9 +12,23 @@ export default function PdpReviewsBadge({ storeId, className = "" }: { storeId?:
 
   const goToReviews = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const el = document.getElementById("reviews");
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    // The reviews block is lazy-mounted, so on first tap only the placeholder
+    // exists. Scroll to the placeholder, then re-align once the real section
+    // renders.
+    const scrollTo = (smooth: boolean) => {
+      const el = document.getElementById("reviews") || document.getElementById("reviews-anchor");
+      if (el) el.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "start" });
+      return !!document.getElementById("reviews");
+    };
+    scrollTo(true);
+    let tries = 0;
+    const timer = setInterval(() => {
+      tries += 1;
+      const mounted = scrollTo(false);
+      if (mounted || tries > 12) clearInterval(timer);
+    }, 150);
   };
+
 
   return (
     <button
