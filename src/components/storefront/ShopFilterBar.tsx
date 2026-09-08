@@ -44,7 +44,7 @@ export default function ShopFilterBar({ total, showing, sort, onSortChange, topO
           <button
             onClick={onSearchClick}
             aria-label="Search products"
-            className="flex min-w-0 flex-[1_1_45%] max-w-[52%] sm:max-w-[240px] items-center gap-2 rounded-full border border-border bg-card px-3 h-8 text-[12px] font-medium text-muted-foreground hover:bg-accent transition-colors"
+            className="flex min-w-0 flex-[1_1_65%] max-w-[72%] sm:max-w-[340px] items-center gap-2 rounded-full border border-border bg-card px-3 h-8 text-[12px] font-medium text-muted-foreground hover:bg-accent transition-colors"
           >
             <Search className="h-3.5 w-3.5 shrink-0" />
             <span className="truncate">Search products</span>
