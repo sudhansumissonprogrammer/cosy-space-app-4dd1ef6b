@@ -12,8 +12,11 @@ export interface ReviewMedia {
   type: "image" | "video";
 }
 
-const MAX_IMAGE_DIM = 1400;
-const WEBP_QUALITY = 0.8;
+/** Review photos keep near-original detail — only very large phone shots shrink. */
+const MAX_IMAGE_DIM = 2200;
+const WEBP_QUALITY = 0.92;
+/** Small originals are uploaded untouched (no re-encode = no quality loss). */
+const PASSTHROUGH_BYTES = 2 * 1024 * 1024;
 /** Hard cap enforced server-side for images */
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 
