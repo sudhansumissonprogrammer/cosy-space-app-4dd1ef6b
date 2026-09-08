@@ -87,7 +87,7 @@ export default function UtkalPricePromise() {
               </span>
             </span>
             <span className="mt-0.5 block text-[10px] font-medium leading-snug opacity-65 sm:text-xs">
-              Direct sourcing · Low margin · ₹100 advance, rest COD
+              Direct sourcing · Fair pricing · ₹100 advance, rest COD
             </span>
           </span>
 
