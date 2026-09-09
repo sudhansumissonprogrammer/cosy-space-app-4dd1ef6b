@@ -166,8 +166,7 @@ export function buildPayuProductInfo(opts: {
   amount: number;
   isPartial: boolean;
 }): string {
-  const store = sanitizePayuText(opts.storeName || "", 22);
-  const order = sanitizePayuText(String(opts.orderNumber ?? ""), 12);
+  const store = sanitizePayuText(opts.storeName || "", 28);
   const amt = Math.round(opts.amount) === opts.amount
     ? String(Math.round(opts.amount))
     : opts.amount.toFixed(2);
@@ -175,7 +174,6 @@ export function buildPayuProductInfo(opts: {
   const parts: string[] = [];
   if (store) parts.push(store);
   parts.push(`${action} Rs ${amt}`);
-  if (order) parts.push(order);
   return sanitizePayuText(parts.join(" "), 50) || "Order Payment";
 }
 
