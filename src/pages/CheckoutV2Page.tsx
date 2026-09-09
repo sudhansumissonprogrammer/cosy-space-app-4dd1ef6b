@@ -5525,13 +5525,6 @@ export default function CheckoutV2Page() {
             </div>
           )}
 
-          {/* Stores without partial payment still get the social-proof strip */}
-          {!hasPartial && reviewsTeaserReady && (
-            <Suspense fallback={null}>
-              <CheckoutReviewsTeaser storeId={store?.id} />
-            </Suspense>
-          )}
-
           {/* Payment breakup bottom sheet — trust + explanation */}
           {breakupOpen && typeof document !== "undefined" && createPortal(
             <div className="fixed inset-0 z-[100] flex flex-col justify-end pointer-events-auto" role="dialog" aria-modal="true" aria-label="Payment breakup">
