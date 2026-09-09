@@ -172,13 +172,18 @@ Deno.serve(async (req) => {
       contentType !== "image/webp" &&
       (contentType === "image/jpeg" || contentType === "image/png");
 
+    // Callers that need near-lossless output (AI creatives, review photos)
+    // can raise the WebP quality; clamped so nobody can push huge files.
+    const rawQ = Number(form.get("webp_quality"));
+    const webpQuality = Number.isFinite(rawQ) ? Math.min(95, Math.max(60, Math.round(rawQ))) : 80;
+
     if (needsConvert) {
       try {
         const imageData =
           contentType === "image/jpeg"
             ? await decodeJpeg(body)
             : await decodePng(body);
-        const webpBuf = await encodeWebp(imageData, { quality: 80 });
+        const webpBuf = await encodeWebp(imageData, { quality: webpQuality });
         body = new Uint8Array(webpBuf);
         contentType = "image/webp";
         key = key.replace(/\.(jpe?g|png)$/i, ".webp");
