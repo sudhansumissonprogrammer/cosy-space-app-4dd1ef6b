@@ -218,6 +218,118 @@ export default function CheckoutPhoneStep({
     onQuantityChange?.(item, n);
   };
 
+  // ── Mobile-number verification (opt-in per store) ────────────────────────
+  // Default OFF. Only stores that switch it on in Settings ever see the OTP
+  // screen; every other store keeps the exact previous checkout flow.
+  const [otpRequired, setOtpRequired] = useState(false);
+  const [otpPhone, setOtpPhone] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!storeId) return;
+    (async () => {
+      try {
+        const { data } = await (supabase as any).rpc("get_store_checkout_otp", {
+          _store_id: storeId,
+        });
+        if (!cancelled) setOtpRequired(data === true);
+      } catch {
+        /* flag unavailable → behave exactly as before (no OTP) */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [storeId]);
+
+  const verifiedKey = (canon: string) => `sb_otp_ok:${storeId}:${canon}`;
+  const isAlreadyVerified = (canon: string) => {
+    try {
+      const raw = localStorage.getItem(verifiedKey(canon));
+      return !!raw && Date.now() - Number(raw) < 30 * 24 * 60 * 60 * 1000;
+    } catch {
+      return false;
+    }
+  };
+
+  /** Everything that used to run straight after tapping Continue. */
+  const proceed = (canon: string) => {
+    try {
+      localStorage.setItem("checkout_phone", canon);
+    } catch {}
+
+    // EMQ lift: seed Meta Advanced Matching + CAPI registry with the
+    // phone RIGHT NOW so InitiateCheckout / AddPaymentInfo events fired
+    // moments later ship with hashed phone in user_data.
+    try {
+      setCapiUser({ phone: canon });
+    } catch {}
+
+    // Lead — fired once per phone per session with a shared event_id so the
+    // browser and server events deduplicate.
+    try {
+      const leadKey = `sb_lead_fired:${storeId}:${canon}`;
+      const alreadyFired = (() => {
+        try { return sessionStorage.getItem(leadKey) === "1"; } catch { return false; }
+      })();
+      if (storeId && !alreadyFired) {
+        try { sessionStorage.setItem(leadKey, "1"); } catch {}
+        const leadValue = cartItems.reduce(
+          (s, i) => s + (Number(i.price) || 0) * (Number(i.quantity) || 1),
+          0,
+        );
+        const eid = generateEventId();
+        fbPixelTrack("Lead", { content_name: "checkout_phone", currency: "INR", value: leadValue }, eid);
+        fireMetaCAPI({
+          storeId,
+          eventName: "Lead",
+          eventId: eid,
+          userPhone: canon,
+          customData: { content_name: "checkout_phone", currency: "INR", value: leadValue },
+        });
+      }
+    } catch {}
+
+    const session_token = (() => {
+      try {
+        return getOrCreateSessionId();
+      } catch {
+        return null;
+      }
+    })();
+
+    const cartSnapshot = cartItems.map((i) => ({
+      productId: i.productId,
+      variantId: i.variantId,
+      name: i.name,
+      price: i.price,
+      quantity: i.quantity,
+      image: i.image,
+    }));
+
+    // ⚡ INSTANT ADVANCE: neither the lead capture nor the guest-session
+    // mint blocks the shopper.
+    (async () => {
+      try {
+        const { data: rpcData } = await (supabase as any).rpc("capture_checkout_lead", {
+          p_store_id: storeId,
+          p_phone: canon,
+          p_cart_items: cartSnapshot,
+          p_consent: consent,
+          p_session_token: session_token,
+          p_source: "checkout_step1",
+        });
+        const cartId = (rpcData as any)?.cart_id;
+        if (cartId && storeId) {
+          sessionStorage.setItem(`ac_${storeId}`, String(cartId));
+        }
+      } catch { /* noop */ }
+    })();
+
+    autoLoginByPhone(storeId, canon).catch(() => null);
+    onComplete(canon, null);
+  };
+
   const submit = async () => {
     if (inFlight.current) return;
     if (digits.length < 10) {
@@ -240,89 +352,28 @@ export default function CheckoutPhoneStep({
     inFlight.current = true;
     setSubmitting(true);
     try {
-      try {
-        localStorage.setItem("checkout_phone", canon);
-      } catch {}
-
-      // EMQ lift: seed Meta Advanced Matching + CAPI registry with the
-      // phone RIGHT NOW so InitiateCheckout / AddPaymentInfo events fired
-      // moments later ship with hashed phone in user_data. Without this,
-      // step-1 users leave phone-less events → EMQ stuck at ~6.
-      try {
-        setCapiUser({ phone: canon });
-      } catch {}
-
-      // Lead — the new checkout never fired this (the legacy checkouts did),
-      // so Meta had no mid-funnel "identified shopper" signal between
-      // InitiateCheckout and Purchase. It is fired once per phone per session
-      // with a shared event_id so the browser and server events deduplicate.
-      try {
-        const leadKey = `sb_lead_fired:${storeId}:${canon}`;
-        const alreadyFired = (() => {
-          try { return sessionStorage.getItem(leadKey) === "1"; } catch { return false; }
-        })();
-        if (storeId && !alreadyFired) {
-          try { sessionStorage.setItem(leadKey, "1"); } catch {}
-          const leadValue = cartItems.reduce(
-            (s, i) => s + (Number(i.price) || 0) * (Number(i.quantity) || 1),
-            0,
-          );
-          const eid = generateEventId();
-          fbPixelTrack("Lead", { content_name: "checkout_phone", currency: "INR", value: leadValue }, eid);
-          fireMetaCAPI({
-            storeId,
-            eventName: "Lead",
-            eventId: eid,
-            userPhone: canon,
-            customData: { content_name: "checkout_phone", currency: "INR", value: leadValue },
-          });
+      if (otpRequired && storeId && !isAlreadyVerified(canon)) {
+        const { data, error } = await supabase.functions.invoke("checkout-otp-send", {
+          body: { store_id: storeId, phone: canon },
+        });
+        const res = data as any;
+        if (res?.disabled) {
+          // Toggle was switched off between page load and submit.
+          proceed(canon);
+          return;
         }
-      } catch {}
-
-
-
-      const session_token = (() => {
-        try {
-          return getOrCreateSessionId();
-        } catch {
-          return null;
+        if (res?.sent) {
+          setOtpPhone(canon);
+          return;
         }
-      })();
+        // Delivery problem — never dead-end a paying shopper.
+        console.warn("[CheckoutPhoneStep] OTP send failed", res?.error || error?.message);
+        toast.error(res?.message || "Could not send the WhatsApp code. Continuing without verification.");
+        proceed(canon);
+        return;
+      }
 
-      const cartSnapshot = cartItems.map((i) => ({
-        productId: i.productId,
-        variantId: i.variantId,
-        name: i.name,
-        price: i.price,
-        quantity: i.quantity,
-        image: i.image,
-      }));
-
-      // ⚡ INSTANT ADVANCE: neither the lead capture nor the guest-session
-      // mint blocks the shopper. Previously these two awaits ran serially
-      // (RPC ~300-800ms + create-guest-account ~800-2500ms), so tapping
-      // Continue felt frozen for 1-3s when no address existed. Both are
-      // fire-and-forget now; CheckoutV2Page runs its own fast address_only
-      // lookup (900ms ceiling) to decide whether to show the address form.
-      (async () => {
-        try {
-          const { data: rpcData } = await (supabase as any).rpc("capture_checkout_lead", {
-            p_store_id: storeId,
-            p_phone: canon,
-            p_cart_items: cartSnapshot,
-            p_consent: consent,
-            p_session_token: session_token,
-            p_source: "checkout_step1",
-          });
-          const cartId = (rpcData as any)?.cart_id;
-          if (cartId && storeId) {
-            sessionStorage.setItem(`ac_${storeId}`, String(cartId));
-          }
-        } catch { /* noop */ }
-      })();
-
-      autoLoginByPhone(storeId, canon).catch(() => null);
-      onComplete(canon, null);
+      proceed(canon);
     } catch (err) {
       console.warn("[CheckoutPhoneStep] capture failed:", err);
       onComplete(canon);
@@ -331,6 +382,7 @@ export default function CheckoutPhoneStep({
       inFlight.current = false;
     }
   };
+
 
 
   useEffect(() => {
