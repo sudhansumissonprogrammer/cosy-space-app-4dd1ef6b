@@ -456,6 +456,9 @@ Deno.serve(async (req) => {
           let intentUrl: string | undefined;
           if (rawIntent) {
             intentUrl = rawIntent.startsWith("upi://") ? rawIntent : `upi://pay?${rawIntent}`;
+            // Some PayU accounts send a bare "Payment" note — replace it with
+            // our store/advance wording when the URI carries no signature.
+            intentUrl = withUpiNote(intentUrl, productinfo);
           }
 
           if (!intentUrl || !intentUrl.startsWith("upi://")) {
