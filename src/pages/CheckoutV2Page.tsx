@@ -2431,6 +2431,21 @@ export default function CheckoutV2Page() {
   const [advancePaid, setAdvancePaid] = useState(0);
   const [balanceDue, setBalanceDue] = useState(0);
 
+  // Review teaser is mounted only once the browser is idle, so the review
+  // chunk + RPC never compete with checkout's critical path.
+  const [reviewsTeaserReady, setReviewsTeaserReady] = useState(false);
+  useEffect(() => {
+    if (reviewsTeaserReady) return;
+    const w = window as any;
+    const id = w.requestIdleCallback
+      ? w.requestIdleCallback(() => setReviewsTeaserReady(true), { timeout: 4000 })
+      : window.setTimeout(() => setReviewsTeaserReady(true), 2500);
+    return () => {
+      if (w.cancelIdleCallback) w.cancelIdleCallback(id);
+      else clearTimeout(id);
+    };
+  }, [reviewsTeaserReady]);
+
   const finishSuccess = (paidOrderId?: string | null) => {
     const finalOrderId = paidOrderId || orderId;
     if (!finalOrderId) return;
