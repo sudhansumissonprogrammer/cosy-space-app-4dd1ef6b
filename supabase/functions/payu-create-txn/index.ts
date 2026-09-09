@@ -107,7 +107,18 @@ Deno.serve(async (req) => {
 
 
     const amountStr = chargeAmount.toFixed(2);
-    const productinfo = `Order ${dbOrder.order_number || order_id.slice(0, 8)}`;
+    // Store name + advance wording is what the shopper reads in the UPI app.
+    const { data: storeRow } = await supabase
+      .from("stores")
+      .select("name")
+      .eq("id", store_id)
+      .maybeSingle();
+    const productinfo = buildPayuProductInfo({
+      storeName: (storeRow as any)?.name || "",
+      orderNumber: dbOrder.order_number || order_id.slice(0, 8),
+      amount: chargeAmount,
+      isPartial: dbOrder.payment_type === "partial" && Number(dbOrder.advance_paid) > 0,
+    });
     const firstname = (customer_name || "Customer").trim().slice(0, 60) || "Customer";
     // PayU rejects empty email; fall back to a placeholder.
     const email = (customer_email && String(customer_email).trim()) || "noreply@shopbanao.in";
