@@ -228,12 +228,24 @@ export default function CheckoutPhoneStep({
   useEffect(() => {
     let cancelled = false;
     if (!storeId) return;
+    // Cache per tab so a shopper bouncing between cart and checkout doesn't
+    // repeat this lookup. Any failure keeps the previous behaviour (no OTP).
+    const cacheKey = `sb_otp_flag:${storeId}`;
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached === "1" || cached === "0") {
+        setOtpRequired(cached === "1");
+        return;
+      }
+    } catch { /* private mode */ }
     (async () => {
       try {
         const { data } = await (supabase as any).rpc("get_store_checkout_otp", {
           _store_id: storeId,
         });
-        if (!cancelled) setOtpRequired(data === true);
+        const on = data === true;
+        try { sessionStorage.setItem(cacheKey, on ? "1" : "0"); } catch {}
+        if (!cancelled) setOtpRequired(on);
       } catch {
         /* flag unavailable → behave exactly as before (no OTP) */
       }
@@ -398,26 +410,26 @@ export default function CheckoutPhoneStep({
 
 
 
-  if (otpPhone) {
-    return (
-      <CheckoutOtpSheet
-        storeId={storeId!}
-        phone={otpPhone}
-        onEdit={() => setOtpPhone(null)}
-        onVerified={() => {
-          try {
-            localStorage.setItem(verifiedKey(otpPhone), String(Date.now()));
-          } catch {}
-          const canon = otpPhone;
-          setOtpPhone(null);
-          proceed(canon);
-        }}
-      />
-    );
-  }
+  // Rendered as an overlay so the checkout page stays visible behind it.
+  const otpOverlay = otpPhone ? (
+    <CheckoutOtpSheet
+      storeId={storeId!}
+      phone={otpPhone}
+      onEdit={() => setOtpPhone(null)}
+      onVerified={() => {
+        try {
+          localStorage.setItem(verifiedKey(otpPhone), String(Date.now()));
+        } catch {}
+        const canon = otpPhone;
+        setOtpPhone(null);
+        proceed(canon);
+      }}
+    />
+  ) : null;
 
   return (
     <div className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] pb-10">
+      {otpOverlay}
       {/* Sticky header */}
       <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-3 py-1 flex items-center gap-2">
         <button
