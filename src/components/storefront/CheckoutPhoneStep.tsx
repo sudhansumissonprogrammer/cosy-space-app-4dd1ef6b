@@ -47,6 +47,7 @@ import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { setCapiUser } from "@/lib/metaEnrichment";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
+import CheckoutOtpSheet from "@/components/storefront/CheckoutOtpSheet";
 
 interface Props {
   storeId?: string;
@@ -396,6 +397,24 @@ export default function CheckoutPhoneStep({
   // The shopper must now tap Continue after verifying the number.
 
 
+
+  if (otpPhone) {
+    return (
+      <CheckoutOtpSheet
+        storeId={storeId!}
+        phone={otpPhone}
+        onEdit={() => setOtpPhone(null)}
+        onVerified={() => {
+          try {
+            localStorage.setItem(verifiedKey(otpPhone), String(Date.now()));
+          } catch {}
+          const canon = otpPhone;
+          setOtpPhone(null);
+          proceed(canon);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] pb-10">
