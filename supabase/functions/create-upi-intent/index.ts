@@ -90,6 +90,15 @@ Deno.serve(async (req) => {
       .single();
     if (configErr || !config) return jsonRes({ error: "Payment config not found" }, 404);
 
+    // Store name is shown to the shopper inside the UPI app (transaction note).
+    const { data: storeRow } = await supabase
+      .from("stores")
+      .select("name")
+      .eq("id", store_id)
+      .maybeSingle();
+    const storeName = (storeRow as any)?.name || "";
+    const isPartial = dbOrder.payment_type === "partial" && Number(dbOrder.advance_paid) > 0;
+
     const methods = Array.isArray(config.payment_methods) ? (config.payment_methods as string[]) : [];
 
     // STRICT GATEWAY: use ONLY the store's selected/primary gateway. No silent
