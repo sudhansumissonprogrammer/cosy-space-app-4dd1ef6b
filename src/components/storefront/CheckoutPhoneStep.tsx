@@ -366,23 +366,10 @@ export default function CheckoutPhoneStep({
     setSubmitting(true);
     try {
       if (otpRequired && storeId && !isAlreadyVerified(canon)) {
-        const { data, error } = await supabase.functions.invoke("checkout-otp-send", {
-          body: { store_id: storeId, phone: canon },
-        });
-        const res = data as any;
-        if (res?.disabled) {
-          // Toggle was switched off between page load and submit.
-          proceed(canon);
-          return;
-        }
-        if (res?.sent) {
-          setOtpPhone(canon);
-          return;
-        }
-        // Delivery problem — never dead-end a paying shopper.
-        console.warn("[CheckoutPhoneStep] OTP send failed", res?.error || error?.message);
-        toast.error(res?.message || "Could not send the WhatsApp code. Continuing without verification.");
-        proceed(canon);
+        // Open the verification sheet INSTANTLY — the WhatsApp code is
+        // requested from inside the sheet, so there is no waiting spinner
+        // on this screen.
+        setOtpPhone(canon);
         return;
       }
 
@@ -395,6 +382,7 @@ export default function CheckoutPhoneStep({
       inFlight.current = false;
     }
   };
+
 
 
 
