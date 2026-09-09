@@ -810,6 +810,38 @@ export default function StorePayments() {
         </Card>
       )}
 
+      {/* Mobile number verification (WhatsApp OTP) — strictly opt-in */}
+      {showPaymentConfig && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <ShieldCheck className="h-5 w-5" /> Verify Mobile Number (WhatsApp OTP)
+            </CardTitle>
+            <CardDescription>
+              Ask customers to confirm a 6-digit code sent on WhatsApp before they continue to
+              address &amp; payment. Cuts fake numbers and undelivered parcels.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-foreground">Enable OTP verification</p>
+                <p className="text-xs text-muted-foreground">
+                  Off by default. Nothing changes at checkout until you switch this on.
+                </p>
+              </div>
+              <Switch checked={checkoutOtpEnabled} onCheckedChange={setCheckoutOtpEnabled} />
+            </div>
+            {checkoutOtpEnabled && (
+              <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs text-foreground">
+                Customers without WhatsApp on that number can't receive the code. If WhatsApp is
+                temporarily unavailable, checkout continues without verification so no order is lost.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Section 3: Partial Payment Defaults — visible whenever website checkout is on */}
       {showPaymentConfig && (
         <Card>
