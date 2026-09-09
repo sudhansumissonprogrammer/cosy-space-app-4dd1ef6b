@@ -1,4 +1,4 @@
-// Storefront checkout mobile-number verification — sends a 6-digit WhatsApp OTP.
+// Storefront checkout mobile-number verification — sends a 4-digit WhatsApp OTP.
 //
 // STRICTLY opt-in: only runs when the store has `checkout_otp_enabled = true`.
 // Every other store (Serdiya included) gets `disabled: true` and the checkout
@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    const code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000).padStart(6, "0");
+    const code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 10_000).padStart(4, "0");
     const codeHash = await hashOtp(code, phone);
 
     await admin

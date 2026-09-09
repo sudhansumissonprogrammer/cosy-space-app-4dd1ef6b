@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
 
     if (!/^[0-9a-f-]{36}$/i.test(storeId)) return json({ error: "store_id required" }, 400);
     if (!phone) return json({ error: "invalid_phone", message: "Enter a valid 10-digit mobile number" }, 400);
-    if (code.length !== 6) return json({ error: "invalid_code", message: "Enter the 6-digit code" }, 400);
+    if (code.length !== 4) return json({ error: "invalid_code", message: "Enter the 4-digit code" }, 400);
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },

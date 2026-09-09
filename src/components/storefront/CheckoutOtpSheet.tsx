@@ -12,7 +12,7 @@
  *  - Autofill: `autocomplete="one-time-code"` + WebOTP where available, plus a
  *    clipboard read on focus/visibility-return (WhatsApp's "Copy code" button
  *    puts the code on the clipboard, so returning to the tab fills it).
- *  - Auto-submits the moment 6 digits are present.
+ *  - Auto-submits the moment 4 digits are present.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -30,7 +30,7 @@ interface Props {
 }
 
 const RESEND_SECONDS = 30;
-const EMPTY = ["", "", "", "", "", ""];
+const EMPTY = ["", "", "", ""];
 
 export default function CheckoutOtpSheet({ storeId, phone, onEdit, onVerified, onSendFailed }: Props) {
   const [digits, setDigits] = useState<string[]>(EMPTY);
@@ -83,12 +83,12 @@ export default function CheckoutOtpSheet({ storeId, phone, onEdit, onVerified, o
   }, []);
 
   const fill = useCallback((value: string) => {
-    const only = value.replace(/\D/g, "").slice(0, 6);
+    const only = value.replace(/\D/g, "").slice(0, 4);
     if (!only) return;
     const next = ["", "", "", "", "", ""];
     only.split("").forEach((d, i) => (next[i] = d));
     setDigits(next);
-    inputs.current[Math.min(only.length, 5)]?.focus();
+    inputs.current[Math.min(only.length, 3)]?.focus();
   }, []);
 
   // WebOTP (works when the code arrives as SMS on Android Chrome).
@@ -109,7 +109,7 @@ export default function CheckoutOtpSheet({ storeId, phone, onEdit, onVerified, o
   const tryClipboard = useCallback(async () => {
     try {
       const text = await navigator.clipboard.readText();
-      const m = text && text.match(/\b(\d{6})\b/);
+      const m = text && text.match(/\b(\d{4})\b/);
       if (m) fill(m[1]);
     } catch {
       /* permission denied — shopper types it manually */
@@ -153,7 +153,7 @@ export default function CheckoutOtpSheet({ storeId, phone, onEdit, onVerified, o
   );
 
   useEffect(() => {
-    if (code.length === 6) verify(code);
+    if (code.length === 4) verify(code);
   }, [code, verify]);
 
   const resend = async () => {
