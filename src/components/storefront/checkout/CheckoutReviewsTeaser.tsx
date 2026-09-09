@@ -11,7 +11,7 @@
  */
 import { useMemo, useState, lazy, Suspense } from "react";
 import { createPortal } from "react-dom";
-import { X, Star } from "lucide-react";
+import { X } from "lucide-react";
 import ReviewCard, { ReviewStars } from "@/components/storefront/reviews/ReviewCard";
 import { useStoreReviews } from "@/hooks/useStoreReviews";
 
