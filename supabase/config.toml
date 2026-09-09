@@ -132,3 +132,9 @@ verify_jwt = false
 
 [functions.cartpe-stock-sync]
 verify_jwt = false
+
+[functions.checkout-otp-send]
+verify_jwt = false
+
+[functions.checkout-otp-verify]
+verify_jwt = false
