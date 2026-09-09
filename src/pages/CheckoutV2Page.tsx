@@ -2301,8 +2301,6 @@ export default function CheckoutV2Page() {
     !orderPlaced &&
     !waiting &&
     !confirmingPayment;
-  const canShowExitOfferRef = useRef(canShowExitOffer);
-  canShowExitOfferRef.current = canShowExitOffer;
   const canShowExplicitExitOfferRef = useRef(canShowExplicitExitOffer);
   canShowExplicitExitOfferRef.current = canShowExplicitExitOffer;
 
