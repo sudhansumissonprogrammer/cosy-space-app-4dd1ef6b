@@ -4834,6 +4834,13 @@ export default function CheckoutV2Page() {
             </button>
           </div>
 
+          {/* Social proof — visible as soon as the phone step clears, even before address */}
+          {reviewsTeaserReady && (
+            <Suspense fallback={null}>
+              <CheckoutReviewsTeaser storeId={store?.id} />
+            </Suspense>
+          )}
+
           {/* Order Summary bottom sheet */}
           {summaryOpen && typeof document !== "undefined" && createPortal(
             <div className="fixed inset-0 z-[100] flex flex-col justify-end pointer-events-auto" role="dialog" aria-modal="true" aria-label="Order summary">
@@ -5500,11 +5507,6 @@ export default function CheckoutV2Page() {
                   Know more · Why pay advance?
                 </button>
               )}
-              {reviewsTeaserReady && (
-                <Suspense fallback={null}>
-                  <CheckoutReviewsTeaser storeId={store?.id} />
-                </Suspense>
-              )}
               {!addressFilled ? (
                 <button
                   type="button"
@@ -5521,13 +5523,6 @@ export default function CheckoutV2Page() {
               )}
 
             </div>
-          )}
-
-          {/* Stores without partial payment still get the social-proof strip */}
-          {!hasPartial && reviewsTeaserReady && (
-            <Suspense fallback={null}>
-              <CheckoutReviewsTeaser storeId={store?.id} />
-            </Suspense>
           )}
 
           {/* Payment breakup bottom sheet — trust + explanation */}
