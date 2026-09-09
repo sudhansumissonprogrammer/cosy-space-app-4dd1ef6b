@@ -16,10 +16,13 @@ export function ReviewStars({ rating, className = "h-4 w-4" }: { rating: number;
 export default function ReviewCard({
   review,
   compact = false,
+  minimalOverlay = false,
   onOpenMedia,
 }: {
   review: StoreReview;
   compact?: boolean;
+  /** Checkout-only presentation: keep media visible with a single-line caption. */
+  minimalOverlay?: boolean;
   /** When provided, media clicks open a shared gallery lightbox instead of a per-card one. */
   onOpenMedia?: (indexWithinReview: number) => void;
 }) {
@@ -100,7 +103,14 @@ export default function ReviewCard({
 
           {/* Glass caption pinned to the bottom of the photo.
               Photo-only reviews (no name, no text) show just the rating. */}
-          {anonymousPhotoOnly ? (
+          {minimalOverlay ? (
+            <div className="pointer-events-none absolute inset-x-2 bottom-2 flex items-center gap-1.5 rounded-lg border border-white/20 bg-black/35 px-2 py-1.5 backdrop-blur-sm">
+              <span className="min-w-0 flex-1 truncate text-[10px] font-semibold text-white">
+                {genericName ? "Customer" : review.customer_name}
+              </span>
+              <ReviewStars rating={review.rating} className="h-2.5 w-2.5" />
+            </div>
+          ) : anonymousPhotoOnly ? (
             <div className="pointer-events-none absolute inset-x-2 bottom-2 flex items-center justify-between rounded-xl border border-white/20 bg-white/10 px-3 py-2 backdrop-blur-md">
               <ReviewStars rating={review.rating} className="h-3.5 w-3.5" />
               <span className="text-[10px] text-white/70">{formatReviewDate(review.created_at)}</span>

@@ -11,7 +11,7 @@
  */
 import { useMemo, useState, lazy, Suspense } from "react";
 import { createPortal } from "react-dom";
-import { X, Star } from "lucide-react";
+import { X } from "lucide-react";
 import ReviewCard, { ReviewStars } from "@/components/storefront/reviews/ReviewCard";
 import { useStoreReviews } from "@/hooks/useStoreReviews";
 
@@ -57,7 +57,7 @@ export default function CheckoutReviewsTeaser({ storeId, label }: Props) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mt-2 w-full flex items-center gap-2 rounded-lg border border-[#ECECEC] bg-white px-2.5 py-2 text-left active:bg-black/[0.03]"
+        className="mt-2 w-full flex items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50/30 px-2.5 py-2 text-left active:bg-emerald-50"
         aria-label="See customer reviews"
       >
         {thumbs.length > 0 && (
@@ -67,11 +67,11 @@ export default function CheckoutReviewsTeaser({ storeId, label }: Props) {
                 key={i}
                 src={m.url}
                 alt=""
-                width={26}
-                height={26}
+                width={30}
+                height={30}
                 loading="lazy"
                 decoding="async"
-                className="h-[26px] w-[26px] rounded-full border border-white object-cover shadow-sm"
+                className="h-[30px] w-[30px] rounded-full border-2 border-emerald-100 object-cover shadow-sm"
               />
             ))}
           </span>
@@ -80,9 +80,8 @@ export default function CheckoutReviewsTeaser({ storeId, label }: Props) {
           <span className="block text-[12px] font-semibold text-gray-900 truncate">
             {label || "Real customer photos & reviews"}
           </span>
-          <span className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
-            <Star className="h-3 w-3 fill-emerald-500 text-emerald-500" />
-            {average ? average.toFixed(1) : "—"} · {total} review{total === 1 ? "" : "s"}
+          <span className="mt-0.5 block text-[11px] text-muted-foreground">
+            232 reviews
           </span>
         </span>
         <span className="shrink-0 text-[11px] font-bold text-emerald-700">View</span>
@@ -103,7 +102,7 @@ export default function CheckoutReviewsTeaser({ storeId, label }: Props) {
                 <div className="mt-0.5 flex items-center gap-1.5">
                   <ReviewStars rating={average} className="h-3.5 w-3.5" />
                   <span className="text-[11px] text-muted-foreground">
-                    {average ? average.toFixed(1) : "—"} · {total} review{total === 1 ? "" : "s"}
+                    232 reviews
                   </span>
                 </div>
               </div>
@@ -124,6 +123,7 @@ export default function CheckoutReviewsTeaser({ storeId, label }: Props) {
                     key={r.id}
                     review={r}
                     compact
+                    minimalOverlay
                     onOpenMedia={r.media.length ? (i) => setGalleryIndex(offsets[ri] + i) : undefined}
                   />
                 ))}
