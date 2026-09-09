@@ -4,7 +4,7 @@
 // Used by the CheckoutV2 tile UI. Dormant until UI calls it — safe to deploy alongside
 // the existing checkout flow.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { computePayuRequestHash, mapPayuStatus, payuCheckoutHost, verifyPayuTxn, type PayuEnv } from "../_shared/payuHelpers.ts";
+import { buildPayuProductInfo, computePayuRequestHash, mapPayuStatus, payuCheckoutHost, verifyPayuTxn, withUpiNote, type PayuEnv } from "../_shared/payuHelpers.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -89,6 +89,15 @@ Deno.serve(async (req) => {
       .eq("store_id", store_id)
       .single();
     if (configErr || !config) return jsonRes({ error: "Payment config not found" }, 404);
+
+    // Store name is shown to the shopper inside the UPI app (transaction note).
+    const { data: storeRow } = await supabase
+      .from("stores")
+      .select("name")
+      .eq("id", store_id)
+      .maybeSingle();
+    const storeName = (storeRow as any)?.name || "";
+    const isPartial = dbOrder.payment_type === "partial" && Number(dbOrder.advance_paid) > 0;
 
     const methods = Array.isArray(config.payment_methods) ? (config.payment_methods as string[]) : [];
 
@@ -351,7 +360,14 @@ Deno.serve(async (req) => {
             (dbOrder as any).payu_txnids = [...priorTxnids, txnid].slice(-8);
           }
           const amountStr = chargeAmount.toFixed(2);
-          const productinfo = `Order ${dbOrder.order_number || order_id.slice(0, 8)}`;
+          // Shown inside GPay/PhonePe/Paytm as the transaction note:
+          //   "Serdiya Jewellers - Advance Rs 100 - Order 6348"
+          const productinfo = buildPayuProductInfo({
+            storeName,
+            orderNumber: dbOrder.order_number || order_id.slice(0, 8),
+            amount: chargeAmount,
+            isPartial,
+          });
           const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
           const notifyUrl = `${supabaseUrl}/functions/v1/payu-webhook`;
           const originHdr = req.headers.get("origin") || "";
@@ -440,6 +456,9 @@ Deno.serve(async (req) => {
           let intentUrl: string | undefined;
           if (rawIntent) {
             intentUrl = rawIntent.startsWith("upi://") ? rawIntent : `upi://pay?${rawIntent}`;
+            // Some PayU accounts send a bare "Payment" note — replace it with
+            // our store/advance wording when the URI carries no signature.
+            intentUrl = withUpiNote(intentUrl, productinfo);
           }
 
           if (!intentUrl || !intentUrl.startsWith("upi://")) {
