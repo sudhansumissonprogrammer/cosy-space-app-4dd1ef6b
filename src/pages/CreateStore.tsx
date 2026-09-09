@@ -281,7 +281,7 @@ export default function CreateStore() {
           header_bg_color: "#ffffff",
           header_text_color: "#1a1a1a",
           heading_font: "Alegreya SC",
-          body_font: "Inter",
+          body_font: "Alegreya SC",
           button_style: "rounded",
           product_card_style: "style-1",
           category_style: "style-1",

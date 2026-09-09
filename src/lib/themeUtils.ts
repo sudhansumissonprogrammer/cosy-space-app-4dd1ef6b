@@ -4,7 +4,7 @@
 
 const GOOGLE_FONT_WEIGHTS = "400;500;600;700";
 const DEFAULT_HEADING_FONT = "Alegreya SC";
-const DEFAULT_BODY_FONT = "Inter";
+const DEFAULT_BODY_FONT = "Alegreya SC";
 const DEFAULT_TEXT_COLOR = "#1a1a1a";
 const DEFAULT_BACKGROUND_COLOR = "#ffffff";
 const FONT_READY_TIMEOUT_MS = 3000;

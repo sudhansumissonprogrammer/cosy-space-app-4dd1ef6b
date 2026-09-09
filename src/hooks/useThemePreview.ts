@@ -48,8 +48,8 @@ export function useThemePreview(storeId?: string) {
           const accent = c.accent_color || "#666666";
           const text = c.text_color || "#1a1a1a";
           const bg = c.background_color || "#ffffff";
-          const headingFont = c.heading_font || "Inter";
-          const bodyFont = c.body_font || "Inter";
+          const headingFont = c.heading_font || "Alegreya SC";
+          const bodyFont = c.body_font || "Alegreya SC";
           const marqueeGradient = c.marquee_gradient || `linear-gradient(90deg, ${primary}, ${primary})`;
           const buttonStyle = c.button_style || "rounded";
 
