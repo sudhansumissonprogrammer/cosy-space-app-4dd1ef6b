@@ -360,6 +360,7 @@ Deno.serve(async (req) => {
                 content: [
                   { type: "text", text: instruction },
                   { type: "image_url", image_url: { url: dataUrl } },
+                  ...refDataUrls.map((u) => ({ type: "image_url", image_url: { url: u } })),
                 ],
               },
             ],
@@ -394,11 +395,14 @@ Deno.serve(async (req) => {
         // Store on R2 through the existing upload function (WebP conversion,
         // tenant path guard and CDN URL all handled there).
         const ext = mime === "image/png" ? "png" : mime === "image/webp" ? "webp" : "jpg";
-        const key = `${user.id}/${storeId}/ai/${crypto.randomUUID()}-1024w.${ext}`;
+        const key = `${user.id}/${storeId}/ai/${crypto.randomUUID()}-1600w.${ext}`;
         const form = new FormData();
         form.append("file", new File([bytes], `creative.${ext}`, { type: mime }));
         form.append("bucket", "product-images");
         form.append("path", key);
+        // Near-lossless WebP: jewellery texture (chain weave, engraving) is the
+        // first thing normal q80 compression smears away.
+        form.append("webp_quality", "94");
 
         const up = await fetch(`${SUPABASE_URL}/functions/v1/r2-upload`, {
           method: "POST",
