@@ -6238,6 +6238,7 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
     // v8.1.0: clear write-dedup for slug-keyed entries
     _kvWriteRecent.delete(`storefront:${purgeSlug}`);
     _kvWriteRecent.delete(`theme-lite:${purgeSlug}`);
+    _kvWriteRecent.delete(`theme-lite:${WORKER_VERSION}:${purgeSlug}`);
     _kvWriteRecent.delete(`store-info:${purgeSlug}`);
     // v8.18.0: also clear warm-lock dedup + in-memory marker so the next
     // visitor re-warms the full HTML cache immediately (otherwise TTFB stays
@@ -6248,11 +6249,13 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
     for (const d of domainsToPurge) revalCooldowns.delete(`html:${d}`);
     purgeOps.push(cache.delete(new Request(`https://cache/storefront-data/${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/theme-lite:${purgeSlug}`)).catch(() => {}));
+    purgeOps.push(cache.delete(new Request(`https://cache/theme-lite:${WORKER_VERSION}:${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/store-info:${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/slug-domain-${purgeSlug}`)).catch(() => {}));
     if (env?.STORE_KV) {
       purgeOps.push(kvDeleteForce(env, `storefront:${purgeSlug}`));
       purgeOps.push(kvDeleteDedup(env, `theme-lite:${purgeSlug}`));
+      purgeOps.push(kvDeleteForce(env, `theme-lite:${WORKER_VERSION}:${purgeSlug}`));
       purgeOps.push(kvDeleteDedup(env, `store-info:${purgeSlug}`));
       purgeOps.push(kvDeleteForce(env, `warm-lock:${purgeSlug}`));
       // v8.27.0: purge all html:<slug>:* KV entries (best-effort list+delete).
