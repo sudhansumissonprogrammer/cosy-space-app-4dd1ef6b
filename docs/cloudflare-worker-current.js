@@ -6601,6 +6601,7 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
   if (purgeSlug) {
     _kvWriteRecent.delete(`storefront:${purgeSlug}`);
     _kvWriteRecent.delete(`theme-lite:${purgeSlug}`);
+    _kvWriteRecent.delete(`theme-lite:${WORKER_VERSION}:${purgeSlug}`);
     _kvWriteRecent.delete(`store-info:${purgeSlug}`);
     _kvWriteRecent.delete(`warm-lock:${purgeSlug}`); // v8.18.0
     _memWarmLock.delete(purgeSlug); // v8.18.0
@@ -6627,11 +6628,13 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
     }
     purgeOps.push(cache.delete(new Request(`https://cache/storefront-data/${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/theme-lite:${purgeSlug}`)).catch(() => {}));
+    purgeOps.push(cache.delete(new Request(`https://cache/theme-lite:${WORKER_VERSION}:${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/store-info:${purgeSlug}`)).catch(() => {}));
 
     if (env?.STORE_KV) {
       purgeOps.push(kvDeleteForce(env, `storefront:${purgeSlug}`));
       purgeOps.push(kvDeleteDedup(env, `theme-lite:${purgeSlug}`));
+      purgeOps.push(kvDeleteForce(env, `theme-lite:${WORKER_VERSION}:${purgeSlug}`));
       purgeOps.push(kvDeleteDedup(env, `store-info:${purgeSlug}`));
       purgeOps.push(kvDeleteForce(env, `warm-lock:${purgeSlug}`)); // v8.18.0
       // v8.27.0: purge html:<slug>:* entries
