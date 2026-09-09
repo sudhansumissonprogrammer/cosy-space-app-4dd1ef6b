@@ -360,7 +360,14 @@ Deno.serve(async (req) => {
             (dbOrder as any).payu_txnids = [...priorTxnids, txnid].slice(-8);
           }
           const amountStr = chargeAmount.toFixed(2);
-          const productinfo = `Order ${dbOrder.order_number || order_id.slice(0, 8)}`;
+          // Shown inside GPay/PhonePe/Paytm as the transaction note:
+          //   "Serdiya Jewellers - Advance Rs 100 - Order 6348"
+          const productinfo = buildPayuProductInfo({
+            storeName,
+            orderNumber: dbOrder.order_number || order_id.slice(0, 8),
+            amount: chargeAmount,
+            isPartial,
+          });
           const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
           const notifyUrl = `${supabaseUrl}/functions/v1/payu-webhook`;
           const originHdr = req.headers.get("origin") || "";
