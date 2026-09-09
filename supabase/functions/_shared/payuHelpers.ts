@@ -166,16 +166,17 @@ export function buildPayuProductInfo(opts: {
   amount: number;
   isPartial: boolean;
 }): string {
-  const store = sanitizePayuText(opts.storeName || "", 40);
-  const order = sanitizePayuText(String(opts.orderNumber ?? ""), 14);
+  const store = sanitizePayuText(opts.storeName || "", 22);
+  const order = sanitizePayuText(String(opts.orderNumber ?? ""), 12);
   const amt = Math.round(opts.amount) === opts.amount
     ? String(Math.round(opts.amount))
     : opts.amount.toFixed(2);
+  const action = opts.isPartial ? "adv" : "pay";
   const parts: string[] = [];
   if (store) parts.push(store);
-  parts.push(opts.isPartial ? `Advance Rs ${amt}` : `Order Payment Rs ${amt}`);
-  if (order) parts.push(`Order ${order}`);
-  return sanitizePayuText(parts.join(" - ")) || "Order Payment";
+  parts.push(`${action} Rs ${amt}`);
+  if (order) parts.push(order);
+  return sanitizePayuText(parts.join(" "), 50) || "Order Payment";
 }
 
 // Injects a readable transaction note into a PayU-issued `upi://pay?...` link.
