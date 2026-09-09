@@ -146,6 +146,56 @@ export async function verifyPayuTxn(opts: {
 //   bounced / dropped → failed
 export type PayuVerdict = "PAID" | "PENDING" | "FAILED";
 
+// ── UPI-app facing description ───────────────────────────────────────────────
+// `productinfo` is what PayU forwards into the UPI intent as the transaction
+// note, so it's the one string a shopper reads inside GPay/PhonePe/Paytm.
+// PayU rejects most special characters (₹, #, &, |, quotes), so keep it to
+// letters/digits/space/hyphen/dot and cap the length.
+export function sanitizePayuText(s: string, max = 90): string {
+  return String(s || "")
+    .replace(/[^A-Za-z0-9 .\-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, max)
+    .trim();
+}
+
+export function buildPayuProductInfo(opts: {
+  storeName?: string | null;
+  orderNumber?: string | number | null;
+  amount: number;
+  isPartial: boolean;
+}): string {
+  const store = sanitizePayuText(opts.storeName || "", 40);
+  const order = sanitizePayuText(String(opts.orderNumber ?? ""), 14);
+  const amt = Math.round(opts.amount) === opts.amount
+    ? String(Math.round(opts.amount))
+    : opts.amount.toFixed(2);
+  const parts: string[] = [];
+  if (store) parts.push(store);
+  parts.push(opts.isPartial ? `Advance Rs ${amt}` : `Order Payment Rs ${amt}`);
+  if (order) parts.push(`Order ${order}`);
+  return sanitizePayuText(parts.join(" - ")) || "Order Payment";
+}
+
+// Injects a readable transaction note into a PayU-issued `upi://pay?...` link.
+// Only touches `tn` and only when the URI is not signed — rewriting a signed
+// intent would invalidate PayU's signature and the app would reject it.
+export function withUpiNote(intentUrl: string, note: string): string {
+  try {
+    const qIdx = intentUrl.indexOf("?");
+    if (qIdx < 0) return intentUrl;
+    const params = new URLSearchParams(intentUrl.slice(qIdx + 1));
+    if (params.get("sign")) return intentUrl;
+    const clean = sanitizePayuText(note, 50);
+    if (!clean) return intentUrl;
+    params.set("tn", clean);
+    return `${intentUrl.slice(0, qIdx)}?${params.toString()}`;
+  } catch {
+    return intentUrl;
+  }
+}
+
 export function mapPayuStatus(status: unknown): PayuVerdict {
   const s = String(status || "").toLowerCase();
   if (s === "success" || s === "captured") return "PAID";
