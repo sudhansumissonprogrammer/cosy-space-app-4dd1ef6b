@@ -68,11 +68,11 @@ export default function CheckoutReviewsTeaser({ storeId, label }: Props) {
                 key={i}
                 src={m.url}
                 alt=""
-                width={30}
-                height={30}
+                width={34}
+                height={34}
                 loading="lazy"
                 decoding="async"
-                className="h-[30px] w-[30px] rounded-full border-2 border-emerald-100 object-cover shadow-sm"
+                className="h-[34px] w-[34px] rounded-full border-2 border-emerald-100 object-cover shadow-sm"
               />
             ))}
           </span>
@@ -81,8 +81,9 @@ export default function CheckoutReviewsTeaser({ storeId, label }: Props) {
           <span className="block text-[12px] font-semibold text-gray-900 truncate">
             {label || "Real customer photos & reviews"}
           </span>
-          <span className="mt-0.5 block text-[11px] text-muted-foreground">
-            232 reviews
+          <span className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
+            <ReviewStars rating={average} className="h-3 w-3" />
+            {total} review{total === 1 ? "" : "s"}
           </span>
         </span>
         <span className="shrink-0 text-[11px] font-bold text-emerald-700">View</span>
@@ -103,7 +104,7 @@ export default function CheckoutReviewsTeaser({ storeId, label }: Props) {
                 <div className="mt-0.5 flex items-center gap-1.5">
                   <ReviewStars rating={average} className="h-3.5 w-3.5" />
                   <span className="text-[11px] text-muted-foreground">
-                    232 reviews
+                    {total} review{total === 1 ? "" : "s"}
                   </span>
                 </div>
               </div>
@@ -124,7 +125,6 @@ export default function CheckoutReviewsTeaser({ storeId, label }: Props) {
                     key={r.id}
                     review={r}
                     compact
-                    minimalOverlay
                     onOpenMedia={r.media.length ? (i) => setGalleryIndex(offsets[ri] + i) : undefined}
                   />
                 ))}
