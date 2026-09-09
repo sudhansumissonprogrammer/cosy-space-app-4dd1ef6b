@@ -4099,6 +4099,7 @@ export type Database = {
           business_hours: Json | null
           business_type: string | null
           capi_disabled: boolean
+          checkout_otp_enabled: boolean
           checkout_v2_enabled: boolean
           city: string | null
           created_at: string
@@ -4163,6 +4164,7 @@ export type Database = {
           business_hours?: Json | null
           business_type?: string | null
           capi_disabled?: boolean
+          checkout_otp_enabled?: boolean
           checkout_v2_enabled?: boolean
           city?: string | null
           created_at?: string
@@ -4227,6 +4229,7 @@ export type Database = {
           business_hours?: Json | null
           business_type?: string | null
           capi_disabled?: boolean
+          checkout_otp_enabled?: boolean
           checkout_v2_enabled?: boolean
           city?: string | null
           created_at?: string
@@ -5848,6 +5851,7 @@ export type Database = {
           used_count: number
         }[]
       }
+      get_store_checkout_otp: { Args: { _store_id: string }; Returns: boolean }
       get_store_coupon_teaser: {
         Args: { _store_id: string }
         Returns: {

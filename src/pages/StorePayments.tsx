@@ -66,6 +66,9 @@ export default function StorePayments() {
   // Checkout V2 (GoKwik-style one-page UPI intent checkout) — off by default
   const [checkoutV2Enabled, setCheckoutV2Enabled] = useState(false);
 
+  // WhatsApp OTP verification at checkout — strictly opt-in, off by default.
+  const [checkoutOtpEnabled, setCheckoutOtpEnabled] = useState(false);
+
   const { data: store, isLoading: storeLoading } = useQuery({
     queryKey: ["payment-store-settings", storeId, isAdminView],
     staleTime: 0,
@@ -80,7 +83,7 @@ export default function StorePayments() {
 
       const { data, error } = await (supabase as any)
         .from("stores")
-        .select("id, owner_id, name, slug, order_mode, billing_mode, partial_payment_enabled, partial_payment_type, partial_payment_value, checkout_v2_enabled")
+        .select("id, owner_id, name, slug, order_mode, billing_mode, partial_payment_enabled, partial_payment_type, partial_payment_value, checkout_v2_enabled, checkout_otp_enabled")
         .eq("id", storeId!)
         .eq("owner_id", user!.id)
         .maybeSingle();
@@ -112,6 +115,7 @@ export default function StorePayments() {
       setPartialType((store as any).partial_payment_type || "percentage");
       setPartialValue((store as any).partial_payment_value ? String((store as any).partial_payment_value) : "");
       setCheckoutV2Enabled((store as any).checkout_v2_enabled ?? false);
+      setCheckoutOtpEnabled((store as any).checkout_otp_enabled ?? false);
     }
   }, [store]);
 
@@ -215,6 +219,7 @@ export default function StorePayments() {
         partial_payment_type: partialType,
         partial_payment_value: partialEnabled && partialValue ? Number(partialValue) : null,
         checkout_v2_enabled: true,
+        checkout_otp_enabled: checkoutOtpEnabled,
       };
 
       if (partialEnabled && onlineEnabled && partialValue) {
@@ -805,6 +810,38 @@ export default function StorePayments() {
                   </CollapsibleContent>
                 </div>
               </Collapsible>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Mobile number verification (WhatsApp OTP) — strictly opt-in */}
+      {showPaymentConfig && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <ShieldCheck className="h-5 w-5" /> Verify Mobile Number (WhatsApp OTP)
+            </CardTitle>
+            <CardDescription>
+              Ask customers to confirm a 6-digit code sent on WhatsApp before they continue to
+              address &amp; payment. Cuts fake numbers and undelivered parcels.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-foreground">Enable OTP verification</p>
+                <p className="text-xs text-muted-foreground">
+                  Off by default. Nothing changes at checkout until you switch this on.
+                </p>
+              </div>
+              <Switch checked={checkoutOtpEnabled} onCheckedChange={setCheckoutOtpEnabled} />
+            </div>
+            {checkoutOtpEnabled && (
+              <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs text-foreground">
+                Customers without WhatsApp on that number can't receive the code. If WhatsApp is
+                temporarily unavailable, checkout continues without verification so no order is lost.
+              </div>
             )}
           </CardContent>
         </Card>
