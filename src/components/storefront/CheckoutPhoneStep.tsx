@@ -164,76 +164,24 @@ export default function CheckoutPhoneStep({
   useEffect(() => {
     let cancelled = false;
     if (!storeId) return;
-    (async () => {
-      const first = <T,>(d: any): T | null => (Array.isArray(d) ? d[0] ?? null : d ?? null);
-      try {
-        const { data } = await (supabase as any).rpc(
-          "get_store_auto_apply_coupon",
-          { _store_id: storeId },
-        );
-        if (!cancelled) setAutoCoupon(first<CouponRow>(data));
-      } catch {}
-      try {
-        const { data } = await (supabase as any).rpc("get_store_wa_coupon", {
-          _store_id: storeId,
-        });
-        if (!cancelled) setExclusiveCoupon(first<CouponRow>(data));
-      } catch {}
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [storeId]);
-
-  const valueOf = (c: CouponRow | null) => {
-    if (!c || subtotal <= 0) return 0;
-    if (subtotal < Number(c.min_order_amount || 0)) return 0;
-    const raw =
-      c.discount_type === "percentage"
-        ? (subtotal * Number(c.discount_value || 0)) / 100
-        : Number(c.discount_value || 0);
-    return Math.max(0, Math.min(raw, subtotal));
-  };
-
-  const { bestCoupon, autoCouponDiscount } = useMemo(() => {
-    const a = valueOf(autoCoupon);
-    // The exclusive coupon is only advertised to shoppers who actually
-    // claimed it from the exit-intent popup.
-    const claimed = (() => {
-      try { return sessionStorage.getItem(`sf_exit_claimed_${storeId || "x"}`); } catch { return null; }
-    })();
-    const e =
-      claimed && exclusiveCoupon?.code &&
-      claimed.toUpperCase() === String(exclusiveCoupon.code).toUpperCase()
-        ? valueOf(exclusiveCoupon)
-        : 0;
-    return e > a
-      ? { bestCoupon: exclusiveCoupon, autoCouponDiscount: e }
-      : { bestCoupon: autoCoupon, autoCouponDiscount: a };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoCoupon, exclusiveCoupon, subtotal, storeId]);
-
-
-  const setQty = (item: CartItem, next: number) => {
-    const n = Math.max(1, Math.min(99, Math.floor(next)));
-    onQuantityChange?.(item, n);
-  };
-
-  // ── Mobile-number verification (opt-in per store) ────────────────────────
-  // Default OFF. Only stores that switch it on in Settings ever see the OTP
-  // screen; every other store keeps the exact previous checkout flow.
-  const [otpRequired, setOtpRequired] = useState(false);
-  const [otpPhone, setOtpPhone] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    if (!storeId) return;
+    // Cache per tab so a shopper bouncing between cart and checkout doesn't
+    // repeat this lookup. Any failure keeps the previous behaviour (no OTP).
+    const cacheKey = `sb_otp_flag:${storeId}`;
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached === "1" || cached === "0") {
+        setOtpRequired(cached === "1");
+        return;
+      }
+    } catch { /* private mode */ }
     (async () => {
       try {
         const { data } = await (supabase as any).rpc("get_store_checkout_otp", {
           _store_id: storeId,
         });
-        if (!cancelled) setOtpRequired(data === true);
+        const on = data === true;
+        try { sessionStorage.setItem(cacheKey, on ? "1" : "0"); } catch {}
+        if (!cancelled) setOtpRequired(on);
       } catch {
         /* flag unavailable → behave exactly as before (no OTP) */
       }
@@ -398,26 +346,25 @@ export default function CheckoutPhoneStep({
 
 
 
-  if (otpPhone) {
-    return (
-      <CheckoutOtpSheet
-        storeId={storeId!}
-        phone={otpPhone}
-        onEdit={() => setOtpPhone(null)}
-        onVerified={() => {
-          try {
-            localStorage.setItem(verifiedKey(otpPhone), String(Date.now()));
-          } catch {}
-          const canon = otpPhone;
-          setOtpPhone(null);
-          proceed(canon);
-        }}
-      />
-    );
-  }
+  const otpOverlay = otpPhone ? (
+    <CheckoutOtpSheet
+      storeId={storeId!}
+      phone={otpPhone}
+      onEdit={() => setOtpPhone(null)}
+      onVerified={() => {
+        try {
+          localStorage.setItem(verifiedKey(otpPhone), String(Date.now()));
+        } catch {}
+        const canon = otpPhone;
+        setOtpPhone(null);
+        proceed(canon);
+      }}
+    />
+  ) : null;
 
   return (
     <div className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] pb-10">
+      {otpOverlay}
       {/* Sticky header */}
       <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-3 py-1 flex items-center gap-2">
         <button
