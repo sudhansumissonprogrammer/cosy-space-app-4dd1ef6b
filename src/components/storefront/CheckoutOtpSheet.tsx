@@ -109,7 +109,7 @@ export default function CheckoutOtpSheet({ storeId, phone, onEdit, onVerified, o
   const tryClipboard = useCallback(async () => {
     try {
       const text = await navigator.clipboard.readText();
-      const m = text && text.match(/\b(\d{6})\b/);
+      const m = text && text.match(/\b(\d{4})\b/);
       if (m) fill(m[1]);
     } catch {
       /* permission denied — shopper types it manually */
