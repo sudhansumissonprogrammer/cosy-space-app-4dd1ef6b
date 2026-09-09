@@ -360,6 +360,7 @@ Deno.serve(async (req) => {
                 content: [
                   { type: "text", text: instruction },
                   { type: "image_url", image_url: { url: dataUrl } },
+                  ...refDataUrls.map((u) => ({ type: "image_url", image_url: { url: u } })),
                 ],
               },
             ],
