@@ -300,17 +300,46 @@ Deno.serve(async (req) => {
         const dataUrl = await toDataUrl(sourceUrl);
         if (!dataUrl) return json({ error: "Could not read the product photo. Try another image." }, 400);
 
+        // Extra reference angles: the more real views the model sees, the less
+        // it "invents" texture (chain link weave, clasp, plating tone, dial).
+        const refUrls: string[] = [];
+        {
+          const { data: extra } = await admin
+            .from("product_images")
+            .select("image_url, display_order")
+            .eq("product_id", productId)
+            .order("display_order", { ascending: true })
+            .limit(6);
+          for (const im of extra ?? []) {
+            if (!im.image_url || im.image_url === sourceUrl) continue;
+            if (refUrls.length >= 2) break;
+            refUrls.push(im.image_url);
+          }
+        }
+        const refDataUrls = (await Promise.all(refUrls.map(toDataUrl))).filter(
+          (d): d is string => !!d,
+        );
+
         const instruction = [
-          `You are a senior product photographer and ad creative director for an Indian D2C brand named "${store.name}".`,
-          `Recreate this exact product as a finished marketing image.`,
+          `You are a senior product photographer retouching a REAL photograph for an Indian D2C brand named "${store.name}".`,
+          `This is a re-photograph / relight of the physical item in the reference image — NOT a new design and NOT an illustration.`,
           `Product: ${product.name}.`,
           product.description ? `Details: ${String(product.description).replace(/<[^>]*>/g, " ").slice(0, 300)}` : "",
+          refDataUrls.length
+            ? `You are given ${refDataUrls.length + 1} photos of the SAME single item from different angles. Use them together to understand its true geometry, texture and finish. Produce ONE image of that one item.`
+            : "",
           `Style: ${preset.prompt}`,
           brief ? `Merchant's request (highest priority): ${brief}` : "",
           `Framing: ${ASPECTS[aspect]}.`,
-          `HARD RULES: keep the product's exact shape, colour, material, pattern and every design detail identical to the photo — do not redesign it, do not change the number of items, do not invent new parts.`,
+          `PRODUCT-IDENTITY RULES (most important, never break):`,
+          `• Copy the item pixel-faithfully: exact silhouette, proportions, thickness, length and item count.`,
+          `• Reproduce the surface EXACTLY as photographed — link-by-link chain weave/pattern, braid direction, stone cuts and settings, engraving, filigree, beadwork, kundan/meena work, embossing, dial layout, indices, hands, logo placement, strap grain and stitching.`,
+          `• Keep the exact metal tone and finish (gold polish vs rose gold vs silver/steel, matte vs mirror polish, antique/oxidised patina) and the exact clasp/hook/lock type shown.`,
+          `• Keep real material behaviour: genuine metal specular highlights, micro-scratches and casting texture from the reference. Do not smooth it into plastic or CGI, do not "beautify", do not add glitter/sparkle overlays.`,
+          `• Do not redesign, simplify, straighten, re-space or stylise any part. If a detail is unclear in the reference, copy it as-is instead of inventing something.`,
+          `Only the background, lighting, camera angle and composition may change.`,
           `Do not add any text, watermark, price, brand name or logo unless the merchant explicitly asked for it.`,
-          `Output a single photorealistic, high-resolution, clean image.`,
+          `Output ONE photorealistic, ultra-sharp, high-resolution image with true-to-life colour — macro-level detail on the product, no noise, no blur on the product.`,
         ]
           .filter(Boolean)
           .join("\n");
