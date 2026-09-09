@@ -49,6 +49,8 @@ import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { pixelPayloadFromItems } from "@/lib/expandBundleForPixel";
 const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPhoneStep"));
+// Loaded only after checkout is interactive — see `reviewsTeaserReady` below.
+const CheckoutReviewsTeaser = lazy(() => import("@/components/storefront/checkout/CheckoutReviewsTeaser"));
 import { estimateDelivery } from "@/lib/deliveryEstimate";
 import CheckoutExitOffer from "@/components/storefront/CheckoutExitOffer";
 
@@ -2428,6 +2430,21 @@ export default function CheckoutV2Page() {
   const [showUpsell, setShowUpsell] = useState(false);
   const [advancePaid, setAdvancePaid] = useState(0);
   const [balanceDue, setBalanceDue] = useState(0);
+
+  // Review teaser is mounted only once the browser is idle, so the review
+  // chunk + RPC never compete with checkout's critical path.
+  const [reviewsTeaserReady, setReviewsTeaserReady] = useState(false);
+  useEffect(() => {
+    if (reviewsTeaserReady) return;
+    const w = window as any;
+    const id = w.requestIdleCallback
+      ? w.requestIdleCallback(() => setReviewsTeaserReady(true), { timeout: 4000 })
+      : window.setTimeout(() => setReviewsTeaserReady(true), 2500);
+    return () => {
+      if (w.cancelIdleCallback) w.cancelIdleCallback(id);
+      else clearTimeout(id);
+    };
+  }, [reviewsTeaserReady]);
 
   const finishSuccess = (paidOrderId?: string | null) => {
     const finalOrderId = paidOrderId || orderId;
@@ -5537,6 +5554,11 @@ export default function CheckoutV2Page() {
                   Know more · Why pay advance?
                 </button>
               )}
+              {reviewsTeaserReady && (
+                <Suspense fallback={null}>
+                  <CheckoutReviewsTeaser storeId={store?.id} />
+                </Suspense>
+              )}
               {!addressFilled ? (
                 <button
                   type="button"
@@ -5553,6 +5575,13 @@ export default function CheckoutV2Page() {
               )}
 
             </div>
+          )}
+
+          {/* Stores without partial payment still get the social-proof strip */}
+          {!hasPartial && reviewsTeaserReady && (
+            <Suspense fallback={null}>
+              <CheckoutReviewsTeaser storeId={store?.id} />
+            </Suspense>
           )}
 
           {/* Payment breakup bottom sheet — trust + explanation */}
