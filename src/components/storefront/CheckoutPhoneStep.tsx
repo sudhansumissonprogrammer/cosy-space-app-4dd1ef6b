@@ -404,7 +404,16 @@ export default function CheckoutPhoneStep({
       storeId={storeId!}
       phone={otpPhone}
       onEdit={() => setOtpPhone(null)}
+      onSendFailed={(message) => {
+        // Delivery problem — never dead-end a paying shopper.
+        console.warn("[CheckoutPhoneStep] OTP send failed", message);
+        const canon = otpPhone;
+        setOtpPhone(null);
+        toast.error("Could not send the WhatsApp code. Continuing without verification.");
+        proceed(canon);
+      }}
       onVerified={() => {
+
         try {
           localStorage.setItem(verifiedKey(otpPhone), String(Date.now()));
         } catch {}
