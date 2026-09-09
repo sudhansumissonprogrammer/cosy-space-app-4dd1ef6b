@@ -253,7 +253,6 @@ export default function CheckoutOtpSheet({ storeId, phone, onEdit, onVerified }:
           </Button>
         </div>
       </div>
-    </div>
     </div>,
     document.body,
   );
