@@ -1,7 +1,7 @@
 // Per-store PayU Merchant Hosted (Bolt) — creates the transaction payload + hash
 // the browser passes to bolt.launch(). Keys never leave the server.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { computePayuRequestHash, payuCheckoutHost, type PayuEnv } from "../_shared/payuHelpers.ts";
+import { buildPayuProductInfo, computePayuRequestHash, payuCheckoutHost, type PayuEnv } from "../_shared/payuHelpers.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
