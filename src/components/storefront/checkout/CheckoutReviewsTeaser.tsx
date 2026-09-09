@@ -125,6 +125,7 @@ export default function CheckoutReviewsTeaser({ storeId, label }: Props) {
                     key={r.id}
                     review={r}
                     compact
+                    minimalOverlay
                     onOpenMedia={r.media.length ? (i) => setGalleryIndex(offsets[ri] + i) : undefined}
                   />
                 ))}
