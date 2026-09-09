@@ -102,7 +102,7 @@ export default function CheckoutReviewsTeaser({ storeId, label }: Props) {
                 <div className="mt-0.5 flex items-center gap-1.5">
                   <ReviewStars rating={average} className="h-3.5 w-3.5" />
                   <span className="text-[11px] text-muted-foreground">
-                    {average ? average.toFixed(1) : "—"} · {total} review{total === 1 ? "" : "s"}
+                    232 reviews
                   </span>
                 </div>
               </div>
