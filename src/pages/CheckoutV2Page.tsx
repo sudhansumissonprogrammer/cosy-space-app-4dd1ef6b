@@ -5554,6 +5554,11 @@ export default function CheckoutV2Page() {
                   Know more · Why pay advance?
                 </button>
               )}
+              {reviewsTeaserReady && (
+                <Suspense fallback={null}>
+                  <CheckoutReviewsTeaser storeId={store?.id} />
+                </Suspense>
+              )}
               {!addressFilled ? (
                 <button
                   type="button"
