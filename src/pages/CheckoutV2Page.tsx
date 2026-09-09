@@ -5494,7 +5494,7 @@ export default function CheckoutV2Page() {
                 <button
                   type="button"
                   onClick={() => setBreakupOpen(true)}
-                  className="mt-2.5 mx-auto flex w-fit items-center justify-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[11px] font-semibold text-emerald-800 active:bg-emerald-100"
+                  className="mt-2.5 mx-auto flex w-fit items-center justify-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-800 active:bg-emerald-100"
                 >
                   <Info className="h-3 w-3" />
                   Know more · Why pay advance?

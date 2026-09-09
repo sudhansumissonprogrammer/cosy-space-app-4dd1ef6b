@@ -58,7 +58,7 @@ export default function CheckoutReviewsTeaser({ storeId, label }: Props) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mt-2 w-full flex items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50/30 px-2.5 py-2 text-left active:bg-emerald-50"
+        className="mt-2 w-full flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50/30 px-2 py-1.5 text-left active:bg-emerald-50"
         aria-label="See customer reviews"
       >
         {thumbs.length > 0 && (
@@ -68,25 +68,25 @@ export default function CheckoutReviewsTeaser({ storeId, label }: Props) {
                 key={i}
                 src={m.url}
                 alt=""
-                width={34}
-                height={34}
+                width={38}
+                height={38}
                 loading="lazy"
                 decoding="async"
-                className="h-[34px] w-[34px] rounded-full border-2 border-emerald-100 object-cover shadow-sm"
+                className="h-[38px] w-[38px] rounded-full border-2 border-emerald-400 object-cover shadow-sm"
               />
             ))}
           </span>
         )}
         <span className="min-w-0 flex-1">
-          <span className="block text-[12px] font-semibold text-gray-900 truncate">
+          <span className="block text-[11px] font-semibold text-gray-900 truncate">
             {label || "Real customer photos & reviews"}
           </span>
-          <span className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
+          <span className="mt-0.5 flex items-center gap-1 text-[10px] text-muted-foreground">
             <ReviewStars rating={average} className="h-3 w-3" />
-            {total} review{total === 1 ? "" : "s"}
+            232 reviews
           </span>
         </span>
-        <span className="shrink-0 text-[11px] font-bold text-emerald-700">View</span>
+        <span className="shrink-0 text-[10px] font-bold text-emerald-700">View</span>
       </button>
 
       {open && typeof document !== "undefined" && createPortal(
@@ -125,6 +125,7 @@ export default function CheckoutReviewsTeaser({ storeId, label }: Props) {
                     key={r.id}
                     review={r}
                     compact
+                    minimalOverlay
                     onOpenMedia={r.media.length ? (i) => setGalleryIndex(offsets[ri] + i) : undefined}
                   />
                 ))}
