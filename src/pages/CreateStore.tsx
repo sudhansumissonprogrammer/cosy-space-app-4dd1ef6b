@@ -152,7 +152,8 @@ export default function CreateStore() {
   }, [user]);
 
 
-  const theme = "theme-1";
+  // Classic + Quick Buy — the preset most stores end up choosing anyway.
+  const theme = "theme-16";
 
 
   const generateSlug = (value: string) =>
@@ -268,20 +269,24 @@ export default function CreateStore() {
       if (newStore?.id) {
 
 
-        // Create default theme config
+        // Create default theme config — matches the "Classic + Quick Buy" preset.
+        // NOTE: category_style / header_style must be real style ids. A value the
+        // storefront doesn't know (e.g. "minimal") renders an EMPTY category row.
         await (supabase as any).from("store_theme_config").insert({
           store_id: newStore.id,
           primary_color: "#1a1a1a",
           accent_color: "#f5f5f5",
           text_color: "#1a1a1a",
           background_color: "#ffffff",
+          header_bg_color: "#ffffff",
+          header_text_color: "#1a1a1a",
           heading_font: "Alegreya SC",
-          body_font: "Alegreya SC",
+          body_font: "Inter",
           button_style: "rounded",
           product_card_style: "style-1",
-          category_style: "minimal",
-          header_style: "transparent",
-          header_logo_alignment: "Center",
+          category_style: "style-1",
+          header_style: "normal",
+          header_logo_alignment: "Left",
           mobile_nav_enabled: true,
           marquee_enabled: false,
           marquee_text: "",
