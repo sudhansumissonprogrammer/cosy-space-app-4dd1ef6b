@@ -24,12 +24,13 @@ interface Props {
 }
 
 export default function CheckoutReviewsTeaser({ storeId, label }: Props) {
-  const { reviews, total, average } = useStoreReviews(storeId, 9);
+  // More reviews than the PDP teaser (top 16) — same shared summary RPC, so
+  // shoppers arriving from a PDP reuse the warm cache and pay no extra fetch.
+  const { reviews, total, average } = useStoreReviews(storeId, 16);
   const [open, setOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
 
-  // Same ordering as the PDP showcase — top 9 from the shared summary RPC.
-  const shown = useMemo(() => reviews.slice(0, 9), [reviews]);
+  const shown = useMemo(() => reviews.slice(0, 16), [reviews]);
 
   const thumbs = useMemo(
     () =>
