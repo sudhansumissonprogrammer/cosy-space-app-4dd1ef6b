@@ -203,8 +203,17 @@ function PillCarousel({ categories, storeSlug }: { categories: Category[]; store
 }
 
 
-export default function UniversalCategories({ categories, storeSlug, isLoading, categoryStyle = "style-1" }: Props) {
+const KNOWN_STYLES = new Set([
+  "style-1", "style-2", "style-3", "style-4", "style-5",
+  "style-6", "style-8", "style-10", "style-11",
+]);
+
+export default function UniversalCategories({ categories, storeSlug, isLoading, categoryStyle: rawCategoryStyle = "style-1" }: Props) {
   if (!isLoading && (!categories || categories.length === 0)) return null;
+
+  // Any unknown/legacy value (e.g. "minimal", "style-7", "style-9") would render
+  // an empty section — fall back to the default circle carousel instead.
+  const categoryStyle = KNOWN_STYLES.has(rawCategoryStyle) ? rawCategoryStyle : "style-1";
 
   const isCarousel = categoryStyle === "style-1" || categoryStyle === "style-2" || categoryStyle === "style-5" || categoryStyle === "style-11";
   const isCompact = isCarousel || categoryStyle === "style-9";

@@ -152,7 +152,8 @@ export default function CreateStore() {
   }, [user]);
 
 
-  const theme = "theme-1";
+  // Classic + Quick Buy — the preset most stores end up choosing anyway.
+  const theme = "theme-16";
 
 
   const generateSlug = (value: string) =>
@@ -268,20 +269,24 @@ export default function CreateStore() {
       if (newStore?.id) {
 
 
-        // Create default theme config
+        // Create default theme config — matches the "Classic + Quick Buy" preset.
+        // NOTE: category_style / header_style must be real style ids. A value the
+        // storefront doesn't know (e.g. "minimal") renders an EMPTY category row.
         await (supabase as any).from("store_theme_config").insert({
           store_id: newStore.id,
           primary_color: "#1a1a1a",
           accent_color: "#f5f5f5",
           text_color: "#1a1a1a",
           background_color: "#ffffff",
+          header_bg_color: "#ffffff",
+          header_text_color: "#1a1a1a",
           heading_font: "Alegreya SC",
-          body_font: "Alegreya SC",
+          body_font: "Inter",
           button_style: "rounded",
           product_card_style: "style-1",
-          category_style: "minimal",
-          header_style: "transparent",
-          header_logo_alignment: "Center",
+          category_style: "style-1",
+          header_style: "normal",
+          header_logo_alignment: "Left",
           mobile_nav_enabled: true,
           marquee_enabled: false,
           marquee_text: "",
@@ -362,9 +367,13 @@ export default function CreateStore() {
         }
 
 
-        // Seed 3 demo categories + 4 demo products
+        // Seed demo categories, demo products (some with video), category links,
+        // trust videos and the Shop by Video app so a brand-new storefront looks
+        // complete instead of half-empty. Everything is clearly labelled "Demo".
         try {
           const STORAGE_BASE = "https://cdn.shopbanao.in/product-images/demo";
+          const MEDIA_BASE =
+            "https://dqepeywgftbpxeeqfuwt.supabase.co/storage/v1/object/public/product-images/demo%2F";
           const DEMO_IMGS = [
             `${STORAGE_BASE}/product-1.jpg`,
             `${STORAGE_BASE}/product-2.jpg`,
@@ -375,25 +384,79 @@ export default function CreateStore() {
             `${STORAGE_BASE}/category-fashion.jpg`,
             `${STORAGE_BASE}/category-electronics.jpg`,
             `${STORAGE_BASE}/category-accessories.jpg`,
+            `${MEDIA_BASE}necklace.jpg`,
+            `${MEDIA_BASE}watch2.jpg`,
           ];
           const demoCategories = [
             { name: "Fashion", slug: "fashion", image_url: CAT_IMGS[0], display_order: 0 },
             { name: "Electronics", slug: "electronics", image_url: CAT_IMGS[1], display_order: 1 },
             { name: "Accessories", slug: "accessories", image_url: CAT_IMGS[2], display_order: 2 },
+            { name: "Jewellery", slug: "jewellery", image_url: CAT_IMGS[3], display_order: 3 },
+            { name: "Watches", slug: "watches", image_url: CAT_IMGS[4], display_order: 4 },
           ];
-          await (supabase as any).from("categories").insert(
-            demoCategories.map((c) => ({ ...c, store_id: newStore.id }))
-          );
+          const { data: insertedCats } = await (supabase as any)
+            .from("categories")
+            .insert(demoCategories.map((c) => ({ ...c, store_id: newStore.id })))
+            .select("id, name");
 
+          const demoNote =
+            "This is a demo product. Go to your dashboard and replace it with your own product.";
           const demoProducts = [
-            { name: "Demo T-Shirt", slug: "demo-tshirt", price: 499, category: "Fashion", description: "This is a demo product. Go to your admin dashboard and add your own products!", image_url: DEMO_IMGS[0], display_order: 0 },
-            { name: "Demo Earbuds", slug: "demo-earbuds", price: 799, category: "Electronics", description: "This is a demo product. Go to your admin dashboard and add your own products!", image_url: DEMO_IMGS[1], display_order: 1 },
-            { name: "Demo Leather Bag", slug: "demo-leather-bag", price: 999, category: "Accessories", description: "This is a demo product. Go to your admin dashboard and add your own products!", image_url: DEMO_IMGS[2], display_order: 2 },
-            { name: "Demo Watch", slug: "demo-watch", price: 1299, category: "Accessories", description: "This is a demo product. Go to your admin dashboard and add your own products!", image_url: DEMO_IMGS[3], display_order: 3 },
+            { name: "Demo T-Shirt", slug: "demo-tshirt", price: 499, category: "Fashion", description: demoNote, image_url: DEMO_IMGS[0], display_order: 0 },
+            { name: "Demo Earbuds", slug: "demo-earbuds", price: 799, category: "Electronics", description: demoNote, image_url: DEMO_IMGS[1], display_order: 1 },
+            { name: "Demo Leather Bag", slug: "demo-leather-bag", price: 999, category: "Accessories", description: demoNote, image_url: DEMO_IMGS[2], display_order: 2 },
+            { name: "Demo Watch", slug: "demo-watch", price: 1299, category: "Accessories", description: demoNote, image_url: DEMO_IMGS[3], display_order: 3 },
+            { name: "Demo Gold-Plated Necklace Set", slug: "demo-necklace-set", price: 1499, category: "Jewellery", description: demoNote, image_url: `${MEDIA_BASE}necklace.jpg`, video_url: `${MEDIA_BASE}necklace.mp4`, video_poster_url: `${MEDIA_BASE}necklace-poster.jpg`, is_best_selling: true, display_order: 4 },
+            { name: "Demo Gold-Plated Ring", slug: "demo-gold-ring", price: 899, category: "Jewellery", description: demoNote, image_url: `${MEDIA_BASE}ring.jpg`, video_url: `${MEDIA_BASE}ring.mp4`, video_poster_url: `${MEDIA_BASE}ring-poster.jpg`, display_order: 5 },
+            { name: "Demo Pearl Jhumka Earrings", slug: "demo-jhumka-earrings", price: 649, category: "Jewellery", description: demoNote, image_url: `${MEDIA_BASE}earrings.jpg`, video_url: `${MEDIA_BASE}earrings.mp4`, video_poster_url: `${MEDIA_BASE}earrings-poster.jpg`, is_best_selling: true, display_order: 6 },
+            { name: "Demo Classic Leather Watch", slug: "demo-classic-watch", price: 1799, category: "Watches", description: demoNote, image_url: `${MEDIA_BASE}watch2.jpg`, video_url: `${MEDIA_BASE}watch2.mp4`, video_poster_url: `${MEDIA_BASE}watch2-poster.jpg`, is_best_selling: true, display_order: 7 },
           ];
-          await (supabase as any).from("products").insert(
-            demoProducts.map((p) => ({ ...p, store_id: newStore.id, currency, is_active: true }))
-          );
+          const { data: insertedProducts } = await (supabase as any)
+            .from("products")
+            .insert(demoProducts.map((p) => ({ ...p, store_id: newStore.id, currency, is_active: true })))
+            .select("id, name, category");
+
+          // Link products to categories so category pages aren't empty
+          if (insertedCats?.length && insertedProducts?.length) {
+            const catByName = new Map<string, string>(
+              insertedCats.map((c: any) => [c.name, c.id]),
+            );
+            const links = insertedProducts
+              .map((p: any) => {
+                const categoryId = catByName.get(p.category);
+                return categoryId
+                  ? { store_id: newStore.id, product_id: p.id, category_id: categoryId }
+                  : null;
+              })
+              .filter(Boolean);
+            if (links.length) {
+              await (supabase as any).from("product_categories").insert(links);
+            }
+          }
+
+          // Demo trust videos (owner can delete or replace them any time)
+          await (supabase as any).from("store_trust_videos").insert([
+            { store_id: newStore.id, video_url: `${MEDIA_BASE}necklace.mp4`, poster_url: `${MEDIA_BASE}necklace-poster.jpg`, title: "Demo: product close-up", cta_label: "See more details", sort_order: 0, is_active: true },
+            { store_id: newStore.id, video_url: `${MEDIA_BASE}watch2.mp4`, poster_url: `${MEDIA_BASE}watch2-poster.jpg`, title: "Demo: quality check", cta_label: "See more details", sort_order: 1, is_active: true },
+            { store_id: newStore.id, video_url: `${MEDIA_BASE}earrings.mp4`, poster_url: `${MEDIA_BASE}earrings-poster.jpg`, title: "Demo: packed with care", cta_label: "See more details", sort_order: 2, is_active: true },
+          ]);
+
+          // Turn Shop by Video on — the demo products above already have videos
+          await (supabase as any).from("store_apps").insert({
+            store_id: newStore.id,
+            app_id: "shop-by-video",
+            enabled: true,
+            config: {
+              title: "Shop by Video",
+              autoplay: true,
+              loop: true,
+              aspect_ratio: "9:16",
+              max_items: 10,
+              show_price: true,
+              show_cta: true,
+              order: [],
+            },
+          });
         } catch (demoErr) {
           console.warn("Demo seed failed (non-blocking):", demoErr);
         }
