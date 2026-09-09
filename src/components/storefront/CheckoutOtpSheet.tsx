@@ -10,6 +10,7 @@
  *  - Auto-submits the moment 6 digits are present.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Loader2, Lock, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -153,8 +154,10 @@ export default function CheckoutOtpSheet({ storeId, phone, onEdit, onVerified }:
   const mm = String(Math.floor(countdown / 60)).padStart(2, "0");
   const ss = String(countdown % 60).padStart(2, "0");
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+  // Portal to <body>: an animated ancestor on the checkout page creates a
+  // containing block that would otherwise collapse this fixed overlay to 0px.
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center">
       <div className="absolute inset-0 bg-black/45" onClick={onEdit} aria-hidden />
       <div
         role="dialog"
@@ -251,5 +254,7 @@ export default function CheckoutOtpSheet({ storeId, phone, onEdit, onVerified }:
         </div>
       </div>
     </div>
+    </div>,
+    document.body,
   );
 }
