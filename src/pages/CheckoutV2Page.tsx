@@ -49,6 +49,8 @@ import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { pixelPayloadFromItems } from "@/lib/expandBundleForPixel";
 const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPhoneStep"));
+// Loaded only after checkout is interactive — see `reviewsTeaserReady` below.
+const CheckoutReviewsTeaser = lazy(() => import("@/components/storefront/checkout/CheckoutReviewsTeaser"));
 import { estimateDelivery } from "@/lib/deliveryEstimate";
 import CheckoutExitOffer from "@/components/storefront/CheckoutExitOffer";
 
