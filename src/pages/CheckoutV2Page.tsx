@@ -2260,14 +2260,13 @@ export default function CheckoutV2Page() {
   const orderPlacedRef = useRef(false);
 
   // ─── Exit-intent save sheet ─────────────────────────────────────────────
-  // Fires at most once per session when a shopper tries to abandon checkout:
-  // mobile back-press, desktop mouse-out, or 20s idle at the payment step.
+  // Opens only after a deliberate leave attempt: the checkout header back
+  // arrow or browser/mobile back. Never interrupt a shopper because they are
+  // reading reviews, comparing payment methods, or spending longer on checkout.
   // Offers the store's WhatsApp-exclusive coupon (bigger than the store-wide
   // auto coupon) which replaces the currently applied one on claim.
   const [exitOfferOpen, setExitOfferOpen] = useState(false);
-  const exitOfferShownRef = useRef(false);
   const exitGuardPushedRef = useRef(false);
-  const exitSessionKey = `sf_exit_offer_${store?.id || "x"}`;
 
   const exitCoupon = useMemo(() => {
     if (!waCoupon?.code || subtotal <= 0) return null;
@@ -2302,39 +2301,14 @@ export default function CheckoutV2Page() {
     !orderPlaced &&
     !waiting &&
     !confirmingPayment;
-  const canShowExitOfferRef = useRef(canShowExitOffer);
-  canShowExitOfferRef.current = canShowExitOffer;
   const canShowExplicitExitOfferRef = useRef(canShowExplicitExitOffer);
   canShowExplicitExitOfferRef.current = canShowExplicitExitOffer;
 
-  // While the shopper is actively filling a sheet (address / phone) or typing
-  // in any field, an automatic exit popup is pure interruption — it stole the
-  // screen mid-typing and stacked a second overlay on top of the sheet.
-  const sheetBusyRef = useRef(false);
-  sheetBusyRef.current = showAddressFormSheet || showAddressDialog;
-  const isTypingNow = () => {
-    const el = document.activeElement as HTMLElement | null;
-    if (!el) return false;
-    const tag = el.tagName;
-    return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable;
-  };
-
-  const triggerExitOffer = useCallback((explicit = false) => {
-    if (explicit ? !canShowExplicitExitOfferRef.current : !canShowExitOfferRef.current) return false;
-    // Idle/mouse-leave is once per checkout session. A deliberate back action
-    // must always work, even when an earlier automatic popup was dismissed or
-    // stale sessionStorage from HMR/Instagram WebView remains in the tab.
-    if (!explicit) {
-      if (sheetBusyRef.current || isTypingNow()) return false;
-      if (exitOfferShownRef.current) return false;
-      try { if (sessionStorage.getItem(exitSessionKey)) return false; } catch { /* noop */ }
-    }
-
-    exitOfferShownRef.current = true;
-    try { sessionStorage.setItem(exitSessionKey, "1"); } catch { /* noop */ }
+  const triggerExitOffer = useCallback((_explicit = false) => {
+    if (!canShowExplicitExitOfferRef.current) return false;
     setExitOfferOpen(true);
     return true;
-  }, [exitSessionKey]);
+  }, []);
 
   // Expose to handlers declared earlier in the component (e.g. the header back arrow).
   exitTriggerRef.current = triggerExitOffer;
@@ -2362,34 +2336,6 @@ export default function CheckoutV2Page() {
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, [triggerExitOffer]);
-
-  // Desktop mouse-out of the viewport top.
-  useEffect(() => {
-    if (!canShowExitOffer) return;
-    const onLeave = (e: globalThis.MouseEvent) => { if (e.clientY <= 0) triggerExitOffer(); };
-    document.addEventListener("mouseleave", onLeave);
-    return () => document.removeEventListener("mouseleave", onLeave);
-  }, [canShowExitOffer, triggerExitOffer]);
-
-  // Idle nudge while sitting on the payment step (never while a sheet is open
-  // or the shopper is typing — see triggerExitOffer guards).
-  useEffect(() => {
-    if (!canShowExitOffer || !showPayment || showAddressFormSheet || showAddressDialog) return;
-    let timer = 0;
-    const arm = () => {
-      window.clearTimeout(timer);
-      timer = window.setTimeout(() => { if (document.visibilityState === "visible") triggerExitOffer(); }, 90000);
-    };
-    arm();
-    const events: (keyof DocumentEventMap)[] = ["touchstart", "touchmove", "pointerdown", "click", "keydown", "input", "focusin", "scroll", "mousemove"];
-    events.forEach((ev) => document.addEventListener(ev, arm, { passive: true } as any));
-
-    return () => {
-      window.clearTimeout(timer);
-      events.forEach((ev) => document.removeEventListener(ev, arm as any));
-    };
-  }, [canShowExitOffer, showPayment, triggerExitOffer]);
-
 
   const claimExitOffer = async () => {
     setExitOfferOpen(false);
