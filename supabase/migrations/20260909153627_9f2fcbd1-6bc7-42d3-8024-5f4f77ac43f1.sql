@@ -1,0 +1,1 @@
+ALTER TABLE public.store_theme_config ALTER COLUMN body_font SET DEFAULT 'Alegreya SC';
