@@ -347,7 +347,7 @@ serve(async (req) => {
     // Tool phase — the assistant can query this store's live analytics before
     // answering (funnel, trend, cancellations, monthly, sources, products).
     // Non-streaming, max 2 rounds, then the final answer is streamed.
-    for (let round = 0; round < 2; round++) {
+    for (let round = 0; round < 3; round++) {
       const planRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -358,9 +358,9 @@ serve(async (req) => {
         body: JSON.stringify({
           model,
           messages,
-          tools: [...ANALYTICS_TOOLS, ...CREATIVE_TOOLS],
+          tools: [...ANALYTICS_TOOLS, ...OPERATIONS_TOOLS, ...CREATIVE_TOOLS],
           tool_choice: "auto",
-          max_tokens: 300,
+          max_tokens: 400,
           temperature: 0,
         }),
       });
@@ -374,22 +374,25 @@ serve(async (req) => {
       if (!Array.isArray(calls) || calls.length === 0) break;
 
       messages.push({ role: "assistant", content: choice.content ?? "", tool_calls: calls } as any);
-      for (const call of calls.slice(0, 3)) {
+      for (const call of calls.slice(0, 4)) {
         let args: Record<string, unknown> = {};
         try {
           args = JSON.parse(call?.function?.arguments || "{}");
         } catch (_) { /* model sent malformed args — use defaults */ }
         let result: unknown;
+        const toolName = call?.function?.name;
         try {
-          const creative = await runCreativeTool(admin, storeId, call?.function?.name, args);
+          const creative = await runCreativeTool(admin, storeId, toolName, args);
           if (creative) {
             cards.push(creative.card);
             result = creative.result;
+          } else if (OPERATIONS_TOOL_NAMES.has(toolName)) {
+            result = await runOperationsTool(admin, storeId, toolName, args);
           } else {
-            result = await runAnalyticsTool(admin, storeId, call?.function?.name, args);
+            result = await runAnalyticsTool(admin, storeId, toolName, args);
           }
         } catch (e) {
-          console.error("tool error", call?.function?.name, e);
+          console.error("tool error", toolName, e);
           result = { error: "Could not read this data right now." };
         }
         messages.push({
@@ -399,6 +402,7 @@ serve(async (req) => {
         } as any);
       }
     }
+
 
     const upstream = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
