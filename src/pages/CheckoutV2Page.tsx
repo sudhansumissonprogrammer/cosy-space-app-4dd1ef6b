@@ -406,6 +406,10 @@ export default function CheckoutV2Page() {
     }));
   }, [isSingleMode, buyNowProduct, buyNowVariant, buyNowQty, cartItems, pkgSurcharge, pkgOption.key, pkgOption.label]);
 
+  // Free gift (Upsell app, cart_value trigger) — also for Buy Now checkouts,
+  // which never pass through the cart where AutoFreeGift runs.
+  const checkoutItems = useAutoFreeGiftLine(store?.slug, baseCheckoutItems as any) as typeof baseCheckoutItems;
+
   // Stable fingerprint of WHAT is being bought. Used by the recent-order guard
   // so it only blocks a re-mint of the *same* basket, never a genuinely new
   // order the shopper places minutes later.
