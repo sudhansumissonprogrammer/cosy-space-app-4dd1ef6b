@@ -381,7 +381,7 @@ export default function CheckoutV2Page() {
     | null;
 
   // Unified checkout items (buy-now OR cart). Includes variantId + image.
-  const checkoutItems = useMemo(() => {
+  const baseCheckoutItems = useMemo(() => {
     if (isSingleMode && buyNowProduct) {
       return [{
         productId: buyNowProduct.id as string,
