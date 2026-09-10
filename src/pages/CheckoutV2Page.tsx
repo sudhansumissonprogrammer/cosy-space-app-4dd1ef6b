@@ -27,7 +27,6 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import secureBadge from "@/assets/trust/secure-payment-badge.webp.asset.json";
-import trustedSellerBadge from "@/assets/trust/trusted-seller-badge-v3.webp.asset.json";
 import { Loader2, MapPin, ShieldCheck, CheckCircle2, ArrowLeft, Lock, Banknote, Tag, X, Plus, Minus, Check, CreditCard, ShoppingCart, ChevronDown, Trash2, Info, Camera, Package, Truck, Wallet, Sparkles, Headset } from "lucide-react";
 import { toast } from "sonner";
 import type { StoreData } from "@/layouts/StorefrontLayout";
@@ -4764,22 +4763,14 @@ export default function CheckoutV2Page() {
         </div>
 
 
-        <div className="flex items-center -space-x-2">
-          <img
-            src={trustedSellerBadge.url}
-            alt="Trusted Seller"
-            width={622}
-            height={300}
-            decoding="async"
-            className="h-[50px] w-auto shrink-0 object-contain"
-          />
+        <div className="flex items-center">
           <img
             src={secureBadge.url}
             alt="100% Secure Payment"
             width={110}
             height={50}
             decoding="async"
-            className="h-[26px] w-auto shrink-0 object-contain"
+            className="h-[34px] w-auto shrink-0 object-contain"
           />
         </div>
       </div>
