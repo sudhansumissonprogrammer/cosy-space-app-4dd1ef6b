@@ -298,7 +298,7 @@ export default function CheckoutOtpSheet({ storeId, phone, onEdit, onVerified, o
                   const next = [...digits];
                   next[i] = v;
                   setDigits(next);
-                  if (v && i < 5) inputs.current[i + 1]?.focus();
+                  if (v && i < 3) inputs.current[i + 1]?.focus();
                   if (error) setError(null);
                 }}
                 onKeyDown={(e) => onKey(i, e)}
