@@ -134,8 +134,11 @@ export default function CreateOrderDialog({ open, onOpenChange, storeId, storeCu
       toast.error("Delivery address is required");
       return;
     }
-    if (!/^\d{6}$/.test(pincode.trim())) {
-      toast.error("Enter a valid 6-digit pincode");
+    // India uses 6-digit PIN codes; other currencies/countries do not, so only
+    // require a sane non-empty postal code there.
+    const pin = pincode.trim();
+    if (storeCurrency === "INR" ? !/^\d{6}$/.test(pin) : !/^[A-Za-z0-9 -]{3,12}$/.test(pin)) {
+      toast.error(storeCurrency === "INR" ? "Enter a valid 6-digit pincode" : "Enter a valid postal code");
       return;
     }
 

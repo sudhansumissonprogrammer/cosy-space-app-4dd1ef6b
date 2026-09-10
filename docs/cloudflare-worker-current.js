@@ -4704,10 +4704,16 @@ async function serveStreamedHtml(
       if (_isPdpPreload && _pdpHeroRaw) {
         try {
           const _main = _toGalleryUrl(_pdpHeroRaw, 800, 80);
-          const _origin = new URL(_main).origin;
-          pdpImgPreconnect =
-            `<link rel="preconnect" href="${escapeHtml(_origin)}" crossorigin />` +
-            `<link rel="dns-prefetch" href="${escapeHtml(_origin)}" />`;
+          // v8.93.0+ — _toGalleryUrl can return a SAME-ORIGIN relative /cf-img
+          // path. `new URL()` on that throws, which used to kill the whole
+          // edge-hero block (swallowed by the catch below). Same-origin needs
+          // no preconnect at all.
+          let _origin = "";
+          try { _origin = new URL(_main).origin; } catch { _origin = ""; }
+          pdpImgPreconnect = _origin
+            ? `<link rel="preconnect" href="${escapeHtml(_origin)}" crossorigin />` +
+              `<link rel="dns-prefetch" href="${escapeHtml(_origin)}" />`
+            : "";
           const _srcsetAttr = _isRawPassthrough(_pdpHeroRaw)
             ? ""
             : ` srcset="${[400, 600, 800, 1200]
