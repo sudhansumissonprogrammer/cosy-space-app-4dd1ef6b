@@ -52,6 +52,7 @@ const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPho
 const CheckoutReviewsTeaser = lazy(() => import("@/components/storefront/checkout/CheckoutReviewsTeaser"));
 import { estimateDelivery } from "@/lib/deliveryEstimate";
 import CheckoutExitOffer from "@/components/storefront/CheckoutExitOffer";
+import { useAutoFreeGiftLine } from "@/hooks/useAutoFreeGiftLine";
 
 type UpiApp = "gpay" | "phonepe" | "paytm" | "bhim" | "any";
 type PayMethod = "upi" | "gateway" | "cod";
@@ -381,7 +382,7 @@ export default function CheckoutV2Page() {
     | null;
 
   // Unified checkout items (buy-now OR cart). Includes variantId + image.
-  const checkoutItems = useMemo(() => {
+  const baseCheckoutItems = useMemo(() => {
     if (isSingleMode && buyNowProduct) {
       return [{
         productId: buyNowProduct.id as string,
@@ -405,6 +406,10 @@ export default function CheckoutV2Page() {
       meta: (i as any).meta || null,
     }));
   }, [isSingleMode, buyNowProduct, buyNowVariant, buyNowQty, cartItems, pkgSurcharge, pkgOption.key, pkgOption.label]);
+
+  // Free gift (Upsell app, cart_value trigger) — also for Buy Now checkouts,
+  // which never pass through the cart where AutoFreeGift runs.
+  const checkoutItems = useAutoFreeGiftLine(store?.slug, baseCheckoutItems as any) as typeof baseCheckoutItems;
 
   // Stable fingerprint of WHAT is being bought. Used by the recent-order guard
   // so it only blocks a re-mint of the *same* basket, never a genuinely new
