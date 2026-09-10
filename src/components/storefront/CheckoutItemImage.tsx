@@ -37,15 +37,18 @@ export default function CheckoutItemImage({ image, name, meta, className = "h-14
 
   return (
     <>
-      <div className={`relative shrink-0 ${packagingImage ? "mr-2 mb-2" : ""} ${className}`}>
+      <div className={`relative shrink-0 ${packagingImage ? "mr-4 mb-2" : ""} ${className}`}>
         {packagingImage && (
           <button
             type="button"
             onClick={() => open(packagingImage, packagingLabel)}
-            className="absolute -bottom-2 -right-2 z-0 h-[76%] w-[76%] overflow-hidden rounded-md border-2 border-background bg-muted shadow-sm"
+            className="absolute -bottom-2 -right-4 z-20 h-[62%] w-[62%] overflow-hidden rounded-md border-2 border-background bg-muted shadow-sm"
             aria-label={`View ${packagingLabel} photo`}
           >
             <img src={packagingImage} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
+            <span className="absolute bottom-0 right-0 flex h-3.5 w-3.5 items-center justify-center rounded-tl bg-background/90" aria-hidden>
+              <Expand className="h-2 w-2 text-foreground" strokeWidth={2.5} />
+            </span>
           </button>
         )}
 
