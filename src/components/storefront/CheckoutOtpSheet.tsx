@@ -85,7 +85,7 @@ export default function CheckoutOtpSheet({ storeId, phone, onEdit, onVerified, o
   const fill = useCallback((value: string) => {
     const only = value.replace(/\D/g, "").slice(0, 4);
     if (!only) return;
-    const next = ["", "", "", "", "", ""];
+    const next = ["", "", "", ""];
     only.split("").forEach((d, i) => (next[i] = d));
     setDigits(next);
     inputs.current[Math.min(only.length, 3)]?.focus();
@@ -298,7 +298,7 @@ export default function CheckoutOtpSheet({ storeId, phone, onEdit, onVerified, o
                   const next = [...digits];
                   next[i] = v;
                   setDigits(next);
-                  if (v && i < 5) inputs.current[i + 1]?.focus();
+                  if (v && i < 3) inputs.current[i + 1]?.focus();
                   if (error) setError(null);
                 }}
                 onKeyDown={(e) => onKey(i, e)}
