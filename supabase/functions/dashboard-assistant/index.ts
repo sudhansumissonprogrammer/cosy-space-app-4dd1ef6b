@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { HELP_ARTICLES, type HelpArticle } from "./knowledge.ts";
 import { buildStoreInsights, type StoreInsights } from "./insights.ts";
 import { ANALYTICS_TOOLS, runAnalyticsTool } from "./analytics.ts";
+import { OPERATIONS_TOOLS, OPERATIONS_TOOL_NAMES, runOperationsTool } from "./operations.ts";
 import { buildSetupReadiness, type SetupReadiness } from "./setup.ts";
 import { CREATIVE_TOOLS, runCreativeTool, type StudioCard } from "./creative.ts";
 
