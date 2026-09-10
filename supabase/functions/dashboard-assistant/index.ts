@@ -33,7 +33,7 @@ let cachedModelAt = 0;
 const MODEL_CACHE_MS = 6 * 60 * 60 * 1000;
 
 async function pickModel(): Promise<string> {
-  if (cachedModel) return cachedModel;
+  if (cachedModel && Date.now() - cachedModelAt < MODEL_CACHE_MS) return cachedModel;
   try {
     const res = await fetch("https://ai.gateway.lovable.dev/v1/models", {
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}` },
@@ -46,12 +46,14 @@ async function pickModel(): Promise<string> {
           .map((m: any) => m?.id),
       );
       cachedModel = MODEL_PREFERENCE.find((id) => ids.has(id)) ?? FALLBACK_MODEL;
+      cachedModelAt = Date.now();
       return cachedModel;
     }
   } catch (e) {
     console.error("model listing failed", e);
   }
-  cachedModel = FALLBACK_MODEL;
+  cachedModel = cachedModel ?? FALLBACK_MODEL;
+  cachedModelAt = Date.now();
   return cachedModel;
 }
 
