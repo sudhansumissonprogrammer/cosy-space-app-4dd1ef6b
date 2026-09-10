@@ -58,12 +58,12 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
     doc.open();
     doc.write(`<!DOCTYPE html>
 <html><head><title>Label ${order.order_number ? '#' + (1000 + order.order_number) : '#' + order.id.slice(0, 8).toUpperCase()}</title>
-<link href="https://fonts.googleapis.com/css2?family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
+  @font-face { font-family: 'Outfit'; src: url('/fonts/outfit-variable.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
   @page { size: 100mm 150mm; margin: 3mm; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    font-family: 'Changa', sans-serif;
+    font-family: 'Outfit', Arial, sans-serif;
     font-weight: 400;
     color: #000;
     line-height: 1.4;
@@ -138,13 +138,17 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
   }
   .items-tbl td.r { text-align: right; font-variant-numeric: tabular-nums; }
   .items-tbl td.c { text-align: center; }
-  .items-tbl td.name { font-weight: 600; max-width: 40mm; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .items-tbl td.name { font-weight: 600; max-width: 32mm; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item-img { width: 8mm; height: 8mm; display: block; object-fit: cover; border-radius: 1mm; }
+  .item-img-empty { width: 8mm; height: 8mm; border-radius: 1mm; background: #f1f1f1; }
   .items-tbl tr:nth-child(even) { background: #f5f5f5; }
 
   /* Totals */
   .totals { display: flex; justify-content: flex-end; margin-top: 1.5mm; }
-  .totals-tbl { width: 45mm; border-collapse: collapse; }
-  .totals-tbl td { padding: 2px 4px; font-size: 8.5px; color: #444; }
+  .totals-tbl { width: 58mm; border-collapse: collapse; table-layout: fixed; }
+  .totals-tbl td { padding: 2px 4px; font-size: 8.5px; color: #444; white-space: nowrap; }
+  .totals-tbl td:first-child { width: 34mm; }
+  .totals-tbl td:last-child { width: 24mm; }
   .totals-tbl td.r { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; color: #111; }
   .totals-tbl .grand td {
     font-size: 10px;
@@ -207,6 +211,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
     <thead>
       <tr>
         <th style="width:7%">#</th>
+        <th style="width:10%">Img</th>
         <th>Item</th>
         <th class="c" style="width:10%">Qty</th>
         <th class="r" style="width:18%">Price</th>
@@ -217,6 +222,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
       ${items.map((item: any, idx: number) => `
         <tr>
           <td>${idx + 1}</td>
+          <td>${item.image_url || item.products?.image_url ? `<img src="${item.image_url || item.products?.image_url}" class="item-img" crossorigin="anonymous" alt=""/>` : `<div class="item-img-empty"></div>`}</td>
           <td class="name">${item.product_name}</td>
           <td class="c">${item.quantity || 1}</td>
           <td class="r">${currencySymbol}${money(item.unit_price ?? item.total / (item.quantity || 1))}</td>
@@ -234,7 +240,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
       <tr class="grand"><td>Total</td><td class="r">${currencySymbol}${Number(order.total).toFixed(2)}</td></tr>
       ${order.payment_type === "partial" ? `
       <tr><td style="color:#6c3483;font-weight:600;">Advance Paid</td><td class="r" style="color:#155724;font-weight:600;">${currencySymbol}${Number(order.advance_paid || 0).toFixed(2)}</td></tr>
-      <tr><td style="color:#6c3483;font-weight:600;">Balance Due (COD)</td><td class="r" style="font-weight:600;">${currencySymbol}${Number(order.balance_due || 0).toFixed(2)}</td></tr>
+      <tr><td style="color:#6c3483;font-weight:700;">Balance Due (COD)</td><td class="r" style="font-weight:700;">${currencySymbol}${Number(order.balance_due || 0).toFixed(2)}</td></tr>
       ` : ""}
     </table>
   </div>
@@ -277,7 +283,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
   return (
     <div className="space-y-4">
       {/* Compact Preview (matches 4x6 label feel) */}
-      <div ref={printRef} className="rounded-lg border border-border bg-card p-4 space-y-3 max-w-[380px] mx-auto text-xs" style={{ fontFamily: "'Changa', sans-serif", fontWeight: 400 }}>
+      <div ref={printRef} className="rounded-lg border border-border bg-card p-4 space-y-3 max-w-[380px] mx-auto text-xs font-sans">
         {/* Header */}
         <div className="flex items-center justify-between pb-2 border-b-2 border-foreground">
           <div className="flex items-center gap-2">
@@ -337,7 +343,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
             </thead>
             <tbody>
               {items.map((item: any, idx: number) => {
-                const img = item.products?.image_url || item.image_url;
+                const img = item.image_url || item.products?.image_url;
                 return (
                   <tr key={item.id || idx} className={idx % 2 === 1 ? "bg-muted/30" : ""}>
                     <td className="px-1.5 py-1 text-[9px] text-muted-foreground">{idx + 1}</td>
@@ -365,7 +371,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
 
         {/* Totals */}
         <div className="flex justify-end">
-          <div className="w-40 space-y-0.5">
+          <div className="w-52 space-y-0.5">
             <div className="flex justify-between text-[9px] text-muted-foreground">
               <span>Subtotal</span>
               <span className="tabular-nums">{currencySymbol}{subtotal.toFixed(2)}</span>
@@ -386,9 +392,9 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
                   <span className="text-purple-700 dark:text-purple-400 font-semibold">Advance Paid</span>
                   <span className="tabular-nums text-emerald-600 font-semibold">{currencySymbol}{Number(order.advance_paid || 0).toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-[9px]">
-                  <span className="text-purple-700 dark:text-purple-400 font-semibold">Balance Due (COD)</span>
-                  <span className="tabular-nums font-semibold text-foreground">{currencySymbol}{Number(order.balance_due || 0).toFixed(2)}</span>
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 text-[9px]">
+                  <span className="whitespace-nowrap text-purple-700 dark:text-purple-400 font-semibold">Balance Due (COD)</span>
+                  <span className="whitespace-nowrap tabular-nums font-semibold text-foreground">{currencySymbol}{Number(order.balance_due || 0).toFixed(2)}</span>
                 </div>
               </>
             )}

@@ -164,7 +164,7 @@ async function buildInvoicePdf(order: any, store: any, ownerEmail?: string): Pro
   const orderShort = order.order_number ? `#${1000 + order.order_number}` : `#${order.id.slice(0, 8).toUpperCase()}`;
 
   // Pre-load logo + product thumbs
-  const logoData = store?.logo_url ? await urlToDataUrl(store.logo_url) : null;
+  const logoData = store?.logo_url ? await urlToLogo(store.logo_url) : null;
   const itemImages: ({ data: string; format: "JPEG" | "PNG" } | null)[] = await Promise.all(
     items.map((it: any) => urlToPdfImage(it.image_url || it.products?.image_url || null))
   );
