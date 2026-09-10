@@ -48,6 +48,7 @@ import { setCapiUser } from "@/lib/metaEnrichment";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 import CheckoutOtpSheet from "@/components/storefront/CheckoutOtpSheet";
+import CheckoutItemImage from "@/components/storefront/CheckoutItemImage";
 
 interface Props {
   storeId?: string;
@@ -567,16 +568,11 @@ export default function CheckoutPhoneStep({
                     key={`${it.productId}-${it.variantId ?? "base"}-${idx}`}
                     className="flex items-start gap-3"
                   >
-                    {it.image ? (
-                      <img
-                        src={it.image}
-                        alt={it.name}
-                        loading="lazy"
-                        className="h-14 w-14 flex-shrink-0 rounded-lg border object-cover"
-                      />
-                    ) : (
-                      <div className="h-14 w-14 flex-shrink-0 rounded-lg border bg-muted" />
-                    )}
+                    <CheckoutItemImage
+                      image={it.image}
+                      name={it.name || "Item"}
+                      meta={it.meta}
+                    />
                     <div className="min-w-0 flex-1">
                       <div className="line-clamp-2 text-[13px] font-semibold">
                         {it.name || "Item"}

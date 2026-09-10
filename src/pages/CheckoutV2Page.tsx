@@ -53,6 +53,7 @@ const CheckoutReviewsTeaser = lazy(() => import("@/components/storefront/checkou
 import { estimateDelivery } from "@/lib/deliveryEstimate";
 import CheckoutExitOffer from "@/components/storefront/CheckoutExitOffer";
 import { useAutoFreeGiftLine } from "@/hooks/useAutoFreeGiftLine";
+import CheckoutItemImage from "@/components/storefront/CheckoutItemImage";
 
 type UpiApp = "gpay" | "phonepe" | "paytm" | "bhim" | "any";
 type PayMethod = "upi" | "gateway" | "cod";
@@ -4864,11 +4865,11 @@ export default function CheckoutV2Page() {
                     const canRemove = !isSingleMode;
                     return (
                     <div key={`${it.productId}-${it.variantId || ""}-${idx}`} className="flex items-start gap-3">
-                      {(it as any).image ? (
-                        <img src={(it as any).image} alt={it.name} loading="lazy" className="h-14 w-14 flex-shrink-0 rounded-lg border object-cover" />
-                      ) : (
-                        <div className="h-14 w-14 flex-shrink-0 rounded-lg border bg-muted" />
-                      )}
+                      <CheckoutItemImage
+                        image={(it as any).image}
+                        name={it.name || "Item"}
+                        meta={(it as any).meta}
+                      />
                       <div className="min-w-0 flex-1">
                         <div className="line-clamp-2 text-[13px] font-semibold">{it.name || "Item"}</div>
                         <div className="mt-1.5 inline-flex items-center gap-1 rounded-md border border-[#ECECEC] bg-white">
