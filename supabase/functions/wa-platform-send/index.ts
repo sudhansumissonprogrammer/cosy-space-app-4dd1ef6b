@@ -166,8 +166,10 @@ Deno.serve(async (req) => {
   // Per-sender (whole platform number) daily tier limit — protects Meta messaging tier.
   // Meta meters DISTINCT recipients in 24h, not total messages. Counting messages
   // would over-throttle legitimate transactional retries / multi-template flows.
+  // Auth codes are exempt: the shopper is standing at checkout waiting for the
+  // code, and skipping the send here blocks the order outright (502 upstream).
   const tierLimit = Number((cfg as any)?.wa_tier_limit ?? 250);
-  if (tierLimit > 0) {
+  if (tierLimit > 0 && !isAuthOtp) {
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { data: recents } = await admin
       .from("whatsapp_messages")

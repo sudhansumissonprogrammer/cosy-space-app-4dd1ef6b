@@ -56,10 +56,12 @@ export default function AutoFreeGift({ storeSlug }: { storeSlug: string }) {
   });
 
   // Subtotal of paid lines only — the ₹0 gift must never keep itself alive.
+  // Must match place-order exactly (it excludes EVERY upsell line), otherwise
+  // the cart can show "Free" while the server re-prices the gift at full price.
   const paidSubtotal = useMemo(
     () =>
       items
-        .filter((i) => !(i.meta?.kind === "upsell" && i.meta?.auto_gift === true))
+        .filter((i) => i.meta?.kind !== "upsell")
         .reduce((s, i) => s + i.price * i.quantity, 0),
     [items]
   );
