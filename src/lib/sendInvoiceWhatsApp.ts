@@ -9,6 +9,31 @@ interface SendInvoiceArgs {
   ownerEmail?: string;
 }
 
+const INVOICE_FONT_URL = "/fonts/outfit-variable.ttf";
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+  }
+  return btoa(binary);
+}
+
+async function installInvoiceFont(doc: jsPDF): Promise<string> {
+  try {
+    const response = await fetch(INVOICE_FONT_URL);
+    if (!response.ok) return "helvetica";
+    const base64 = bytesToBase64(new Uint8Array(await response.arrayBuffer()));
+    doc.addFileToVFS("Outfit.ttf", base64);
+    doc.addFont("Outfit.ttf", "Outfit", "normal");
+    doc.addFont("Outfit.ttf", "Outfit", "bold");
+    return "Outfit";
+  } catch {
+    return "helvetica";
+  }
+}
+
 /**
  * Generate a PDF invoice (matches the on-screen 4x6 label design) and share it
  * directly to WhatsApp as a file using the Web Share API. Falls back to
@@ -128,6 +153,7 @@ async function buildInvoicePdf(order: any, store: any, ownerEmail?: string): Pro
   const pageW = 100;
   const pageH = 150;
   const margin = 4;
+  const invoiceFont = await installInvoiceFont(doc);
 
   const items = order.order_items || [];
   const currency = order.currency || store?.currency || "INR";
@@ -139,8 +165,8 @@ async function buildInvoicePdf(order: any, store: any, ownerEmail?: string): Pro
 
   // Pre-load logo + product thumbs
   const logoData = store?.logo_url ? await urlToDataUrl(store.logo_url) : null;
-  const itemImages: (string | null)[] = await Promise.all(
-    items.map((it: any) => urlToDataUrl(it.products?.image_url || it.image_url || null))
+  const itemImages: ({ data: string; format: "JPEG" | "PNG" } | null)[] = await Promise.all(
+    items.map((it: any) => urlToPdfImage(it.image_url || it.products?.image_url || null))
   );
 
   // ── Header ──
@@ -148,18 +174,18 @@ async function buildInvoicePdf(order: any, store: any, ownerEmail?: string): Pro
 
   // Logo (left) + INVOICE label (right)
   if (logoData) {
-    try { doc.addImage(logoData, "JPEG", margin, y, 14, 14); } catch {}
+    try { doc.addImage(logoData.data, logoData.format, margin, y, 14, 14); } catch {}
   }
 
   // Store name (next to logo, or alone if no logo)
   const nameX = logoData ? margin + 16 : margin;
-  doc.setFont("helvetica", "bold");
+  doc.setFont(invoiceFont, "bold");
   doc.setFontSize(11);
   doc.setTextColor(20, 20, 20);
   doc.text(store?.name || "Store", nameX, y + 6);
 
   // Address line under name
-  doc.setFont("helvetica", "normal");
+  doc.setFont(invoiceFont, "normal");
   doc.setFontSize(6);
   doc.setTextColor(110, 110, 110);
   const storeAddr = [store?.location, store?.city, store?.state].filter(Boolean).join(", ");
@@ -169,11 +195,11 @@ async function buildInvoicePdf(order: any, store: any, ownerEmail?: string): Pro
   }
 
   // INVOICE label (right)
-  doc.setFont("helvetica", "bold");
+  doc.setFont(invoiceFont, "bold");
   doc.setFontSize(9);
   doc.setTextColor(40, 40, 40);
   doc.text("INVOICE", pageW - margin, y + 5, { align: "right" });
-  doc.setFont("helvetica", "normal");
+  doc.setFont(invoiceFont, "normal");
   doc.setFontSize(7);
   doc.setTextColor(100, 100, 100);
   doc.text(orderShort, pageW - margin, y + 9, { align: "right" });
@@ -188,18 +214,18 @@ async function buildInvoicePdf(order: any, store: any, ownerEmail?: string): Pro
   // ── Ship To + Order Info ──
   const colW = (pageW - margin * 2) / 2;
 
-  doc.setFont("helvetica", "bold");
+  doc.setFont(invoiceFont, "bold");
   doc.setFontSize(6);
   doc.setTextColor(130, 130, 130);
   doc.text("SHIP TO", margin, y);
   doc.text("ORDER INFO", pageW - margin, y, { align: "right" });
 
   y += 3.5;
-  doc.setFont("helvetica", "bold");
+  doc.setFont(invoiceFont, "bold");
   doc.setFontSize(8);
   doc.setTextColor(20, 20, 20);
   doc.text(order.customer_name || "Customer", margin, y);
-  doc.setFont("helvetica", "normal");
+  doc.setFont(invoiceFont, "normal");
   doc.setFontSize(7);
   doc.setTextColor(80, 80, 80);
   doc.text(formatDate(order.created_at), pageW - margin, y, { align: "right" });
@@ -210,7 +236,7 @@ async function buildInvoicePdf(order: any, store: any, ownerEmail?: string): Pro
     doc.setTextColor(80, 80, 80);
     doc.text(order.customer_phone, margin, y);
   }
-  doc.setFont("helvetica", "bold");
+  doc.setFont(invoiceFont, "bold");
   doc.setFontSize(7);
   doc.setTextColor(20, 20, 20);
   doc.text((order.payment_method || "cod").toUpperCase(), pageW - margin, y, { align: "right" });
@@ -218,7 +244,7 @@ async function buildInvoicePdf(order: any, store: any, ownerEmail?: string): Pro
   y += 3.5;
   const addr = [order.street_address, order.city, order.state, order.pincode].filter(Boolean).join(", ");
   if (addr) {
-    doc.setFont("helvetica", "normal");
+    doc.setFont(invoiceFont, "normal");
     doc.setFontSize(6.5);
     doc.setTextColor(80, 80, 80);
     const lines = doc.splitTextToSize(addr, colW - 2);
@@ -227,7 +253,7 @@ async function buildInvoicePdf(order: any, store: any, ownerEmail?: string): Pro
   }
 
   // Status badge (right side, under payment method)
-  doc.setFont("helvetica", "bold");
+  doc.setFont(invoiceFont, "bold");
   doc.setFontSize(6);
   doc.setTextColor(60, 60, 60);
   doc.text(`Status: ${String(order.status).toUpperCase()}`, pageW - margin, y, { align: "right" });
@@ -252,7 +278,7 @@ async function buildInvoicePdf(order: any, store: any, ownerEmail?: string): Pro
       `${symbol}${Number(it.unit_price || it.total / (it.quantity || 1)).toFixed(2)}`,
       `${symbol}${Number(it.total).toFixed(2)}`,
     ]),
-    styles: { font: "helvetica", fontSize: 7, cellPadding: 1.2, valign: "middle", minCellHeight: 9 },
+    styles: { font: invoiceFont, fontSize: 7, cellPadding: 1.2, valign: "middle", minCellHeight: 9 },
     headStyles: { fillColor: [25, 25, 25], textColor: 255, fontStyle: "bold", fontSize: 6.5, minCellHeight: 5 },
     alternateRowStyles: { fillColor: [245, 245, 245] },
     columnStyles: {
@@ -270,7 +296,10 @@ async function buildInvoicePdf(order: any, store: any, ownerEmail?: string): Pro
           const size = 7;
           const x = data.cell.x + (data.cell.width - size) / 2;
           const cy = data.cell.y + (data.cell.height - size) / 2;
-          try { doc.addImage(img, "JPEG", x, cy, size, size); } catch {}
+          try { doc.addImage(img.data, img.format, x, cy, size, size); } catch {}
+        } else {
+          doc.setFillColor(242, 242, 242);
+          doc.roundedRect(data.cell.x + 1, data.cell.y + 1, data.cell.width - 2, data.cell.height - 2, 0.7, 0.7, "F");
         }
       }
     },
@@ -278,49 +307,52 @@ async function buildInvoicePdf(order: any, store: any, ownerEmail?: string): Pro
 
   // ── Totals ──
   let finalY = (doc as any).lastAutoTable.finalY + 3;
-  const totalsLabelX = pageW - margin - 30;
+  const totalsLeft = pageW - margin - 48;
+  const totalsValueX = pageW - margin;
+  const totalsLabelWidth = 29;
 
-  doc.setFont("helvetica", "normal");
+  doc.setFont(invoiceFont, "normal");
   doc.setFontSize(7.5);
   doc.setTextColor(80, 80, 80);
-  doc.text("Subtotal", totalsLabelX, finalY);
-  doc.text(`${symbol}${subtotal.toFixed(2)}`, pageW - margin, finalY, { align: "right" });
+  doc.text("Subtotal", totalsLeft, finalY);
+  doc.text(`${symbol} ${subtotal.toFixed(2)}`, totalsValueX, finalY, { align: "right" });
 
   if (Number(order.total) !== subtotal) {
     finalY += 4;
     const diff = Number(order.total) - subtotal;
-    doc.text(diff < 0 ? "Discount" : "Shipping/Tax", totalsLabelX, finalY);
-    doc.text(`${symbol}${diff.toFixed(2)}`, pageW - margin, finalY, { align: "right" });
+    doc.text(diff < 0 ? "Discount" : "Shipping/Tax", totalsLeft, finalY);
+    doc.text(`${symbol} ${diff.toFixed(2)}`, totalsValueX, finalY, { align: "right" });
   }
 
   finalY += 2;
   doc.setDrawColor(20, 20, 20);
   doc.setLineWidth(0.4);
-  doc.line(totalsLabelX, finalY, pageW - margin, finalY);
+  doc.line(totalsLeft, finalY, totalsValueX, finalY);
   finalY += 4;
 
-  doc.setFont("helvetica", "bold");
+  doc.setFont(invoiceFont, "bold");
   doc.setFontSize(9);
   doc.setTextColor(20, 20, 20);
-  doc.text("Total", totalsLabelX, finalY);
-  doc.text(`${symbol}${Number(order.total).toFixed(2)}`, pageW - margin, finalY, { align: "right" });
+  doc.text("Total", totalsLeft, finalY);
+  doc.text(`${symbol} ${Number(order.total).toFixed(2)}`, totalsValueX, finalY, { align: "right" });
 
   if (order.payment_type === "partial") {
     finalY += 5;
-    doc.setFont("helvetica", "normal");
+    doc.setFont(invoiceFont, "normal");
     doc.setFontSize(7);
     doc.setTextColor(108, 52, 131);
-    doc.text("Advance Paid", totalsLabelX, finalY);
-    doc.text(`${symbol}${Number(order.advance_paid || 0).toFixed(2)}`, pageW - margin, finalY, { align: "right" });
-    finalY += 3.5;
-    doc.text("Balance Due (COD)", totalsLabelX, finalY);
-    doc.text(`${symbol}${Number(order.balance_due || 0).toFixed(2)}`, pageW - margin, finalY, { align: "right" });
+    doc.text("Advance Paid", totalsLeft, finalY, { maxWidth: totalsLabelWidth });
+    doc.text(`${symbol} ${Number(order.advance_paid || 0).toFixed(2)}`, totalsValueX, finalY, { align: "right" });
+    finalY += 4;
+    doc.setFont(invoiceFont, "bold");
+    doc.text("Balance Due (COD)", totalsLeft, finalY, { maxWidth: totalsLabelWidth });
+    doc.text(`${symbol} ${Number(order.balance_due || 0).toFixed(2)}`, totalsValueX, finalY, { align: "right" });
   }
 
   // ── Tracking ──
   if (order.tracking_number) {
     finalY += 6;
-    doc.setFont("helvetica", "bold");
+    doc.setFont(invoiceFont, "bold");
     doc.setFontSize(6);
     doc.setTextColor(120, 120, 120);
     doc.text("TRACKING", margin, finalY);
@@ -331,11 +363,11 @@ async function buildInvoicePdf(order: any, store: any, ownerEmail?: string): Pro
   }
 
   // ── Footer ──
-  doc.setFont("helvetica", "bold");
+  doc.setFont(invoiceFont, "bold");
   doc.setFontSize(8);
   doc.setTextColor(20, 20, 20);
   doc.text("Thank you!", pageW / 2, pageH - 6, { align: "center" });
-  doc.setFont("helvetica", "normal");
+  doc.setFont(invoiceFont, "normal");
   doc.setFontSize(6);
   doc.setTextColor(150, 150, 150);
   doc.text("Computer-generated — no signature required.", pageW / 2, pageH - 3, { align: "center" });
@@ -344,18 +376,46 @@ async function buildInvoicePdf(order: any, store: any, ownerEmail?: string): Pro
 }
 
 /** Fetch a remote image and convert it to a JPEG data URL (safe for jsPDF). */
-async function urlToDataUrl(url: string | null | undefined): Promise<string | null> {
+async function urlToPdfImage(url: string | null | undefined): Promise<{ data: string; format: "JPEG" | "PNG" } | null> {
   if (!url) return null;
   try {
-    const res = await fetch(url, { mode: "cors" });
+    const normalized = new URL(url, window.location.origin).href;
+    let res = await fetch(normalized, { mode: "cors", credentials: "omit" });
+    if (!res.ok && normalized !== url) res = await fetch(url, { mode: "cors", credentials: "omit" });
     if (!res.ok) return null;
     const blob = await res.blob();
-    return await new Promise((resolve) => {
+    const bitmap = await createImageBitmap(blob);
+    const canvas = document.createElement("canvas");
+    const maxSize = 320;
+    const scale = Math.min(maxSize / bitmap.width, maxSize / bitmap.height, 1);
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+    return { data: canvas.toDataURL("image/jpeg", 0.86), format: "JPEG" };
+  } catch {
+    return null;
+  }
+}
+
+async function urlToLogo(url: string | null | undefined): Promise<{ data: string; format: "JPEG" | "PNG" } | null> {
+  if (!url) return null;
+  try {
+    const response = await fetch(new URL(url, window.location.origin).href, { mode: "cors", credentials: "omit" });
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    const readerResult = await new Promise<string | null>((resolve) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(typeof reader.result === "string" ? reader.result : null);
       reader.onerror = () => resolve(null);
       reader.readAsDataURL(blob);
     });
+    if (!readerResult) return null;
+    return { data: readerResult, format: blob.type.includes("png") ? "PNG" : "JPEG" };
   } catch {
     return null;
   }
