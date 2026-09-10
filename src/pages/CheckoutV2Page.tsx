@@ -4770,7 +4770,7 @@ export default function CheckoutV2Page() {
             width={110}
             height={50}
             decoding="async"
-            className="h-[34px] w-auto shrink-0 object-contain"
+            className="h-[28px] w-auto shrink-0 object-contain"
           />
         </div>
       </div>
