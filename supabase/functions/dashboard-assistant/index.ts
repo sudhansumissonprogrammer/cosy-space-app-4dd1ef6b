@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { HELP_ARTICLES, type HelpArticle } from "./knowledge.ts";
 import { buildStoreInsights, type StoreInsights } from "./insights.ts";
 import { ANALYTICS_TOOLS, runAnalyticsTool } from "./analytics.ts";
+import { OPERATIONS_TOOLS, OPERATIONS_TOOL_NAMES, runOperationsTool } from "./operations.ts";
 import { buildSetupReadiness, type SetupReadiness } from "./setup.ts";
 import { CREATIVE_TOOLS, runCreativeTool, type StudioCard } from "./creative.ts";
 
@@ -20,16 +21,19 @@ const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 // Model is discovered from the live gateway listing on first use, so the
 // assistant follows the current model generation instead of a pinned id that
 // silently ages out. FALLBACK_MODEL is only used if the listing is unreachable.
-const FALLBACK_MODEL = "google/gemini-3.7-flash";
+const FALLBACK_MODEL = "google/gemini-3.8-flash";
 const MODEL_PREFERENCE = [
+  "google/gemini-3.8-flash",
   "google/gemini-3.7-flash",
   "google/gemini-3.6-flash",
   "google/gemini-3.1-flash-lite",
 ];
 let cachedModel: string | null = null;
+let cachedModelAt = 0;
+const MODEL_CACHE_MS = 6 * 60 * 60 * 1000;
 
 async function pickModel(): Promise<string> {
-  if (cachedModel) return cachedModel;
+  if (cachedModel && Date.now() - cachedModelAt < MODEL_CACHE_MS) return cachedModel;
   try {
     const res = await fetch("https://ai.gateway.lovable.dev/v1/models", {
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}` },
@@ -42,12 +46,14 @@ async function pickModel(): Promise<string> {
           .map((m: any) => m?.id),
       );
       cachedModel = MODEL_PREFERENCE.find((id) => ids.has(id)) ?? FALLBACK_MODEL;
+      cachedModelAt = Date.now();
       return cachedModel;
     }
   } catch (e) {
     console.error("model listing failed", e);
   }
-  cachedModel = FALLBACK_MODEL;
+  cachedModel = cachedModel ?? FALLBACK_MODEL;
+  cachedModelAt = Date.now();
   return cachedModel;
 }
 
@@ -211,7 +217,10 @@ HOW TO ANSWER — FOLLOW STRICTLY
 - New store with 0 orders: assume onboarding, not analytics. Lead with the pending setup item, not funnel data.
 - SALES / GROWTH QUESTIONS ("sale kaise badhaye", "why no orders", "what should I do"): answer using PRIORITY ACTIONS. Give the top 1 finding in one line, then the top 2-3 actions as a numbered list, each one line with the exact page path. Never give generic marketing theory.
 - LIVE DATA TOOLS: you can query this store's real analytics before answering — get_funnel, get_daily_trend, get_cancellations, get_monthly_summary, get_traffic_sources, get_product_performance. Call the right one whenever the merchant asks about conversion, funnel, drop-off, traffic, why sales/orders fell, why orders get cancelled, monthly or weekly summary, which channel works, or which product to push. Never guess these numbers — fetch them.
-- When a tool result is present, answer from it: one line with the key number, one line with the cause, then max 3 fix actions with exact paths. Round numbers. Never dump the raw JSON or list every day.
+- LIVE OPERATIONS TOOLS: you can also look up this store's real day-to-day records — find_order (one order by order number, phone or customer name), list_orders (today/this week, pending dispatch, counts by status), get_wallet_status (balance, commission deducted, recharges), search_products (price, stock, live or hidden), get_inventory_alerts (out of stock, missing image or description), get_abandoned_carts, get_coupon_usage, get_customer_summary (one customer's history by phone). Call these instantly for any question about a specific order, customer, product, coupon, stock, wallet balance or "how many orders today". Never ask the merchant for data you can fetch yourself; only ask for an order number or phone if the question names none.
+- Call more than one tool in the same turn when the question needs it (e.g. an order question that is also a payment question), and after a tool result you may call another tool to confirm the cause before answering.
+- When a tool result is present, answer from it: one line with the key number or the order's real status, one line with the cause, then max 3 fix actions with exact paths. Round numbers. Never dump the raw JSON or list every day.
+- If a lookup returns nothing or several matches, say so in one line and ask for the one missing detail (order number or phone). Never invent an order, customer or product that the tool did not return.
 - Never state a number that is not in STORE STATUS, STORE PERFORMANCE or a tool result. If the data is not there, say you cannot see it.
 - Money, refunds, payouts and policy: be exact and never guess numbers. Commission is a flat 2% per order and there is no monthly subscription. Gateway money goes to the merchant's own gateway account.
 - COMMISSION REFUNDS — HARD RULE: never promise, confirm, estimate or explain that any commission will be refunded, reversed or credited back. Never say "it will be refunded automatically" or describe the conditions for a refund. For ANY commission refund, wrong-commission, RTO-commission, cancelled-order-commission or commission-dispute question, reply in one or two lines: this needs the customer care team, and they will check the order and settle it. Point them to the Help/contact option and stop — no steps, no reasoning, no policy detail.
@@ -347,7 +356,7 @@ serve(async (req) => {
     // Tool phase — the assistant can query this store's live analytics before
     // answering (funnel, trend, cancellations, monthly, sources, products).
     // Non-streaming, max 2 rounds, then the final answer is streamed.
-    for (let round = 0; round < 2; round++) {
+    for (let round = 0; round < 3; round++) {
       const planRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -358,9 +367,9 @@ serve(async (req) => {
         body: JSON.stringify({
           model,
           messages,
-          tools: [...ANALYTICS_TOOLS, ...CREATIVE_TOOLS],
+          tools: [...ANALYTICS_TOOLS, ...OPERATIONS_TOOLS, ...CREATIVE_TOOLS],
           tool_choice: "auto",
-          max_tokens: 300,
+          max_tokens: 400,
           temperature: 0,
         }),
       });
@@ -374,22 +383,25 @@ serve(async (req) => {
       if (!Array.isArray(calls) || calls.length === 0) break;
 
       messages.push({ role: "assistant", content: choice.content ?? "", tool_calls: calls } as any);
-      for (const call of calls.slice(0, 3)) {
+      for (const call of calls.slice(0, 4)) {
         let args: Record<string, unknown> = {};
         try {
           args = JSON.parse(call?.function?.arguments || "{}");
         } catch (_) { /* model sent malformed args — use defaults */ }
         let result: unknown;
+        const toolName = call?.function?.name;
         try {
-          const creative = await runCreativeTool(admin, storeId, call?.function?.name, args);
+          const creative = await runCreativeTool(admin, storeId, toolName, args);
           if (creative) {
             cards.push(creative.card);
             result = creative.result;
+          } else if (OPERATIONS_TOOL_NAMES.has(toolName)) {
+            result = await runOperationsTool(admin, storeId, toolName, args);
           } else {
-            result = await runAnalyticsTool(admin, storeId, call?.function?.name, args);
+            result = await runAnalyticsTool(admin, storeId, toolName, args);
           }
         } catch (e) {
-          console.error("tool error", call?.function?.name, e);
+          console.error("tool error", toolName, e);
           result = { error: "Could not read this data right now." };
         }
         messages.push({
@@ -399,6 +411,7 @@ serve(async (req) => {
         } as any);
       }
     }
+
 
     const upstream = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
