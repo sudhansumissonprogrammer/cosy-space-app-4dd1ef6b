@@ -12,7 +12,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
 import secureBadge from "@/assets/trust/secure-payment-badge.webp.asset.json";
-import trustedSellerBadge from "@/assets/trust/trusted-seller-badge-v3.webp.asset.json";
 import {
   ArrowLeft,
   ChevronDown,
@@ -475,15 +474,7 @@ export default function CheckoutPhoneStep({
         </div>
 
 
-        <div className="flex items-center -space-x-2">
-          <img
-            src={trustedSellerBadge.url}
-            alt="Trusted Seller"
-            width={622}
-            height={300}
-            decoding="async"
-            className="h-[60px] w-auto shrink-0 object-contain"
-          />
+        <div className="flex items-center">
           <img
             src={secureBadge.url}
             alt="100% Secure Payment"
