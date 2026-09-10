@@ -12,7 +12,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
 import secureBadge from "@/assets/trust/secure-payment-badge.webp.asset.json";
-import trustedSellerBadge from "@/assets/trust/trusted-seller-badge-v3.webp.asset.json";
 import {
   ArrowLeft,
   ChevronDown,
