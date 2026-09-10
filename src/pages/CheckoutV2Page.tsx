@@ -52,6 +52,7 @@ const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPho
 const CheckoutReviewsTeaser = lazy(() => import("@/components/storefront/checkout/CheckoutReviewsTeaser"));
 import { estimateDelivery } from "@/lib/deliveryEstimate";
 import CheckoutExitOffer from "@/components/storefront/CheckoutExitOffer";
+import { useAutoFreeGiftLine } from "@/hooks/useAutoFreeGiftLine";
 
 type UpiApp = "gpay" | "phonepe" | "paytm" | "bhim" | "any";
 type PayMethod = "upi" | "gateway" | "cod";
