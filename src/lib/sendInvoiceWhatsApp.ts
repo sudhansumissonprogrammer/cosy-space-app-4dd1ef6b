@@ -147,7 +147,7 @@ function triggerDownload(blob: Blob, fileName: string) {
 }
 
 /* ───────────────── PDF Builder — mirrors on-screen 4x6 label invoice ───────────────── */
-async function buildInvoicePdf(order: any, store: any, ownerEmail?: string): Promise<jsPDF> {
+export async function buildInvoicePdf(order: any, store: any, ownerEmail?: string): Promise<jsPDF> {
   // 100mm x 150mm — same as print label format
   const doc = new jsPDF({ unit: "mm", format: [100, 150] });
   const pageW = 100;
@@ -159,12 +159,12 @@ async function buildInvoicePdf(order: any, store: any, ownerEmail?: string): Pro
   const currency = order.currency || store?.currency || "INR";
   // Note: jsPDF's built-in Helvetica (WinAnsi) does not include ₹ (U+20B9).
   // Use "Rs." for INR inside the PDF to avoid rendering a .notdef glyph.
-  const symbol = currency === "INR" ? "Rs." : currency === "USD" ? "$" : currency;
+  const symbol = currency === "INR" ? (invoiceFont === "Outfit" ? "₹" : "Rs.") : currency === "USD" ? "$" : currency;
   const subtotal = items.reduce((s: number, i: any) => s + Number(i.total || 0), 0);
   const orderShort = order.order_number ? `#${1000 + order.order_number}` : `#${order.id.slice(0, 8).toUpperCase()}`;
 
   // Pre-load logo + product thumbs
-  const logoData = store?.logo_url ? await urlToLogo(store.logo_url) : null;
+  const logoData = store?.logo_url ? await urlToPdfImage(store.logo_url) : null;
   const itemImages: ({ data: string; format: "JPEG" | "PNG" } | null)[] = await Promise.all(
     items.map((it: any) => urlToPdfImage(it.image_url || it.products?.image_url || null))
   );
@@ -380,9 +380,21 @@ async function urlToPdfImage(url: string | null | undefined): Promise<{ data: st
   if (!url) return null;
   try {
     const normalized = new URL(url, window.location.origin).href;
-    let res = await fetch(normalized, { mode: "cors", credentials: "omit" });
-    if (!res.ok && normalized !== url) res = await fetch(url, { mode: "cors", credentials: "omit" });
-    if (!res.ok) return null;
+    const candidates = [normalized];
+    if (new URL(normalized).origin !== window.location.origin) {
+      candidates.push(`${window.location.origin}/cf-img?url=${encodeURIComponent(normalized)}&w=320&q=82`);
+    }
+    let res: Response | null = null;
+    for (const candidate of candidates) {
+      try {
+        const attempt = await fetch(candidate, { mode: "cors", credentials: "omit" });
+        if (attempt.ok) {
+          res = attempt;
+          break;
+        }
+      } catch { /* try the same-origin image proxy next */ }
+    }
+    if (!res) return null;
     const blob = await res.blob();
     const bitmap = await createImageBitmap(blob);
     const canvas = document.createElement("canvas");
@@ -397,25 +409,6 @@ async function urlToPdfImage(url: string | null | undefined): Promise<{ data: st
     ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
     bitmap.close();
     return { data: canvas.toDataURL("image/jpeg", 0.86), format: "JPEG" };
-  } catch {
-    return null;
-  }
-}
-
-async function urlToLogo(url: string | null | undefined): Promise<{ data: string; format: "JPEG" | "PNG" } | null> {
-  if (!url) return null;
-  try {
-    const response = await fetch(new URL(url, window.location.origin).href, { mode: "cors", credentials: "omit" });
-    if (!response.ok) return null;
-    const blob = await response.blob();
-    const readerResult = await new Promise<string | null>((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(typeof reader.result === "string" ? reader.result : null);
-      reader.onerror = () => resolve(null);
-      reader.readAsDataURL(blob);
-    });
-    if (!readerResult) return null;
-    return { data: readerResult, format: blob.type.includes("png") ? "PNG" : "JPEG" };
   } catch {
     return null;
   }
