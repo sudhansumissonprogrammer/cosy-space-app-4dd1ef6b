@@ -83,7 +83,6 @@ export default function CheckoutReviewsTeaser({ storeId, label }: Props) {
           </span>
           <span className="mt-0.5 flex items-center gap-1 text-[10px] text-muted-foreground">
             <ReviewStars rating={average} className="h-3 w-3" />
-            232 reviews
           </span>
         </span>
         <span className="shrink-0 text-[10px] font-bold text-emerald-700">View</span>
@@ -103,9 +102,6 @@ export default function CheckoutReviewsTeaser({ storeId, label }: Props) {
                 <div className="text-[16px] font-bold">Customer reviews</div>
                 <div className="mt-0.5 flex items-center gap-1.5">
                   <ReviewStars rating={average} className="h-3.5 w-3.5" />
-                  <span className="text-[11px] text-muted-foreground">
-                    {total} review{total === 1 ? "" : "s"}
-                  </span>
                 </div>
               </div>
               <button
