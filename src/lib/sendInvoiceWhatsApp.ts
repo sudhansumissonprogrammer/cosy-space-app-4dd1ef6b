@@ -163,11 +163,8 @@ export async function buildInvoicePdf(order: any, store: any, ownerEmail?: strin
   const subtotal = items.reduce((s: number, i: any) => s + Number(i.total || 0), 0);
   const orderShort = order.order_number ? `#${1000 + order.order_number}` : `#${order.id.slice(0, 8).toUpperCase()}`;
 
-  // Pre-load logo + product thumbs
+  // Pre-load the store logo only; product images are intentionally omitted.
   const logoData = store?.logo_url ? await urlToPdfImage(store.logo_url) : null;
-  const itemImages: ({ data: string; format: "JPEG" | "PNG" } | null)[] = await Promise.all(
-    items.map((it: any) => urlToPdfImage(it.image_url || it.products?.image_url || null))
-  );
 
   // ── Header ──
   let y = margin + 2;
@@ -187,7 +184,7 @@ export async function buildInvoicePdf(order: any, store: any, ownerEmail?: strin
   // Address line under name
   doc.setFont(invoiceFont, "normal");
   doc.setFontSize(6);
-  doc.setTextColor(110, 110, 110);
+  doc.setTextColor(45, 45, 45);
   const storeAddr = [store?.location, store?.city, store?.state].filter(Boolean).join(", ");
   if (storeAddr) {
     const addrLine = ownerEmail ? `${storeAddr} | ${ownerEmail}` : storeAddr;
@@ -201,7 +198,7 @@ export async function buildInvoicePdf(order: any, store: any, ownerEmail?: strin
   doc.text("INVOICE", pageW - margin, y + 5, { align: "right" });
   doc.setFont(invoiceFont, "normal");
   doc.setFontSize(7);
-  doc.setTextColor(100, 100, 100);
+  doc.setTextColor(35, 35, 35);
   doc.text(orderShort, pageW - margin, y + 9, { align: "right" });
 
   // Header divider
@@ -216,7 +213,7 @@ export async function buildInvoicePdf(order: any, store: any, ownerEmail?: strin
 
   doc.setFont(invoiceFont, "bold");
   doc.setFontSize(6);
-  doc.setTextColor(130, 130, 130);
+  doc.setTextColor(35, 35, 35);
   doc.text("SHIP TO", margin, y);
   doc.text("ORDER INFO", pageW - margin, y, { align: "right" });
 
@@ -227,13 +224,13 @@ export async function buildInvoicePdf(order: any, store: any, ownerEmail?: strin
   doc.text(order.customer_name || "Customer", margin, y);
   doc.setFont(invoiceFont, "normal");
   doc.setFontSize(7);
-  doc.setTextColor(80, 80, 80);
+  doc.setTextColor(25, 25, 25);
   doc.text(formatDate(order.created_at), pageW - margin, y, { align: "right" });
 
   y += 3.5;
   if (order.customer_phone) {
     doc.setFontSize(7);
-    doc.setTextColor(80, 80, 80);
+    doc.setTextColor(25, 25, 25);
     doc.text(order.customer_phone, margin, y);
   }
   doc.setFont(invoiceFont, "bold");
@@ -246,7 +243,7 @@ export async function buildInvoicePdf(order: any, store: any, ownerEmail?: strin
   if (addr) {
     doc.setFont(invoiceFont, "normal");
     doc.setFontSize(6.5);
-    doc.setTextColor(80, 80, 80);
+    doc.setTextColor(25, 25, 25);
     const lines = doc.splitTextToSize(addr, colW - 2);
     doc.text(lines, margin, y);
     y += lines.length * 2.8;
@@ -255,7 +252,7 @@ export async function buildInvoicePdf(order: any, store: any, ownerEmail?: strin
   // Status badge (right side, under payment method)
   doc.setFont(invoiceFont, "bold");
   doc.setFontSize(6);
-  doc.setTextColor(60, 60, 60);
+  doc.setTextColor(20, 20, 20);
   doc.text(`Status: ${String(order.status).toUpperCase()}`, pageW - margin, y, { align: "right" });
 
   y += 2;
@@ -266,43 +263,27 @@ export async function buildInvoicePdf(order: any, store: any, ownerEmail?: strin
   doc.setLineDashPattern([], 0);
   y += 2;
 
-  // ── Items table (with image column, matching screen) ──
+  // ── Items table ──
   autoTable(doc, {
     startY: y,
-    head: [["#", "Img", "Item", "Qty", "Price", "Amt"]],
+    head: [["#", "Item", "Qty", "Price", "Amt"]],
     body: items.map((it: any, idx: number) => [
       String(idx + 1),
-      "",
       it.product_name,
       String(it.quantity || 1),
       `${symbol} ${Number(it.unit_price || it.total / (it.quantity || 1)).toFixed(2)}`,
       `${symbol} ${Number(it.total).toFixed(2)}`,
     ]),
-    styles: { font: invoiceFont, fontSize: 7, cellPadding: 1.2, valign: "middle", minCellHeight: 9 },
+    styles: { font: invoiceFont, fontSize: 7, cellPadding: 1.2, valign: "middle", textColor: [10, 10, 10], minCellHeight: 7 },
     headStyles: { fillColor: [25, 25, 25], textColor: 255, fontStyle: "bold", fontSize: 6.5, minCellHeight: 5 },
     alternateRowStyles: { fillColor: [245, 245, 245] },
     columnStyles: {
       0: { cellWidth: 5, halign: "center" },
-      1: { cellWidth: 9, halign: "center" },
-      3: { halign: "center", cellWidth: 7 },
-      4: { halign: "right", cellWidth: 18, fontSize: 6.2 },
-      5: { halign: "right", cellWidth: 18, fontSize: 6.2 },
+      2: { halign: "center", cellWidth: 8 },
+      3: { halign: "right", cellWidth: 20, fontSize: 6.5 },
+      4: { halign: "right", cellWidth: 20, fontSize: 6.5 },
     },
     margin: { left: margin, right: margin },
-    didDrawCell: (data) => {
-      if (data.section === "body" && data.column.index === 1) {
-        const img = itemImages[data.row.index];
-        if (img) {
-          const size = 7;
-          const x = data.cell.x + (data.cell.width - size) / 2;
-          const cy = data.cell.y + (data.cell.height - size) / 2;
-          try { doc.addImage(img.data, img.format, x, cy, size, size); } catch {}
-        } else {
-          doc.setFillColor(242, 242, 242);
-          doc.roundedRect(data.cell.x + 1, data.cell.y + 1, data.cell.width - 2, data.cell.height - 2, 0.7, 0.7, "F");
-        }
-      }
-    },
   });
 
   // ── Totals ──
@@ -313,7 +294,7 @@ export async function buildInvoicePdf(order: any, store: any, ownerEmail?: strin
 
   doc.setFont(invoiceFont, "normal");
   doc.setFontSize(7.5);
-  doc.setTextColor(80, 80, 80);
+  doc.setTextColor(20, 20, 20);
   doc.text("Subtotal", totalsLeft, finalY);
   doc.text(`${symbol} ${subtotal.toFixed(2)}`, totalsValueX, finalY, { align: "right" });
 
@@ -354,7 +335,7 @@ export async function buildInvoicePdf(order: any, store: any, ownerEmail?: strin
     finalY += 6;
     doc.setFont(invoiceFont, "bold");
     doc.setFontSize(6);
-    doc.setTextColor(120, 120, 120);
+    doc.setTextColor(35, 35, 35);
     doc.text("TRACKING", margin, finalY);
     doc.setFont("courier", "normal");
     doc.setFontSize(7);
@@ -369,7 +350,7 @@ export async function buildInvoicePdf(order: any, store: any, ownerEmail?: strin
   doc.text("Thank you!", pageW / 2, pageH - 6, { align: "center" });
   doc.setFont(invoiceFont, "normal");
   doc.setFontSize(6);
-  doc.setTextColor(150, 150, 150);
+  doc.setTextColor(45, 45, 45);
   doc.text("Computer-generated — no signature required.", pageW / 2, pageH - 3, { align: "center" });
 
   return doc;

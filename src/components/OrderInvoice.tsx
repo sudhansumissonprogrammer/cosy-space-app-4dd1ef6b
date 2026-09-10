@@ -84,15 +84,15 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
   }
   .brand-row { display: flex; align-items: center; gap: 2mm; }
   .brand-logo { height: 40px; width: auto; object-fit: contain; }
-  .brand-contact { font-size: 7.5px; color: #444; margin-top: 2px; }
+  .brand-contact { font-size: 7.5px; color: #111; margin-top: 2px; font-weight: 500; }
   .inv-tag { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
-  .inv-id { font-size: 8px; color: #555; margin-top: 1px; text-align: right; }
+  .inv-id { font-size: 8px; color: #111; margin-top: 1px; text-align: right; font-weight: 500; }
 
   /* Sections */
   .row { display: flex; gap: 3mm; margin-bottom: 2.5mm; }
   .col { flex: 1; }
-  .sec-label { font-size: 7px; font-weight: 500; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 1mm; }
-  .sec-val { font-size: 9px; color: #111; line-height: 1.5; }
+  .sec-label { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #222; margin-bottom: 1mm; }
+  .sec-val { font-size: 9px; color: #000; line-height: 1.5; font-weight: 500; }
   .sec-val strong { font-weight: 600; }
   .sec-val-right { text-align: right; }
 
@@ -120,7 +120,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
   .items-tbl { width: 100%; border-collapse: collapse; }
   .items-tbl th {
     font-size: 7.5px;
-    font-weight: 500;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.8px;
     color: #fff;
@@ -134,19 +134,17 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
     font-size: 8.5px;
     padding: 3px 4px;
     border-bottom: 0.5px solid #ddd;
-    color: #222;
+    color: #000;
   }
   .items-tbl td.r { text-align: right; font-variant-numeric: tabular-nums; }
   .items-tbl td.c { text-align: center; }
-  .items-tbl td.name { font-weight: 600; max-width: 32mm; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .item-img { width: 8mm; height: 8mm; display: block; object-fit: cover; border-radius: 1mm; }
-  .item-img-empty { width: 8mm; height: 8mm; border-radius: 1mm; background: #f1f1f1; }
-  .items-tbl tr:nth-child(even) { background: #f5f5f5; }
+  .items-tbl td.name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .items-tbl tr:nth-child(even) { background: #f0f0f0; }
 
   /* Totals */
   .totals { display: flex; justify-content: flex-end; margin-top: 1.5mm; }
   .totals-tbl { width: 58mm; border-collapse: collapse; table-layout: fixed; }
-  .totals-tbl td { padding: 2px 4px; font-size: 8.5px; color: #444; white-space: nowrap; }
+  .totals-tbl td { padding: 2px 4px; font-size: 8.5px; color: #111; white-space: nowrap; font-weight: 500; }
   .totals-tbl td:first-child { width: 34mm; }
   .totals-tbl td:last-child { width: 24mm; }
   .totals-tbl td.r { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; color: #111; }
@@ -165,8 +163,8 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
     border-top: 1px solid #ccc;
     text-align: center;
   }
-  .footer-txt { font-size: 7.5px; color: #888; }
-  .footer-bold { font-size: 8.5px; font-weight: 700; color: #222; margin-bottom: 1px; }
+  .footer-txt { font-size: 7.5px; color: #333; font-weight: 500; }
+  .footer-bold { font-size: 8.5px; font-weight: 700; color: #000; margin-bottom: 1px; }
 </style>
 </head><body>
 <div class="label">
@@ -211,7 +209,6 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
     <thead>
       <tr>
         <th style="width:7%">#</th>
-        <th style="width:10%">Img</th>
         <th>Item</th>
         <th class="c" style="width:10%">Qty</th>
         <th class="r" style="width:18%">Price</th>
@@ -222,7 +219,6 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
       ${items.map((item: any, idx: number) => `
         <tr>
           <td>${idx + 1}</td>
-          <td>${item.image_url || item.products?.image_url ? `<img src="${item.image_url || item.products?.image_url}" class="item-img" crossorigin="anonymous" alt=""/>` : `<div class="item-img-empty"></div>`}</td>
           <td class="name">${item.product_name}</td>
           <td class="c">${item.quantity || 1}</td>
           <td class="r">${currencySymbol}${money(item.unit_price ?? item.total / (item.quantity || 1))}</td>
@@ -291,35 +287,35 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
               <img src={store.logo_url} alt="Store logo" className="h-10 w-auto object-contain" />
             )}
             <div>
-              <p className="text-[9px] text-muted-foreground leading-tight">
+              <p className="text-[9px] text-foreground leading-tight font-medium">
                 {[store?.location, store?.city, store?.state].filter(Boolean).join(", ")}
               </p>
             </div>
           </div>
           <div className="text-right">
             <p className="text-[10px] font-semibold tracking-widest text-foreground">INVOICE</p>
-            <p className="text-[8px] text-muted-foreground">{order.order_number ? `#${1000 + order.order_number}` : `#${order.id.slice(0, 8).toUpperCase()}`}</p>
+            <p className="text-[8px] text-foreground font-medium">{order.order_number ? `#${1000 + order.order_number}` : `#${order.id.slice(0, 8).toUpperCase()}`}</p>
           </div>
         </div>
 
         {/* Ship To + Info */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <p className="text-[8px] font-medium uppercase tracking-widest text-muted-foreground mb-0.5">Ship To</p>
+            <p className="text-[8px] font-bold uppercase tracking-widest text-foreground mb-0.5">Ship To</p>
             <p className="text-[11px] font-semibold text-foreground">{order.customer_name || "Customer"}</p>
-            {order.customer_phone && <p className="text-[9px] text-muted-foreground">{order.customer_phone}</p>}
+            {order.customer_phone && <p className="text-[9px] text-foreground">{order.customer_phone}</p>}
             {order.street_address && (
-              <p className="text-[9px] text-muted-foreground leading-tight">
+              <p className="text-[9px] text-foreground leading-tight">
                 {[order.street_address, order.city, order.state, order.pincode].filter(Boolean).join(", ")}
               </p>
             )}
           </div>
           <div className="text-right">
-            <p className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground mb-0.5">Details</p>
-            <p className="text-[9px] text-muted-foreground">
+            <p className="text-[8px] font-bold uppercase tracking-widest text-foreground mb-0.5">Details</p>
+            <p className="text-[9px] text-foreground">
               {format(new Date(order.created_at), "dd MMM yyyy, hh:mm a")}
             </p>
-            <p className="text-[9px] text-muted-foreground">
+            <p className="text-[9px] text-foreground">
               <span className="font-semibold text-foreground">{(order.payment_method || "cod").toUpperCase()}</span>
             </p>
             <span className={`inline-block mt-0.5 rounded px-1.5 py-px text-[8px] font-bold uppercase border ${statusColor[order.status] || "bg-muted text-muted-foreground border-border"}`}>
@@ -334,7 +330,6 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
             <thead>
               <tr className="bg-foreground text-background">
                 <th className="px-1.5 py-1 text-left text-[7px] font-medium uppercase tracking-wider w-5">#</th>
-                <th className="px-1.5 py-1 text-left text-[7px] font-medium uppercase tracking-wider w-9">Img</th>
                 <th className="px-1.5 py-1 text-left text-[7px] font-medium uppercase tracking-wider">Item</th>
                 <th className="px-1.5 py-1 text-center text-[7px] font-medium uppercase tracking-wider w-8">Qty</th>
                 <th className="px-1.5 py-1 text-right text-[7px] font-medium uppercase tracking-wider w-16">Price</th>
@@ -342,29 +337,19 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
               </tr>
             </thead>
             <tbody>
-              {items.map((item: any, idx: number) => {
-                const img = item.image_url || item.products?.image_url;
-                return (
+              {items.map((item: any, idx: number) => (
                   <tr key={item.id || idx} className={idx % 2 === 1 ? "bg-muted/30" : ""}>
-                    <td className="px-1.5 py-1 text-[9px] text-muted-foreground">{idx + 1}</td>
-                    <td className="px-1 py-1">
-                      {img ? (
-                        <img src={img} alt="" className="h-7 w-7 rounded object-cover border border-border" />
-                      ) : (
-                        <div className="h-7 w-7 rounded bg-muted border border-border" />
-                      )}
-                    </td>
-                    <td className="px-1.5 py-1 text-[9px] font-medium text-foreground truncate max-w-[100px]">{item.product_name}</td>
-                    <td className="px-1.5 py-1 text-[9px] text-center text-muted-foreground">{item.quantity || 1}</td>
-                    <td className="px-1.5 py-1 text-[9px] text-right tabular-nums text-muted-foreground">
+                    <td className="px-1.5 py-1 text-[9px] text-foreground">{idx + 1}</td>
+                    <td className="px-1.5 py-1 text-[9px] font-semibold text-foreground truncate max-w-[150px]">{item.product_name}</td>
+                    <td className="px-1.5 py-1 text-[9px] text-center text-foreground">{item.quantity || 1}</td>
+                    <td className="px-1.5 py-1 text-[9px] text-right tabular-nums text-foreground">
                       {currencySymbol}{money(item.unit_price ?? item.total / (item.quantity || 1))}
                     </td>
                     <td className="px-1.5 py-1 text-[9px] text-right tabular-nums font-medium text-foreground">
                       {currencySymbol}{money(item.total)}
                     </td>
                   </tr>
-                );
-              })}
+              ))}
             </tbody>
           </table>
         </div>
@@ -372,12 +357,12 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
         {/* Totals */}
         <div className="flex justify-end">
           <div className="w-52 space-y-0.5">
-            <div className="flex justify-between text-[9px] text-muted-foreground">
+            <div className="flex justify-between text-[9px] text-foreground font-medium">
               <span>Subtotal</span>
               <span className="tabular-nums">{currencySymbol}{subtotal.toFixed(2)}</span>
             </div>
             {Number(order.total) !== subtotal && (
-              <div className="flex justify-between text-[9px] text-muted-foreground">
+              <div className="flex justify-between text-[9px] text-foreground font-medium">
                 <span>{(Number(order.total) - subtotal) < 0 ? 'Discount' : 'Shipping/Tax'}</span>
                 <span className="tabular-nums">{currencySymbol}{(Number(order.total) - subtotal).toFixed(2)}</span>
               </div>
@@ -412,7 +397,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
         {/* Footer */}
         <div className="border-t border-border pt-2 text-center">
           <p className="text-[9px] font-medium text-foreground">Thank you!</p>
-          <p className="text-[7px] text-muted-foreground">Computer generated — no signature required</p>
+          <p className="text-[7px] text-foreground font-medium">Computer generated — no signature required</p>
         </div>
       </div>
 
