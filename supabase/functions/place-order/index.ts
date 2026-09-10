@@ -355,6 +355,75 @@ Deno.serve(async (req) => {
       console.error("upsell expansion failed:", e);
     }
 
+    // ────────────────────────────────────────────────────────────────
+    // AUTO FREE GIFT (server-side safety net) — if the store has an active
+    // free_gift offer with a cart_value trigger and the order qualifies but
+    // the client never added the gift line (Buy Now, stale cached bundle,
+    // WhatsApp recovery link, third-party checkout entry), add it here at ₹0.
+    // ────────────────────────────────────────────────────────────────
+    try {
+      const { data: gRow } = await supabase
+        .from("store_apps")
+        .select("config, enabled")
+        .eq("store_id", store_id)
+        .eq("app_id", "upsell-crosssell")
+        .maybeSingle();
+      if (gRow?.enabled) {
+        const gOffers: any[] = ((gRow.config as any)?.offers || []).filter(
+          (o: any) =>
+            o?.active !== false &&
+            o?.incentive?.type === "free_gift" &&
+            o?.trigger?.type === "cart_value" &&
+            Number(o?.trigger?.min_cart_value) > 0 &&
+            (o?.recommend?.product_ids?.length ?? 0) > 0,
+        );
+        gOffers.sort(
+          (a, b) => Number(b.trigger.min_cart_value) - Number(a.trigger.min_cart_value),
+        );
+        const gOffer = gOffers[0];
+        const giftId = gOffer ? String(gOffer.recommend.product_ids[0]) : null;
+        if (gOffer && giftId) {
+          const paidSubtotal = (items as any[])
+            .filter((it: any) => it?.meta?.kind !== "upsell")
+            .reduce(
+              (s: number, it: any) => s + (Number(it.price) || 0) * (Number(it.quantity) || 0),
+              0,
+            );
+          const alreadyHas = (items as any[]).some(
+            (it: any) => String(it.productId) === giftId,
+          );
+          if (!alreadyHas && paidSubtotal >= Number(gOffer.trigger.min_cart_value)) {
+            const { data: gp } = await supabase
+              .from("products")
+              .select("id, name, image_url, is_active, store_id, stock_quantity")
+              .eq("id", giftId)
+              .maybeSingle();
+            const inStock = gp?.stock_quantity == null || Number(gp.stock_quantity) > 0;
+            if (gp && gp.store_id === store_id && gp.is_active && inStock) {
+              (items as any[]).push({
+                productId: gp.id,
+                name: gp.name,
+                price: 0,
+                quantity: 1,
+                image: gp.image_url || null,
+                __upsell_priced: true,
+                meta: {
+                  kind: "upsell",
+                  auto_gift: true,
+                  server_added: true,
+                  offer_id: gOffer.id,
+                  placement: "pre_checkout",
+                  incentive_snapshot: gOffer.incentive,
+                },
+              });
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error("auto free gift failed:", e);
+    }
+
     // Persistent cross-isolate rate limit, scoped to the shopper identity
     // instead of raw IP. Mobile carriers/Instagram often put many real buyers
     // behind one NAT IP; IP-only limits caused unrelated shoppers to get 429s.
