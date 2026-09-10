@@ -4738,7 +4738,7 @@ export default function CheckoutV2Page() {
       )}
 
       {/* Header: back • brand + customer care • trust badges */}
-      <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-3 py-0.5 flex items-center gap-2">
+      <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-3 py-2 flex items-center gap-2">
         <button onClick={goBack} aria-label="Back" className="p-1 -ml-1 shrink-0">
           <ArrowLeft className="h-4.5 w-4.5" />
         </button>
@@ -4770,7 +4770,7 @@ export default function CheckoutV2Page() {
             width={110}
             height={50}
             decoding="async"
-            className="h-[34px] w-auto shrink-0 object-contain"
+            className="h-[28px] w-auto shrink-0 object-contain"
           />
         </div>
       </div>
