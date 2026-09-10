@@ -21,13 +21,16 @@ const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 // Model is discovered from the live gateway listing on first use, so the
 // assistant follows the current model generation instead of a pinned id that
 // silently ages out. FALLBACK_MODEL is only used if the listing is unreachable.
-const FALLBACK_MODEL = "google/gemini-3.7-flash";
+const FALLBACK_MODEL = "google/gemini-3.8-flash";
 const MODEL_PREFERENCE = [
+  "google/gemini-3.8-flash",
   "google/gemini-3.7-flash",
   "google/gemini-3.6-flash",
   "google/gemini-3.1-flash-lite",
 ];
 let cachedModel: string | null = null;
+let cachedModelAt = 0;
+const MODEL_CACHE_MS = 6 * 60 * 60 * 1000;
 
 async function pickModel(): Promise<string> {
   if (cachedModel) return cachedModel;
