@@ -4723,7 +4723,7 @@ export default function CheckoutV2Page() {
 
   return (
     <div
-      className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] pb-32"
+      className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] pb-28 text-[13px]"
       style={{ fontFamily: "'Montserrat Alternates', system-ui, -apple-system, 'Segoe UI', sans-serif" }}
     >
 
@@ -4739,22 +4739,22 @@ export default function CheckoutV2Page() {
       )}
 
       {/* Header: back • brand + customer care • trust badges */}
-      <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-3 py-1 flex items-center gap-2">
+      <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-3 py-0.5 flex items-center gap-2">
         <button onClick={goBack} aria-label="Back" className="p-1 -ml-1 shrink-0">
-          <ArrowLeft className="h-5 w-5" />
+          <ArrowLeft className="h-4.5 w-4.5" />
         </button>
 
         <div className="flex flex-col justify-center min-w-0 flex-1">
 
           {store?.logo_url ? (
-            <img src={store.logo_url} alt={store.name || "Store logo"} className="h-8 w-auto max-w-[120px] self-start object-contain" />
+            <img src={store.logo_url} alt={store.name || "Store logo"} className="h-7 w-auto max-w-[112px] self-start object-contain" />
           ) : (
             <div className="text-[15px] font-bold leading-tight truncate">{store?.name || "Store"}</div>
           )}
           {(store?.secondary_phone || store?.whatsapp_number) && (
             <a
               href={`tel:${(store?.secondary_phone || store?.whatsapp_number || "").replace(/\s/g, "")}`}
-              className="mt-0.5 inline-flex items-center gap-1 text-[11px] leading-none text-muted-foreground hover:text-foreground transition-colors"
+              className="inline-flex items-center gap-1 text-[10px] leading-none text-muted-foreground hover:text-foreground transition-colors"
               aria-label={`Customer care ${store?.secondary_phone || store?.whatsapp_number}`}
             >
               <Headset className="h-3 w-3" />
@@ -4771,7 +4771,7 @@ export default function CheckoutV2Page() {
             width={622}
             height={300}
             decoding="async"
-            className="h-[60px] w-auto shrink-0 object-contain"
+            className="h-[50px] w-auto shrink-0 object-contain"
           />
           <img
             src={secureBadge.url}
@@ -4779,7 +4779,7 @@ export default function CheckoutV2Page() {
             width={110}
             height={50}
             decoding="async"
-            className="h-[30px] w-auto shrink-0 object-contain"
+            className="h-[26px] w-auto shrink-0 object-contain"
           />
         </div>
       </div>
@@ -4799,36 +4799,36 @@ export default function CheckoutV2Page() {
 
       {/* ═══════ CONTACT + ADDRESS STEP (always visible) ═══════ */}
       {true && (
-        <div className="px-3 py-3 space-y-2.5">
+        <div className="px-3 py-2.5 space-y-2">
 
           {/* Order Summary card — header opens a bottom sheet (parity w/ address sheet) */}
-          <div className="bg-white rounded-xl border border-[#ECECEC] p-3.5">
+          <div className="bg-white rounded-lg border border-[#ECECEC] px-3 py-2.5">
             <button
               type="button"
               onClick={() => setSummaryOpen(true)}
-              className="w-full flex items-start gap-3 text-left"
+              className="w-full flex items-center gap-2.5 text-left"
               aria-haspopup="dialog"
               aria-expanded={summaryOpen}
             >
-              <div className="h-9 w-9 rounded-md bg-[#F5F5F5] flex items-center justify-center flex-shrink-0">
-                <ShoppingCart className="h-5 w-5" />
+              <div className="h-8 w-8 rounded-md bg-[#F5F5F5] flex items-center justify-center flex-shrink-0">
+                <ShoppingCart className="h-4 w-4" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-[15px] font-bold">Order Summary</div>
+                <div className="text-[13px] font-bold leading-tight">Order Summary</div>
                 {savedAmount > 0 && (
-                  <div className="inline-block mt-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[12px] font-semibold">
-                    {formatPrice(savedAmount, currency)} saved so far
+                  <div className="text-[10px] text-emerald-700 font-semibold leading-tight mt-0.5">
+                    {formatPrice(savedAmount, currency)} saved
                   </div>
                 )}
               </div>
               <div className="text-right">
-                <div className="text-[11px] text-muted-foreground">{checkoutItems.length} item{checkoutItems.length !== 1 ? "s" : ""}</div>
+                <div className="text-[10px] text-muted-foreground leading-tight">{checkoutItems.length} item{checkoutItems.length !== 1 ? "s" : ""}</div>
                 <div className="flex items-center gap-1 justify-end">
                   {savedAmount > 0 && originalTotal > finalTotal && (
-                    <span className="text-[12px] text-muted-foreground line-through">{formatPrice(originalTotal, currency)}</span>
+                    <span className="text-[10px] text-muted-foreground line-through">{formatPrice(originalTotal, currency)}</span>
                   )}
-                  <span className="text-[15px] font-bold">{formatPrice(finalTotal, currency)}</span>
-                  <ChevronDown className="h-4 w-4" />
+                  <span className="text-[13px] font-bold">{formatPrice(finalTotal, currency)}</span>
+                  <ChevronDown className="h-3.5 w-3.5" />
                 </div>
               </div>
             </button>
@@ -4982,14 +4982,14 @@ export default function CheckoutV2Page() {
             <button
               type="button"
               onClick={openAddressFormSheet}
-              className="w-full bg-white rounded-xl border-2 border-dashed border-amber-400 p-3.5 flex items-center gap-3 active:scale-[0.99] transition-transform text-left"
+              className="w-full bg-white rounded-lg border border-dashed border-amber-400 px-3 py-2.5 flex items-center gap-2.5 active:scale-[0.99] transition-transform text-left"
             >
-              <div className="h-9 w-9 rounded-full bg-amber-50 flex items-center justify-center flex-shrink-0">
+              <div className="h-8 w-8 rounded-full bg-amber-50 flex items-center justify-center flex-shrink-0">
                 <MapPin className="h-4.5 w-4.5 text-amber-600" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-[14px] font-bold">Add delivery address</div>
-                <div className="text-[12px] text-muted-foreground">Needed to place your order</div>
+                <div className="text-[13px] font-bold">Add delivery address</div>
+                <div className="text-[10.5px] text-muted-foreground">Needed to place your order</div>
               </div>
               <Plus className="h-5 w-5 text-amber-600 flex-shrink-0" />
             </button>
@@ -5055,31 +5055,30 @@ export default function CheckoutV2Page() {
           {(
             true) && (
             <>
-              <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-1 pt-1">Offers & Rewards</div>
-              <div className="bg-white rounded-xl border border-[#ECECEC] overflow-hidden">
-                {savedAmount > 0 && (
-                  <div className="bg-emerald-50 text-emerald-700 text-[13px] font-semibold text-center py-2">
-                    You saved {formatPrice(savedAmount, currency)}
-                  </div>
-                )}
-                <div className="p-3.5">
+              <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1">Offers & Rewards</div>
+              <div className="bg-white rounded-lg border border-[#ECECEC] overflow-hidden">
+                <div className="px-3 py-2.5">
                   {appliedCoupon ? (
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="h-7 w-7 rounded-full bg-emerald-500 text-white flex items-center justify-center">
-                          <Check className="h-4 w-4" />
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="h-6 w-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
+                          <Check className="h-3.5 w-3.5" />
                         </div>
-                        <div>
-                          <div className="text-[14px] font-bold flex items-center gap-1.5">
+                        <div className="min-w-0">
+                          <div className="text-[12px] font-bold flex items-center gap-1.5 truncate">
                             "{appliedCoupon.code}" applied
-                            {appliedCoupon.auto_apply && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 tracking-wide">AUTO</span>}
+                            {appliedCoupon.auto_apply && <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-emerald-100 text-emerald-700 tracking-wide">AUTO</span>}
                           </div>
-                          <div className="text-[12px] text-muted-foreground">You save {formatPrice(couponDiscount, currency)}</div>
                         </div>
                       </div>
-                      <button onClick={() => { removeCoupon(); setCouponOpen(false); }} className="text-[13px] font-semibold">
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="rounded-b-md bg-emerald-600 px-2 py-1 text-[9px] font-extrabold leading-none text-white shadow-sm">
+                          {formatPrice(couponDiscount, currency)} saved
+                        </span>
+                      <button onClick={() => { removeCoupon(); setCouponOpen(false); }} className="text-[10px] font-semibold text-muted-foreground">
                         Remove
                       </button>
+                      </div>
                     </div>
                   ) : !couponOpen ? (
                     <button
@@ -5088,16 +5087,16 @@ export default function CheckoutV2Page() {
                       className="w-full flex items-center justify-between text-left"
                       aria-expanded={false}
                     >
-                      <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                          <Tag className="h-4 w-4" />
+                      <div className="flex items-center gap-2">
+                        <div className="h-7 w-7 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                          <Tag className="h-3.5 w-3.5" />
                         </div>
                         <div>
-                          <div className="text-[14px] font-semibold">Have a coupon?</div>
-                          <div className="text-[12px] text-muted-foreground">Tap to enter your code</div>
+                          <div className="text-[12px] font-semibold">Have a coupon?</div>
+                          <div className="text-[10px] text-muted-foreground">Tap to enter your code</div>
                         </div>
                       </div>
-                      <span className="text-[13px] font-semibold text-emerald-700">Apply ›</span>
+                      <span className="text-[11px] font-semibold text-emerald-700">Apply ›</span>
                     </button>
                   ) : (
                     <div className="space-y-2">
@@ -5117,10 +5116,10 @@ export default function CheckoutV2Page() {
                           value={couponCode}
                           onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                           placeholder="ENTER CODE"
-                          className="h-11 rounded-lg border-[#ECECEC] uppercase tracking-wider"
+                          className="h-9 rounded-lg border-[#ECECEC] uppercase tracking-wider text-[12px]"
                           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyCoupon(); } }}
                         />
-                        <Button size="sm" onClick={() => applyCoupon()} disabled={couponLoading || !couponCode.trim()} className="h-11 px-4 bg-black hover:bg-black/90">
+                        <Button size="sm" onClick={() => applyCoupon()} disabled={couponLoading || !couponCode.trim()} className="h-9 px-3 bg-black hover:bg-black/90 text-[12px]">
                           {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
                         </Button>
                       </div>
@@ -5435,20 +5434,20 @@ export default function CheckoutV2Page() {
 
       {/* ═══════ PAYMENT STEP (inline, below address) ═══════ */}
       {showPayment && (
-        <div className="px-3 pb-3 space-y-3">
+        <div className="px-3 pb-3 space-y-2">
 
           {/* Partial-payment mode selector — prominent, above tiles */}
           {hasPartial && (
-            <div className="bg-white rounded-xl border border-[#ECECEC] p-3.5">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="text-[13px] font-bold">Choose payment method</div>
+            <div className="bg-white rounded-lg border border-[#ECECEC] p-3">
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="text-[12px] font-bold">Choose payment method</div>
                 <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">Recommended</span>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <button
                   type="button"
                   onClick={() => setPayMode("partial")}
-                  className={`w-full text-left rounded-lg border-2 p-3 transition-colors ${payMode === "partial" ? "border-black bg-black/5" : "border-[#ECECEC]"}`}
+                  className={`w-full text-left rounded-lg border-2 px-2.5 py-2 transition-colors ${payMode === "partial" ? "border-black bg-black/5" : "border-[#ECECEC]"}`}
                 >
                   <div className="flex items-start gap-2">
                     <div className={`mt-0.5 h-4 w-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${payMode === "partial" ? "border-black bg-black" : "border-muted-foreground"}`}>
@@ -5458,10 +5457,10 @@ export default function CheckoutV2Page() {
                       <div className="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-600">
                         Partial COD
                       </div>
-                      <div className="text-[13px] font-semibold mt-1">
+                      <div className="text-[12px] font-semibold mt-0.5">
                         Pay {formatPrice(partialAdvanceTotal, currency)} advance now
                       </div>
-                      <div className="text-[12px] text-muted-foreground mt-0.5">Balance {formatPrice(partialBalanceDue, currency)} on delivery</div>
+                      <div className="text-[10.5px] text-muted-foreground">Balance {formatPrice(partialBalanceDue, currency)} on delivery</div>
 
                     </div>
                   </div>
@@ -5469,7 +5468,7 @@ export default function CheckoutV2Page() {
                 <button
                   type="button"
                   onClick={() => setPayMode("full")}
-                  className={`w-full text-left rounded-lg border-2 p-3 transition-colors ${payMode === "full" ? "border-black bg-black/5" : "border-[#ECECEC]"}`}
+                  className={`w-full text-left rounded-lg border-2 px-2.5 py-2 transition-colors ${payMode === "full" ? "border-black bg-black/5" : "border-[#ECECEC]"}`}
                 >
                   <div className="flex items-start gap-2">
                     <div className={`mt-0.5 h-4 w-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${payMode === "full" ? "border-black bg-black" : "border-muted-foreground"}`}>
@@ -5486,7 +5485,7 @@ export default function CheckoutV2Page() {
                           </span>
                         )}
                       </div>
-                      <div className="text-[13px] font-semibold mt-1">
+                      <div className="text-[12px] font-semibold mt-0.5">
                         Pay full {formatPrice(prepaidTotalPreview, currency)} online
                       </div>
 
@@ -5501,7 +5500,7 @@ export default function CheckoutV2Page() {
                 <button
                   type="button"
                   onClick={() => setBreakupOpen(true)}
-                  className="mt-2.5 mx-auto flex w-fit items-center justify-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-800 active:bg-emerald-100"
+                  className="mt-1.5 mx-auto flex w-fit items-center justify-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-[9.5px] font-semibold text-emerald-800 active:bg-emerald-100"
                 >
                   <Info className="h-3 w-3" />
                   Know more · Why pay advance?
@@ -5665,7 +5664,7 @@ export default function CheckoutV2Page() {
 
 
 
-          <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-1 pt-1">Payment Options</div>
+          <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1">Payment Options</div>
 
 
           {/* Hosted-gateway stores (no PayU S2S UPI — e.g. Cashfree / Razorpay
