@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { Loader2, ArrowLeft, Copy, Facebook, Server, Rss, ExternalLink, CheckCircle2, AlertTriangle, Activity, ShieldOff } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import MetaCapiSetupWizard from "@/components/dashboard/MetaCapiSetupWizard";
+import MetaEventIssuesCard from "@/components/dashboard/MetaEventIssuesCard";
 
 export default function StoreTracking() {
   const { storeId, storeSlug } = useStoreSlugParam();
