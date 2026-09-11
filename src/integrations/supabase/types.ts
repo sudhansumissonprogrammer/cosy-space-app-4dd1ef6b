@@ -1444,6 +1444,7 @@ export type Database = {
           store_id: string
           storefront_customer_id: string | null
           street_address: string | null
+          telegram_notified_at: string | null
           total: number
           tracking_number: string | null
           tracking_url: string | null
@@ -1498,6 +1499,7 @@ export type Database = {
           store_id: string
           storefront_customer_id?: string | null
           street_address?: string | null
+          telegram_notified_at?: string | null
           total?: number
           tracking_number?: string | null
           tracking_url?: string | null
@@ -1552,6 +1554,7 @@ export type Database = {
           store_id?: string
           storefront_customer_id?: string | null
           street_address?: string | null
+          telegram_notified_at?: string | null
           total?: number
           tracking_number?: string | null
           tracking_url?: string | null
