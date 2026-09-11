@@ -40,23 +40,35 @@ Deno.serve(async (req) => {
 
   try {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const admin = createClient(Deno.env.get("SUPABASE_URL")!, serviceKey);
+
     const auth = req.headers.get("Authorization") || "";
-    if (auth !== `Bearer ${serviceKey}`) return json({ error: "unauthorized" }, 401);
+    const cronHeader = req.headers.get("x-cron-secret") || "";
+    let allowed = auth === `Bearer ${serviceKey}`;
+    if (!allowed && cronHeader) {
+      const { data: cron } = await admin.from("cron_auth").select("secret").limit(1).maybeSingle();
+      allowed = !!cron?.secret && cron.secret === cronHeader;
+    }
+    if (!allowed) return json({ error: "unauthorized" }, 401);
 
     const { order_id } = await req.json().catch(() => ({}));
     if (!order_id || typeof order_id !== "string") return json({ error: "order_id required" }, 400);
 
-    const admin = createClient(Deno.env.get("SUPABASE_URL")!, serviceKey);
-
     const { data: order, error: orderErr } = await admin
       .from("orders")
       .select(
-        "id, store_id, order_number, status, payment_status, payment_method, payment_type, advance_paid, balance_due, total, currency, customer_name, customer_phone, street_address, city, state, pincode, notes, created_at",
+        "id, store_id, order_number, status, payment_method, payment_type, payment_verified, advance_paid, balance_due, total, currency, customer_name, customer_phone, street_address, city, state, pincode, created_at",
       )
       .eq("id", order_id)
       .maybeSingle();
     if (orderErr) throw orderErr;
     if (!order) return json({ skipped: "order_not_found" });
+
+    // Paid orders only: partially paid (advance received) or fully paid.
+    const verified = (order as any).payment_verified === true;
+    const status = String(order.status || "").toLowerCase();
+    if (!verified) return json({ skipped: "not_paid" });
+    if (status === "cancelled" || status === "refunded") return json({ skipped: status });
 
     const { data: cfg } = await admin
       .from("store_telegram_config")
@@ -84,19 +96,16 @@ Deno.serve(async (req) => {
     const total = r(order.total);
     const isPartial = String((order as any).payment_type || "") === "partial";
     const paidOnline = !isCod(order.payment_method)
-      ? total
+      ? (isPartial ? r((order as any).advance_paid) : total)
       : isPartial
         ? r((order as any).advance_paid)
         : 0;
     const due = Math.max(0, total - paidOnline);
 
+    // Compact block — one detail per line, no blank lines.
     const lines: string[] = [];
     lines.push(esc(order.customer_name || "Guest"));
-    lines.push("");
-    if (order.customer_phone) {
-      lines.push(esc(order.customer_phone));
-      lines.push("");
-    }
+    if (order.customer_phone) lines.push(esc(order.customer_phone));
     String(order.street_address || "")
       .split(/\s*,\s*/)
       .map((p) => p.trim())
@@ -106,32 +115,30 @@ Deno.serve(async (req) => {
     if (order.state) lines.push(esc(String(order.state).trim()));
     if (order.pincode) lines.push(esc(String(order.pincode).trim()));
 
-    lines.push("");
     if (due > 0) {
       lines.push(`<b>COD ${paidOnline > 0 ? `${total}-${paidOnline}=${due}` : due}</b>`);
     } else {
-      lines.push(`<b>COD 0 — fully prepaid (${total} paid)</b>`);
+      lines.push(`<b>Fully paid ${total}</b>`);
     }
 
     const from = store?.owner_name || store?.name;
-    if (from) {
-      lines.push("");
-      lines.push(`From ${esc(from)}`);
-    }
+    if (from) lines.push(`From ${esc(from)}`);
 
-    if (list.length) {
-      lines.push("");
-      for (const it of list) {
-        const qty = Number(it.quantity || 1);
-        lines.push(`${esc(it.product_name)}${qty > 1 ? ` × ${qty}` : ""}`);
-      }
+    for (const it of list) {
+      const qty = Number(it.quantity || 1);
+      lines.push(`${esc(it.product_name)}${qty > 1 ? ` x ${qty}` : ""}`);
     }
 
     const text = lines.join("\n");
-    const photos = list
-      .map((it) => it.image_url || it.products?.image_url)
-      .filter((u: unknown): u is string => typeof u === "string" && /^https?:\/\//.test(u))
-      .slice(0, 10);
+
+    const photos = [
+      ...new Set(
+        list
+          .map((it) => it.image_url || it.products?.image_url)
+          .filter((u: unknown): u is string => typeof u === "string" && /^https?:\/\//.test(u)),
+      ),
+    ].slice(0, 10);
+
 
     const call = async (method: string, payload: Record<string, unknown>) => {
       const res = await fetch(`${GATEWAY_URL}/${method}`, {
