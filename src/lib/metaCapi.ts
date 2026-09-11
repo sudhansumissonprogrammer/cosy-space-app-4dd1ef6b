@@ -285,56 +285,22 @@ export function fireMetaCAPI(params: CAPIEventParams) {
     safeUrl = window.location.origin;
   }
 
-  const probe = supabase.functions
-    .invoke("meta-capi", {
-      body: {
-        store_id: params.storeId,
-        event_name: params.eventName,
-        event_id: params.eventId || undefined,
-        event_source_url: safeUrl,
-        user_email: userEmail || undefined,
-        user_phone: userPhone || undefined,
-        user_agent: navigator.userAgent,
-        fbc: fbc || undefined,
-        fbp: fbp || undefined,
-        external_id: externalId || undefined,
-        first_name: firstName || undefined,
-        last_name: lastName || undefined,
-        city: city || undefined,
-        state: state || undefined,
-        zip_code: zipCode || undefined,
-        custom_data: params.customData || undefined,
-        declared_client_ip: getDeclaredClientIp() || undefined,
-      },
-    })
-    .then(({ data, error }) => {
-      if (error) {
-        console.warn("Meta CAPI warning:", error.message);
-        return false;
-      }
-      // Cache "no CAPI configured" for 6 hours so we don't re-call the edge
-      // function on every visit. Deliberately SHORT: a 7-day cache meant that
-      // the moment a merchant finally pasted a Meta access token, returning
-      // visitors kept skipping CAPI for a whole week — silently blocking the
-      // fix. 6h keeps the cost saving but lets a new token go live same-day.
-      if (data?.skipped && data?.reason === "meta_not_configured") {
-        try {
-          const expiresAt = Date.now() + 6 * 60 * 60 * 1000;
-          localStorage.setItem(cacheKey, String(expiresAt));
-        } catch {
-          // localStorage unavailable — best effort
-        }
-        return true;
-      }
-      return false;
-    })
-    .catch((err) => {
-      console.warn("Meta CAPI fire-and-forget error:", err);
-      return false;
-    })
-    .finally(() => {
-      inflightProbe.delete(params.storeId);
-    }) as Promise<boolean>;
-
-  inflightProbe.set(params.storeId, probe);
+  enqueueCapiEvent(params.storeId, cacheKey, {
+    event_name: params.eventName,
+    event_id: params.eventId || undefined,
+    event_time: Math.floor(Date.now() / 1000),
+    event_source_url: safeUrl,
+    user_email: userEmail || undefined,
+    user_phone: userPhone || undefined,
+    fbc: fbc || undefined,
+    fbp: fbp || undefined,
+    external_id: externalId || undefined,
+    first_name: firstName || undefined,
+    last_name: lastName || undefined,
+    city: city || undefined,
+    state: state || undefined,
+    zip_code: zipCode || undefined,
+    custom_data: params.customData || undefined,
+  });
 }
+
