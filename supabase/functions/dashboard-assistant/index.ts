@@ -425,7 +425,9 @@ serve(async (req) => {
         messages,
         stream: true,
         service_tier: "priority",
-        max_tokens: 640,
+        // 640 cut step-by-step answers (e.g. "connect Pixel / add CAPI") mid
+        // sentence. Guides need room; the prompt still enforces brevity.
+        max_tokens: 2048,
         temperature: 0.45,
       }),
     });
