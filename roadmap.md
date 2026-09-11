@@ -10,5 +10,5 @@
 - [ ] Deploy updated `docs/cloudflare-worker-current.js` (domain resolver DB fallback) to Cloudflare
 - [x] Deploy Worker mic-permission fix — live now: permissions-policy `microphone=(self)` confirmed on utkalwatch.in, getUserMedia OK
 - [x] Store Assistant: short direct answers + per-store business insights (30d orders/revenue/catalog/carts → findings + ranked actions)
-- Reconnect Telegram connector in new workspace (multi-group order alerts)
-- Workspace move: Telegram already re-linked; verify other integrations if needed.
+- [x] Reconnect Telegram connector in new workspace (multi-group order alerts) — linked `std_01m27y899ze8f8bnd7f3mqbf1x`, `TELEGRAM_API_KEY` available
+- [ ] Verify other integrations after workspace move if needed.
