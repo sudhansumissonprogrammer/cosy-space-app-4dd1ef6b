@@ -17,8 +17,16 @@ function esc(s: unknown): string {
     .replace(/>/g, "&gt;");
 }
 
-function money(v: unknown, cur = "₹"): string {
-  return `${cur}${Math.round(Number(v || 0))}`;
+const ONLINE_GATEWAYS = new Set([
+  "cashfree", "razorpay", "payu", "phonepe", "paytm", "upi",
+  "stripe", "online", "prepaid", "card", "netbanking", "wallet",
+]);
+
+function isCod(method?: string | null): boolean {
+  const m = String(method || "").trim().toLowerCase();
+  if (!m) return true;
+  if (ONLINE_GATEWAYS.has(m)) return false;
+  return /\bcod\b|cash[\s_-]*on[\s_-]*delivery|^cash$/.test(m);
 }
 
 Deno.serve(async (req) => {
@@ -43,7 +51,7 @@ Deno.serve(async (req) => {
     const { data: order, error: orderErr } = await admin
       .from("orders")
       .select(
-        "id, store_id, order_number, status, payment_status, payment_method, total, currency, customer_name, customer_phone, street_address, city, state, pincode, notes, created_at",
+        "id, store_id, order_number, status, payment_status, payment_method, payment_type, advance_paid, balance_due, total, currency, customer_name, customer_phone, street_address, city, state, pincode, notes, created_at",
       )
       .eq("id", order_id)
       .maybeSingle();
@@ -64,64 +72,108 @@ Deno.serve(async (req) => {
     const [{ data: items }, { data: store }] = await Promise.all([
       admin
         .from("order_items")
-        .select("product_name, quantity, unit_price, total")
+        .select("product_name, quantity, unit_price, total, image_url, products(image_url)")
         .eq("order_id", order.id),
-      admin.from("stores").select("name, slug").eq("id", order.store_id).maybeSingle(),
+      admin.from("stores").select("name, slug, owner_name").eq("id", order.store_id).maybeSingle(),
     ]);
 
-    const cur = order.currency === "INR" || !order.currency ? "₹" : `${order.currency} `;
-    const num = order.order_number
-      ? `#${1000 + Number(order.order_number)}`
-      : `#${String(order.id).slice(0, 8).toUpperCase()}`;
+    const list = (items || []) as any[];
+    const r = (v: unknown) => Math.round(Number(v || 0));
+
+    // Money: COD 1750-100=1650 (advance subtracted when partly paid)
+    const total = r(order.total);
+    const isPartial = String((order as any).payment_type || "") === "partial";
+    const paidOnline = !isCod(order.payment_method)
+      ? total
+      : isPartial
+        ? r((order as any).advance_paid)
+        : 0;
+    const due = Math.max(0, total - paidOnline);
 
     const lines: string[] = [];
-    lines.push(`🛍️ <b>New order ${esc(num)}</b> — ${esc(store?.name || "Store")}`);
+    lines.push(esc(order.customer_name || "Guest"));
     lines.push("");
-    for (const it of items || []) {
-      lines.push(
-        `• ${esc(it.product_name)} × ${Number(it.quantity || 1)} — ${money(it.total ?? Number(it.unit_price || 0) * Number(it.quantity || 1), cur)}`,
-      );
+    if (order.customer_phone) {
+      lines.push(esc(order.customer_phone));
+      lines.push("");
     }
-    lines.push("");
-    lines.push(`💰 <b>Total: ${money(order.total, cur)}</b>`);
-    const pay = String(order.payment_method || "").toUpperCase() || "—";
-    lines.push(`💳 Payment: ${esc(pay)} (${esc(order.payment_status || order.status || "pending")})`);
-    lines.push("");
-    lines.push(`👤 ${esc(order.customer_name || "Guest")}`);
-    if (order.customer_phone) lines.push(`📞 ${esc(order.customer_phone)}`);
-    const address = [order.street_address, order.city, order.state, order.pincode]
+    String(order.street_address || "")
+      .split(/\s*,\s*/)
+      .map((p) => p.trim())
       .filter(Boolean)
-      .join(", ");
-    if (address) lines.push(`📍 ${esc(address)}`);
-    if (order.notes) lines.push(`📝 ${esc(order.notes)}`);
+      .forEach((p) => lines.push(esc(p)));
+    if (order.city) lines.push(esc(String(order.city).trim()));
+    if (order.state) lines.push(esc(String(order.state).trim()));
+    if (order.pincode) lines.push(esc(String(order.pincode).trim()));
 
-    const res = await fetch(`${GATEWAY_URL}/sendMessage`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "X-Connection-Api-Key": TELEGRAM_API_KEY,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        chat_id: cfg.chat_id,
-        text: lines.join("\n"),
-        parse_mode: "HTML",
-        disable_web_page_preview: true,
-      }),
-    });
-
-    const bodyText = await res.text();
-    if (!res.ok) {
-      console.error(`telegram sendMessage failed [${res.status}]: ${bodyText}`);
-      return json({ error: "telegram_failed", status: res.status, details: bodyText }, res.status);
-    }
-    const parsed = JSON.parse(bodyText);
-    if (parsed?.ok === false) {
-      console.error("telegram sendMessage error:", bodyText);
-      return json({ error: "telegram_failed", details: parsed }, 502);
+    lines.push("");
+    if (due > 0) {
+      lines.push(`<b>COD ${paidOnline > 0 ? `${total}-${paidOnline}=${due}` : due}</b>`);
+    } else {
+      lines.push(`<b>COD 0 — fully prepaid (${total} paid)</b>`);
     }
 
-    return json({ success: true });
+    const from = store?.owner_name || store?.name;
+    if (from) {
+      lines.push("");
+      lines.push(`From ${esc(from)}`);
+    }
+
+    if (list.length) {
+      lines.push("");
+      for (const it of list) {
+        const qty = Number(it.quantity || 1);
+        lines.push(`${esc(it.product_name)}${qty > 1 ? ` × ${qty}` : ""}`);
+      }
+    }
+
+    const text = lines.join("\n");
+    const photos = list
+      .map((it) => it.image_url || it.products?.image_url)
+      .filter((u: unknown): u is string => typeof u === "string" && /^https?:\/\//.test(u))
+      .slice(0, 10);
+
+    const call = async (method: string, payload: Record<string, unknown>) => {
+      const res = await fetch(`${GATEWAY_URL}/${method}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "X-Connection-Api-Key": TELEGRAM_API_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ chat_id: cfg.chat_id, ...payload }),
+      });
+      const bodyText = await res.text();
+      let parsed: any = null;
+      try { parsed = JSON.parse(bodyText); } catch { /* non-JSON */ }
+      return { ok: res.ok && parsed?.ok !== false, status: res.status, bodyText };
+    };
+
+    // Photos on top, order details as the caption of the first photo.
+    let sent = { ok: false, status: 0, bodyText: "" };
+    if (photos.length === 1) {
+      sent = await call("sendPhoto", { photo: photos[0], caption: text, parse_mode: "HTML" });
+    } else if (photos.length > 1) {
+      sent = await call("sendMediaGroup", {
+        media: photos.map((p, i) => ({
+          type: "photo",
+          media: p,
+          ...(i === 0 ? { caption: text, parse_mode: "HTML" } : {}),
+        })),
+      });
+    }
+    // No images, or Telegram rejected the media — always deliver the text.
+    if (!sent.ok) {
+      if (photos.length) console.error(`telegram media failed [${sent.status}]: ${sent.bodyText}`);
+      sent = await call("sendMessage", { text, parse_mode: "HTML", disable_web_page_preview: true });
+    }
+
+    if (!sent.ok) {
+      console.error(`telegram send failed [${sent.status}]: ${sent.bodyText}`);
+      return json({ error: "telegram_failed", status: sent.status, details: sent.bodyText }, 502);
+    }
+
+    return json({ success: true, photos: photos.length });
   } catch (err) {
     console.error("telegram-order-notify error:", (err as Error).message);
     return json({ error: (err as Error).message }, 500);

@@ -1,10 +1,16 @@
 /**
  * Compact "copy order details" text for couriers/suppliers.
  *
- * Copies only the customer info and the exact cash to collect on delivery.
- * No order ID, store name, item list, or transaction breakdown — just the
- * COD value, derived from the SAME breakdown the UI shows (`buildOrderBreakdown`).
- * A ₹1000 order with a ₹100 advance always reads "Amount to collect (COD): ₹900".
+ * Format (one block, easy to paste into WhatsApp/Telegram):
+ *   Name
+ *   Phone
+ *   Street address (each comma part on its own line)
+ *   City
+ *   State
+ *   Pincode
+ *   COD 1750-100=1650   (advance subtracted when partly paid)
+ *   From <store owner>
+ *   Product title × qty (one line per item)
  */
 import { buildOrderBreakdown, type OrderLike } from "@/lib/orderPaymentBreakdown";
 
@@ -22,37 +28,68 @@ export interface CopyOrderInput extends OrderLike {
   order_items?: Array<{ product_name?: string | null; quantity?: number | null; total?: number | null; unit_price?: number | null }> | null;
 }
 
+export interface CopyStoreInfo {
+  name?: string | null;
+  owner_name?: string | null;
+}
+
 export function orderDisplayId(order: { order_number?: number | null; id: string }) {
   return order.order_number ? `#${1000 + order.order_number}` : `#${order.id.slice(0, 8).toUpperCase()}`;
 }
 
-export function buildOrderCopyText(order: CopyOrderInput, _storeName?: string | null): string {
+export function buildOrderCopyText(order: CopyOrderInput, store?: CopyStoreInfo | string | null): string {
+  const info: CopyStoreInfo = typeof store === "string" ? { name: store } : store || {};
   const items = order.order_items || [];
   const itemsSubtotal = items.reduce(
     (s, it) => s + Number(it?.total ?? Number(it?.unit_price || 0) * Number(it?.quantity || 1)),
     0,
   );
   const bd = buildOrderBreakdown(order, itemsSubtotal);
-  const cur = order.currency || "₹";
-  const money = (v: number) => `${cur}${Math.round(v)}`;
-
-  const address = [order.street_address, order.city, order.state, order.pincode]
-    .map((v) => (v == null ? "" : String(v).trim()))
-    .filter(Boolean)
-    .join(", ");
+  const r = (v: number) => Math.round(v);
 
   const lines: string[] = [];
-  lines.push(`Name: ${order.customer_name || "Guest"}`);
-  if (order.customer_phone) lines.push(`Phone: ${order.customer_phone}`);
-  if (address) lines.push(`Address: ${address}`);
-  if (order.pincode) lines.push(`Pincode: ${order.pincode}`);
+  lines.push(order.customer_name || "Guest");
+  lines.push("");
+  if (order.customer_phone) {
+    lines.push(String(order.customer_phone));
+    lines.push("");
+  }
+
+  // Street address — split on commas so long addresses read as separate lines.
+  String(order.street_address || "")
+    .split(/\s*,\s*/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .forEach((p) => lines.push(p));
+
+  if (order.city) lines.push(String(order.city).trim());
+  if (order.state) lines.push(String(order.state).trim());
+  if (order.pincode) lines.push(String(order.pincode).trim());
 
   lines.push("");
-  lines.push(
-    bd.dueOnDelivery > 0
-      ? `Amount to collect (COD): ${money(bd.dueOnDelivery)}`
-      : "Amount to collect (COD): ₹0 — fully prepaid",
-  );
+  if (bd.dueOnDelivery > 0) {
+    lines.push(
+      bd.paid > 0
+        ? `COD ${r(bd.total)}-${r(bd.paid)}=${r(bd.dueOnDelivery)}`
+        : `COD ${r(bd.dueOnDelivery)}`,
+    );
+  } else {
+    lines.push(`COD 0 — fully prepaid (${r(bd.total)} paid)`);
+  }
+
+  const from = info.owner_name || info.name;
+  if (from) {
+    lines.push("");
+    lines.push(`From ${from}`);
+  }
+
+  if (items.length) {
+    lines.push("");
+    items.forEach((it) => {
+      const qty = Number(it?.quantity || 1);
+      lines.push(`${it?.product_name || "Item"}${qty > 1 ? ` × ${qty}` : ""}`);
+    });
+  }
 
   return lines.join("\n");
 }

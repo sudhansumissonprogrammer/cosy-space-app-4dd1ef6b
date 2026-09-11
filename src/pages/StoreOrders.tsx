@@ -968,7 +968,7 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
 
   /** Compact copy — customer info + COD amount only (no order ID / items / totals). */
   const copyAllDetails = () => {
-    const text = buildOrderCopyText(order, store?.name);
+    const text = buildOrderCopyText(order, store);
     navigator.clipboard.writeText(text).then(
       () => toast.success("COD details copied"),
       () => toast.error("Could not copy"),
