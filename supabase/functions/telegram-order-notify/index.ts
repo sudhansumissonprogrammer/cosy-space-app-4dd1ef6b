@@ -164,7 +164,6 @@ Deno.serve(async (req) => {
     };
 
     // Telegram limits: media caption 1024 chars, album 2-10 items, message 4096 chars.
-    const captionFits = text.length <= 1024;
     const textChunks: string[] = [];
     {
       let buf = "";
@@ -178,27 +177,20 @@ Deno.serve(async (req) => {
     // Send to every configured group/chat. A failure in one group never blocks the others.
     const results: { chat_id: string; ok: boolean; status: number }[] = [];
     for (const chatId of chatIds) {
-      // Photos on top, order details as the caption of the first photo (when it fits).
-      let mediaOk = false;
+      // 1) Order details text first — this is the primary alert and must always land.
       let sent = { ok: false, status: 0, bodyText: "" };
-      const cap = captionFits ? { caption: text, parse_mode: "HTML" } : {};
+      for (const chunk of textChunks) {
+        sent = await call("sendMessage", { text: chunk, parse_mode: "HTML", disable_web_page_preview: true }, chatId);
+      }
+      // 2) Then all product photos immediately after, in albums of up to 10.
       for (let i = 0; i < photos.length; i += 10) {
         const batch = photos.slice(i, i + 10);
-        const withCap = i === 0 ? cap : {};
         const r = batch.length === 1
-          ? await call("sendPhoto", { photo: batch[0], ...withCap }, chatId)
+          ? await call("sendPhoto", { photo: batch[0] }, chatId)
           : await call("sendMediaGroup", {
-              media: batch.map((p, j) => ({ type: "photo", media: p, ...(j === 0 ? withCap : {}) })),
+              media: batch.map((p) => ({ type: "photo", media: p })),
             }, chatId);
         if (!r.ok) console.error(`telegram media failed [${r.status}] chat ${chatId}: ${r.bodyText}`);
-        if (i === 0) mediaOk = r.ok;
-        sent = r;
-      }
-      // No images, caption too long, or Telegram rejected the media — always deliver the text.
-      if (!mediaOk || !captionFits) {
-        for (const chunk of textChunks) {
-          sent = await call("sendMessage", { text: chunk, parse_mode: "HTML", disable_web_page_preview: true }, chatId);
-        }
       }
       if (!sent.ok) {
         console.error(`telegram send failed [${sent.status}] chat ${chatId}: ${sent.bodyText}`);
