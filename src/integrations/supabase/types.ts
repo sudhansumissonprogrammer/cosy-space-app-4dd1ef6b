@@ -3690,6 +3690,7 @@ export type Database = {
       store_telegram_config: {
         Row: {
           chat_id: string
+          chat_ids: string[] | null
           created_at: string
           is_active: boolean
           store_id: string
@@ -3697,6 +3698,7 @@ export type Database = {
         }
         Insert: {
           chat_id: string
+          chat_ids?: string[] | null
           created_at?: string
           is_active?: boolean
           store_id: string
@@ -3704,6 +3706,7 @@ export type Database = {
         }
         Update: {
           chat_id?: string
+          chat_ids?: string[] | null
           created_at?: string
           is_active?: boolean
           store_id?: string
