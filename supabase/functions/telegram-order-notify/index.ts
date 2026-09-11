@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
           .map((it) => it.image_url || it.products?.image_url)
           .filter((u: unknown): u is string => typeof u === "string" && /^https?:\/\//.test(u)),
       ),
-    ].slice(0, 10);
+    ].slice(0, 30);
 
 
     const call = async (method: string, payload: Record<string, unknown>, chatId: string) => {
@@ -163,26 +163,42 @@ Deno.serve(async (req) => {
       return { ok: res.ok && parsed?.ok !== false, status: res.status, bodyText };
     };
 
+    // Telegram limits: media caption 1024 chars, album 2-10 items, message 4096 chars.
+    const captionFits = text.length <= 1024;
+    const textChunks: string[] = [];
+    {
+      let buf = "";
+      for (const line of text.split("\n")) {
+        if ((buf + line + "\n").length > 3800) { textChunks.push(buf); buf = ""; }
+        buf += line + "\n";
+      }
+      if (buf.trim()) textChunks.push(buf);
+    }
+
     // Send to every configured group/chat. A failure in one group never blocks the others.
     const results: { chat_id: string; ok: boolean; status: number }[] = [];
     for (const chatId of chatIds) {
-      // Photos on top, order details as the caption of the first photo.
+      // Photos on top, order details as the caption of the first photo (when it fits).
+      let mediaOk = false;
       let sent = { ok: false, status: 0, bodyText: "" };
-      if (photos.length === 1) {
-        sent = await call("sendPhoto", { photo: photos[0], caption: text, parse_mode: "HTML" }, chatId);
-      } else if (photos.length > 1) {
-        sent = await call("sendMediaGroup", {
-          media: photos.map((p, i) => ({
-            type: "photo",
-            media: p,
-            ...(i === 0 ? { caption: text, parse_mode: "HTML" } : {}),
-          })),
-        }, chatId);
+      const cap = captionFits ? { caption: text, parse_mode: "HTML" } : {};
+      for (let i = 0; i < photos.length; i += 10) {
+        const batch = photos.slice(i, i + 10);
+        const withCap = i === 0 ? cap : {};
+        const r = batch.length === 1
+          ? await call("sendPhoto", { photo: batch[0], ...withCap }, chatId)
+          : await call("sendMediaGroup", {
+              media: batch.map((p, j) => ({ type: "photo", media: p, ...(j === 0 ? withCap : {}) })),
+            }, chatId);
+        if (!r.ok) console.error(`telegram media failed [${r.status}] chat ${chatId}: ${r.bodyText}`);
+        if (i === 0) mediaOk = r.ok;
+        sent = r;
       }
-      // No images, or Telegram rejected the media — always deliver the text.
-      if (!sent.ok) {
-        if (photos.length) console.error(`telegram media failed [${sent.status}] chat ${chatId}: ${sent.bodyText}`);
-        sent = await call("sendMessage", { text, parse_mode: "HTML", disable_web_page_preview: true }, chatId);
+      // No images, caption too long, or Telegram rejected the media — always deliver the text.
+      if (!mediaOk || !captionFits) {
+        for (const chunk of textChunks) {
+          sent = await call("sendMessage", { text: chunk, parse_mode: "HTML", disable_web_page_preview: true }, chatId);
+        }
       }
       if (!sent.ok) {
         console.error(`telegram send failed [${sent.status}] chat ${chatId}: ${sent.bodyText}`);
