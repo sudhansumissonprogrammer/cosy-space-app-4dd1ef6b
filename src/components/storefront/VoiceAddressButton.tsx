@@ -47,6 +47,7 @@ const ERRORS: Record<string, string> = {
 export default function VoiceAddressButton({ onFill, className }: Props) {
   const [state, setState] = useState<"idle" | "recording" | "working" | "review">("idle");
   const [error, setError] = useState<string | null>(null);
+  const [blocked, setBlocked] = useState(false);
   const [result, setResult] = useState<VoiceAddress | null>(null);
   const [transcript, setTranscript] = useState("");
   const [seconds, setSeconds] = useState(0);
@@ -72,11 +73,28 @@ export default function VoiceAddressButton({ onFill, className }: Props) {
     setResult(null);
     setTranscript("");
     setSeconds(0);
+    setBlocked(false);
     try {
+      // Pre-check: if the browser has a saved "blocked" decision, getUserMedia
+      // fails instantly with no prompt. Detect that and show recovery steps
+      // instead of a dead-end error line.
+      try {
+        const nav = navigator as Navigator & { permissions?: { query: (d: { name: string }) => Promise<{ state: string }> } };
+        if (nav.permissions?.query) {
+          const perm = await nav.permissions.query({ name: "microphone" });
+          if (perm.state === "denied") {
+            setBlocked(true);
+            setError(MIC_ERRORS.denied);
+            setState("idle");
+            return;
+          }
+        }
+      } catch { /* permissions API not available — just try the mic */ }
       recRef.current = await startWavRecording();
       setState("recording");
     } catch (e) {
       const code = (e as MicError)?.code as MicErrorCode | undefined;
+      if (code === "denied") setBlocked(true);
       setError(MIC_ERRORS[code || "unknown"] || MIC_ERRORS.unknown);
       setState("idle");
     }
