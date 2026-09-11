@@ -4,6 +4,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import { PenLine, ChevronRight, ArrowRight } from "lucide-react";
 import ReviewCard, { ReviewStars } from "@/components/storefront/reviews/ReviewCard";
 import { useStoreReviews } from "@/hooks/useStoreReviews";
+import { useVisibleBatch } from "@/components/storefront/reviews/useVisibleBatch";
 
 const importWriteReviewDialog = () => import("@/components/storefront/reviews/WriteReviewDialog");
 const WriteReviewDialog = lazy(importWriteReviewDialog);
