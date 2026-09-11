@@ -1,5 +1,11 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.77.0 — CSP allowlist + CSS preload crossorigin fix
+ * SHOPBANAO PRODUCTION ROUTER v8.78.0 — checkout microphone permission fix
+ *
+ * v8.78.0 — Allow microphone access from the storefront's own origin.
+ *           The previous `microphone=()` Permissions-Policy forced browsers to
+ *           reject getUserMedia without displaying a permission prompt, which
+ *           made voice address entry appear permanently blocked. Cross-origin
+ *           frames remain denied because only `self` is allowed.
  *
  * v8.77.0 — Console-error cleanup on live storefronts:
  *            (1) script-src/connect-src now allow static.cloudflareinsights.com
@@ -732,7 +738,7 @@ const SECURITY_HEADERS = {
   // non-HTTPS backend) preload would permanently lock users out with no
   // recourse. Per-host 1y HSTS is still strong and safely reversible.
   "Strict-Transport-Security": "max-age=31536000",
-  "Permissions-Policy": "camera=(), microphone=(), geolocation=(self)",
+  "Permissions-Policy": "camera=(), microphone=(self), geolocation=(self)",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Content-Security-Policy":
     "default-src 'self'; " +
