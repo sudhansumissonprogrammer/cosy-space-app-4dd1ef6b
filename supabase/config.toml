@@ -141,3 +141,6 @@ verify_jwt = false
 
 [functions.voice-address]
 verify_jwt = false
+
+[functions.telegram-order-notify]
+verify_jwt = false

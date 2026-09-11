@@ -1434,6 +1434,21 @@ Deno.serve(async (req) => {
       }), "place-order CAPI");
     }
 
+    // 📣 Telegram group alert for the store owner (opt-in per store via
+    // store_telegram_config). Best-effort — never blocks the order response.
+    runInBackground(
+      fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/telegram-order-notify`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({ order_id: createdOrder.id }),
+      }),
+      "place-order telegram",
+    );
+
+
     return new Response(JSON.stringify({ success: true, order_id: createdOrder.id, order_number: orderNumber, profit: totalProfit }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
