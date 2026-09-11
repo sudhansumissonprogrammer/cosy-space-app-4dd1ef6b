@@ -28,6 +28,16 @@ const LABELS: Record<keyof VoiceAddress, string> = {
   street: "Address",
 };
 
+const MIC_ERRORS: Record<MicErrorCode, string> = {
+  insecure: "Voice input needs a secure (https) page. Please open the store website directly.",
+  unsupported: "This browser can't use the microphone. Try Chrome or Safari.",
+  denied: "Microphone is blocked. Tap the lock icon in the address bar and allow the microphone.",
+  embedded_blocked: "Open this page in your browser (not inside the app preview) to use voice.",
+  no_mic: "No microphone found on this device.",
+  in_use: "Your microphone is busy in another app. Close it and try again.",
+  unknown: "Couldn't start the microphone. Please try again or type your address.",
+};
+
 const ERRORS: Record<string, string> = {
   audio_too_short: "That was too short — hold the button and speak your full address.",
   no_speech: "We couldn't hear anything. Try again in a quieter place.",
