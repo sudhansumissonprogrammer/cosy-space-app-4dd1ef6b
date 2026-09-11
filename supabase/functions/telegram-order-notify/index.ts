@@ -111,6 +111,7 @@ Deno.serve(async (req) => {
 
     // Compact block — one detail per line, no blank lines.
     const lines: string[] = [];
+    lines.push(`<b>Order #${esc(order.order_number || order.id.slice(0, 8))}</b>`);
     lines.push(esc(order.customer_name || "Guest"));
     if (order.customer_phone) lines.push(esc(order.customer_phone));
     String(order.street_address || "")
