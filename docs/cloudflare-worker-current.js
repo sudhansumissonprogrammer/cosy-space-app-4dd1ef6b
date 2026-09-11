@@ -367,6 +367,11 @@ function _applySecurityHeaders(response) {
     if (ct.includes("text/html") && !h.has("content-security-policy-report-only") && !h.has("content-security-policy")) {
       h.set("content-security-policy-report-only", _CSP_REPORT_ONLY);
     }
+    // v8.94.0 — Permissions-Policy is ALWAYS overwritten (never `if (!has)`).
+    // Cached HTML (Cache API / KV) can still carry the pre-v8.78 header
+    // `microphone=()`, which makes the browser deny the checkout voice-address
+    // mic without ever prompting. Forcing it here fixes every cached hit.
+    h.set("Permissions-Policy", "camera=(), microphone=(self), geolocation=(self)");
     return new Response(response.body, { status: response.status, statusText: response.statusText, headers: h });
   } catch {
     return response;
