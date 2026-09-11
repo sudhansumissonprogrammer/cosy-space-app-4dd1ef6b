@@ -12,7 +12,7 @@
 
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
-const META_GRAPH_URL = "https://graph.facebook.com/v21.0";
+import { META_GRAPH_URL } from "./metaGraph.ts";
 
 // Tier-1 #3: cache stores that have NO pixel/access_token so we skip the
 // `stores` SELECT entirely for the 95% of stores without Meta configured.
