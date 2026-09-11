@@ -17,8 +17,16 @@ function esc(s: unknown): string {
     .replace(/>/g, "&gt;");
 }
 
-function money(v: unknown, cur = "₹"): string {
-  return `${cur}${Math.round(Number(v || 0))}`;
+const ONLINE_GATEWAYS = new Set([
+  "cashfree", "razorpay", "payu", "phonepe", "paytm", "upi",
+  "stripe", "online", "prepaid", "card", "netbanking", "wallet",
+]);
+
+function isCod(method?: string | null): boolean {
+  const m = String(method || "").trim().toLowerCase();
+  if (!m) return true;
+  if (ONLINE_GATEWAYS.has(m)) return false;
+  return /\bcod\b|cash[\s_-]*on[\s_-]*delivery|^cash$/.test(m);
 }
 
 Deno.serve(async (req) => {
