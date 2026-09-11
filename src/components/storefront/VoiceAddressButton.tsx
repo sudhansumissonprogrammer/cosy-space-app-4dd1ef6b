@@ -47,7 +47,6 @@ const ERRORS: Record<string, string> = {
 export default function VoiceAddressButton({ onFill, className }: Props) {
   const [state, setState] = useState<"idle" | "recording" | "working" | "review">("idle");
   const [error, setError] = useState<string | null>(null);
-  const [blocked, setBlocked] = useState(false);
   const [result, setResult] = useState<VoiceAddress | null>(null);
   const [transcript, setTranscript] = useState("");
   const [seconds, setSeconds] = useState(0);
@@ -73,28 +72,13 @@ export default function VoiceAddressButton({ onFill, className }: Props) {
     setResult(null);
     setTranscript("");
     setSeconds(0);
-    setBlocked(false);
     try {
-      // Pre-check: if the browser has a saved "blocked" decision, getUserMedia
-      // fails instantly with no prompt. Detect that and show recovery steps
-      // instead of a dead-end error line.
-      try {
-        const nav = navigator as Navigator & { permissions?: { query: (d: { name: string }) => Promise<{ state: string }> } };
-        if (nav.permissions?.query) {
-          const perm = await nav.permissions.query({ name: "microphone" });
-          if (perm.state === "denied") {
-            setBlocked(true);
-            setError(MIC_ERRORS.denied);
-            setState("idle");
-            return;
-          }
-        }
-      } catch { /* permissions API not available — just try the mic */ }
+      // Always ask the browser directly. Some mobile and in-app browsers keep
+      // returning a stale Permissions API value after the shopper changes it.
       recRef.current = await startWavRecording();
       setState("recording");
     } catch (e) {
       const code = (e as MicError)?.code as MicErrorCode | undefined;
-      if (code === "denied") setBlocked(true);
       setError(MIC_ERRORS[code || "unknown"] || MIC_ERRORS.unknown);
       setState("idle");
     }
@@ -212,21 +196,7 @@ export default function VoiceAddressButton({ onFill, className }: Props) {
           )}
         </Button>
       )}
-      {error && !blocked && <p className="mt-1 text-[12px] text-red-600">{error}</p>}
-      {error && blocked && (
-        <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2">
-          <p className="text-[12px] font-medium text-amber-900">{error}</p>
-          <ol className="list-decimal pl-4 space-y-1 text-[11px] text-amber-900/90">
-            <li>Tap the <span className="font-semibold">lock / tune icon</span> left of the website address.</li>
-            <li>Open <span className="font-semibold">Permissions</span> (or Site settings).</li>
-            <li>Set <span className="font-semibold">Microphone</span> to <span className="font-semibold">Allow</span>.</li>
-            <li>Come back here and tap <span className="font-semibold">Try again</span>.</li>
-          </ol>
-          <Button type="button" size="sm" className="h-8 w-full text-xs" onClick={() => void start()}>
-            <Mic className="mr-1 h-3.5 w-3.5" /> Try again
-          </Button>
-        </div>
-      )}
+      {error && <p className="mt-1 text-[12px] text-red-600">{error}</p>}
       {state === "idle" && !error && (
         <p className="mt-1 text-[11px] text-muted-foreground">
           Say name, house/area, city, state and pincode in one go.
