@@ -11,3 +11,4 @@
 - [x] Deploy Worker mic-permission fix — live now: permissions-policy `microphone=(self)` confirmed on utkalwatch.in, getUserMedia OK
 - [x] Store Assistant: short direct answers + per-store business insights (30d orders/revenue/catalog/carts → findings + ranked actions)
 - Reconnect Telegram connector in new workspace (multi-group order alerts)
+- Workspace move: Telegram already re-linked; verify other integrations if needed.
