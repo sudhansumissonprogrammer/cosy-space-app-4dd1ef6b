@@ -14,6 +14,7 @@ import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import ReviewCard, { ReviewStars } from "@/components/storefront/reviews/ReviewCard";
 import { useStoreReviews } from "@/hooks/useStoreReviews";
+import { useVisibleBatch } from "@/components/storefront/reviews/useVisibleBatch";
 
 const ReviewMediaLightbox = lazy(() => import("@/components/storefront/reviews/ReviewMediaLightbox"));
 
@@ -24,17 +25,26 @@ interface Props {
 }
 
 export default function CheckoutReviewsTeaser({ storeId, label }: Props) {
-  // More reviews than the PDP teaser (top 16) — same shared summary RPC, so
-  // shoppers arriving from a PDP reuse the warm cache and pay no extra fetch.
-  const { reviews, total, average } = useStoreReviews(storeId, 16);
+  // Every review (capped at 100) — the SAME shared summary RPC the PDP uses,
+  // so a shopper arriving from a PDP reuses the warm cache and pays no extra
+  // fetch. The list is JSON only; no review media loads until the sheet opens.
+  const { reviews, total, average } = useStoreReviews(storeId, 100);
   const [open, setOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
 
-  const shown = useMemo(() => reviews.slice(0, 16), [reviews]);
+  const shown = reviews;
+
+  // Cards inside the sheet mount 10 at a time while the shopper scrolls, so
+  // opening it never floods the checkout with dozens of image requests.
+  const { count: sheetCount, attach: attachSentinel, done: sheetDone } = useVisibleBatch(
+    open ? shown.length : 0,
+    10,
+  );
 
   const thumbs = useMemo(
     () =>
       shown
+        .slice(0, 8)
         .flatMap((r) => r.media)
         .filter((m) => m.type === "image")
         .slice(0, 4),
@@ -116,7 +126,7 @@ export default function CheckoutReviewsTeaser({ storeId, label }: Props) {
 
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3">
               <div className="grid grid-cols-2 gap-3">
-                {shown.map((r, ri) => (
+                {shown.slice(0, sheetCount).map((r, ri) => (
                   <ReviewCard
                     key={r.id}
                     review={r}
@@ -126,6 +136,7 @@ export default function CheckoutReviewsTeaser({ storeId, label }: Props) {
                   />
                 ))}
               </div>
+              {!sheetDone && <div ref={attachSentinel} className="h-8" aria-hidden />}
             </div>
           </div>
 

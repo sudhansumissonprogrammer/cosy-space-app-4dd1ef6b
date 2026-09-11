@@ -4,6 +4,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import { PenLine, ChevronRight, ArrowRight } from "lucide-react";
 import ReviewCard, { ReviewStars } from "@/components/storefront/reviews/ReviewCard";
 import { useStoreReviews } from "@/hooks/useStoreReviews";
+import { useVisibleBatch } from "@/components/storefront/reviews/useVisibleBatch";
 
 const importWriteReviewDialog = () => import("@/components/storefront/reviews/WriteReviewDialog");
 const WriteReviewDialog = lazy(importWriteReviewDialog);
@@ -19,6 +20,7 @@ interface Props {
 
 export default function ReviewsShowcase({ productId, storeId, storeSlug, productName }: Props) {
   const [writing, setWriting] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   // NOTE: the dialog chunk is intentionally NOT warmed on idle. It drags in
   // uploadReviewMedia + textarea + radio-group + alert-dialog (~1.6s of
@@ -29,22 +31,32 @@ export default function ReviewsShowcase({ productId, storeId, storeSlug, product
 
   // Store-wide reviews — shared cache with the gallery rating badge, so this
   // section renders instantly when the badge has already fetched them.
-  const { reviews, counts, total, average, refetch } = useStoreReviews(storeId);
+  // The list is JSON-only (a few KB even at 100 reviews) and this whole section
+  // is already deferred until it nears the viewport, so asking for every review
+  // costs nothing at page load. What is expensive is the DOM/media of each
+  // card — that stays capped by the batching below.
+  const { reviews, counts, total, average, refetch } = useStoreReviews(storeId, 100);
 
-  // Max 8 review cards on the PDP; a 9th "View all" card links to the full page.
-  const shown = reviews.slice(0, 8);
+  // Above the fold: a swipeable strip of the first 8 cards only.
+  const shown = useMemo(() => reviews.slice(0, 8), [reviews]);
 
+  // Expanded grid renders in batches of 8 as the shopper scrolls.
+  const { count: gridCount, attach: attachSentinel, done: gridDone } = useVisibleBatch(
+    expanded ? reviews.length : 0,
+    8,
+  );
 
-  // Shared gallery so arrows move across every photo of the shown reviews.
+  // Shared gallery indexes across EVERY loaded review so arrows work in both
+  // the strip and the expanded grid.
   const { gallery, offsets } = useMemo(() => {
     const g: { url: string; type: "image" | "video" }[] = [];
     const o: number[] = [];
-    shown.forEach((r) => {
+    reviews.forEach((r) => {
       o.push(g.length);
       g.push(...r.media);
     });
     return { gallery: g, offsets: o };
-  }, [shown]);
+  }, [reviews]);
 
   const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
 
@@ -63,7 +75,13 @@ export default function ReviewsShowcase({ productId, storeId, storeSlug, product
         </Link>
       </div>
 
-      {reviews.length > 0 ? (
+      {reviews.length === 0 && (
+        <p className="mb-5 rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+          Be the first to review this product.
+        </p>
+      )}
+
+      {reviews.length > 0 && !expanded && (
         <div className="mb-5 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 scrollbar-hide">
           {shown.map((r, ri) => (
             <div key={r.id} className="w-[78%] shrink-0 snap-start sm:w-[46%] lg:w-[32%]">
@@ -77,23 +95,46 @@ export default function ReviewsShowcase({ productId, storeId, storeSlug, product
 
           {reviews.length > 8 && (
             <div className="w-[78%] shrink-0 snap-start sm:w-[46%] lg:w-[32%]">
-              <Link
-                to={storefrontPath(storeSlug, "reviews")}
-                className="flex h-full min-h-[220px] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-accent/40 p-6 text-center transition-colors hover:bg-accent"
+              <button
+                type="button"
+                onClick={() => setExpanded(true)}
+                className="flex h-full min-h-[220px] w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-accent/40 p-6 text-center transition-colors hover:bg-accent"
               >
                 <span className="flex h-11 w-11 items-center justify-center rounded-full bg-foreground text-background">
                   <ArrowRight className="h-5 w-5" />
                 </span>
-                <span className="text-sm font-bold text-foreground">View all {total} reviews</span>
+                <span className="text-sm font-bold text-foreground">See all {total} reviews</span>
                 <span className="text-xs text-muted-foreground">Photos & videos from customers</span>
-              </Link>
+              </button>
             </div>
           )}
         </div>
-      ) : (
-        <p className="mb-5 rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-          Be the first to review this product.
-        </p>
+      )}
+
+      {/* Expanded: every review, mounted 8 at a time as the shopper scrolls. */}
+      {reviews.length > 0 && expanded && (
+        <div className="mb-5">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {reviews.slice(0, gridCount).map((r, ri) => (
+              <ReviewCard
+                key={r.id}
+                review={r}
+                compact
+                onOpenMedia={r.media.length ? (i) => setGalleryIndex(offsets[ri] + i) : undefined}
+              />
+            ))}
+          </div>
+          {!gridDone && <div ref={attachSentinel} className="h-8" aria-hidden />}
+          <div className="mt-3 flex justify-center">
+            <button
+              type="button"
+              onClick={() => setExpanded(false)}
+              className="rounded-xl border border-border px-4 py-2 text-xs font-semibold text-foreground hover:bg-accent"
+            >
+              Show less
+            </button>
+          </div>
+        </div>
       )}
 
 
