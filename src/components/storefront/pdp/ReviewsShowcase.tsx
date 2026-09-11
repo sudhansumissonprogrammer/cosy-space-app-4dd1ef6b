@@ -75,7 +75,13 @@ export default function ReviewsShowcase({ productId, storeId, storeSlug, product
         </Link>
       </div>
 
-      {reviews.length > 0 ? (
+      {reviews.length === 0 && (
+        <p className="mb-5 rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+          Be the first to review this product.
+        </p>
+      )}
+
+      {reviews.length > 0 && !expanded && (
         <div className="mb-5 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 scrollbar-hide">
           {shown.map((r, ri) => (
             <div key={r.id} className="w-[78%] shrink-0 snap-start sm:w-[46%] lg:w-[32%]">
@@ -89,23 +95,46 @@ export default function ReviewsShowcase({ productId, storeId, storeSlug, product
 
           {reviews.length > 8 && (
             <div className="w-[78%] shrink-0 snap-start sm:w-[46%] lg:w-[32%]">
-              <Link
-                to={storefrontPath(storeSlug, "reviews")}
-                className="flex h-full min-h-[220px] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-accent/40 p-6 text-center transition-colors hover:bg-accent"
+              <button
+                type="button"
+                onClick={() => setExpanded(true)}
+                className="flex h-full min-h-[220px] w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-accent/40 p-6 text-center transition-colors hover:bg-accent"
               >
                 <span className="flex h-11 w-11 items-center justify-center rounded-full bg-foreground text-background">
                   <ArrowRight className="h-5 w-5" />
                 </span>
-                <span className="text-sm font-bold text-foreground">View all {total} reviews</span>
+                <span className="text-sm font-bold text-foreground">See all {total} reviews</span>
                 <span className="text-xs text-muted-foreground">Photos & videos from customers</span>
-              </Link>
+              </button>
             </div>
           )}
         </div>
-      ) : (
-        <p className="mb-5 rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-          Be the first to review this product.
-        </p>
+      )}
+
+      {/* Expanded: every review, mounted 8 at a time as the shopper scrolls. */}
+      {reviews.length > 0 && expanded && (
+        <div className="mb-5">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {reviews.slice(0, gridCount).map((r, ri) => (
+              <ReviewCard
+                key={r.id}
+                review={r}
+                compact
+                onOpenMedia={r.media.length ? (i) => setGalleryIndex(offsets[ri] + i) : undefined}
+              />
+            ))}
+          </div>
+          {!gridDone && <div ref={attachSentinel} className="h-8" aria-hidden />}
+          <div className="mt-3 flex justify-center">
+            <button
+              type="button"
+              onClick={() => setExpanded(false)}
+              className="rounded-xl border border-border px-4 py-2 text-xs font-semibold text-foreground hover:bg-accent"
+            >
+              Show less
+            </button>
+          </div>
+        </div>
       )}
 
 
