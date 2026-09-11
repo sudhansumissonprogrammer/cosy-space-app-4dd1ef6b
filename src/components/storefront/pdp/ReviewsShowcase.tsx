@@ -20,6 +20,7 @@ interface Props {
 
 export default function ReviewsShowcase({ productId, storeId, storeSlug, productName }: Props) {
   const [writing, setWriting] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   // NOTE: the dialog chunk is intentionally NOT warmed on idle. It drags in
   // uploadReviewMedia + textarea + radio-group + alert-dialog (~1.6s of
