@@ -131,10 +131,14 @@ Deno.serve(async (req) => {
 
     const text = lines.join("\n");
 
-    const photos = list
-      .map((it) => it.image_url || it.products?.image_url)
-      .filter((u: unknown): u is string => typeof u === "string" && /^https?:\/\//.test(u))
-      .slice(0, 10);
+    const photos = [
+      ...new Set(
+        list
+          .map((it) => it.image_url || it.products?.image_url)
+          .filter((u: unknown): u is string => typeof u === "string" && /^https?:\/\//.test(u)),
+      ),
+    ].slice(0, 10);
+
 
     const call = async (method: string, payload: Record<string, unknown>) => {
       const res = await fetch(`${GATEWAY_URL}/${method}`, {
