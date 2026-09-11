@@ -65,8 +65,9 @@ export default function VoiceAddressButton({ onFill, className }: Props) {
     try {
       recRef.current = await startWavRecording();
       setState("recording");
-    } catch {
-      setError("We need microphone permission to fill your address by voice.");
+    } catch (e) {
+      const code = (e as MicError)?.code as MicErrorCode | undefined;
+      setError(MIC_ERRORS[code || "unknown"] || MIC_ERRORS.unknown);
       setState("idle");
     }
   }
