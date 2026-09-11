@@ -93,11 +93,80 @@ interface CAPIEventParams {
  * This runs alongside the client-side pixel for deduplication.
  * Non-blocking — errors are silently logged.
  */
-// In-flight dedupe: if multiple events fire on a fresh visit (PageView +
-// ViewContent + AddToCart, etc.) before the first response sets the
-// "meta_not_configured" cache, they would ALL hit the edge function. Track
-// the first probe per store so the rest short-circuit until it resolves.
-const inflightProbe = new Map<string, Promise<boolean>>();
+// v8.72.0 BATCHING: Meta recommends batching events into a single request
+// rather than one POST per event. Events fired within BATCH_WINDOW_MS for the
+// same store are grouped into one call to the edge function, which forwards
+// them as one Graph API request. Fewer requests = less throttling, fewer 4xx
+// against the token, and a much smaller "noisy sender" footprint.
+const BATCH_WINDOW_MS = 400;
+const MAX_BATCH = 20;
+type PendingBatch = { events: any[]; timer: ReturnType<typeof setTimeout> | null; cacheKey: string };
+const batches = new Map<string, PendingBatch>();
+
+function flushBatch(storeId: string) {
+  const batch = batches.get(storeId);
+  if (!batch) return;
+  batches.delete(storeId);
+  if (batch.timer) clearTimeout(batch.timer);
+  if (!batch.events.length) return;
+
+  supabase.functions
+    .invoke("meta-capi", {
+      body: {
+        store_id: storeId,
+        user_agent: navigator.userAgent,
+        declared_client_ip: getDeclaredClientIp() || undefined,
+        events: batch.events,
+      },
+    })
+    .then(({ data, error }) => {
+      if (error) {
+        console.warn("Meta CAPI warning:", error.message);
+        return;
+      }
+      // Cache "no CAPI configured" for 6 hours so we don't re-call the edge
+      // function on every visit. Deliberately SHORT: a long cache meant that
+      // the moment a merchant finally pasted a Meta access token, returning
+      // visitors kept skipping CAPI — silently blocking the fix.
+      if (data?.skipped && data?.reason === "meta_not_configured") {
+        try {
+          localStorage.setItem(batch.cacheKey, String(Date.now() + 6 * 60 * 60 * 1000));
+        } catch { /* localStorage unavailable — best effort */ }
+      }
+    })
+    .catch((err) => {
+      console.warn("Meta CAPI fire-and-forget error:", err);
+    });
+}
+
+function enqueueCapiEvent(storeId: string, cacheKey: string, event: any) {
+  let batch = batches.get(storeId);
+  if (!batch) {
+    batch = { events: [], timer: null, cacheKey };
+    batches.set(storeId, batch);
+  }
+  batch.events.push(event);
+  if (batch.events.length >= MAX_BATCH) {
+    flushBatch(storeId);
+    return;
+  }
+  if (!batch.timer) {
+    batch.timer = setTimeout(() => flushBatch(storeId), BATCH_WINDOW_MS);
+  }
+}
+
+// Never lose a queued event when the shopper navigates away (checkout →
+// payment gateway is the critical case).
+if (typeof window !== "undefined") {
+  const flushAll = () => {
+    for (const storeId of [...batches.keys()]) flushBatch(storeId);
+  };
+  window.addEventListener("pagehide", flushAll);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") flushAll();
+  });
+}
+
 
 // Server-side CAPI is only meaningful for high-intent / conversion events.
 // PageView, Search, ViewCart etc. already fire via the browser pixel and CAPI
@@ -173,18 +242,8 @@ export function fireMetaCAPI(params: CAPIEventParams) {
     // localStorage unavailable (private mode etc.) — proceed with call
   }
 
-  // If a probe is already in flight for this store, wait for it. If it
-  // resolves to "skipped", drop this event without a second network call.
-  const existing = inflightProbe.get(params.storeId);
-  if (existing) {
-    existing.then((skipped) => {
-      if (skipped) return;
-      // Probe came back configured — fire this event normally (recursive,
-      // but cache/inflight will prevent loops).
-      fireMetaCAPI(params);
-    });
-    return;
-  }
+  // Events fired close together are grouped into one request (see enqueue below).
+
 
   const { fbc, fbp } = getMetaCookies();
   // Per-call params win over the global registry — explicit > implicit.
@@ -226,56 +285,22 @@ export function fireMetaCAPI(params: CAPIEventParams) {
     safeUrl = window.location.origin;
   }
 
-  const probe = supabase.functions
-    .invoke("meta-capi", {
-      body: {
-        store_id: params.storeId,
-        event_name: params.eventName,
-        event_id: params.eventId || undefined,
-        event_source_url: safeUrl,
-        user_email: userEmail || undefined,
-        user_phone: userPhone || undefined,
-        user_agent: navigator.userAgent,
-        fbc: fbc || undefined,
-        fbp: fbp || undefined,
-        external_id: externalId || undefined,
-        first_name: firstName || undefined,
-        last_name: lastName || undefined,
-        city: city || undefined,
-        state: state || undefined,
-        zip_code: zipCode || undefined,
-        custom_data: params.customData || undefined,
-        declared_client_ip: getDeclaredClientIp() || undefined,
-      },
-    })
-    .then(({ data, error }) => {
-      if (error) {
-        console.warn("Meta CAPI warning:", error.message);
-        return false;
-      }
-      // Cache "no CAPI configured" for 6 hours so we don't re-call the edge
-      // function on every visit. Deliberately SHORT: a 7-day cache meant that
-      // the moment a merchant finally pasted a Meta access token, returning
-      // visitors kept skipping CAPI for a whole week — silently blocking the
-      // fix. 6h keeps the cost saving but lets a new token go live same-day.
-      if (data?.skipped && data?.reason === "meta_not_configured") {
-        try {
-          const expiresAt = Date.now() + 6 * 60 * 60 * 1000;
-          localStorage.setItem(cacheKey, String(expiresAt));
-        } catch {
-          // localStorage unavailable — best effort
-        }
-        return true;
-      }
-      return false;
-    })
-    .catch((err) => {
-      console.warn("Meta CAPI fire-and-forget error:", err);
-      return false;
-    })
-    .finally(() => {
-      inflightProbe.delete(params.storeId);
-    }) as Promise<boolean>;
-
-  inflightProbe.set(params.storeId, probe);
+  enqueueCapiEvent(params.storeId, cacheKey, {
+    event_name: params.eventName,
+    event_id: params.eventId || undefined,
+    event_time: Math.floor(Date.now() / 1000),
+    event_source_url: safeUrl,
+    user_email: userEmail || undefined,
+    user_phone: userPhone || undefined,
+    fbc: fbc || undefined,
+    fbp: fbp || undefined,
+    external_id: externalId || undefined,
+    first_name: firstName || undefined,
+    last_name: lastName || undefined,
+    city: city || undefined,
+    state: state || undefined,
+    zip_code: zipCode || undefined,
+    custom_data: params.customData || undefined,
+  });
 }
+

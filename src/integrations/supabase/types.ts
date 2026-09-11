@@ -1022,6 +1022,72 @@ export type Database = {
           },
         ]
       }
+      meta_capi_errors: {
+        Row: {
+          created_at: string
+          event_name: string | null
+          fbtrace_id: string | null
+          http_status: number | null
+          id: string
+          meta_code: number | null
+          meta_message: string | null
+          meta_subcode: number | null
+          pixel_id: string | null
+          source: string | null
+          store_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_name?: string | null
+          fbtrace_id?: string | null
+          http_status?: number | null
+          id?: string
+          meta_code?: number | null
+          meta_message?: string | null
+          meta_subcode?: number | null
+          pixel_id?: string | null
+          source?: string | null
+          store_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_name?: string | null
+          fbtrace_id?: string | null
+          http_status?: number | null
+          id?: string
+          meta_code?: number | null
+          meta_message?: string | null
+          meta_subcode?: number | null
+          pixel_id?: string | null
+          source?: string | null
+          store_id?: string | null
+        }
+        Relationships: []
+      }
+      meta_pixel_breaker: {
+        Row: {
+          fails: number
+          open_until: string | null
+          pixel_id: string
+          updated_at: string
+          window_started_at: string
+        }
+        Insert: {
+          fails?: number
+          open_until?: string | null
+          pixel_id: string
+          updated_at?: string
+          window_started_at?: string
+        }
+        Update: {
+          fails?: number
+          open_until?: string | null
+          pixel_id?: string
+          updated_at?: string
+          window_started_at?: string
+        }
+        Relationships: []
+      }
       migration_jobs: {
         Row: {
           completed_at: string | null
@@ -5648,6 +5714,11 @@ export type Database = {
       }
       canonical_in_phone: { Args: { p_raw: string }; Returns: string }
       canonicalize_indian_phone: { Args: { raw: string }; Returns: string }
+      capi_breaker_open: { Args: { _pixel_id: string }; Returns: boolean }
+      capi_breaker_record: {
+        Args: { _hard: boolean; _pixel_id: string }
+        Returns: boolean
+      }
       capture_checkout_lead: {
         Args: {
           p_cart_items?: Json

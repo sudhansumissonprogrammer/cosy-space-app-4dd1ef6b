@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { fetchWithTimeout } from "../_shared/http.ts";
+import { META_GRAPH_URL } from "../_shared/metaGraph.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,7 +8,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const META_GRAPH_URL = "https://graph.facebook.com/v21.0";
 
 interface CAPIEvent {
   event_name: string;
@@ -120,24 +120,70 @@ async function rateLimited(
 // silencing every PageView/ViewContent/AddToCart CAPI mirror — exactly the EMQ
 // signal a fresh ad account needs to exit learning phase. Hard config errors
 // (100 / 190 / 200 / 803) still trip the breaker, just with more headroom.
+// v8.72.0: the breaker is now DB-backed (public.meta_pixel_breaker via the
+// capi_breaker_open / capi_breaker_record RPCs). The old Map lived inside a
+// single edge isolate, so a cold start (or a second isolate under ad traffic)
+// reset the fail count and we kept hammering Meta with the same broken pixel —
+// exactly the 4xx pattern Meta reads as platform abuse. The in-memory copy is
+// kept as a fast first-tier cache in front of the DB.
 const BREAKER_TTL_MS = 10 * 60_000;
 const BREAKER_THRESHOLD = 8;
 const BREAKER_HARD_CODES = new Set([100, 190, 200, 803]);
 const breakerMap = new Map<string, { fails: number; openUntil: number }>();
-function breakerOpen(pixelId: string): boolean {
+function breakerOpenLocal(pixelId: string): boolean {
   const e = breakerMap.get(pixelId);
   return !!e && e.openUntil > Date.now();
 }
-function breakerRecord(pixelId: string, metaErrCode: number | undefined) {
-  if (!metaErrCode || !BREAKER_HARD_CODES.has(metaErrCode)) {
-    breakerMap.delete(pixelId);
-    return;
+async function breakerOpen(
+  supabase: ReturnType<typeof createClient> | null,
+  pixelId: string,
+): Promise<boolean> {
+  if (breakerOpenLocal(pixelId)) return true;
+  if (!supabase) return false;
+  try {
+    const { data, error } = await supabase.rpc("capi_breaker_open", { _pixel_id: pixelId });
+    if (error) return false; // fail-open — never break tracking on a DB blip
+    if (data === true) {
+      breakerMap.set(pixelId, { fails: BREAKER_THRESHOLD, openUntil: Date.now() + 60_000 });
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
   }
-  const e = breakerMap.get(pixelId) || { fails: 0, openUntil: 0 };
-  e.fails++;
-  if (e.fails >= BREAKER_THRESHOLD) e.openUntil = Date.now() + BREAKER_TTL_MS;
-  breakerMap.set(pixelId, e);
 }
+async function breakerRecord(
+  supabase: ReturnType<typeof createClient> | null,
+  pixelId: string,
+  metaErrCode: number | undefined,
+) {
+  const hard = !!metaErrCode && BREAKER_HARD_CODES.has(metaErrCode);
+  if (!hard) {
+    breakerMap.delete(pixelId);
+  } else {
+    const e = breakerMap.get(pixelId) || { fails: 0, openUntil: 0 };
+    e.fails++;
+    if (e.fails >= BREAKER_THRESHOLD) e.openUntil = Date.now() + BREAKER_TTL_MS;
+    breakerMap.set(pixelId, e);
+  }
+  if (!supabase) return;
+  try {
+    await supabase.rpc("capi_breaker_record", { _pixel_id: pixelId, _hard: hard });
+  } catch { /* never break tracking */ }
+}
+
+// v8.72.0: persist Meta rejections so a store quietly getting every event
+// refused is visible instead of vanishing into edge logs.
+async function logCapiError(
+  supabase: ReturnType<typeof createClient> | null,
+  row: Record<string, unknown>,
+) {
+  if (!supabase) return;
+  try {
+    await supabase.from("meta_capi_errors").insert(row);
+  } catch { /* logging must never break the request */ }
+}
+
 
 // v8.68.0 BAN-FIX P1-NEW-1: Validate client-supplied fbc/fbp shape.
 // Spec: fbp = "fb.1.<ts_ms>.<rand_int>"; fbc = "fb.1.<ts_ms>.<fbclid>".
@@ -287,41 +333,37 @@ Deno.serve(async (req) => {
 
 
   try {
-    const {
-      store_id,
-      event_name,
-      event_id,
-      event_source_url,
-      user_email,
-      user_phone,
-      user_agent,
-      // Client-declared public IP. Cross-validated against edge headers below
-      // before ever being forwarded to Meta — see safe-IP block after userData.
-      declared_client_ip,
-      fbc,
-      fbp,
-      external_id,
-      first_name,
-      last_name,
-      city,
-      state,
-      zip_code,
-      custom_data,
-    } = await req.json();
+    const body = await req.json();
+    const store_id = body?.store_id;
 
-    if (!store_id || !event_name) {
+    // v8.72.0 BATCHING: Meta's docs recommend batching events into one request
+    // instead of one POST per event. The client now groups events fired within
+    // a few hundred ms into `events: [...]`; a single legacy top-level event
+    // body is still accepted unchanged.
+    const rawEvents: any[] = Array.isArray(body?.events) && body.events.length
+      ? body.events.slice(0, 20)
+      : [body];
+
+    if (!store_id || !rawEvents.length) {
       return new Response(
         JSON.stringify({ error: "store_id and event_name required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    if (!ALLOWED_BROWSER_EVENTS.has(String(event_name))) {
+    const validRaw = rawEvents.filter(
+      (e) => e && typeof e === "object" && ALLOWED_BROWSER_EVENTS.has(String(e.event_name)),
+    );
+    if (!validRaw.length) {
       return new Response(
         JSON.stringify({ error: "event_not_allowed" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+    // Shared across the batch (all events come from one page in one browser).
+    const declared_client_ip = body?.declared_client_ip ?? validRaw[0]?.declared_client_ip;
+    const user_agent = body?.user_agent ?? validRaw[0]?.user_agent;
+
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -411,7 +453,7 @@ Deno.serve(async (req) => {
     // v8.68.0 BAN-FIX P0-NEW-1: Skip pixels currently in the breaker.
     // Returns 200 + skipped:true so the browser pixel still fires client-side
     // (no UX impact); we just stop torching the Graph API error budget.
-    if (breakerOpen(pixelId)) {
+    if (await breakerOpen(supabase, pixelId)) {
       return new Response(
         JSON.stringify({ success: true, skipped: true, reason: "pixel_breaker_open" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -445,86 +487,96 @@ Deno.serve(async (req) => {
     const safeClientIp =
       candidateIp && !isPrivateIpV(candidateIp) ? candidateIp : undefined;
 
+    const sharedUa = user_agent || req.headers.get("user-agent") || undefined;
+    const nowSec = Math.floor(Date.now() / 1000);
 
-    const userData: CAPIEvent["user_data"] = {
-      client_user_agent: user_agent || req.headers.get("user-agent") || undefined,
-      client_ip_address: safeClientIp,
-      // v8.68.0 BAN-FIX P1-NEW-1: validate fb cookies before sending.
-      fbc: sanitizeFb(fbc, FBC_RX),
-      fbp: sanitizeFb(fbp, FBP_RX),
-    };
+    async function buildEvent(raw: any): Promise<CAPIEvent> {
+      const userData: CAPIEvent["user_data"] = {
+        client_user_agent: sharedUa,
+        client_ip_address: safeClientIp,
+        // v8.68.0 BAN-FIX P1-NEW-1: validate fb cookies before sending.
+        fbc: sanitizeFb(raw.fbc, FBC_RX),
+        fbp: sanitizeFb(raw.fbp, FBP_RX),
+      };
 
+      // Synthetic auth emails (`<digits>@phone.guest`) exist only inside our
+      // auth table — they can NEVER match a Meta user. Hashing and sending them
+      // adds an `em` key that always misses, which Meta counts against Event
+      // Match Quality (a present-but-unmatchable key scores worse than an absent
+      // one). Drop anything that isn't a plausible real email.
+      const realEmail = (() => {
+        const e = normEmail(String(raw.user_email || ""));
+        if (!e || !/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(e)) return "";
+        if (e.endsWith("@phone.guest") || e.endsWith(".guest") || e.endsWith("@n")) return "";
+        return e;
+      })();
+      if (realEmail) {
+        userData.em = [await hashSHA256(realEmail)];
+      }
+      if (raw.user_phone) {
+        const cleaned = String(raw.user_phone).replace(/\D/g, "");
+        // v8.61.0 BAN-FIX P1-3: Indian phones must include the 91 country code
+        // before hashing. Meta stores all phones in E.164-without-plus form, so
+        // sha256("9876543210") never matches sha256("919876543210").
+        const e164 = cleaned.length === 10 ? `91${cleaned}` : cleaned;
+        if (e164) userData.ph = [await hashSHA256(e164)];
+      }
+      if (raw.external_id) {
+        // external_id is an opaque visitor/customer ID (UUID), NOT an email.
+        // Meta spec: SHA-256 of the trimmed raw value.
+        userData.external_id = [await hashSHA256(String(raw.external_id).trim())];
+      }
+      if (raw.first_name) {
+        const v = normName(String(raw.first_name));
+        if (v) userData.fn = [await hashSHA256(v)];
+      }
+      if (raw.last_name) {
+        const v = normName(String(raw.last_name));
+        if (v) userData.ln = [await hashSHA256(v)];
+      }
+      if (raw.city) {
+        const v = normCityState(String(raw.city));
+        if (v) userData.ct = [await hashSHA256(v)];
+      }
+      if (raw.state) {
+        const v = normCityState(String(raw.state));
+        if (v) userData.st = [await hashSHA256(v)];
+      }
+      if (raw.zip_code) {
+        const v = normZip(String(raw.zip_code));
+        if (v) userData.zp = [await hashSHA256(v)];
+      }
+      // Only set country when we have a real address signal (city/state/zip).
+      if (raw.city || raw.state || raw.zip_code) {
+        userData.country = [await hashSHA256(normCountry("in"))];
+      }
 
-    // Synthetic auth emails (`<digits>@phone.guest`) exist only inside our
-    // auth table — they can NEVER match a Meta user. Hashing and sending them
-    // adds an `em` key that always misses, which Meta counts against Event
-    // Match Quality (a present-but-unmatchable key scores worse than an absent
-    // one). Drop anything that isn't a plausible real email.
-    const realEmail = (() => {
-      const e = normEmail(String(user_email || ""));
-      if (!e || !/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(e)) return "";
-      if (e.endsWith("@phone.guest") || e.endsWith(".guest") || e.endsWith("@n")) return "";
-      return e;
-    })();
-    if (realEmail) {
-      userData.em = [await hashSHA256(realEmail)];
-    }
-    if (user_phone) {
-      const cleaned = user_phone.replace(/\D/g, "");
-      // v8.61.0 BAN-FIX P1-3: Indian phones must include the 91 country code
-      // before hashing. Meta stores all phones in E.164-without-plus form, so
-      // sha256("9876543210") never matches sha256("919876543210"). Result was
-      // ~zero phone match rate across every Indian storefront → tanked EMQ.
-      const e164 = cleaned.length === 10 ? `91${cleaned}` : cleaned;
-      if (e164) userData.ph = [await hashSHA256(e164)];
-    }
-    if (external_id) {
-      // external_id is an opaque visitor/customer ID (UUID), NOT an email.
-      // Meta spec: SHA-256 of the trimmed raw value. Using normEmail() here lowercases
-      // UUIDs and silently mismatches firePurchaseCapi.ts → tanks Event Match Quality.
-      userData.external_id = [await hashSHA256(String(external_id).trim())];
-    }
-    if (first_name) {
-      const v = normName(first_name);
-      if (v) userData.fn = [await hashSHA256(v)];
-    }
-    if (last_name) {
-      const v = normName(last_name);
-      if (v) userData.ln = [await hashSHA256(v)];
-    }
-    if (city) {
-      const v = normCityState(city);
-      if (v) userData.ct = [await hashSHA256(v)];
-    }
-    if (state) {
-      const v = normCityState(state);
-      if (v) userData.st = [await hashSHA256(v)];
-    }
-    if (zip_code) {
-      const v = normZip(zip_code);
-      if (v) userData.zp = [await hashSHA256(v)];
-    }
-    // Only set country when we have a real address signal (city/state/zip).
-    if (city || state || zip_code) {
-      userData.country = [await hashSHA256(normCountry("in"))];
+      // Batched events carry their own client timestamp; clamp it so a skewed
+      // clock can never send a future or stale (>7d) event_time to Meta.
+      const declaredTime = Number(raw.event_time);
+      const eventTime = Number.isFinite(declaredTime) && declaredTime > 0
+        ? Math.min(nowSec, Math.max(Math.floor(declaredTime), nowSec - 6 * 86400))
+        : nowSec;
+
+      return {
+        event_name: String(raw.event_name),
+        event_time: eventTime,
+        event_id: raw.event_id || undefined,
+        event_source_url: sanitizeEventSourceUrl(raw.event_source_url, allowed),
+        user_data: userData,
+        custom_data: sanitizeCustomData(raw.custom_data),
+        action_source: "website",
+      };
     }
 
-    const event: CAPIEvent = {
-      event_name,
-      event_time: Math.floor(Date.now() / 1000),
-      event_id: event_id || undefined,
-      event_source_url: sanitizeEventSourceUrl(event_source_url, allowed),
-      user_data: userData,
-      custom_data: sanitizeCustomData(custom_data),
-      action_source: "website",
-    };
+    const events = await Promise.all(validRaw.map(buildEvent));
 
     const sendOnce = () => fetchWithTimeout(
       `${META_GRAPH_URL}/${pixelId}/events`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${accessToken}` },
-        body: JSON.stringify({ data: [event] }),
+        body: JSON.stringify({ data: events }),
         timeoutMs: 8000,
       }
     );
@@ -540,7 +592,20 @@ Deno.serve(async (req) => {
       // v8.68.0 BAN-FIX P0-NEW-1: record hard-config failures into per-pixel
       // breaker so we stop spamming Graph API with the same broken pixel.
       const code = Number(metaResult?.error?.code);
-      breakerRecord(pixelId, Number.isFinite(code) ? code : undefined);
+      await breakerRecord(supabase, pixelId, Number.isFinite(code) ? code : undefined);
+      await logCapiError(supabase, {
+        store_id,
+        pixel_id: pixelId,
+        event_name: events.map((e) => e.event_name).join(","),
+        source: "browser",
+        http_status: metaResponse.status,
+        meta_code: Number.isFinite(code) ? code : null,
+        meta_subcode: Number.isFinite(Number(metaResult?.error?.error_subcode))
+          ? Number(metaResult?.error?.error_subcode)
+          : null,
+        meta_message: String(metaResult?.error?.message || "").slice(0, 1000),
+        fbtrace_id: metaResult?.error?.fbtrace_id || null,
+      });
       console.error("Meta CAPI error:", JSON.stringify(metaResult));
       return new Response(
         JSON.stringify({ error: "Meta API error", details: metaResult }),
@@ -548,12 +613,17 @@ Deno.serve(async (req) => {
       );
     }
     // Success → clear any prior fail count for this pixel.
-    breakerRecord(pixelId, undefined);
+    await breakerRecord(supabase, pixelId, undefined);
 
     return new Response(
-      JSON.stringify({ success: true, events_received: metaResult.events_received }),
+      JSON.stringify({
+        success: true,
+        events_sent: events.length,
+        events_received: metaResult.events_received,
+      }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
+
   } catch (err) {
     console.error("meta-capi error:", err);
     return new Response(

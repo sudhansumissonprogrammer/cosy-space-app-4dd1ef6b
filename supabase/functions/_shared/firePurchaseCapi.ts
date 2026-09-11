@@ -12,7 +12,7 @@
 
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
-const META_GRAPH_URL = "https://graph.facebook.com/v21.0";
+import { META_GRAPH_URL } from "./metaGraph.ts";
 
 // Tier-1 #3: cache stores that have NO pixel/access_token so we skip the
 // `stores` SELECT entirely for the 95% of stores without Meta configured.
@@ -362,7 +362,11 @@ export async function firePurchaseCapi(
         })),
         num_items: (items || []).reduce((s, i) => s + (Number(i.quantity) || 0), 0),
         order_id: order.id,
+        // Meta's ecommerce spec: Purchase should declare how the order is
+        // fulfilled. Every ShopBanao order ships to the buyer's address.
+        delivery_category: "home_delivery",
       },
+
     };
 
     // Atomic DB claim BEFORE sending to Meta. Webhook + browser verify can hit
@@ -457,6 +461,30 @@ export async function firePurchaseCapi(
 
     if (!resp.ok) {
       console.error(`[capi:${opts.source}] meta error ${resp.status}`, JSON.stringify(result));
+      // v8.72.0: persist the rejection so a store whose Purchases are all being
+      // refused is visible instead of buried in edge logs.
+      try {
+        const code = Number((result as any)?.error?.code);
+        await supabase.from("meta_capi_errors").insert({
+          store_id: order.store_id,
+          pixel_id: store.facebook_pixel_id,
+          event_name: "Purchase",
+          source: opts.source,
+          http_status: resp.status,
+          meta_code: Number.isFinite(code) ? code : null,
+          meta_subcode: Number.isFinite(Number((result as any)?.error?.error_subcode))
+            ? Number((result as any)?.error?.error_subcode)
+            : null,
+          meta_message: String((result as any)?.error?.message || "").slice(0, 1000),
+          fbtrace_id: (result as any)?.error?.fbtrace_id || null,
+        });
+        // Share the same cross-server breaker the browser mirror uses.
+        await supabase.rpc("capi_breaker_record", {
+          _pixel_id: store.facebook_pixel_id,
+          _hard: [100, 190, 200, 803].includes(code),
+        });
+      } catch { /* logging must never affect the order flow */ }
+
       if (resp.status >= 500 || resp.status === 429) {
         // Meta-side outage or rate limit — keep the order eligible for the
         // reconcile-cron retry instead of burning the Purchase forever.

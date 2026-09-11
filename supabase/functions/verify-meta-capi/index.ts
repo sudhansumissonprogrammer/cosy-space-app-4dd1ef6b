@@ -7,6 +7,7 @@
 // we're actually testing here.
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { META_GRAPH_URL } from "../_shared/metaGraph.ts";
 
 interface Body {
   store_id?: string;
@@ -146,7 +147,7 @@ Deno.serve(async (req) => {
 
     // Graph API v21.0 — v19.0 is past Meta's 2-year deprecation window and
     // returns deprecation warnings in fbtrace responses.
-    const url = `https://graph.facebook.com/v21.0/${pixelId}/events`;
+    const url = `${META_GRAPH_URL}/${pixelId}/events`;
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${accessToken}` },
