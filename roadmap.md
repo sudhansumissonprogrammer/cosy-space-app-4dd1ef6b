@@ -8,4 +8,5 @@
 ## Open
 - [ ] Authenticated end-to-end test of the assistant panel + new analytics tools (needs a signed-in preview session)
 - [ ] Deploy updated `docs/cloudflare-worker-current.js` (domain resolver DB fallback) to Cloudflare
+- [ ] Deploy Worker v8.78.0 to enable the checkout microphone prompt (`microphone=(self)`); production still sends the old blocking policy
 - [x] Store Assistant: short direct answers + per-store business insights (30d orders/revenue/catalog/carts → findings + ranked actions)
