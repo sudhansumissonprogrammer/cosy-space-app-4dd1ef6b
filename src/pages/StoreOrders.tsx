@@ -70,7 +70,7 @@ export default function StoreOrders() {
   const [createOrderOpen, setCreateOrderOpen] = useState(false);
 
   // Full line-items are fetched on demand (the list only carries product names)
-  const ORDER_ITEM_COLUMNS = "id, product_name, quantity, unit_price, total, product_id";
+  const ORDER_ITEM_COLUMNS = "id, product_name, quantity, unit_price, total, product_id, image_url, products(image_url)";
   const fetchOrderItems = async (orderId: string) => {
     const { data, error } = await supabase
       .from("order_items")
