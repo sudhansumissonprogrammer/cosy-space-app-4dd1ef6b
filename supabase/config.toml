@@ -138,3 +138,6 @@ verify_jwt = false
 
 [functions.checkout-otp-verify]
 verify_jwt = false
+
+[functions.voice-address]
+verify_jwt = false
