@@ -333,41 +333,37 @@ Deno.serve(async (req) => {
 
 
   try {
-    const {
-      store_id,
-      event_name,
-      event_id,
-      event_source_url,
-      user_email,
-      user_phone,
-      user_agent,
-      // Client-declared public IP. Cross-validated against edge headers below
-      // before ever being forwarded to Meta — see safe-IP block after userData.
-      declared_client_ip,
-      fbc,
-      fbp,
-      external_id,
-      first_name,
-      last_name,
-      city,
-      state,
-      zip_code,
-      custom_data,
-    } = await req.json();
+    const body = await req.json();
+    const store_id = body?.store_id;
 
-    if (!store_id || !event_name) {
+    // v8.72.0 BATCHING: Meta's docs recommend batching events into one request
+    // instead of one POST per event. The client now groups events fired within
+    // a few hundred ms into `events: [...]`; a single legacy top-level event
+    // body is still accepted unchanged.
+    const rawEvents: any[] = Array.isArray(body?.events) && body.events.length
+      ? body.events.slice(0, 20)
+      : [body];
+
+    if (!store_id || !rawEvents.length) {
       return new Response(
         JSON.stringify({ error: "store_id and event_name required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    if (!ALLOWED_BROWSER_EVENTS.has(String(event_name))) {
+    const validRaw = rawEvents.filter(
+      (e) => e && typeof e === "object" && ALLOWED_BROWSER_EVENTS.has(String(e.event_name)),
+    );
+    if (!validRaw.length) {
       return new Response(
         JSON.stringify({ error: "event_not_allowed" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+    // Shared across the batch (all events come from one page in one browser).
+    const declared_client_ip = body?.declared_client_ip ?? validRaw[0]?.declared_client_ip;
+    const user_agent = body?.user_agent ?? validRaw[0]?.user_agent;
+
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
