@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
     const { data: order, error: orderErr } = await admin
       .from("orders")
       .select(
-        "id, store_id, order_number, status, payment_status, payment_method, total, currency, customer_name, customer_phone, street_address, city, state, pincode, notes, created_at",
+        "id, store_id, order_number, status, payment_status, payment_method, payment_type, advance_paid, balance_due, total, currency, customer_name, customer_phone, street_address, city, state, pincode, notes, created_at",
       )
       .eq("id", order_id)
       .maybeSingle();
