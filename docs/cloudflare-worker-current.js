@@ -239,7 +239,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.93.0-supplier-image-resize";
+const WORKER_VERSION = "8.94.0-mic-permission-override";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
