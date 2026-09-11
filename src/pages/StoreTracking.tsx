@@ -345,6 +345,10 @@ export default function StoreTracking() {
           );
         })()}
 
+        {/* Recent Meta rejections, in plain language */}
+        <MetaEventIssuesCard storeId={storeId} />
+
+
         {/* Facebook Pixel */}
         <Card>
           <CardHeader>
