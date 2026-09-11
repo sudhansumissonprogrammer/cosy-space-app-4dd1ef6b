@@ -453,7 +453,7 @@ Deno.serve(async (req) => {
     // v8.68.0 BAN-FIX P0-NEW-1: Skip pixels currently in the breaker.
     // Returns 200 + skipped:true so the browser pixel still fires client-side
     // (no UX impact); we just stop torching the Graph API error budget.
-    if (breakerOpen(pixelId)) {
+    if (await breakerOpen(supabase, pixelId)) {
       return new Response(
         JSON.stringify({ success: true, skipped: true, reason: "pixel_breaker_open" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -487,86 +487,96 @@ Deno.serve(async (req) => {
     const safeClientIp =
       candidateIp && !isPrivateIpV(candidateIp) ? candidateIp : undefined;
 
+    const sharedUa = user_agent || req.headers.get("user-agent") || undefined;
+    const nowSec = Math.floor(Date.now() / 1000);
 
-    const userData: CAPIEvent["user_data"] = {
-      client_user_agent: user_agent || req.headers.get("user-agent") || undefined,
-      client_ip_address: safeClientIp,
-      // v8.68.0 BAN-FIX P1-NEW-1: validate fb cookies before sending.
-      fbc: sanitizeFb(fbc, FBC_RX),
-      fbp: sanitizeFb(fbp, FBP_RX),
-    };
+    async function buildEvent(raw: any): Promise<CAPIEvent> {
+      const userData: CAPIEvent["user_data"] = {
+        client_user_agent: sharedUa,
+        client_ip_address: safeClientIp,
+        // v8.68.0 BAN-FIX P1-NEW-1: validate fb cookies before sending.
+        fbc: sanitizeFb(raw.fbc, FBC_RX),
+        fbp: sanitizeFb(raw.fbp, FBP_RX),
+      };
 
+      // Synthetic auth emails (`<digits>@phone.guest`) exist only inside our
+      // auth table — they can NEVER match a Meta user. Hashing and sending them
+      // adds an `em` key that always misses, which Meta counts against Event
+      // Match Quality (a present-but-unmatchable key scores worse than an absent
+      // one). Drop anything that isn't a plausible real email.
+      const realEmail = (() => {
+        const e = normEmail(String(raw.user_email || ""));
+        if (!e || !/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(e)) return "";
+        if (e.endsWith("@phone.guest") || e.endsWith(".guest") || e.endsWith("@n")) return "";
+        return e;
+      })();
+      if (realEmail) {
+        userData.em = [await hashSHA256(realEmail)];
+      }
+      if (raw.user_phone) {
+        const cleaned = String(raw.user_phone).replace(/\D/g, "");
+        // v8.61.0 BAN-FIX P1-3: Indian phones must include the 91 country code
+        // before hashing. Meta stores all phones in E.164-without-plus form, so
+        // sha256("9876543210") never matches sha256("919876543210").
+        const e164 = cleaned.length === 10 ? `91${cleaned}` : cleaned;
+        if (e164) userData.ph = [await hashSHA256(e164)];
+      }
+      if (raw.external_id) {
+        // external_id is an opaque visitor/customer ID (UUID), NOT an email.
+        // Meta spec: SHA-256 of the trimmed raw value.
+        userData.external_id = [await hashSHA256(String(raw.external_id).trim())];
+      }
+      if (raw.first_name) {
+        const v = normName(String(raw.first_name));
+        if (v) userData.fn = [await hashSHA256(v)];
+      }
+      if (raw.last_name) {
+        const v = normName(String(raw.last_name));
+        if (v) userData.ln = [await hashSHA256(v)];
+      }
+      if (raw.city) {
+        const v = normCityState(String(raw.city));
+        if (v) userData.ct = [await hashSHA256(v)];
+      }
+      if (raw.state) {
+        const v = normCityState(String(raw.state));
+        if (v) userData.st = [await hashSHA256(v)];
+      }
+      if (raw.zip_code) {
+        const v = normZip(String(raw.zip_code));
+        if (v) userData.zp = [await hashSHA256(v)];
+      }
+      // Only set country when we have a real address signal (city/state/zip).
+      if (raw.city || raw.state || raw.zip_code) {
+        userData.country = [await hashSHA256(normCountry("in"))];
+      }
 
-    // Synthetic auth emails (`<digits>@phone.guest`) exist only inside our
-    // auth table — they can NEVER match a Meta user. Hashing and sending them
-    // adds an `em` key that always misses, which Meta counts against Event
-    // Match Quality (a present-but-unmatchable key scores worse than an absent
-    // one). Drop anything that isn't a plausible real email.
-    const realEmail = (() => {
-      const e = normEmail(String(user_email || ""));
-      if (!e || !/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(e)) return "";
-      if (e.endsWith("@phone.guest") || e.endsWith(".guest") || e.endsWith("@n")) return "";
-      return e;
-    })();
-    if (realEmail) {
-      userData.em = [await hashSHA256(realEmail)];
-    }
-    if (user_phone) {
-      const cleaned = user_phone.replace(/\D/g, "");
-      // v8.61.0 BAN-FIX P1-3: Indian phones must include the 91 country code
-      // before hashing. Meta stores all phones in E.164-without-plus form, so
-      // sha256("9876543210") never matches sha256("919876543210"). Result was
-      // ~zero phone match rate across every Indian storefront → tanked EMQ.
-      const e164 = cleaned.length === 10 ? `91${cleaned}` : cleaned;
-      if (e164) userData.ph = [await hashSHA256(e164)];
-    }
-    if (external_id) {
-      // external_id is an opaque visitor/customer ID (UUID), NOT an email.
-      // Meta spec: SHA-256 of the trimmed raw value. Using normEmail() here lowercases
-      // UUIDs and silently mismatches firePurchaseCapi.ts → tanks Event Match Quality.
-      userData.external_id = [await hashSHA256(String(external_id).trim())];
-    }
-    if (first_name) {
-      const v = normName(first_name);
-      if (v) userData.fn = [await hashSHA256(v)];
-    }
-    if (last_name) {
-      const v = normName(last_name);
-      if (v) userData.ln = [await hashSHA256(v)];
-    }
-    if (city) {
-      const v = normCityState(city);
-      if (v) userData.ct = [await hashSHA256(v)];
-    }
-    if (state) {
-      const v = normCityState(state);
-      if (v) userData.st = [await hashSHA256(v)];
-    }
-    if (zip_code) {
-      const v = normZip(zip_code);
-      if (v) userData.zp = [await hashSHA256(v)];
-    }
-    // Only set country when we have a real address signal (city/state/zip).
-    if (city || state || zip_code) {
-      userData.country = [await hashSHA256(normCountry("in"))];
+      // Batched events carry their own client timestamp; clamp it so a skewed
+      // clock can never send a future or stale (>7d) event_time to Meta.
+      const declaredTime = Number(raw.event_time);
+      const eventTime = Number.isFinite(declaredTime) && declaredTime > 0
+        ? Math.min(nowSec, Math.max(Math.floor(declaredTime), nowSec - 6 * 86400))
+        : nowSec;
+
+      return {
+        event_name: String(raw.event_name),
+        event_time: eventTime,
+        event_id: raw.event_id || undefined,
+        event_source_url: sanitizeEventSourceUrl(raw.event_source_url, allowed),
+        user_data: userData,
+        custom_data: sanitizeCustomData(raw.custom_data),
+        action_source: "website",
+      };
     }
 
-    const event: CAPIEvent = {
-      event_name,
-      event_time: Math.floor(Date.now() / 1000),
-      event_id: event_id || undefined,
-      event_source_url: sanitizeEventSourceUrl(event_source_url, allowed),
-      user_data: userData,
-      custom_data: sanitizeCustomData(custom_data),
-      action_source: "website",
-    };
+    const events = await Promise.all(validRaw.map(buildEvent));
 
     const sendOnce = () => fetchWithTimeout(
       `${META_GRAPH_URL}/${pixelId}/events`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${accessToken}` },
-        body: JSON.stringify({ data: [event] }),
+        body: JSON.stringify({ data: events }),
         timeoutMs: 8000,
       }
     );
@@ -582,7 +592,20 @@ Deno.serve(async (req) => {
       // v8.68.0 BAN-FIX P0-NEW-1: record hard-config failures into per-pixel
       // breaker so we stop spamming Graph API with the same broken pixel.
       const code = Number(metaResult?.error?.code);
-      breakerRecord(pixelId, Number.isFinite(code) ? code : undefined);
+      await breakerRecord(supabase, pixelId, Number.isFinite(code) ? code : undefined);
+      await logCapiError(supabase, {
+        store_id,
+        pixel_id: pixelId,
+        event_name: events.map((e) => e.event_name).join(","),
+        source: "browser",
+        http_status: metaResponse.status,
+        meta_code: Number.isFinite(code) ? code : null,
+        meta_subcode: Number.isFinite(Number(metaResult?.error?.error_subcode))
+          ? Number(metaResult?.error?.error_subcode)
+          : null,
+        meta_message: String(metaResult?.error?.message || "").slice(0, 1000),
+        fbtrace_id: metaResult?.error?.fbtrace_id || null,
+      });
       console.error("Meta CAPI error:", JSON.stringify(metaResult));
       return new Response(
         JSON.stringify({ error: "Meta API error", details: metaResult }),
@@ -590,12 +613,17 @@ Deno.serve(async (req) => {
       );
     }
     // Success → clear any prior fail count for this pixel.
-    breakerRecord(pixelId, undefined);
+    await breakerRecord(supabase, pixelId, undefined);
 
     return new Response(
-      JSON.stringify({ success: true, events_received: metaResult.events_received }),
+      JSON.stringify({
+        success: true,
+        events_sent: events.length,
+        events_received: metaResult.events_received,
+      }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
+
   } catch (err) {
     console.error("meta-capi error:", err);
     return new Response(
