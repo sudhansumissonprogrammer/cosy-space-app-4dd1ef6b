@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Mic, Loader2, Square, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { startWavRecording } from "@/lib/wavRecorder";
+import { startWavRecording, type MicError, type MicErrorCode } from "@/lib/wavRecorder";
 
 export type VoiceAddress = {
   full_name: string;
@@ -26,6 +26,16 @@ const LABELS: Record<keyof VoiceAddress, string> = {
   city: "City",
   state: "State",
   street: "Address",
+};
+
+const MIC_ERRORS: Record<MicErrorCode, string> = {
+  insecure: "Voice input needs a secure (https) page. Please open the store website directly.",
+  unsupported: "This browser can't use the microphone. Try Chrome or Safari.",
+  denied: "Microphone is blocked. Tap the lock icon in the address bar and allow the microphone.",
+  embedded_blocked: "Open this page in your browser (not inside the app preview) to use voice.",
+  no_mic: "No microphone found on this device.",
+  in_use: "Your microphone is busy in another app. Close it and try again.",
+  unknown: "Couldn't start the microphone. Please try again or type your address.",
 };
 
 const ERRORS: Record<string, string> = {
@@ -65,8 +75,9 @@ export default function VoiceAddressButton({ onFill, className }: Props) {
     try {
       recRef.current = await startWavRecording();
       setState("recording");
-    } catch {
-      setError("We need microphone permission to fill your address by voice.");
+    } catch (e) {
+      const code = (e as MicError)?.code as MicErrorCode | undefined;
+      setError(MIC_ERRORS[code || "unknown"] || MIC_ERRORS.unknown);
       setState("idle");
     }
   }

@@ -48,10 +48,54 @@ function encodeWav(chunks: Float32Array[], inRate: number, outRate = 16000): Blo
   return new Blob([buffer], { type: "audio/wav" });
 }
 
+/** Reason codes the UI maps to plain-language messages. */
+export type MicErrorCode =
+  | "insecure"
+  | "unsupported"
+  | "denied"
+  | "embedded_blocked"
+  | "no_mic"
+  | "in_use"
+  | "unknown";
+
+export class MicError extends Error {
+  code: MicErrorCode;
+  constructor(code: MicErrorCode, message?: string) {
+    super(message || code);
+    this.code = code;
+  }
+}
+
+const inIframe = () => {
+  try { return window.self !== window.top; } catch { return true; }
+};
+
 export async function startWavRecording(): Promise<Recorder> {
-  const stream = await navigator.mediaDevices.getUserMedia({
-    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-  });
+  // https:// (or localhost) is required by every browser for the microphone.
+  if (typeof window !== "undefined" && window.isSecureContext === false) {
+    throw new MicError("insecure");
+  }
+  if (!navigator.mediaDevices?.getUserMedia) {
+    // Old in-app browsers (some Instagram/Facebook webviews) simply don't ship it.
+    throw new MicError(inIframe() ? "embedded_blocked" : "unsupported");
+  }
+
+  let stream: MediaStream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+    });
+  } catch (e) {
+    const name = (e as DOMException)?.name || "";
+    if (name === "NotAllowedError" || name === "SecurityError") {
+      // Inside an iframe without allow="microphone" the browser denies it
+      // instantly without ever prompting — same error name, different fix.
+      throw new MicError(inIframe() ? "embedded_blocked" : "denied");
+    }
+    if (name === "NotFoundError" || name === "OverconstrainedError") throw new MicError("no_mic");
+    if (name === "NotReadableError" || name === "AbortError") throw new MicError("in_use");
+    throw new MicError("unknown", String((e as Error)?.message || e));
+  }
   const AudioCtx: typeof AudioContext =
     (window as any).AudioContext || (window as any).webkitAudioContext;
   const ctx = new AudioCtx();
