@@ -31,22 +31,32 @@ export default function ReviewsShowcase({ productId, storeId, storeSlug, product
 
   // Store-wide reviews — shared cache with the gallery rating badge, so this
   // section renders instantly when the badge has already fetched them.
-  const { reviews, counts, total, average, refetch } = useStoreReviews(storeId);
+  // The list is JSON-only (a few KB even at 100 reviews) and this whole section
+  // is already deferred until it nears the viewport, so asking for every review
+  // costs nothing at page load. What is expensive is the DOM/media of each
+  // card — that stays capped by the batching below.
+  const { reviews, counts, total, average, refetch } = useStoreReviews(storeId, 100);
 
-  // Max 8 review cards on the PDP; a 9th "View all" card links to the full page.
-  const shown = reviews.slice(0, 8);
+  // Above the fold: a swipeable strip of the first 8 cards only.
+  const shown = useMemo(() => reviews.slice(0, 8), [reviews]);
 
+  // Expanded grid renders in batches of 8 as the shopper scrolls.
+  const { count: gridCount, attach: attachSentinel, done: gridDone } = useVisibleBatch(
+    expanded ? reviews.length : 0,
+    8,
+  );
 
-  // Shared gallery so arrows move across every photo of the shown reviews.
+  // Shared gallery indexes across EVERY loaded review so arrows work in both
+  // the strip and the expanded grid.
   const { gallery, offsets } = useMemo(() => {
     const g: { url: string; type: "image" | "video" }[] = [];
     const o: number[] = [];
-    shown.forEach((r) => {
+    reviews.forEach((r) => {
       o.push(g.length);
       g.push(...r.media);
     });
     return { gallery: g, offsets: o };
-  }, [shown]);
+  }, [reviews]);
 
   const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
 
