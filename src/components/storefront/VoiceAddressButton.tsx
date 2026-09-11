@@ -212,7 +212,21 @@ export default function VoiceAddressButton({ onFill, className }: Props) {
           )}
         </Button>
       )}
-      {error && <p className="mt-1 text-[12px] text-red-600">{error}</p>}
+      {error && !blocked && <p className="mt-1 text-[12px] text-red-600">{error}</p>}
+      {error && blocked && (
+        <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2">
+          <p className="text-[12px] font-medium text-amber-900">{error}</p>
+          <ol className="list-decimal pl-4 space-y-1 text-[11px] text-amber-900/90">
+            <li>Tap the <span className="font-semibold">lock / tune icon</span> left of the website address.</li>
+            <li>Open <span className="font-semibold">Permissions</span> (or Site settings).</li>
+            <li>Set <span className="font-semibold">Microphone</span> to <span className="font-semibold">Allow</span>.</li>
+            <li>Come back here and tap <span className="font-semibold">Try again</span>.</li>
+          </ol>
+          <Button type="button" size="sm" className="h-8 w-full text-xs" onClick={() => void start()}>
+            <Mic className="mr-1 h-3.5 w-3.5" /> Try again
+          </Button>
+        </div>
+      )}
       {state === "idle" && !error && (
         <p className="mt-1 text-[11px] text-muted-foreground">
           Say name, house/area, city, state and pincode in one go.
