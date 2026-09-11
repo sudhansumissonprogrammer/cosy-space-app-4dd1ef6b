@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Mic, Loader2, Square, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { startWavRecording } from "@/lib/wavRecorder";
+import { startWavRecording, type MicError, type MicErrorCode } from "@/lib/wavRecorder";
 
 export type VoiceAddress = {
   full_name: string;
