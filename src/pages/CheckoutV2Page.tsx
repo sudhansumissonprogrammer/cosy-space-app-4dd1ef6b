@@ -5224,6 +5224,8 @@ export default function CheckoutV2Page() {
 
 
 
+                <VoiceAddressButton className="mb-3" onFill={applyVoiceAddress} />
+
                 <form
                   onSubmit={(e) => e.preventDefault()}
                   autoComplete="on"
