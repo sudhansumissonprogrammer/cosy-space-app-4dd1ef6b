@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
           .map((it) => it.image_url || it.products?.image_url)
           .filter((u: unknown): u is string => typeof u === "string" && /^https?:\/\//.test(u)),
       ),
-    ].slice(0, 10);
+    ].slice(0, 30);
 
 
     const call = async (method: string, payload: Record<string, unknown>, chatId: string) => {
