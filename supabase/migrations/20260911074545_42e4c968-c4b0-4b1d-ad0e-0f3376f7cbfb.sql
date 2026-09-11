@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.notify_telegram_paid_order() FROM PUBLIC, anon, authenticated;
