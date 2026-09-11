@@ -111,9 +111,9 @@ Deno.serve(async (req) => {
 
     // Compact block — one detail per line, no blank lines.
     const lines: string[] = [];
-    lines.push(
-      `<b>Order #${esc(order.order_number ? 1000 + Number(order.order_number) : order.id.slice(0, 8).toUpperCase())}</b>`,
-    );
+    const displayOrderNumber = order.order_number
+      ? `#${1000 + Number(order.order_number)}`
+      : `#${order.id.slice(0, 8).toUpperCase()}`;
     lines.push(esc(order.customer_name || "Guest"));
     if (order.customer_phone) lines.push(esc(order.customer_phone));
     String(order.street_address || "")
@@ -195,10 +195,23 @@ Deno.serve(async (req) => {
             }, chatId);
         if (!r.ok) console.error(`telegram media failed [${r.status}] chat ${chatId}: ${r.bodyText}`);
       }
+      // 3) Finish with the dashboard-matching order number as its own message.
+      const orderNumberSent = await call(
+        "sendMessage",
+        { text: `<b>Order ${esc(displayOrderNumber)}</b>`, parse_mode: "HTML", disable_web_page_preview: true },
+        chatId,
+      );
+      if (!orderNumberSent.ok) {
+        console.error(`telegram order number failed [${orderNumberSent.status}] chat ${chatId}: ${orderNumberSent.bodyText}`);
+      }
       if (!sent.ok) {
         console.error(`telegram send failed [${sent.status}] chat ${chatId}: ${sent.bodyText}`);
       }
-      results.push({ chat_id: chatId, ok: sent.ok, status: sent.status });
+      results.push({
+        chat_id: chatId,
+        ok: sent.ok && orderNumberSent.ok,
+        status: !sent.ok ? sent.status : orderNumberSent.status,
+      });
     }
 
     if (!results.some((r) => r.ok)) {
