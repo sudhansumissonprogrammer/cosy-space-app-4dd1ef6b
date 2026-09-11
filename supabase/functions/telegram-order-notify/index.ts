@@ -147,7 +147,7 @@ Deno.serve(async (req) => {
     ].slice(0, 10);
 
 
-    const call = async (method: string, payload: Record<string, unknown>) => {
+    const call = async (method: string, payload: Record<string, unknown>, chatId: string) => {
       const res = await fetch(`${GATEWAY_URL}/${method}`, {
         method: "POST",
         headers: {
@@ -155,7 +155,7 @@ Deno.serve(async (req) => {
           "X-Connection-Api-Key": TELEGRAM_API_KEY,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ chat_id: cfg.chat_id, ...payload }),
+        body: JSON.stringify({ chat_id: chatId, ...payload }),
       });
       const bodyText = await res.text();
       let parsed: any = null;
@@ -163,31 +163,38 @@ Deno.serve(async (req) => {
       return { ok: res.ok && parsed?.ok !== false, status: res.status, bodyText };
     };
 
-    // Photos on top, order details as the caption of the first photo.
-    let sent = { ok: false, status: 0, bodyText: "" };
-    if (photos.length === 1) {
-      sent = await call("sendPhoto", { photo: photos[0], caption: text, parse_mode: "HTML" });
-    } else if (photos.length > 1) {
-      sent = await call("sendMediaGroup", {
-        media: photos.map((p, i) => ({
-          type: "photo",
-          media: p,
-          ...(i === 0 ? { caption: text, parse_mode: "HTML" } : {}),
-        })),
-      });
-    }
-    // No images, or Telegram rejected the media — always deliver the text.
-    if (!sent.ok) {
-      if (photos.length) console.error(`telegram media failed [${sent.status}]: ${sent.bodyText}`);
-      sent = await call("sendMessage", { text, parse_mode: "HTML", disable_web_page_preview: true });
+    // Send to every configured group/chat. A failure in one group never blocks the others.
+    const results: { chat_id: string; ok: boolean; status: number }[] = [];
+    for (const chatId of chatIds) {
+      // Photos on top, order details as the caption of the first photo.
+      let sent = { ok: false, status: 0, bodyText: "" };
+      if (photos.length === 1) {
+        sent = await call("sendPhoto", { photo: photos[0], caption: text, parse_mode: "HTML" }, chatId);
+      } else if (photos.length > 1) {
+        sent = await call("sendMediaGroup", {
+          media: photos.map((p, i) => ({
+            type: "photo",
+            media: p,
+            ...(i === 0 ? { caption: text, parse_mode: "HTML" } : {}),
+          })),
+        }, chatId);
+      }
+      // No images, or Telegram rejected the media — always deliver the text.
+      if (!sent.ok) {
+        if (photos.length) console.error(`telegram media failed [${sent.status}] chat ${chatId}: ${sent.bodyText}`);
+        sent = await call("sendMessage", { text, parse_mode: "HTML", disable_web_page_preview: true }, chatId);
+      }
+      if (!sent.ok) {
+        console.error(`telegram send failed [${sent.status}] chat ${chatId}: ${sent.bodyText}`);
+      }
+      results.push({ chat_id: chatId, ok: sent.ok, status: sent.status });
     }
 
-    if (!sent.ok) {
-      console.error(`telegram send failed [${sent.status}]: ${sent.bodyText}`);
-      return json({ error: "telegram_failed", status: sent.status, details: sent.bodyText }, 502);
+    if (!results.some((r) => r.ok)) {
+      return json({ error: "telegram_failed", results }, 502);
     }
 
-    return json({ success: true, photos: photos.length });
+    return json({ success: true, photos: photos.length, results });
   } catch (err) {
     console.error("telegram-order-notify error:", (err as Error).message);
     return json({ error: (err as Error).message }, 500);
