@@ -362,7 +362,11 @@ export async function firePurchaseCapi(
         })),
         num_items: (items || []).reduce((s, i) => s + (Number(i.quantity) || 0), 0),
         order_id: order.id,
+        // Meta's ecommerce spec: Purchase should declare how the order is
+        // fulfilled. Every ShopBanao order ships to the buyer's address.
+        delivery_category: "home_delivery",
       },
+
     };
 
     // Atomic DB claim BEFORE sending to Meta. Webhook + browser verify can hit
