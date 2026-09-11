@@ -794,6 +794,18 @@ export default function CheckoutV2Page() {
     return true;
   };
 
+  // Voice → form. The pincode effect above re-derives city/state from the
+  // official postal database right after this, so a misheard city self-corrects.
+  const applyVoiceAddress = useCallback((a: VoiceAddress) => {
+    if (a.full_name) setFullName(a.full_name);
+    if (a.street) setStreetAddress(a.street);
+    if (a.city) setCity(a.city);
+    if (a.state) setState(a.state);
+    if (/^\d{6}$/.test(a.pincode)) setPincode(a.pincode);
+    // Never overwrite a phone the shopper already verified/entered.
+    if (a.phone && !phoneRef.current) setPhone(a.phone);
+  }, []);
+
   // When the shopper changes their phone number after an address was already
   // hydrated (either from a returning-order or a phone-lookup for a different
   // number), wipe the stale address so:
