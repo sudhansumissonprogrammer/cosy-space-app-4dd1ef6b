@@ -5237,8 +5237,7 @@ export default function CheckoutV2Page() {
 
 
 
-                {/* Voice address hidden temporarily for testing — re-enable later */}
-                {/* <VoiceAddressButton className="mb-3" onFill={applyVoiceAddress} /> */}
+                <VoiceAddressButton className="mb-3" onFill={applyVoiceAddress} />
 
                 <form
                   onSubmit={(e) => e.preventDefault()}
