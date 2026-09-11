@@ -120,24 +120,70 @@ async function rateLimited(
 // silencing every PageView/ViewContent/AddToCart CAPI mirror — exactly the EMQ
 // signal a fresh ad account needs to exit learning phase. Hard config errors
 // (100 / 190 / 200 / 803) still trip the breaker, just with more headroom.
+// v8.72.0: the breaker is now DB-backed (public.meta_pixel_breaker via the
+// capi_breaker_open / capi_breaker_record RPCs). The old Map lived inside a
+// single edge isolate, so a cold start (or a second isolate under ad traffic)
+// reset the fail count and we kept hammering Meta with the same broken pixel —
+// exactly the 4xx pattern Meta reads as platform abuse. The in-memory copy is
+// kept as a fast first-tier cache in front of the DB.
 const BREAKER_TTL_MS = 10 * 60_000;
 const BREAKER_THRESHOLD = 8;
 const BREAKER_HARD_CODES = new Set([100, 190, 200, 803]);
 const breakerMap = new Map<string, { fails: number; openUntil: number }>();
-function breakerOpen(pixelId: string): boolean {
+function breakerOpenLocal(pixelId: string): boolean {
   const e = breakerMap.get(pixelId);
   return !!e && e.openUntil > Date.now();
 }
-function breakerRecord(pixelId: string, metaErrCode: number | undefined) {
-  if (!metaErrCode || !BREAKER_HARD_CODES.has(metaErrCode)) {
-    breakerMap.delete(pixelId);
-    return;
+async function breakerOpen(
+  supabase: ReturnType<typeof createClient> | null,
+  pixelId: string,
+): Promise<boolean> {
+  if (breakerOpenLocal(pixelId)) return true;
+  if (!supabase) return false;
+  try {
+    const { data, error } = await supabase.rpc("capi_breaker_open", { _pixel_id: pixelId });
+    if (error) return false; // fail-open — never break tracking on a DB blip
+    if (data === true) {
+      breakerMap.set(pixelId, { fails: BREAKER_THRESHOLD, openUntil: Date.now() + 60_000 });
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
   }
-  const e = breakerMap.get(pixelId) || { fails: 0, openUntil: 0 };
-  e.fails++;
-  if (e.fails >= BREAKER_THRESHOLD) e.openUntil = Date.now() + BREAKER_TTL_MS;
-  breakerMap.set(pixelId, e);
 }
+async function breakerRecord(
+  supabase: ReturnType<typeof createClient> | null,
+  pixelId: string,
+  metaErrCode: number | undefined,
+) {
+  const hard = !!metaErrCode && BREAKER_HARD_CODES.has(metaErrCode);
+  if (!hard) {
+    breakerMap.delete(pixelId);
+  } else {
+    const e = breakerMap.get(pixelId) || { fails: 0, openUntil: 0 };
+    e.fails++;
+    if (e.fails >= BREAKER_THRESHOLD) e.openUntil = Date.now() + BREAKER_TTL_MS;
+    breakerMap.set(pixelId, e);
+  }
+  if (!supabase) return;
+  try {
+    await supabase.rpc("capi_breaker_record", { _pixel_id: pixelId, _hard: hard });
+  } catch { /* never break tracking */ }
+}
+
+// v8.72.0: persist Meta rejections so a store quietly getting every event
+// refused is visible instead of vanishing into edge logs.
+async function logCapiError(
+  supabase: ReturnType<typeof createClient> | null,
+  row: Record<string, unknown>,
+) {
+  if (!supabase) return;
+  try {
+    await supabase.from("meta_capi_errors").insert(row);
+  } catch { /* logging must never break the request */ }
+}
+
 
 // v8.68.0 BAN-FIX P1-NEW-1: Validate client-supplied fbc/fbp shape.
 // Spec: fbp = "fb.1.<ts_ms>.<rand_int>"; fbc = "fb.1.<ts_ms>.<fbclid>".
