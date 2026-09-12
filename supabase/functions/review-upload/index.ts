@@ -23,7 +23,7 @@ import { sniffImageMime } from "../_shared/security.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "authorization, x-client-info, apikey, content-type, x-store-id, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const R2_ACCOUNT_ID = Deno.env.get("R2_ACCOUNT_ID") || "";
@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
     );
 
     if (req.method === "GET") {
-      const storeId = new URL(req.url).searchParams.get("store_id") || "";
+      const storeId = new URL(req.url).searchParams.get("store_id") || req.headers.get("x-store-id") || "";
       if (!/^[0-9a-f-]{36}$/i.test(storeId)) return json({ error: "Invalid store" }, 400);
 
       const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
