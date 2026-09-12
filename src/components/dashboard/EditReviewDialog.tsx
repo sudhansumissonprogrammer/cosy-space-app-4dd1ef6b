@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Star, X, Loader2, Plus, Play } from "lucide-react";
+import { Star, X, Loader2, Plus, Play, History } from "lucide-react";
 import { toast } from "sonner";
 import { uploadReviewMedia, type ReviewMedia } from "@/lib/uploadReviewMedia";
 
@@ -53,6 +53,9 @@ export default function EditReviewDialog({ storeId, review, onClose, onSaved }: 
       : []
   );
   const [uploading, setUploading] = useState(false);
+  const [loadingRecent, setLoadingRecent] = useState(false);
+  const [recentMedia, setRecentMedia] = useState<(ReviewMedia & { lastModified?: string })[]>([]);
+  const [showRecent, setShowRecent] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -109,6 +112,30 @@ export default function EditReviewDialog({ storeId, review, onClose, onSaved }: 
 
   function removeAt(i: number) {
     setMedia((m) => m.filter((_, idx) => idx !== i));
+  }
+
+  async function loadRecentUploads() {
+    setShowRecent(true);
+    if (recentMedia.length) return;
+    setLoadingRecent(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("review-upload", {
+        method: "GET",
+        headers: { "x-store-id": storeId },
+      });
+      if (error) throw error;
+      setRecentMedia(Array.isArray(data?.files) ? data.files : []);
+    } catch (err: any) {
+      toast.error(err?.message || "Could not load recent uploads");
+      setShowRecent(false);
+    } finally {
+      setLoadingRecent(false);
+    }
+  }
+
+  function restoreUpload(item: ReviewMedia) {
+    setMedia((current) => current.some((entry) => entry.url === item.url) ? current : [...current, item]);
+    toast.success("Upload restored to this review");
   }
 
   async function save() {
@@ -283,6 +310,50 @@ export default function EditReviewDialog({ storeId, review, onClose, onSaved }: 
                 {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" />}
               </button>
             </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="mt-2 h-8 px-2 text-xs"
+              onClick={loadRecentUploads}
+              disabled={loadingRecent}
+            >
+              {loadingRecent ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <History className="mr-1.5 h-3.5 w-3.5" />}
+              Recover recent uploads
+            </Button>
+            {showRecent && !loadingRecent && (
+              <div className="mt-2 rounded-md border p-2">
+                <p className="mb-2 text-xs font-medium">Recent review uploads</p>
+                {recentMedia.length ? (
+                  <div className="grid max-h-44 grid-cols-4 gap-2 overflow-y-auto">
+                    {recentMedia.map((item) => {
+                      const selected = media.some((entry) => entry.url === item.url);
+                      return (
+                        <button
+                          key={item.url}
+                          type="button"
+                          className="relative aspect-square overflow-hidden rounded-md border bg-muted disabled:opacity-40"
+                          onClick={() => restoreUpload(item)}
+                          disabled={selected}
+                          title={selected ? "Already added" : "Add to this review"}
+                        >
+                          {item.type === "video" ? (
+                            <>
+                              <video src={item.url} className="h-full w-full object-cover" muted playsInline preload="metadata" />
+                              <Play className="pointer-events-none absolute left-1/2 top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 fill-primary-foreground text-primary-foreground" />
+                            </>
+                          ) : (
+                            <img src={item.url} alt="Recent review upload" className="h-full w-full object-cover" loading="lazy" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">No recent uploads found.</p>
+                )}
+              </div>
+            )}
             <input
               ref={fileRef}
               type="file"
