@@ -319,18 +319,12 @@ export default function CategoryDetail() {
     if (useBrandCarousels) importBrandCarousels();
   }, [useBrandCarousels]);
 
-  // Carousel mode groups by brand, so every product must be present — but only
-  // AFTER first paint (idle), so cold-load speed is untouched.
+  // Carousel mode groups by brand, so every product must be present before the
+  // rails appear. Fetch the remaining page immediately; deferring this work to
+  // idle made some brand rows arrive seconds after others on mobile.
   useEffect(() => {
     if (!useBrandCarousels || !hasNextPage || isFetchingNextPage || productsLoading) return;
-    const run = () => fetchNextPage();
-    const w = window as any;
-    if (typeof w.requestIdleCallback === "function") {
-      const id = w.requestIdleCallback(run, { timeout: 2500 });
-      return () => w.cancelIdleCallback?.(id);
-    }
-    const t = window.setTimeout(run, 900);
-    return () => window.clearTimeout(t);
+    fetchNextPage();
   }, [useBrandCarousels, hasNextPage, isFetchingNextPage, productsLoading, fetchNextPage, pageCount]);
 
   if (!categoryLoading && !category) {
