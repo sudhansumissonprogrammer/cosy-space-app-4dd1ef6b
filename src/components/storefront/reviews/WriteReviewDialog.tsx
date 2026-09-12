@@ -49,15 +49,18 @@ export default function WriteReviewDialog({ productId, storeId, productName, onC
     if (rating === 0) return toast.error("Please select a star rating");
     if (!name.trim()) return toast.error("Please enter your name");
     setSubmitting(true);
-    const { error } = await supabase.from("product_reviews").insert({
+    const baseReview = {
       product_id: productId,
       store_id: storeId,
       customer_name: name.trim().slice(0, 50),
       rating,
       title: title.trim() ? title.trim().slice(0, 80) : null,
       review_text: text.trim() ? text.trim().slice(0, 1000) : null,
-      media: media as any,
-    });
+    };
+    const reviewMedia = media.length ? media.map((item) => [item]) : [[]];
+    const { error } = await supabase.from("product_reviews").insert(
+      reviewMedia.map((itemMedia) => ({ ...baseReview, media: itemMedia as any })),
+    );
     setSubmitting(false);
     if (error) {
       console.error("[review] insert failed", error);
