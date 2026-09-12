@@ -10,10 +10,10 @@
 - Shipped cancellation safety: paid shipped/tracked orders can be manually cancelled with commission reversal; new tracking always starts as shipped
 
 ## Open
-- [ ] Connect Telegram in the current workspace and redeploy the order-alert function.
+- [x] Connect Telegram in the current workspace and redeploy the order-alert function.
 - [ ] Authenticated end-to-end test of the assistant panel + new analytics tools (needs a signed-in preview session)
 - [ ] Deploy updated `docs/cloudflare-worker-current.js` (domain resolver DB fallback) to Cloudflare
 - [x] Deploy Worker mic-permission fix — live now: permissions-policy `microphone=(self)` confirmed on utkalwatch.in, getUserMedia OK
 - [x] Store Assistant: short direct answers + per-store business insights (30d orders/revenue/catalog/carts → findings + ranked actions)
-- [x] Reconnect Telegram connector in new workspace (multi-group order alerts) — linked `std_01m27y899ze8f8bnd7f3mqbf1x`, `TELEGRAM_API_KEY` available
+- [x] Reconnect Telegram connector in current workspace (multi-group order alerts); `TELEGRAM_API_KEY` available
 - [ ] Verify other integrations after workspace move if needed.
