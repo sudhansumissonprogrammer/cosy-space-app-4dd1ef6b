@@ -416,9 +416,23 @@ export default function CategoryDetail() {
         ) : products.length > 0 ? (
           <>
             {useBrandCarousels ? (
-              <Suspense fallback={<div className="min-h-[2200px]" />}>
-                <LazyBrandCarousels products={products} slug={slug!} store={store} cardStyle={cardStyle} />
-              </Suspense>
+              hasNextPage || isFetchingNextPage ? (
+                <div className={gridClass} aria-label="Loading complete Sale collection">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="overflow-hidden rounded-2xl border border-border bg-card">
+                      <Skeleton className="w-full" style={{ aspectRatio: "4/5" }} />
+                      <div className="space-y-2 px-2.5 pb-2.5 pt-2">
+                        <Skeleton className="h-3.5 w-full" />
+                        <Skeleton className="h-4 w-20" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <Suspense fallback={<div className="min-h-[2200px]" />}>
+                  <LazyBrandCarousels products={products} slug={slug!} store={store} cardStyle={cardStyle} />
+                </Suspense>
+              )
             ) : (
               <div className={gridClass}>
                 {products.map((product, idx) => (
