@@ -2595,7 +2595,7 @@ export type Database = {
           is_verified: boolean
           media: Json
           pinned_rank: number | null
-          product_id: string
+          product_id: string | null
           rating: number
           review_text: string | null
           store_id: string
@@ -2609,7 +2609,7 @@ export type Database = {
           is_verified?: boolean
           media?: Json
           pinned_rank?: number | null
-          product_id: string
+          product_id?: string | null
           rating: number
           review_text?: string | null
           store_id: string
@@ -2623,7 +2623,7 @@ export type Database = {
           is_verified?: boolean
           media?: Json
           pinned_rank?: number | null
-          product_id?: string
+          product_id?: string | null
           rating?: number
           review_text?: string | null
           store_id?: string

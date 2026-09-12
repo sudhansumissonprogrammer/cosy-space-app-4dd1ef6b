@@ -25,7 +25,7 @@ import EditReviewDialog from "@/components/dashboard/EditReviewDialog";
 
 interface ReviewRow {
   id: string;
-  product_id: string;
+  product_id: string | null;
   customer_name: string;
   rating: number;
   title: string | null;
