@@ -86,7 +86,10 @@ export default function BrandCarouselGroups({ products, slug, store, cardStyle =
                   store={store}
                   cardStyle={cardStyle}
                   index={idx}
-                  priority={gi === 0 && idx < 2}
+                  // Load the first desktop-visible row in every brand rail.
+                  // Native horizontal lazy-loading otherwise leaves pale cards
+                  // visible until the shopper starts scrolling the rail.
+                  priority={idx < 5}
                   deferOffscreen={false}
                 />
               </div>
