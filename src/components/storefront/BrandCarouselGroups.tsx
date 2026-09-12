@@ -23,6 +23,7 @@ interface Props {
 
 /** Ordered brand groups. `match` runs on the normalized (a-z0-9 only) name. */
 const BRANDS: { key: string; label: string; match: (n: string) => boolean }[] = [
+  { key: "seiko", label: "Seiko Trending", match: (n) => n.includes("seiko") || n.startsWith("seko") },
   { key: "casio", label: "Casio Illuminator", match: (n) => n.includes("casio") || n.includes("iluminator") || n.includes("illuminator") },
   { key: "tissot", label: "Tissot", match: (n) => n.includes("tisso") },
   { key: "rado", label: "Rado", match: (n) => n.includes("rado") || n.includes("raddo") },
@@ -85,7 +86,10 @@ export default function BrandCarouselGroups({ products, slug, store, cardStyle =
                   store={store}
                   cardStyle={cardStyle}
                   index={idx}
-                  priority={gi === 0 && idx < 2}
+                  // Load the first desktop-visible row in every brand rail.
+                  // Native horizontal lazy-loading otherwise leaves pale cards
+                  // visible until the shopper starts scrolling the rail.
+                  priority={idx < 5}
                   deferOffscreen={false}
                 />
               </div>

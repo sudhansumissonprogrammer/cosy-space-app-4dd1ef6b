@@ -52,7 +52,7 @@ function seedInfinitePages(products: any[]) {
   // whole category — keep the remainder as a final partial page so
   // `hasNextPage` turns false and we never fire a second network roundtrip
   // (that extra fetch was what made cards trickle in after the skeletons).
-  const complete = products.length < CATEGORY_PAGE_LIMIT;
+  const complete = products.length <= CATEGORY_PAGE_LIMIT;
   const full = Math.floor(products.length / PAGE_SIZE);
   const count = complete ? Math.max(1, Math.ceil(products.length / PAGE_SIZE)) : (full > 0 ? full : 1);
   for (let i = 0; i < count; i++) {
@@ -319,18 +319,12 @@ export default function CategoryDetail() {
     if (useBrandCarousels) importBrandCarousels();
   }, [useBrandCarousels]);
 
-  // Carousel mode groups by brand, so every product must be present — but only
-  // AFTER first paint (idle), so cold-load speed is untouched.
+  // Carousel mode groups by brand, so every product must be present before the
+  // rails appear. Fetch the remaining page immediately; deferring this work to
+  // idle made some brand rows arrive seconds after others on mobile.
   useEffect(() => {
     if (!useBrandCarousels || !hasNextPage || isFetchingNextPage || productsLoading) return;
-    const run = () => fetchNextPage();
-    const w = window as any;
-    if (typeof w.requestIdleCallback === "function") {
-      const id = w.requestIdleCallback(run, { timeout: 2500 });
-      return () => w.cancelIdleCallback?.(id);
-    }
-    const t = window.setTimeout(run, 900);
-    return () => window.clearTimeout(t);
+    fetchNextPage();
   }, [useBrandCarousels, hasNextPage, isFetchingNextPage, productsLoading, fetchNextPage, pageCount]);
 
   if (!categoryLoading && !category) {
@@ -416,9 +410,23 @@ export default function CategoryDetail() {
         ) : products.length > 0 ? (
           <>
             {useBrandCarousels ? (
-              <Suspense fallback={<div className="min-h-[2200px]" />}>
-                <LazyBrandCarousels products={products} slug={slug!} store={store} cardStyle={cardStyle} />
-              </Suspense>
+              hasNextPage || isFetchingNextPage ? (
+                <div className={gridClass} aria-label="Loading complete Sale collection">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="overflow-hidden rounded-2xl border border-border bg-card">
+                      <Skeleton className="w-full" style={{ aspectRatio: "4/5" }} />
+                      <div className="space-y-2 px-2.5 pb-2.5 pt-2">
+                        <Skeleton className="h-3.5 w-full" />
+                        <Skeleton className="h-4 w-20" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <Suspense fallback={<div className="min-h-[2200px]" />}>
+                  <LazyBrandCarousels products={products} slug={slug!} store={store} cardStyle={cardStyle} />
+                </Suspense>
+              )
             ) : (
               <div className={gridClass}>
                 {products.map((product, idx) => (
