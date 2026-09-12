@@ -90,10 +90,10 @@ Deno.serve(async (req) => {
       if (!userId) return json({ error: "Unauthorized" }, 401);
 
       const [{ data: store }, { data: adminRole }] = await Promise.all([
-        admin.from("stores").select("id,user_id").eq("id", storeId).maybeSingle(),
+        admin.from("stores").select("id,owner_id").eq("id", storeId).maybeSingle(),
         admin.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle(),
       ]);
-      if (!store || (store.user_id !== userId && !adminRole)) return json({ error: "Forbidden" }, 403);
+      if (!store || (store.owner_id !== userId && !adminRole)) return json({ error: "Forbidden" }, 403);
 
       const prefix = `review-media/${storeId}/`;
       const listUrl = `${r2Endpoint}?list-type=2&max-keys=1000&prefix=${encodeURIComponent(prefix)}`;
