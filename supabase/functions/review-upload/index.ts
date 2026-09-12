@@ -11,6 +11,10 @@
  *
  * POST multipart/form-data: { file, store_id }
  * Returns: { publicUrl, type: "image" | "video" }
+ *
+ * GET ?store_id=<uuid> is owner/admin-only and lists recent uploaded media.
+ * This lets support recover an upload if a review was deleted or the edit
+ * dialog was closed before its media array was saved.
  */
 import { AwsClient } from "npm:aws4fetch@1.0.20";
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -45,6 +49,15 @@ const EXT: Record<string, string> = {
   "video/webm": "webm",
 };
 
+function xmlText(value: string): string {
+  return value
+    .replaceAll("&amp;", "&")
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replaceAll("&quot;", '"')
+    .replaceAll("&apos;", "'");
+}
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -54,7 +67,7 @@ function json(body: unknown, status = 200) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (req.method !== "POST" && req.method !== "GET") return json({ error: "Method not allowed" }, 405);
 
   try {
     if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_BUCKET_NAME || !R2_PUBLIC_URL) {
@@ -66,6 +79,45 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
       { auth: { persistSession: false } },
     );
+
+    if (req.method === "GET") {
+      const storeId = new URL(req.url).searchParams.get("store_id") || "";
+      if (!/^[0-9a-f-]{36}$/i.test(storeId)) return json({ error: "Invalid store" }, 400);
+
+      const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
+      const { data: authData } = await admin.auth.getUser(token);
+      const userId = authData.user?.id;
+      if (!userId) return json({ error: "Unauthorized" }, 401);
+
+      const [{ data: store }, { data: adminRole }] = await Promise.all([
+        admin.from("stores").select("id,user_id").eq("id", storeId).maybeSingle(),
+        admin.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle(),
+      ]);
+      if (!store || (store.user_id !== userId && !adminRole)) return json({ error: "Forbidden" }, 403);
+
+      const prefix = `review-media/${storeId}/`;
+      const listUrl = `${r2Endpoint}?list-type=2&max-keys=1000&prefix=${encodeURIComponent(prefix)}`;
+      const listRes = await r2.fetch(listUrl, { method: "GET" });
+      if (!listRes.ok) return json({ error: "Could not list review media" }, 502);
+      const xml = await listRes.text();
+      const files = Array.from(xml.matchAll(/<Contents>([\s\S]*?)<\/Contents>/g))
+        .map((match) => {
+          const block = match[1];
+          const key = xmlText(block.match(/<Key>([\s\S]*?)<\/Key>/)?.[1] || "");
+          const lastModified = block.match(/<LastModified>([\s\S]*?)<\/LastModified>/)?.[1] || "";
+          const size = Number(block.match(/<Size>(\d+)<\/Size>/)?.[1] || 0);
+          return {
+            url: key ? `${R2_PUBLIC_URL}/${key}` : "",
+            type: /\.(mp4|webm)$/i.test(key) ? "video" : "image",
+            lastModified,
+            size,
+          };
+        })
+        .filter((file) => file.url)
+        .sort((a, b) => b.lastModified.localeCompare(a.lastModified))
+        .slice(0, 100);
+      return json({ files });
+    }
 
     const form = await req.formData();
     const file = form.get("file");

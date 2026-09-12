@@ -13,7 +13,7 @@ import { uploadReviewMedia, type ReviewMedia } from "@/lib/uploadReviewMedia";
 
 interface ReviewRow {
   id: string;
-  product_id?: string;
+  product_id?: string | null;
   customer_name: string;
   rating: number;
   title: string | null;
