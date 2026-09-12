@@ -1,6 +1,7 @@
 # Roadmap
 
 - [x] Reconnect Telegram in the new workspace and redeploy the order-alert function.
+- [ ] Protect Utkal reviews and uploaded review videos from product-deletion cascades; recover recent media where possible.
 
 ## Done
 - Utkal Watches: created the Tissot Premium category and linked all 13 active Tissot watches from Sale without removing their Sale assignments
