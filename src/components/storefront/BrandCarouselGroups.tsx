@@ -98,7 +98,10 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle }: BrandRailProps
         style={{
           overscrollBehaviorX: "contain",
           WebkitOverflowScrolling: "touch",
-          minHeight: group.items.length > 2 ? 620 : 300,
+          // Reserve space only while a below-fold rail is deferred. Keeping a
+          // fixed 620px height after cards mount stretches the two grid rows
+          // and creates a large blank band between them on mobile.
+          minHeight: isNearViewport ? undefined : group.items.length > 2 ? 620 : 300,
         }}
         onScroll={(event) => {
           if (!hasMore) return;
@@ -115,6 +118,7 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle }: BrandRailProps
               cardStyle={cardStyle}
               index={idx}
               priority={groupIndex === 0 && idx < 4}
+              deferOffscreen={false}
             />
           </div>
         ))}
