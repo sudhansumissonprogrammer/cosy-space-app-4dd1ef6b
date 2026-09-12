@@ -10,7 +10,7 @@
  *  - Mobile shows 2 full cards + a peek of the third (44% basis) so the row
  *    reads as swipeable.
  */
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import UniversalProductCard from "./UniversalProductCard";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
@@ -32,6 +32,96 @@ const BRANDS: { key: string; label: string; match: (n: string) => boolean }[] = 
 ];
 
 const normalize = (s: string) => (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+interface BrandRailProps extends Props {
+  group: { key: string; label: string; items: any[] };
+  groupIndex: number;
+}
+
+/**
+ * Mount each rail only when it approaches the viewport, then reveal more cards
+ * as the shopper scrolls horizontally. Native image lazy-loading alone starts
+ * downloads several screens early, which previously fetched the whole Sale
+ * collection during the first load.
+ */
+function BrandRail({ group, groupIndex, slug, store, cardStyle }: BrandRailProps) {
+  const sectionRef = useRef<HTMLElement>(null);
+  const [isNearViewport, setIsNearViewport] = useState(groupIndex === 0);
+  const [visibleCount, setVisibleCount] = useState(() =>
+    typeof window !== "undefined" && window.matchMedia("(min-width: 640px)").matches ? 12 : 6
+  );
+
+  useEffect(() => {
+    if (isNearViewport) return;
+    const section = sectionRef.current;
+    if (!section || typeof IntersectionObserver === "undefined") {
+      setIsNearViewport(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        setIsNearViewport(true);
+        observer.disconnect();
+      },
+      { rootMargin: "500px 0px" }
+    );
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, [isNearViewport]);
+
+  const visibleItems = isNearViewport ? group.items.slice(0, visibleCount) : [];
+  const hasMore = visibleCount < group.items.length;
+
+  const revealMore = () => {
+    if (hasMore) setVisibleCount((count) => Math.min(count + 8, group.items.length));
+  };
+
+  return (
+    <section ref={sectionRef}>
+      <div className="mb-2.5 flex items-baseline justify-between px-0.5">
+        <h2
+          className="text-[15px] sm:text-lg font-semibold tracking-tight"
+          style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}
+        >
+          {group.label}
+        </h2>
+        <span className="text-[11px] opacity-60" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
+          {group.items.length} {group.items.length === 1 ? "watch" : "watches"}
+        </span>
+      </div>
+
+      <div
+        className={`brand-rail -mx-3 grid grid-flow-col ${
+          group.items.length > 2 ? "grid-rows-2" : "grid-rows-1"
+        } auto-rows-fr auto-cols-[44%] snap-x snap-mandatory gap-x-2 gap-y-3 overflow-x-auto scroll-px-3 px-3 pb-1 scrollbar-hide sm:mx-0 sm:auto-cols-[31%] sm:gap-x-4 sm:px-0 sm:scroll-px-0 md:auto-cols-[23.5%] lg:auto-cols-[19%]`}
+        style={{
+          overscrollBehaviorX: "contain",
+          WebkitOverflowScrolling: "touch",
+          minHeight: group.items.length > 2 ? 620 : 300,
+        }}
+        onScroll={(event) => {
+          if (!hasMore) return;
+          const rail = event.currentTarget;
+          if (rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - rail.clientWidth * 0.75) revealMore();
+        }}
+      >
+        {visibleItems.map((product, idx) => (
+          <div key={product.id} className="h-full snap-start">
+            <UniversalProductCard
+              product={product}
+              slug={slug}
+              store={store}
+              cardStyle={cardStyle}
+              index={idx}
+              priority={groupIndex === 0 && idx < 4}
+            />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 export default function BrandCarouselGroups({ products, slug, store, cardStyle = "style-1" }: Props) {
   const groups = useMemo(() => {
@@ -59,44 +149,15 @@ export default function BrandCarouselGroups({ products, slug, store, cardStyle =
   return (
     <div className="space-y-6">
       {groups.map((group, gi) => (
-        <section key={group.key}>
-          <div className="mb-2.5 flex items-baseline justify-between px-0.5">
-            <h2
-              className="text-[15px] sm:text-lg font-semibold tracking-tight"
-              style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}
-            >
-              {group.label}
-            </h2>
-            <span className="text-[11px] opacity-60" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
-              {group.items.length} {group.items.length === 1 ? "watch" : "watches"}
-            </span>
-          </div>
-
-          <div
-            className={`brand-rail -mx-3 grid grid-flow-col ${
-              group.items.length > 2 ? "grid-rows-2" : "grid-rows-1"
-            } auto-rows-fr auto-cols-[44%] snap-x snap-mandatory gap-x-2 gap-y-3 overflow-x-auto scroll-px-3 px-3 pb-1 scrollbar-hide sm:mx-0 sm:auto-cols-[31%] sm:gap-x-4 sm:px-0 sm:scroll-px-0 md:auto-cols-[23.5%] lg:auto-cols-[19%]`}
-            style={{ overscrollBehaviorX: "contain", WebkitOverflowScrolling: "touch" }}
-          >
-            {group.items.map((product, idx) => (
-              <div key={product.id} className="h-full snap-start">
-                <UniversalProductCard
-                  product={product}
-                  slug={slug}
-                  store={store}
-                  cardStyle={cardStyle}
-                  index={idx}
-                  // Load the first desktop-visible row in every brand rail.
-                  // Native horizontal lazy-loading otherwise leaves pale cards
-                  // visible until the shopper starts scrolling the rail.
-                  priority={idx < 5}
-                  deferOffscreen={false}
-                />
-              </div>
-            ))}
-          </div>
-
-        </section>
+        <BrandRail
+          key={group.key}
+          group={group}
+          groupIndex={gi}
+          products={products}
+          slug={slug}
+          store={store}
+          cardStyle={cardStyle}
+        />
       ))}
     </div>
   );
