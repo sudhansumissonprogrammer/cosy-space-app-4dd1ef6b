@@ -143,10 +143,6 @@ export default function EditReviewDialog({ storeId, review, onClose, onSaved }: 
       toast.error("Customer name is required");
       return;
     }
-    if (isCreate && !productId) {
-      toast.error("Pick the product this review is for");
-      return;
-    }
     setSaving(true);
     try {
       const payload = {
@@ -160,16 +156,21 @@ export default function EditReviewDialog({ storeId, review, onClose, onSaved }: 
       if (isCreate) {
         // Keep the picked date but a realistic time-of-day
         const created = new Date(`${date}T10:00:00`);
-        const { error } = await supabase.from("product_reviews").insert({
+        const createdAt = isNaN(created.getTime()) ? new Date() : created;
+        // Each upload is its own review card. Text-only reviews still create one row.
+        const reviewMedia = media.length ? media.map((item) => [item]) : [[]];
+        const rows = reviewMedia.map((itemMedia, index) => ({
           ...payload,
+          media: itemMedia as any,
           store_id: storeId,
-          product_id: productId,
+          product_id: productId || null,
           is_verified: verified,
           is_hidden: false,
-          created_at: isNaN(created.getTime()) ? new Date().toISOString() : created.toISOString(),
-        });
+          created_at: new Date(createdAt.getTime() - index * 1000).toISOString(),
+        }));
+        const { error } = await supabase.from("product_reviews").insert(rows);
         if (error) throw error;
-        toast.success("Review added");
+        toast.success(rows.length > 1 ? `${rows.length} review cards added` : "Review added");
       } else {
         const created = new Date(`${date}T10:00:00`);
         const { error } = await supabase
@@ -202,7 +203,7 @@ export default function EditReviewDialog({ storeId, review, onClose, onSaved }: 
         <div className="space-y-4">
           {isCreate && (
             <div>
-              <Label>Product *</Label>
+              <Label>Product (optional)</Label>
               <Input
                 value={productSearch}
                 onChange={(e) => setProductSearch(e.target.value)}
@@ -214,7 +215,7 @@ export default function EditReviewDialog({ storeId, review, onClose, onSaved }: 
                 onChange={(e) => setProductId(e.target.value)}
                 className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               >
-                <option value="">Select a product…</option>
+                <option value="">No product — store review</option>
                 {filteredProducts.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}

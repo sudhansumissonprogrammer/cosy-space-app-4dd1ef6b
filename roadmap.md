@@ -1,5 +1,6 @@
 # Roadmap
 
+- [x] Utkal reviews: separate every photo/video into its own review card and keep product linking optional.
 - [x] Reconnect Telegram in the new workspace and redeploy the order-alert function.
 - [x] Protect Utkal reviews and uploaded review videos from product-deletion cascades; added owner-only recent-upload recovery access.
 
