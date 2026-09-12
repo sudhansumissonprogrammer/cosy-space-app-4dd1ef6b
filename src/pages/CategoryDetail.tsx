@@ -52,7 +52,7 @@ function seedInfinitePages(products: any[]) {
   // whole category — keep the remainder as a final partial page so
   // `hasNextPage` turns false and we never fire a second network roundtrip
   // (that extra fetch was what made cards trickle in after the skeletons).
-  const complete = products.length < CATEGORY_PAGE_LIMIT;
+  const complete = products.length <= CATEGORY_PAGE_LIMIT;
   const full = Math.floor(products.length / PAGE_SIZE);
   const count = complete ? Math.max(1, Math.ceil(products.length / PAGE_SIZE)) : (full > 0 ? full : 1);
   for (let i = 0; i < count; i++) {
