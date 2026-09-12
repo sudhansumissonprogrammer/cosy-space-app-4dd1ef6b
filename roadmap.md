@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Reconnect Telegram in the new workspace and redeploy the order-alert function.
+- [x] Reconnect Telegram in the new workspace and redeploy the order-alert function.
 
 ## Done
 - Store Assistant (dashboard AI help): DB tables, 54-article knowledge base, `dashboard-assistant` edge fn (live model pick, Hinglish retrieval, dashboard map), assistant panel + hook, header/⌘K entry points
