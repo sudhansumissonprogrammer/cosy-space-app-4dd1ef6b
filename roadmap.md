@@ -5,6 +5,7 @@
 - [x] Protect Utkal reviews and uploaded review videos from product-deletion cascades; added owner-only recent-upload recovery access.
 - [x] Monitoring cleanup: restore category pagination beyond 50 products, remove the kicked Telegram group, and verify order photos.
 - [x] Serdiyajewellers.shop Ring-1: generated and appended one preservation-first 4:5 PDP image to each of the first 10 products.
+- [x] Serdiyajewellers.shop Ring-1: audited and appended the same preservation-first 4:5 PDP image treatment to products 11–30; no prior AI creations required reuse.
 - [x] PDP gallery reliability: refresh stale gallery data, merge primary + extras in every theme, and purge before prewarming product saves.
 
 ## Done
