@@ -1692,6 +1692,9 @@ export default function CheckoutV2Page() {
       setDebouncedShipIdentity(shipIdentityRef.current);
     }
   };
+  // Pricing changes require a fresh gateway intent. Delivery-detail edits do
+  // not: treating every address debounce as an amount change repeatedly tore
+  // down otherwise-valid UPI intents and left the checkout faded/spinning.
   const paymentSnapshot = useMemo(() => JSON.stringify({
     mode: effectiveMode,
     total: Math.round(total * 100),
@@ -1700,8 +1703,15 @@ export default function CheckoutV2Page() {
     couponDiscount: Math.round(couponDiscount * 100),
     shipping: Math.round(shippingCharge * 100),
     items: checkoutItems.map((i) => [i.productId, i.variantId || "", i.quantity, Math.round(i.price * 100)]),
-    ship: debouncedShipIdentity,
-  }), [effectiveMode, total, chargeAmount, appliedCoupon?.id, couponDiscount, shippingCharge, checkoutItems, debouncedShipIdentity]);
+  }), [effectiveMode, total, chargeAmount, appliedCoupon?.id, couponDiscount, shippingCharge, checkoutItems]);
+
+  // The order row still needs the latest delivery identity. This key is used
+  // only when a real payment action creates/updates the row; it must not drive
+  // payment-option loading state by itself.
+  const orderDetailsSnapshot = useMemo(
+    () => `${paymentSnapshot}|ship:${debouncedShipIdentity}`,
+    [paymentSnapshot, debouncedShipIdentity],
+  );
 
   const lastPaymentSnapshotRef = useRef(paymentSnapshot);
   const paymentAmountSyncing = (showPayment || !!orderId) && paymentSnapshot !== lastPaymentSnapshotRef.current;
@@ -1890,7 +1900,7 @@ export default function CheckoutV2Page() {
     // pay everything on delivery.
     const resolvedPaymentType: "full" | "partial" =
       paymentTypeOverride ?? (paymentMethodHint === "cod" ? "full" : effectiveMode);
-    const { data, error } = await supabase.functions.invoke("place-order", {
+    const placeOrderRequest = supabase.functions.invoke("place-order", {
       body: {
         store_id: store.id,
           checkout_token: checkoutTokenRef.current,
@@ -1921,6 +1931,15 @@ export default function CheckoutV2Page() {
         user_initiated: userInitiated,
       },
     });
+    // A cold or unhealthy payment function must never leave the whole checkout
+    // disabled forever. Retrying is safe because checkout_token is idempotent.
+    const { data, error } = await Promise.race([
+      placeOrderRequest,
+      new Promise<never>((_, reject) => window.setTimeout(
+        () => reject(new Error("Payment preparation timed out. Please try again.")),
+        20000,
+      )),
+    ]);
     if (error) throw new Error(error.message);
     const result = data as { order_id?: string; order_number?: string; error?: string; token_consumed?: boolean; token_stale?: boolean; already_paid?: boolean } | null;
     // The token in localStorage points at an abandoned attempt from an earlier
@@ -3366,7 +3385,7 @@ export default function CheckoutV2Page() {
     // checkout-v2-cod (which rejects partial orders).
     const resolvedType: "full" | "partial" =
       paymentMethodHint === "cod" ? "full" : effectiveMode;
-    const effectiveSnapshot = `${paymentSnapshot}|pt:${resolvedType}|pm:${paymentMethodHint === "cod" ? "cod" : "online"}`;
+    const effectiveSnapshot = `${orderDetailsSnapshot}|pt:${resolvedType}|pm:${paymentMethodHint === "cod" ? "cod" : "online"}`;
     if (orderIdRef.current && orderSnapshotRef.current === effectiveSnapshot) {
       return { id: orderIdRef.current, number: orderNumberRef.current };
     }
