@@ -280,8 +280,19 @@ function loadRazorpayScript(): Promise<boolean> {
     if (window.Razorpay) return resolve(true);
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
+    let settled = false;
+    const finish = (loaded: boolean) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeoutId);
+      resolve(loaded);
+    };
+    const timeoutId = window.setTimeout(() => {
+      try { script.remove(); } catch { /* noop */ }
+      finish(false);
+    }, 12000);
+    script.onload = () => finish(true);
+    script.onerror = () => finish(false);
     document.body.appendChild(script);
   });
 }
@@ -3703,8 +3714,10 @@ export default function CheckoutV2Page() {
   // the #1 source of "checkout shows X, PhonePe/Razorpay shows Y" mismatches.
   useEffect(() => {
     if (lastPaymentSnapshotRef.current === paymentSnapshot) return;
-    lastPaymentSnapshotRef.current = paymentSnapshot;
-    if (!orderId && !showPayment) return; // nothing to reset yet
+    if (!orderId && !showPayment) {
+      lastPaymentSnapshotRef.current = paymentSnapshot;
+      return; // nothing to reset yet
+    }
     if (confirmingPayment || orderPlaced) return; // don't disrupt an in-flight confirm
     // Desktop QR auto-polls (sets waiting=true) the moment a QR is ready. A
     // Partial↔Full toggle after that must still re-mint — cancel the passive
@@ -3712,6 +3725,10 @@ export default function CheckoutV2Page() {
     // UPI-app tap (waitingApp !== "UPI QR") should not be interrupted.
     const isDesktopQrWait = waiting && waitingApp === "UPI QR" && !isMobile();
     if (waiting && !isDesktopQrWait) return;
+    // Only consume the change once it is safe to rebuild. If an amount changes
+    // while a payment app/confirmation is active, keeping the old marker makes
+    // this effect retry as soon as that wait ends instead of silently losing it.
+    lastPaymentSnapshotRef.current = paymentSnapshot;
     if (isDesktopQrWait) {
       clearWaiting();
       setWaiting(false);
@@ -3740,7 +3757,7 @@ export default function CheckoutV2Page() {
       queueMicrotask(() => { void createOrderAndIntents(); });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paymentSnapshot]);
+  }, [paymentSnapshot, orderId, showPayment, confirmingPayment, orderPlaced, waiting, waitingApp]);
 
   // Safety-net: if any ready intent's stamped amount no longer matches the
   // current chargeAmount (e.g. the snapshot reset effect bailed out because
@@ -3793,7 +3810,7 @@ export default function CheckoutV2Page() {
       loadRazorpayScript(),
       callEdgeFunction("razorpay-order", {
         store_id: store.id, amount: chargeAmount, currency, order_id: order.id,
-      }),
+      }, 15000),
     ]);
     if (!loaded) throw new Error("Failed to load payment gateway");
     gatewayRef.current = { pg: "razorpay" };
@@ -3805,12 +3822,12 @@ export default function CheckoutV2Page() {
       setConfirmingPayment(true);
       try {
         try {
-          await callEdgeFunction("razorpay-verify", { ...response, order_id: order.id, store_id: store.id });
+          await callEdgeFunction("razorpay-verify", { ...response, order_id: order.id, store_id: store.id }, 15000);
         } catch (verifyErr) {
           console.warn("Razorpay verify failed, trying status fallback:", verifyErr);
           const statusData = await callEdgeFunction("razorpay-payment-status", {
             razorpay_payment_id: response.razorpay_payment_id, store_id: store.id, order_id: order.id,
-          });
+          }, 10000);
           if (statusData.status !== "captured" && statusData.status !== "authorized") throw new Error("Payment verification failed");
         }
         gatewayRef.current.razorpay_payment_id = response.razorpay_payment_id;
@@ -3846,7 +3863,7 @@ export default function CheckoutV2Page() {
             await new Promise(r => setTimeout(r, 2000));
             const statusData = await callEdgeFunction("razorpay-payment-status", {
               razorpay_payment_id: "check_order", store_id: store.id, order_id: order.id,
-            });
+            }, 10000);
             if (statusData.status === "captured" || statusData.status === "authorized") {
               finishSuccess(order.id); return;
             }
@@ -3880,12 +3897,15 @@ export default function CheckoutV2Page() {
       cashfreeReturnUrl = `${window.location.origin}/checkout?cf_order={order_id}&order=${order.id}`;
     }
     const [cashfree, cfData] = await Promise.all([
-      loadCashfree(env),
+      Promise.race([
+        loadCashfree(env),
+        new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error("Cashfree took too long to open")), 12000)),
+      ]),
       callEdgeFunction("store-cashfree-create-order", {
         store_id: store.id, amount: chargeAmount, currency, order_id: order.id,
         customer_name: fullName, customer_phone: toCanonicalIndianPhone(phone) || normalizePhone(phone), customer_email: email || undefined,
         return_url: cashfreeReturnUrl,
-      }),
+      }, 15000),
     ]);
     gatewayRef.current = { pg: "cashfree", cf_order_id: cfData.cf_order_id };
 
@@ -3897,7 +3917,7 @@ export default function CheckoutV2Page() {
         try {
           const verdict = await callEdgeFunction("store-cashfree-verify", {
             store_id: store.id, order_id: order.id, cf_order_id: cfData.cf_order_id,
-          });
+          }, 10000);
           if (verdict?.status === "PAID") {
             setConfirmingPayment(false); finishSuccess(order.id); return true;
           }
@@ -4222,9 +4242,12 @@ export default function CheckoutV2Page() {
     try {
       saveExpressInfo();
       const order = await createOrderIfNeeded("cod", { userInitiated: true });
-      const { data, error } = await supabase.functions.invoke("checkout-v2-cod", {
-        body: { store_id: store.id, order_id: order.id },
-      });
+      const { data, error } = await Promise.race([
+        supabase.functions.invoke("checkout-v2-cod", {
+          body: { store_id: store.id, order_id: order.id },
+        }),
+        new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error("Order placement took too long. Please retry.")), 15000)),
+      ]);
       if (error) throw new Error(error.message);
       const res = data as { ok?: boolean; error?: string } | null;
       if (!res?.ok) throw new Error(res?.error || "Failed to place COD order");
