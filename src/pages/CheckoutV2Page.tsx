@@ -632,10 +632,14 @@ export default function CheckoutV2Page() {
     enabled: !!store?.id,
   });
 
-  const { data: paymentConfig, isFetched: paymentConfigFetched, isError: paymentConfigError } = useQuery({
+  const { data: paymentConfig, isFetched: paymentConfigFetched, isError: paymentConfigError, refetch: retryPaymentConfig } = useQuery({
     queryKey: ["store-payment-config", store?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_store_payment_config", { _store_id: store.id });
+      const request = supabase.rpc("get_store_payment_config", { _store_id: store.id });
+      const timeout = new Promise<never>((_, reject) => {
+        window.setTimeout(() => reject(new Error("Payment options took too long to load")), 10000);
+      });
+      const { data, error } = await Promise.race([request, timeout]);
       if (error) throw error;
       return data as {
         payment_methods: string[];
@@ -1676,22 +1680,6 @@ export default function CheckoutV2Page() {
     state.trim().toLowerCase(),
     (pincode || "").replace(/\D/g, ""),
   ].join("|"), [fullName, phone, streetAddress, city, state, pincode]);
-  const [debouncedShipIdentity, setDebouncedShipIdentity] = useState(shipIdentity);
-  const shipIdentityRef = useRef(shipIdentity);
-  useEffect(() => { shipIdentityRef.current = shipIdentity; }, [shipIdentity]);
-  useEffect(() => {
-    const t = window.setTimeout(() => setDebouncedShipIdentity(shipIdentity), 1800);
-    return () => window.clearTimeout(t);
-  }, [shipIdentity]);
-  // Force the debounced ship-identity to match the live one immediately.
-  // Called from pay-tile taps so a shopper who edits their address on the
-  // payment step and taps GPay/Cashfree/COD within the 1.8s debounce window
-  // does not launch a gateway that still references the pre-edit address.
-  const flushShipIdentity = () => {
-    if (debouncedShipIdentity !== shipIdentityRef.current) {
-      setDebouncedShipIdentity(shipIdentityRef.current);
-    }
-  };
   // Pricing changes require a fresh gateway intent. Delivery-detail edits do
   // not: treating every address debounce as an amount change repeatedly tore
   // down otherwise-valid UPI intents and left the checkout faded/spinning.
@@ -1709,8 +1697,8 @@ export default function CheckoutV2Page() {
   // only when a real payment action creates/updates the row; it must not drive
   // payment-option loading state by itself.
   const orderDetailsSnapshot = useMemo(
-    () => `${paymentSnapshot}|ship:${debouncedShipIdentity}`,
-    [paymentSnapshot, debouncedShipIdentity],
+    () => `${paymentSnapshot}|ship:${shipIdentity}`,
+    [paymentSnapshot, shipIdentity],
   );
 
   const lastPaymentSnapshotRef = useRef(paymentSnapshot);
@@ -2905,19 +2893,6 @@ export default function CheckoutV2Page() {
     }
 
 
-    // Stale-address guard: if the shopper edited address/name/phone/email
-    // within the 1.8s ship-identity debounce window, the minted order row
-    // still holds the pre-edit values. Flush + re-mint before launching so
-    // the delivery boy sees the corrected address.
-    if (shipIdentityRef.current !== debouncedShipIdentity) {
-      toast.info("Updating details…");
-      trackTap("queued_address_flush");
-      queueTap();
-      flushShipIdentity();
-      return;
-    }
-
-
     const label = UPI_APPS.find((u) => u.key === app)?.label || "UPI";
 
     // A custom-scheme navigation triggered WITHOUT a live user gesture (queued
@@ -3111,7 +3086,6 @@ export default function CheckoutV2Page() {
       return;
     }
     if (creatingOrder || couponLoading || paymentAmountSyncing) return;
-    if (shipIdentityRef.current !== debouncedShipIdentity) return;
     const s = intents[pending.app];
     if (s.status === "failed") {
       pendingUpiTapRef.current = null;
@@ -3122,7 +3096,7 @@ export default function CheckoutV2Page() {
     if (typeof s.amount === "number" && Math.round(s.amount * 100) !== Math.round(chargeAmount * 100)) return;
     pendingUpiTapRef.current = null;
     tapUpiAppRef.current?.(pending.app, undefined, { gesture: false });
-  }, [intents, creatingOrder, couponLoading, paymentAmountSyncing, chargeAmount, debouncedShipIdentity, waiting, orderPlaced, confirmingPayment]);
+  }, [intents, creatingOrder, couponLoading, paymentAmountSyncing, chargeAmount, waiting, orderPlaced, confirmingPayment]);
 
 
 
@@ -3983,7 +3957,7 @@ export default function CheckoutV2Page() {
         store_id: store.id, order_id: order.id,
         customer_name: fullName, customer_phone: toCanonicalIndianPhone(phone) || normalizePhone(phone), customer_email: email || undefined,
         return_url: returnUrl,
-      });
+      }, 15000);
     } catch (err: any) {
       setPendingOrder(order); setPaymentFailed(true);
       toast.error(err?.message || "Could not start payment. Please try again.");
@@ -4047,7 +4021,12 @@ export default function CheckoutV2Page() {
         surl: payuData.surl, furl: payuData.furl, curl: payuData.furl,
         notifyurl: payuData.notify_url || "", boltEnabled: "true", icp_source: "newBolt",
       };
-      const bolt = await loadPayuBolt(payuData.env === "sandbox" ? "sandbox" : "production");
+      const bolt = await Promise.race([
+        loadPayuBolt(payuData.env === "sandbox" ? "sandbox" : "production"),
+        new Promise<never>((_, reject) => {
+          window.setTimeout(() => reject(new Error("PayU took too long to open")), 12000);
+        }),
+      ]);
 
       await new Promise<void>((resolve) => {
         let settled = false;
@@ -4170,14 +4149,6 @@ export default function CheckoutV2Page() {
       return;
     }
 
-    // Flush any pending address/email edits into the snapshot so the order
-    // row minted here reflects the live-typed values, not the pre-debounce
-    // ones. See tapUpiApp for the same guard.
-    if (shipIdentityRef.current !== debouncedShipIdentity) {
-      flushShipIdentity();
-      toast.info("Updating details…");
-      return;
-    }
     if (!activeGateway) {
       toast.error("No online payment gateway configured");
       return;
@@ -4244,14 +4215,6 @@ export default function CheckoutV2Page() {
     if (!requireAddressOrPrompt(() => { void placeCod(); })) return;
     const err = validateAddress();
     if (err) { toast.error(err); return; }
-    // Same stale-identity flush as UPI/gateway paths — a COD row minted with
-    // a half-typed address would leave the delivery boy without a real
-    // location. Force debounce to catch up before hitting the edge fn.
-    if (shipIdentityRef.current !== debouncedShipIdentity) {
-      flushShipIdentity();
-      toast.info("Updating details…");
-      return;
-    }
     // Acquire before the first await so a double tap cannot start a second
     // create/finalize chain while React is still committing `placingCod`.
     placingCodRef.current = true;
@@ -5999,6 +5962,21 @@ export default function CheckoutV2Page() {
           )}
 
 
+          {paymentConfigError && (
+            <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
+              <div className="font-semibold">Payment options did not load</div>
+              <div className="mt-1 opacity-80">Check your connection, then try again.</div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-2 w-full"
+                onClick={() => { void retryPaymentConfig(); }}
+              >
+                Try again
+              </Button>
+            </div>
+          )}
+
           {!hasOnline && !codAvailable && paymentConfigLoaded && (
             <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
               {tCritical("This store has no payment methods configured. Please contact the store.", "इस स्टोर के लिए भुगतान विधि उपलब्ध नहीं है।")}
@@ -6011,17 +5989,30 @@ export default function CheckoutV2Page() {
       {/* Sticky bottom Continue (contact step only) */}
       {!showPayment && (
         <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-[#ECECEC] p-3">
+          {paymentConfigError && (
+            <div className="mb-2 text-center text-[12px] font-semibold text-destructive">
+              Payment options could not load. Check your connection and retry.
+            </div>
+          )}
           <Button
             className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 disabled:bg-gray-300 disabled:text-white rounded-lg"
             onClick={() => {
+              if (paymentConfigError) {
+                void retryPaymentConfig();
+                return;
+              }
               // Missing address → open the sheet (and auto-resume after save)
               // instead of firing a bare red validation toast.
               if (!requireAddressOrPrompt(() => { void createOrderAndIntents({ userInitiated: true }); })) return;
               void createOrderAndIntents({ userInitiated: true });
             }}
-            disabled={creatingOrder || couponLoading || paymentAmountSyncing || !paymentConfigLoaded}
+            disabled={creatingOrder || couponLoading || paymentAmountSyncing || (!paymentConfigLoaded && !paymentConfigError)}
           >
-            {creatingOrder ? <Loader2 className="h-5 w-5 animate-spin" /> : addressFilled ? "Continue to Pay" : "Continue"}
+            {creatingOrder || (!paymentConfigLoaded && !paymentConfigError)
+              ? <><Loader2 className="h-5 w-5 animate-spin" /> Loading payment options…</>
+              : paymentConfigError
+                ? "Retry payment options"
+                : addressFilled ? "Continue to Pay" : "Continue"}
           </Button>
           <div className="text-[10px] text-center text-muted-foreground mt-1.5">
             By proceeding, I agree to the store's Privacy Policy and T&amp;C

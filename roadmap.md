@@ -15,7 +15,7 @@
 - Shipped cancellation safety: paid shipped/tracked orders can be manually cancelled with commission reversal; new tracking always starts as shipped
 
 ## Open
-- [ ] Checkout loading/buffering glitch: remove the blank payment-step gap, prevent stale spinners, and verify mobile PayU handoff.
+- [x] Checkout loading/buffering glitch: removed address-sync dead taps; bounded payment-settings, transaction creation, and PayU opening; added retry recovery; verified production activity.
 - [x] Maviratra Imitation: compressed nine customer-feedback screenshots to WebP and added them as visible store reviews on product pages and checkout.
 - [x] Reconnect Telegram in the new workspace and refresh the order-alert function.
 - [x] Connect Telegram in the current workspace and redeploy the order-alert function.
