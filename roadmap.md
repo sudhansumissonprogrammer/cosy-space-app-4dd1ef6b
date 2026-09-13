@@ -4,7 +4,7 @@
 - [x] Reconnect Telegram in the new workspace and redeploy the order-alert function.
 - [x] Protect Utkal reviews and uploaded review videos from product-deletion cascades; added owner-only recent-upload recovery access.
 - [x] Monitoring cleanup: restore category pagination beyond 50 products, remove the kicked Telegram group, and verify order photos.
-- [ ] Serdiyajewellers.shop Ring-1: generate and append one preservation-first 4:5 PDP image to each of the first 10 products.
+- [x] Serdiyajewellers.shop Ring-1: generated and appended one preservation-first 4:5 PDP image to each of the first 10 products.
 
 ## Done
 - Utkal Watches: created the Tissot Premium category and linked all 13 active Tissot watches from Sale without removing their Sale assignments
