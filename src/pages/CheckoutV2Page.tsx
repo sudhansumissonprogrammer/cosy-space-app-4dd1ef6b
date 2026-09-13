@@ -635,7 +635,11 @@ export default function CheckoutV2Page() {
   const { data: paymentConfig, isFetched: paymentConfigFetched, isError: paymentConfigError, refetch: retryPaymentConfig } = useQuery({
     queryKey: ["store-payment-config", store?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_store_payment_config", { _store_id: store.id });
+      const request = supabase.rpc("get_store_payment_config", { _store_id: store.id });
+      const timeout = new Promise<never>((_, reject) => {
+        window.setTimeout(() => reject(new Error("Payment options took too long to load")), 10000);
+      });
+      const { data, error } = await Promise.race([request, timeout]);
       if (error) throw error;
       return data as {
         payment_methods: string[];
@@ -1676,22 +1680,6 @@ export default function CheckoutV2Page() {
     state.trim().toLowerCase(),
     (pincode || "").replace(/\D/g, ""),
   ].join("|"), [fullName, phone, streetAddress, city, state, pincode]);
-  const [debouncedShipIdentity, setDebouncedShipIdentity] = useState(shipIdentity);
-  const shipIdentityRef = useRef(shipIdentity);
-  useEffect(() => { shipIdentityRef.current = shipIdentity; }, [shipIdentity]);
-  useEffect(() => {
-    const t = window.setTimeout(() => setDebouncedShipIdentity(shipIdentity), 1800);
-    return () => window.clearTimeout(t);
-  }, [shipIdentity]);
-  // Force the debounced ship-identity to match the live one immediately.
-  // Called from pay-tile taps so a shopper who edits their address on the
-  // payment step and taps GPay/Cashfree/COD within the 1.8s debounce window
-  // does not launch a gateway that still references the pre-edit address.
-  const flushShipIdentity = () => {
-    if (debouncedShipIdentity !== shipIdentityRef.current) {
-      setDebouncedShipIdentity(shipIdentityRef.current);
-    }
-  };
   // Pricing changes require a fresh gateway intent. Delivery-detail edits do
   // not: treating every address debounce as an amount change repeatedly tore
   // down otherwise-valid UPI intents and left the checkout faded/spinning.
@@ -5996,17 +5984,30 @@ export default function CheckoutV2Page() {
       {/* Sticky bottom Continue (contact step only) */}
       {!showPayment && (
         <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-[#ECECEC] p-3">
+          {paymentConfigError && (
+            <div className="mb-2 text-center text-[12px] font-semibold text-destructive">
+              Payment options could not load. Check your connection and retry.
+            </div>
+          )}
           <Button
             className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 disabled:bg-gray-300 disabled:text-white rounded-lg"
             onClick={() => {
+              if (paymentConfigError) {
+                void retryPaymentConfig();
+                return;
+              }
               // Missing address → open the sheet (and auto-resume after save)
               // instead of firing a bare red validation toast.
               if (!requireAddressOrPrompt(() => { void createOrderAndIntents({ userInitiated: true }); })) return;
               void createOrderAndIntents({ userInitiated: true });
             }}
-            disabled={creatingOrder || couponLoading || paymentAmountSyncing || !paymentConfigLoaded}
+            disabled={creatingOrder || couponLoading || paymentAmountSyncing || (!paymentConfigLoaded && !paymentConfigError)}
           >
-            {creatingOrder ? <Loader2 className="h-5 w-5 animate-spin" /> : addressFilled ? "Continue to Pay" : "Continue"}
+            {creatingOrder || (!paymentConfigLoaded && !paymentConfigError)
+              ? <><Loader2 className="h-5 w-5 animate-spin" /> Loading payment options…</>
+              : paymentConfigError
+                ? "Retry payment options"
+                : addressFilled ? "Continue to Pay" : "Continue"}
           </Button>
           <div className="text-[10px] text-center text-muted-foreground mt-1.5">
             By proceeding, I agree to the store's Privacy Policy and T&amp;C
