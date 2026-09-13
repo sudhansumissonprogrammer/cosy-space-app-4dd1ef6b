@@ -15,6 +15,7 @@
 - Shipped cancellation safety: paid shipped/tracked orders can be manually cancelled with commission reversal; new tracking always starts as shipped
 
 ## Open
+- [ ] Reconnect Telegram in the new workspace and refresh the order-alert function.
 - [x] Connect Telegram in the current workspace and redeploy the order-alert function.
 - [ ] Authenticated end-to-end test of the assistant panel + new analytics tools (needs a signed-in preview session)
 - [ ] Deploy updated `docs/cloudflare-worker-current.js` (domain resolver DB fallback) to Cloudflare
