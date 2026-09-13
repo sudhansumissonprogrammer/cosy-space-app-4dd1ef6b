@@ -250,7 +250,10 @@ Deno.serve(async (req) => {
 
       case "generate": {
         const productId = String(body?.product_id ?? "");
-        const brief = (body?.brief ?? "").toString().slice(0, 600);
+        // Detailed product-preservation briefs can be long. Keep enough room for
+        // exact geometry, material, lighting and exclusion instructions instead
+        // of silently truncating the merchant's requirements.
+        const brief = (body?.brief ?? "").toString().slice(0, 6000);
         const presetId = String(body?.preset ?? "clean_white");
         const aspect = ASPECTS[String(body?.aspect ?? "square")] ? String(body.aspect) : "square";
         const quality = body?.quality === "fast" ? "fast" : "high";
