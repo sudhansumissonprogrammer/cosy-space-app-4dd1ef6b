@@ -5,6 +5,7 @@
 - [x] Protect Utkal reviews and uploaded review videos from product-deletion cascades; added owner-only recent-upload recovery access.
 - [x] Monitoring cleanup: restore category pagination beyond 50 products, remove the kicked Telegram group, and verify order photos.
 - [x] Serdiyajewellers.shop Ring-1: generated and appended one preservation-first 4:5 PDP image to each of the first 10 products.
+- [x] PDP gallery reliability: refresh stale gallery data, merge primary + extras in every theme, and purge before prewarming product saves.
 
 ## Done
 - Utkal Watches: created the Tissot Premium category and linked all 13 active Tissot watches from Sale without removing their Sale assignments
