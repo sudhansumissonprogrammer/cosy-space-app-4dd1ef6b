@@ -3,6 +3,7 @@
 - [x] Utkal reviews: separate every photo/video into its own review card and keep product linking optional.
 - [x] Reconnect Telegram in the new workspace and redeploy the order-alert function.
 - [x] Protect Utkal reviews and uploaded review videos from product-deletion cascades; added owner-only recent-upload recovery access.
+- [x] Monitoring cleanup: restore category pagination beyond 50 products, remove the kicked Telegram group, and verify order photos.
 
 ## Done
 - Utkal Watches: created the Tissot Premium category and linked all 13 active Tissot watches from Sale without removing their Sale assignments
