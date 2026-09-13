@@ -632,7 +632,7 @@ export default function CheckoutV2Page() {
     enabled: !!store?.id,
   });
 
-  const { data: paymentConfig, isFetched: paymentConfigFetched, isError: paymentConfigError } = useQuery({
+  const { data: paymentConfig, isFetched: paymentConfigFetched, isError: paymentConfigError, refetch: retryPaymentConfig } = useQuery({
     queryKey: ["store-payment-config", store?.id],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_store_payment_config", { _store_id: store.id });
@@ -1709,8 +1709,8 @@ export default function CheckoutV2Page() {
   // only when a real payment action creates/updates the row; it must not drive
   // payment-option loading state by itself.
   const orderDetailsSnapshot = useMemo(
-    () => `${paymentSnapshot}|ship:${debouncedShipIdentity}`,
-    [paymentSnapshot, debouncedShipIdentity],
+    () => `${paymentSnapshot}|ship:${shipIdentity}`,
+    [paymentSnapshot, shipIdentity],
   );
 
   const lastPaymentSnapshotRef = useRef(paymentSnapshot);
@@ -2905,19 +2905,6 @@ export default function CheckoutV2Page() {
     }
 
 
-    // Stale-address guard: if the shopper edited address/name/phone/email
-    // within the 1.8s ship-identity debounce window, the minted order row
-    // still holds the pre-edit values. Flush + re-mint before launching so
-    // the delivery boy sees the corrected address.
-    if (shipIdentityRef.current !== debouncedShipIdentity) {
-      toast.info("Updating details…");
-      trackTap("queued_address_flush");
-      queueTap();
-      flushShipIdentity();
-      return;
-    }
-
-
     const label = UPI_APPS.find((u) => u.key === app)?.label || "UPI";
 
     // A custom-scheme navigation triggered WITHOUT a live user gesture (queued
@@ -3111,7 +3098,6 @@ export default function CheckoutV2Page() {
       return;
     }
     if (creatingOrder || couponLoading || paymentAmountSyncing) return;
-    if (shipIdentityRef.current !== debouncedShipIdentity) return;
     const s = intents[pending.app];
     if (s.status === "failed") {
       pendingUpiTapRef.current = null;
@@ -3122,7 +3108,7 @@ export default function CheckoutV2Page() {
     if (typeof s.amount === "number" && Math.round(s.amount * 100) !== Math.round(chargeAmount * 100)) return;
     pendingUpiTapRef.current = null;
     tapUpiAppRef.current?.(pending.app, undefined, { gesture: false });
-  }, [intents, creatingOrder, couponLoading, paymentAmountSyncing, chargeAmount, debouncedShipIdentity, waiting, orderPlaced, confirmingPayment]);
+  }, [intents, creatingOrder, couponLoading, paymentAmountSyncing, chargeAmount, waiting, orderPlaced, confirmingPayment]);
 
 
 
@@ -4170,14 +4156,6 @@ export default function CheckoutV2Page() {
       return;
     }
 
-    // Flush any pending address/email edits into the snapshot so the order
-    // row minted here reflects the live-typed values, not the pre-debounce
-    // ones. See tapUpiApp for the same guard.
-    if (shipIdentityRef.current !== debouncedShipIdentity) {
-      flushShipIdentity();
-      toast.info("Updating details…");
-      return;
-    }
     if (!activeGateway) {
       toast.error("No online payment gateway configured");
       return;
@@ -4244,14 +4222,6 @@ export default function CheckoutV2Page() {
     if (!requireAddressOrPrompt(() => { void placeCod(); })) return;
     const err = validateAddress();
     if (err) { toast.error(err); return; }
-    // Same stale-identity flush as UPI/gateway paths — a COD row minted with
-    // a half-typed address would leave the delivery boy without a real
-    // location. Force debounce to catch up before hitting the edge fn.
-    if (shipIdentityRef.current !== debouncedShipIdentity) {
-      flushShipIdentity();
-      toast.info("Updating details…");
-      return;
-    }
     // Acquire before the first await so a double tap cannot start a second
     // create/finalize chain while React is still committing `placingCod`.
     placingCodRef.current = true;
@@ -5998,6 +5968,21 @@ export default function CheckoutV2Page() {
             document.body
           )}
 
+
+          {paymentConfigError && (
+            <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
+              <div className="font-semibold">Payment options did not load</div>
+              <div className="mt-1 opacity-80">Check your connection, then try again.</div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-2 w-full"
+                onClick={() => { void retryPaymentConfig(); }}
+              >
+                Try again
+              </Button>
+            </div>
+          )}
 
           {!hasOnline && !codAvailable && paymentConfigLoaded && (
             <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
