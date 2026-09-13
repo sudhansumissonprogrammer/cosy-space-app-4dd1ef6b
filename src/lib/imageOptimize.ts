@@ -209,16 +209,18 @@ export function splitImageUrls(url: string | null | undefined): string[] {
  */
 export function resolveProductImages(product: any): string[] {
   const fromUrl = splitImageUrls(product?.image_url);
-  if (fromUrl.length > 0) return fromUrl;
-  // Fallback to product_images array from RPC data
   const piArr = product?.product_images;
-  if (Array.isArray(piArr) && piArr.length > 0) {
-    return piArr
-      .sort((a: any, b: any) => (a.display_order ?? 0) - (b.display_order ?? 0))
-      .map((pi: any) => pi.image_url)
-      .filter((u: string) => !!u);
-  }
-  return [];
+  const extras = Array.isArray(piArr)
+    ? [...piArr]
+        .sort((a: any, b: any) => (a.display_order ?? 0) - (b.display_order ?? 0))
+        .map((pi: any) => pi.image_url)
+        .filter((u: string) => !!u)
+    : [];
+
+  // The primary image stays first, but gallery rows must still be included.
+  // Older behaviour returned early whenever image_url existed, which made
+  // every extra PDP image disappear in themes that use this shared resolver.
+  return Array.from(new Set([...fromUrl, ...extras]));
 }
 
 /**

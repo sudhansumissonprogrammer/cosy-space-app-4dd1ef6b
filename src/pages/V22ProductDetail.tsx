@@ -215,6 +215,8 @@ export default function V22ProductDetail() {
       if (edge?.product) {
         rpcPromise.then((fresh: any) => {
           if (!fresh?.product || fresh.product.id !== edge.product.id) return;
+          // Gallery rows can change without touching products.updated_at.
+          if (fresh.images) queryClient.setQueryData(["product-images", fresh.product.id], fresh.images);
           const edgeProduct = edge.product as any;
           const freshProduct = fresh.product as any;
           const edgeVideo = edgeProduct.video_url || null;
@@ -222,7 +224,6 @@ export default function V22ProductDetail() {
           const edgeUpdated = edgeProduct.updated_at ? Date.parse(edgeProduct.updated_at) : 0;
           const freshUpdated = freshProduct.updated_at ? Date.parse(freshProduct.updated_at) : 0;
           if (edgeVideo !== freshVideo || freshUpdated > edgeUpdated || !("video_url" in edgeProduct)) {
-            if (fresh.images) queryClient.setQueryData(["product-images", freshProduct.id], fresh.images);
             if (fresh.variants) queryClient.setQueryData(["product-variants", freshProduct.id], fresh.variants);
             if (fresh.shipping_config) queryClient.setQueryData(["storefront-shipping-config", store.id], fresh.shipping_config);
             queryClient.setQueryData(["storefront-product", store.id, canonicalProductSlug], freshProduct);
@@ -358,6 +359,7 @@ export default function V22ProductDetail() {
     initialData: getCachedImages,
     enabled: !!productId,
     staleTime: 5 * 60 * 1000,
+    refetchOnMount: "always",
   });
 
   // Use cached product_variants from RPC data as initialData
@@ -512,7 +514,7 @@ export default function V22ProductDetail() {
     const imgs: string[] = [];
     if (product?.image_url) imgs.push(...splitImageUrls(product.image_url));
     if (extraImages) imgs.push(...extraImages.map((i) => i.image_url));
-    return imgs;
+    return Array.from(new Set(imgs));
   })();
 
   const productVideo = (() => {

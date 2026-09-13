@@ -28,13 +28,14 @@ export function useStorePurge(storeId: string | null | undefined) {
   const { data: store } = useStoreData(storeId ?? undefined);
 
   return useCallback(
-    (opts: PurgeOptions = {}) => {
-      if (!store?.slug) return;
-      import("@/lib/purgeStoreCache")
-        .then(({ purgeStoreCache }) =>
-          purgeStoreCache(store.slug, (store as any).custom_domain, opts)
-        )
-        .catch(() => {});
+    async (opts: PurgeOptions = {}): Promise<boolean> => {
+      if (!store?.slug) return false;
+      try {
+        const { purgeStoreCache } = await import("@/lib/purgeStoreCache");
+        return await purgeStoreCache(store.slug, (store as any).custom_domain, opts);
+      } catch {
+        return false;
+      }
     },
     [store?.slug, (store as any)?.custom_domain]
   );

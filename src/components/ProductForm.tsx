@@ -663,6 +663,10 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
         queryClient.invalidateQueries({ queryKey: ["best-selling-products"] }),
       ]);
       
+      // Purge before pre-warming. Running these concurrently can let prewarm
+      // re-cache the old gallery before the version bump reaches the Worker.
+      await purgeStore({ force: true });
+
       // Pre-warm edge caches so storefront reflects changes instantly.
       // Pass the product slug so /api/pdp?slug=... is warmed too — first
       // WhatsApp click after save lands on a hot KV cache (no DB hit).
@@ -670,8 +674,6 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
       import("@/lib/prewarmStore").then(({ prewarmStore }) => {
         if (storeSlug) prewarmStore(storeSlug, undefined, { hidden: !isActive, productSlug: productSlugForWarm });
       }).catch(() => {});
-      // Also purge edge cache so changes propagate immediately on storefront
-      purgeStore();
 
       if (onClose) {
         onClose();
