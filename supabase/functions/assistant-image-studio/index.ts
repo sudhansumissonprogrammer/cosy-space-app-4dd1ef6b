@@ -130,6 +130,22 @@ function b64ToBytes(b64: string): Uint8Array {
   return out;
 }
 
+async function purgeStorefrontCache(store: { slug: string; custom_domain?: string | null }) {
+  const secret = Deno.env.get("WORKER_PURGE_SECRET") || "";
+  if (!secret) return;
+  const domain = (store.custom_domain || "").replace(/^www\./, "").toLowerCase().trim();
+  const params = new URLSearchParams({ slug: store.slug });
+  if (domain) params.set("domain", domain);
+  const bases = [`https://${store.slug}.shopbanao.in`];
+  if (domain) bases.push(`https://${domain}`);
+  await Promise.allSettled(
+    bases.map((base) => fetch(`${base}/api/purge-store?${params}`, {
+      method: "POST",
+      headers: { "x-purge-secret": secret, "Cache-Control": "no-store" },
+    })),
+  );
+}
+
 /* -------------------------------- main -------------------------------- */
 
 Deno.serve(async (req) => {
@@ -154,7 +170,7 @@ Deno.serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
     const { data: store } = await admin
       .from("stores")
-      .select("id, slug, name, owner_id, theme")
+      .select("id, slug, name, owner_id, theme, custom_domain")
       .eq("id", storeId)
       .maybeSingle();
     if (!store) return json({ error: "Store not found" }, 404);
@@ -500,6 +516,10 @@ Deno.serve(async (req) => {
           .update({ attached: true, product_image_id: productImageId, product_id: productId })
           .eq("id", creativeId);
 
+        // AI Studio writes gallery rows server-side, outside the dashboard's
+        // normal product-save purge. Clear versioned PDP caches immediately.
+        await purgeStorefrontCache(store);
+
         return json({ ok: true, attached: true, primary: makePrimary, product_image_id: productImageId });
       }
 
@@ -540,6 +560,7 @@ Deno.serve(async (req) => {
           .from("store_ai_creatives")
           .update({ attached: false, product_image_id: null })
           .eq("id", creativeId);
+        await purgeStorefrontCache(store);
         return json({ ok: true, attached: false });
       }
 
