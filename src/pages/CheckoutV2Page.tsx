@@ -3957,7 +3957,7 @@ export default function CheckoutV2Page() {
         store_id: store.id, order_id: order.id,
         customer_name: fullName, customer_phone: toCanonicalIndianPhone(phone) || normalizePhone(phone), customer_email: email || undefined,
         return_url: returnUrl,
-      });
+      }, 15000);
     } catch (err: any) {
       setPendingOrder(order); setPaymentFailed(true);
       toast.error(err?.message || "Could not start payment. Please try again.");
@@ -4021,7 +4021,12 @@ export default function CheckoutV2Page() {
         surl: payuData.surl, furl: payuData.furl, curl: payuData.furl,
         notifyurl: payuData.notify_url || "", boltEnabled: "true", icp_source: "newBolt",
       };
-      const bolt = await loadPayuBolt(payuData.env === "sandbox" ? "sandbox" : "production");
+      const bolt = await Promise.race([
+        loadPayuBolt(payuData.env === "sandbox" ? "sandbox" : "production"),
+        new Promise<never>((_, reject) => {
+          window.setTimeout(() => reject(new Error("PayU took too long to open")), 12000);
+        }),
+      ]);
 
       await new Promise<void>((resolve) => {
         let settled = false;
