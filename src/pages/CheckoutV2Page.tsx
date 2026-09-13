@@ -3989,7 +3989,6 @@ export default function CheckoutV2Page() {
       toast.error("Payment gateway error. Please retry.");
       return;
     }
-    gatewayRef.current = { pg: "payu", payu_txnid: payuData.txnid };
     try {
       const pendingPayload = JSON.stringify({
         order_id: order.id, order_number: order.number,
@@ -4127,6 +4126,9 @@ export default function CheckoutV2Page() {
           s === "usercancelled" || s === "user_cancelled" ||
           s === "closed" || s === "closedbyuser" || s === "dropped" ||
           s === "bolt_closed" || s === "userclosed";
+        // Stamp PayU only once the SDK is ready to launch. If loading fails,
+        // recovery must not poll a transaction that never reached PayU.
+        gatewayRef.current = { pg: "payu", payu_txnid: payuData.txnid };
         bolt.launch(boltParams, {
           responseHandler: (response: any) => {
             const rawStatus = String(response?.response?.status || response?.status || "").toLowerCase().replace(/[\s-]/g, "");
@@ -4147,6 +4149,10 @@ export default function CheckoutV2Page() {
     } catch (err) {
       console.error("[PayU] Bolt failed to open", err);
       window.dispatchEvent(new CustomEvent("payment-ended"));
+      try { sessionStorage.removeItem(`payu_pending_${store.id}`); localStorage.removeItem(`payu_pending_${store.id}`); } catch { /* noop */ }
+      clearWaiting();
+      gatewayRef.current = {};
+      setWaiting(false);
       setPendingOrder(order); setPaymentFailed(true);
       toast.error("PayU checkout could not open. Please retry.");
     }

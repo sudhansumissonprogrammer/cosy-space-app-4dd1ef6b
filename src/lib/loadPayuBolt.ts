@@ -21,20 +21,33 @@ export async function loadPayuBolt(mode: "sandbox" | "production" = "production"
   if (!loadingPromise) {
     const SDK_URL = mode === "sandbox" ? SDK_URL_TEST : SDK_URL_PROD;
     loadingPromise = new Promise<void>((resolve, reject) => {
+      let settled = false;
+      const finish = (error?: Error) => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(watchdog);
+        if (error) reject(error);
+        else resolve();
+      };
+      const watchdog = window.setTimeout(() => {
+        const stalled = document.querySelector(`script[data-payu-bolt]`) as HTMLScriptElement | null;
+        try { stalled?.remove(); } catch {}
+        finish(new Error("PayU Bolt SDK load timed out"));
+      }, 10000);
       const existing = document.querySelector(`script[data-payu-bolt]`) as HTMLScriptElement | null;
       if (existing) {
-        existing.addEventListener("load", () => resolve());
-        existing.addEventListener("error", () => reject(new Error("PayU Bolt SDK load failed")));
+        existing.addEventListener("load", () => finish());
+        existing.addEventListener("error", () => finish(new Error("PayU Bolt SDK load failed")));
         return;
       }
       const s = document.createElement("script");
       s.src = SDK_URL;
       s.async = true;
       s.dataset.payuBolt = mode;
-      s.onload = () => resolve();
+      s.onload = () => finish();
       s.onerror = () => {
         try { s.remove(); } catch {}
-        reject(new Error("PayU Bolt SDK load failed"));
+        finish(new Error("PayU Bolt SDK load failed"));
       };
       document.head.appendChild(s);
     });
