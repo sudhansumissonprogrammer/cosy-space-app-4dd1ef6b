@@ -15,6 +15,7 @@
 - Shipped cancellation safety: paid shipped/tracked orders can be manually cancelled with commission reversal; new tracking always starts as shipped
 
 ## Open
+- [ ] Freshly connect Telegram after the latest workspace move and redeploy the order-alert function.
 - [x] Checkout loading/buffering glitch: removed address-sync dead taps; bounded payment-settings, transaction creation, and PayU opening; added retry recovery; verified production activity.
 - [x] Maviratra Imitation: compressed nine customer-feedback screenshots to WebP and added them as visible store reviews on product pages and checkout.
 - [x] Reconnect Telegram in the new workspace and refresh the order-alert function.
