@@ -39,7 +39,7 @@ export default function CategoryCrossShopCard({
     : { name: "Ring-1", slug: "ring-1", label: "Rings", action: "Shop Rings" };
   const [imagesReady, setImagesReady] = useState(false);
 
-  const { data: products = [], isLoading } = useQuery({
+  const { data: products = [], isLoading, isError } = useQuery({
     queryKey: ["serdiya-category-cross-shop", storeId, target.slug],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -112,8 +112,10 @@ export default function CategoryCrossShopCard({
                 decoding="sync"
                 className="h-full w-full object-cover"
               />
-            ) : (
+            ) : isLoading || (!imagesReady && !isError && imageUrls.length > 0) ? (
               <Skeleton key={product?.id || index} className="h-full w-full rounded-none" />
+            ) : (
+              <div key={product?.id || index} className="h-full w-full bg-muted" aria-hidden="true" />
             );
           })}
         </div>
