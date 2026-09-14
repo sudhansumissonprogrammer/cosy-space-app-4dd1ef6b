@@ -60,8 +60,7 @@ import CheckoutItemImage from "@/components/storefront/CheckoutItemImage";
 type UpiApp = "gpay" | "phonepe" | "paytm" | "bhim" | "any";
 type PayMethod = "upi" | "gateway" | "cod";
 
-const isCompleteStreetAddress = (value: unknown): boolean =>
-  String(value ?? "").trim().replace(/\s/g, "").length >= 10;
+const hasStreetAddress = (value: unknown): boolean => String(value ?? "").trim().length > 0;
 
 interface IntentState {
   status: "idle" | "loading" | "ready" | "failed";
@@ -797,7 +796,7 @@ export default function CheckoutV2Page() {
   const addressHydratedForPhoneRef = useRef<string>("");
 
   const applyPhoneLookupAddress = (addr: any) => {
-    if (!isCompleteStreetAddress(addr?.street_address) || !addr?.pincode) return false;
+    if (!hasStreetAddress(addr?.street_address) || !addr?.pincode) return false;
     setSelectedAddressId(addr.id || null);
     setFullName(addr.full_name || "");
     const canonAddrPhone = toCanonicalIndianPhone(addr.phone) || addr.phone || phone;
@@ -876,10 +875,6 @@ export default function CheckoutV2Page() {
     setOrderId(null);
     orderIdRef.current = null;
     orderSnapshotRef.current = null;
-    // Allow the UPI intents to re-mint for the new shopper's order once
-    // their address is filled (guard flag was one-shot per checkout).
-    intentsMintedForAddressRef.current = false;
-
   }, [phone]);
 
   const phoneAddressLookupRef = useRef("");
@@ -897,7 +892,7 @@ export default function CheckoutV2Page() {
   useEffect(() => {
     const canon = toCanonicalIndianPhone(phone);
     if (!store?.id || !canon) return;
-    if (isCompleteStreetAddress(streetAddress) && pincode && city && state && fullName) return;
+    if (hasStreetAddress(streetAddress) && pincode && city && state && fullName) return;
     const key = `${store.id}:${canon}`;
     if (phoneAddressLookupRef.current === key) return;
     phoneAddressLookupRef.current = key;
@@ -982,7 +977,7 @@ export default function CheckoutV2Page() {
   };
 
   const phoneValid = !!toCanonicalIndianPhone(phone);
-  const addressComplete = !!(pincode && isCompleteStreetAddress(streetAddress) && city && state && fullName);
+  const addressComplete = !!(pincode && hasStreetAddress(streetAddress) && city && state && fullName);
   // Ref mirror so async mint paths read the live value, never a stale closure.
   const addressCompleteRef = useRef(addressComplete);
   addressCompleteRef.current = addressComplete;
@@ -1235,7 +1230,7 @@ export default function CheckoutV2Page() {
           .limit(1)
           .maybeSingle();
         if (cancelled) return;
-        if (isCompleteStreetAddress(sameStore?.street_address) && sameStore?.pincode) {
+        if (hasStreetAddress(sameStore?.street_address) && sameStore?.pincode) {
           setReturningOrder(sameStore);
           return;
         }
@@ -1250,7 +1245,7 @@ export default function CheckoutV2Page() {
           .limit(1)
           .maybeSingle();
         if (cancelled) return;
-        if (isCompleteStreetAddress(anyStore?.street_address) && anyStore?.pincode) setReturningOrder(anyStore);
+        if (hasStreetAddress(anyStore?.street_address) && anyStore?.pincode) setReturningOrder(anyStore);
         else setReturningOrder(null);
       } catch { if (!cancelled) setReturningOrder(null); }
     })();
@@ -1816,7 +1811,7 @@ export default function CheckoutV2Page() {
     const nPhone = normalizePhone(f.phone);
     if (!isValidIndianPhone(nPhone)) return "Enter a valid 10-digit phone number";
     if (!/^\d{6}$/.test((f.pincode || "").replace(/\D/g, ""))) return "Enter a valid 6-digit pincode";
-    if (!isCompleteStreetAddress(f.streetAddress)) return "Enter your complete address (house, area and landmark)";
+    if (!hasStreetAddress(f.streetAddress)) return "Enter your delivery address";
     if (!f.city.trim()) return "Enter city";
     if (!f.state.trim()) return "Enter state";
     return null;
@@ -3690,25 +3685,12 @@ export default function CheckoutV2Page() {
     if (!phoneValid) return;
     autoAdvancedRef.current = true;
     setShowPayment(true);
-    const filled = addressComplete;
-    if (filled) void createOrderAndIntents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phoneValid, pincode, streetAddress, city, state, fullName, showPayment, creatingOrder, paymentConfigLoaded]);
 
-  // When the address gets filled *after* showPayment has been revealed
-  // (payment-first flow), mint the UPI intents so the tiles activate.
-  const intentsMintedForAddressRef = useRef(false);
-  useEffect(() => {
-    if (!showPayment) return;
-    if (!paymentConfigLoaded) return;
-    const filled = addressComplete;
-    if (!filled) return;
-    if (intentsMintedForAddressRef.current) return;
-    if (orderId) return; // createOrderAndIntents already ran (auto-advance branch)
-    intentsMintedForAddressRef.current = true;
-    void createOrderAndIntents();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showPayment, paymentConfigLoaded, pincode, streetAddress, city, state, fullName, orderId]);
+  // Never create/update an order merely because an address field became
+  // non-empty. The shopper may still be typing. Order creation starts only
+  // from Continue or a deliberate payment tap, preserving the complete value.
 
 
   // Desktop QR has been removed — desktop shoppers now pay via the hosted
@@ -4742,7 +4724,7 @@ export default function CheckoutV2Page() {
   const mobile = isMobile();
 
   const savedAddr = savedAddresses?.find((a: any) => a.id === selectedAddressId);
-  const addressFilled = !!(pincode && isCompleteStreetAddress(streetAddress) && city && state && fullName);
+  const addressFilled = !!(pincode && hasStreetAddress(streetAddress) && city && state && fullName);
   // One source of truth for discounts shown in the header:
   //   • coupon always counts (applies to both plans)
   //   • prepaid discount counts only when the shopper is on "Pay full"
@@ -5353,10 +5335,10 @@ export default function CheckoutV2Page() {
                     data-field="street"
                     placeholder="House no, area, village, landmark"
                     rows={3}
-                    className={`min-h-[76px] resize-none rounded-lg ${addressAttempted && !isCompleteStreetAddress(streetAddress) ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
+                    className={`min-h-[76px] resize-none rounded-lg ${addressAttempted && !hasStreetAddress(streetAddress) ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
                   />
-                  {addressAttempted && !isCompleteStreetAddress(streetAddress) && (
-                    <p className="mt-1 text-[12px] text-red-600">Enter house/flat, area and landmark</p>
+                  {addressAttempted && !hasStreetAddress(streetAddress) && (
+                    <p className="mt-1 text-[12px] text-red-600">Enter your delivery address</p>
                   )}
                 </div>
                 </form>
@@ -5402,7 +5384,7 @@ export default function CheckoutV2Page() {
                         !/^\d{6}$/.test(pincode) ? ["pincode", "Enter a valid 6-digit pincode"] as [string, string] : null,
                         !city.trim() ? ["city", "Enter your city"] as [string, string] : null,
                         !state.trim() ? ["state", "Enter your state"] as [string, string] : null,
-                        !isCompleteStreetAddress(streetAddress) ? ["street", "Enter your complete address (house, area and landmark)"] as [string, string] : null,
+                        !hasStreetAddress(streetAddress) ? ["street", "Enter your delivery address"] as [string, string] : null,
                       ].filter(Boolean) as Array<[string, string]>;
                     if (missing.length > 0) {
                       setAddressAttempted(true);
@@ -5431,6 +5413,8 @@ export default function CheckoutV2Page() {
                     if (resume) {
                       bypassAddressGateRef.current = true;
                       resume();
+                    } else if (!orderIdRef.current) {
+                      void createOrderAndIntents();
                     }
                   }}
                 >

@@ -253,7 +253,7 @@ export default function AdminOrders() {
                             <TableCell className="text-sm text-foreground">{order.stores?.name || "—"}</TableCell>
                             <TableCell className="font-medium text-foreground">{order.customer_name || "—"}</TableCell>
                             <TableCell className="text-sm text-muted-foreground">{order.customer_phone || "—"}</TableCell>
-                            <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
+                            <TableCell className="text-xs text-muted-foreground min-w-[240px] max-w-[360px] whitespace-normal break-words leading-relaxed">
                               {[order.street_address, order.city, order.state, order.pincode].filter(Boolean).join(", ")}
                             </TableCell>
                             <TableCell className="text-right">{order.currency} {Number(order.total).toFixed(2)}</TableCell>
