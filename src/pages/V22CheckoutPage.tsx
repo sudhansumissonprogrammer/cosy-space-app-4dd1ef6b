@@ -1564,7 +1564,7 @@ function V22CheckoutPageInner() {
     if (!isValidIndianPhone(normalizedPhone)) { toast.error(t("Please enter a valid 10-digit mobile number", "कृपया एक वैध 10-अंकीय मोबाइल नंबर दर्ज करें")); focusField("phone"); return; }
     if (normalizedPhone !== phone.trim()) setPhone(normalizedPhone);
     if (!pincode.trim()) { toast.error(t("Please enter your pincode", "कृपया अपना पिनकोड दर्ज करें")); focusField("pincode"); return; }
-    if (!streetAddress.trim()) { toast.error(t("Please enter your street address", "कृपया अपना पता दर्ज करें")); focusField("street"); return; }
+    if (streetAddress.trim().replace(/\s/g, "").length < 10) { toast.error(t("Please enter your complete address with house, area and landmark", "कृपया मकान, क्षेत्र और लैंडमार्क सहित पूरा पता दर्ज करें")); focusField("street"); return; }
     if (!city.trim()) { toast.error(t("Please enter your city", "कृपया अपना शहर दर्ज करें")); focusField("city"); return; }
     if (!state.trim()) { toast.error(t("Please enter your state", "कृपया अपना राज्य दर्ज करें")); focusField("state"); return; }
 

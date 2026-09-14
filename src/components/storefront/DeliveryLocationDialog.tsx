@@ -51,7 +51,7 @@ export default function DeliveryLocationDialog({ open, onClose, storeId, onSaved
 
   const onSave = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!streetAddress.trim() || !city.trim() || !pincode.trim()) {
+    if (streetAddress.trim().replace(/\s/g, "").length < 10 || !city.trim() || !pincode.trim()) {
       toast.error("Please fill address, city and pincode");
       return;
     }

@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
     // The heavy full call still runs in the background from the client.
     if (address_only) {
       const mapAddr = (row: any) => {
-        if (!row?.street_address || !row?.pincode) return null;
+        if (String(row?.street_address || "").trim().replace(/\s/g, "").length < 10 || !row?.pincode) return null;
         return {
           id: row.id ?? null,
           label: row.label ?? "Home",
@@ -271,7 +271,7 @@ Deno.serve(async (req) => {
     } | null = null;
 
     const toAddressPayload = (row: any) => {
-      if (!row?.street_address || !row?.pincode) return null;
+      if (String(row?.street_address || "").trim().replace(/\s/g, "").length < 10 || !row?.pincode) return null;
       return {
         id: row.id ?? null,
         label: row.label ?? "Home",

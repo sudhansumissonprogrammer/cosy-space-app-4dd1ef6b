@@ -897,7 +897,7 @@ export default function CheckoutV2Page() {
   useEffect(() => {
     const canon = toCanonicalIndianPhone(phone);
     if (!store?.id || !canon) return;
-    if (streetAddress && pincode && city && state && fullName) return;
+    if (isCompleteStreetAddress(streetAddress) && pincode && city && state && fullName) return;
     const key = `${store.id}:${canon}`;
     if (phoneAddressLookupRef.current === key) return;
     phoneAddressLookupRef.current = key;
@@ -3690,7 +3690,7 @@ export default function CheckoutV2Page() {
     if (!phoneValid) return;
     autoAdvancedRef.current = true;
     setShowPayment(true);
-    const filled = !!(pincode && streetAddress && city && state && fullName);
+    const filled = addressComplete;
     if (filled) void createOrderAndIntents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phoneValid, pincode, streetAddress, city, state, fullName, showPayment, creatingOrder, paymentConfigLoaded]);
@@ -3701,7 +3701,7 @@ export default function CheckoutV2Page() {
   useEffect(() => {
     if (!showPayment) return;
     if (!paymentConfigLoaded) return;
-    const filled = !!(pincode && streetAddress && city && state && fullName);
+    const filled = addressComplete;
     if (!filled) return;
     if (intentsMintedForAddressRef.current) return;
     if (orderId) return; // createOrderAndIntents already ran (auto-advance branch)
@@ -5447,7 +5447,7 @@ export default function CheckoutV2Page() {
 
 
           {/* Trust footer only shown when payment step isn't below */}
-          {!showPayment && !(pincode && streetAddress && city && state && fullName) && (
+          {!showPayment && !addressComplete && (
             <div className="pt-6 pb-2 text-center">
               <div className="text-[11px] text-muted-foreground mb-1">Powered by</div>
               <div className="inline-flex items-center justify-center gap-1.5 text-[14px] font-bold tracking-tight">
