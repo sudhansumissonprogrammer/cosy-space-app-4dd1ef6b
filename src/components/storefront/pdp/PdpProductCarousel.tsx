@@ -87,6 +87,7 @@ export default function PdpProductCarousel({
                   store={store}
                   cardStyle={cardStyle}
                   index={i}
+                  deferOffscreen={false}
                 />
               </CarouselItem>
             ))}
