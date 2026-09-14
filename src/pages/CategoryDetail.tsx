@@ -21,6 +21,7 @@ import { fetchCategoryEdge, CATEGORY_PAGE_LIMIT } from "@/lib/storefrontEdgeApi"
 import { categoryPrefetchCache, categoryPrefetchResolved } from "@/lib/prefetchCategory";
 import CategoryQuickJump from "@/components/storefront/CategoryQuickJump";
 import ComboSetCategoryShortcuts from "@/components/storefront/ComboSetCategoryShortcuts";
+import CategoryCrossShopCard, { isSerdiyaCrossShopCategory } from "@/components/storefront/CategoryCrossShopCard";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 import { hidesCategoryFilters } from "@/components/storefront/pdp/storeSections/config";
@@ -74,6 +75,7 @@ export default function CategoryDetail() {
   const showComboShortcuts =
     categorySlug === "combo-set" &&
     (store.id === "771a3012-393c-421a-b1c9-2ca918e6917f" || store.id === "04010cad-1cbe-40ac-b818-07d9a79c1bf7");
+  const showCrossShopCard = isSerdiyaCrossShopCategory(store.id, categorySlug);
   const [isMobileViewport, setIsMobileViewport] = useState(
     () => typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches,
   );
@@ -460,6 +462,14 @@ export default function CategoryDetail() {
               )
             ) : (
               <div className={gridClass}>
+                {showCrossShopCard && categorySlug && (
+                  <CategoryCrossShopCard
+                    storeId={store.id}
+                    storeSlug={slug || store.slug}
+                    currentCategorySlug={categorySlug}
+                    active={isMobileViewport}
+                  />
+                )}
                 {products.map((product, idx) => (
                   <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 4} cardStyle={cardStyle} index={idx} />
                 ))}
