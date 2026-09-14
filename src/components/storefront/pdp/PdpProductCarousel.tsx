@@ -66,7 +66,7 @@ export default function PdpProductCarousel({
   if (items.length === 0) return null;
 
   return (
-    <section className="mt-8">
+    <section className="brand-rail mt-8">
       <h2
         className="text-base sm:text-lg font-bold mb-3"
         style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}
@@ -87,6 +87,7 @@ export default function PdpProductCarousel({
                   store={store}
                   cardStyle={cardStyle}
                   index={i}
+                  deferOffscreen={false}
                 />
               </CarouselItem>
             ))}
