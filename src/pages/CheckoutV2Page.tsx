@@ -23,6 +23,7 @@ import { normalizePhone, isValidIndianPhone, toCanonicalIndianPhone } from "@/li
 import { storefrontPath } from "@/lib/subdomain";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -58,6 +59,9 @@ import CheckoutItemImage from "@/components/storefront/CheckoutItemImage";
 
 type UpiApp = "gpay" | "phonepe" | "paytm" | "bhim" | "any";
 type PayMethod = "upi" | "gateway" | "cod";
+
+const isCompleteStreetAddress = (value: unknown): boolean =>
+  String(value ?? "").trim().replace(/\s/g, "").length >= 10;
 
 interface IntentState {
   status: "idle" | "loading" | "ready" | "failed";
@@ -793,7 +797,7 @@ export default function CheckoutV2Page() {
   const addressHydratedForPhoneRef = useRef<string>("");
 
   const applyPhoneLookupAddress = (addr: any) => {
-    if (!addr?.street_address || !addr?.pincode) return false;
+    if (!isCompleteStreetAddress(addr?.street_address) || !addr?.pincode) return false;
     setSelectedAddressId(addr.id || null);
     setFullName(addr.full_name || "");
     const canonAddrPhone = toCanonicalIndianPhone(addr.phone) || addr.phone || phone;
@@ -893,7 +897,7 @@ export default function CheckoutV2Page() {
   useEffect(() => {
     const canon = toCanonicalIndianPhone(phone);
     if (!store?.id || !canon) return;
-    if (streetAddress && pincode && city && state && fullName) return;
+    if (isCompleteStreetAddress(streetAddress) && pincode && city && state && fullName) return;
     const key = `${store.id}:${canon}`;
     if (phoneAddressLookupRef.current === key) return;
     phoneAddressLookupRef.current = key;
@@ -978,7 +982,7 @@ export default function CheckoutV2Page() {
   };
 
   const phoneValid = !!toCanonicalIndianPhone(phone);
-  const addressComplete = !!(pincode && streetAddress && city && state && fullName);
+  const addressComplete = !!(pincode && isCompleteStreetAddress(streetAddress) && city && state && fullName);
   // Ref mirror so async mint paths read the live value, never a stale closure.
   const addressCompleteRef = useRef(addressComplete);
   addressCompleteRef.current = addressComplete;
@@ -1231,7 +1235,7 @@ export default function CheckoutV2Page() {
           .limit(1)
           .maybeSingle();
         if (cancelled) return;
-        if (sameStore?.street_address && sameStore?.pincode) {
+        if (isCompleteStreetAddress(sameStore?.street_address) && sameStore?.pincode) {
           setReturningOrder(sameStore);
           return;
         }
@@ -1246,7 +1250,7 @@ export default function CheckoutV2Page() {
           .limit(1)
           .maybeSingle();
         if (cancelled) return;
-        if (anyStore?.street_address && anyStore?.pincode) setReturningOrder(anyStore);
+        if (isCompleteStreetAddress(anyStore?.street_address) && anyStore?.pincode) setReturningOrder(anyStore);
         else setReturningOrder(null);
       } catch { if (!cancelled) setReturningOrder(null); }
     })();
@@ -1812,7 +1816,7 @@ export default function CheckoutV2Page() {
     const nPhone = normalizePhone(f.phone);
     if (!isValidIndianPhone(nPhone)) return "Enter a valid 10-digit phone number";
     if (!/^\d{6}$/.test((f.pincode || "").replace(/\D/g, ""))) return "Enter a valid 6-digit pincode";
-    if (!f.streetAddress.trim()) return "Enter your street address";
+    if (!isCompleteStreetAddress(f.streetAddress)) return "Enter your complete address (house, area and landmark)";
     if (!f.city.trim()) return "Enter city";
     if (!f.state.trim()) return "Enter state";
     return null;
@@ -1891,6 +1895,11 @@ export default function CheckoutV2Page() {
     attempt = 0,
     userInitiated = false,
   ): Promise<PendingOrder> => {
+    // Payment actions can resume from a callback captured before the address
+    // sheet opened. Always read the live ref here; reading component-state from
+    // that old closure submitted the first typed character (for example "7")
+    // even though the shopper had completed the full address before continuing.
+    const liveAddress = addrFieldsRef.current;
     const orderNotes = appliedCoupon
       ? `Coupon: ${appliedCoupon.code} (-${formatPrice(couponDiscount, currency)})`
       : undefined;
@@ -1905,11 +1914,11 @@ export default function CheckoutV2Page() {
           checkout_token: checkoutTokenRef.current,
         order: {
           total, currency, status: "pending",
-          customer_name: fullName.trim(),
-          customer_phone: toCanonicalIndianPhone(phone) || normalizePhone(phone),
+          customer_name: liveAddress.fullName.trim(),
+          customer_phone: toCanonicalIndianPhone(liveAddress.phone) || normalizePhone(liveAddress.phone),
           customer_email: email.trim() || null,
-          street_address: streetAddress.trim(),
-          city: city.trim(), state: state.trim(), pincode: pincode.trim(),
+          street_address: liveAddress.streetAddress.trim(),
+          city: liveAddress.city.trim(), state: liveAddress.state.trim(), pincode: liveAddress.pincode.trim(),
           payment_method: paymentMethodHint,
           notes: orderNotes,
           storefront_customer_id: customer?.id ?? null,
@@ -3681,7 +3690,7 @@ export default function CheckoutV2Page() {
     if (!phoneValid) return;
     autoAdvancedRef.current = true;
     setShowPayment(true);
-    const filled = !!(pincode && streetAddress && city && state && fullName);
+    const filled = addressComplete;
     if (filled) void createOrderAndIntents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phoneValid, pincode, streetAddress, city, state, fullName, showPayment, creatingOrder, paymentConfigLoaded]);
@@ -3692,7 +3701,7 @@ export default function CheckoutV2Page() {
   useEffect(() => {
     if (!showPayment) return;
     if (!paymentConfigLoaded) return;
-    const filled = !!(pincode && streetAddress && city && state && fullName);
+    const filled = addressComplete;
     if (!filled) return;
     if (intentsMintedForAddressRef.current) return;
     if (orderId) return; // createOrderAndIntents already ran (auto-advance branch)
@@ -4733,7 +4742,7 @@ export default function CheckoutV2Page() {
   const mobile = isMobile();
 
   const savedAddr = savedAddresses?.find((a: any) => a.id === selectedAddressId);
-  const addressFilled = !!(pincode && streetAddress && city && state && fullName);
+  const addressFilled = !!(pincode && isCompleteStreetAddress(streetAddress) && city && state && fullName);
   // One source of truth for discounts shown in the header:
   //   • coupon always counts (applies to both plans)
   //   • prepaid discount counts only when the shopper is on "Pay full"
@@ -5032,8 +5041,8 @@ export default function CheckoutV2Page() {
                       className="text-[12px] font-semibold border border-[#111] rounded-md px-2.5 py-1 flex-shrink-0"
                     >Change</button>
                   </div>
-                  {/* Line 2: full address in max 2 lines */}
-                  <div className="text-[12.5px] text-foreground/80 mt-1 line-clamp-2 leading-snug">
+                  {/* Show the complete saved address; never visually shorten it. */}
+                  <div className="text-[12.5px] text-foreground/80 mt-1 whitespace-normal break-words leading-snug">
                     {streetAddress}, {city}, {state} {pincode}
                   </div>
                   {deliveryEta && (
@@ -5335,7 +5344,7 @@ export default function CheckoutV2Page() {
 
                 <div>
                   <Label htmlFor="ck-street" className="text-[12px] text-muted-foreground">Complete Address *</Label>
-                  <Input
+                  <Textarea
                     id="ck-street"
                     name="address-line1"
                     autoComplete="street-address"
@@ -5343,10 +5352,11 @@ export default function CheckoutV2Page() {
                     onChange={(e) => setStreetAddress(e.target.value)}
                     data-field="street"
                     placeholder="House no, area, village, landmark"
-                    className={`h-11 rounded-lg ${addressAttempted && !streetAddress.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
+                    rows={3}
+                    className={`min-h-[76px] resize-none rounded-lg ${addressAttempted && !isCompleteStreetAddress(streetAddress) ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
                   />
-                  {addressAttempted && !streetAddress.trim() && (
-                    <p className="mt-1 text-[12px] text-red-600">Enter Complete Address</p>
+                  {addressAttempted && !isCompleteStreetAddress(streetAddress) && (
+                    <p className="mt-1 text-[12px] text-red-600">Enter house/flat, area and landmark</p>
                   )}
                 </div>
                 </form>
@@ -5392,7 +5402,7 @@ export default function CheckoutV2Page() {
                         !/^\d{6}$/.test(pincode) ? ["pincode", "Enter a valid 6-digit pincode"] as [string, string] : null,
                         !city.trim() ? ["city", "Enter your city"] as [string, string] : null,
                         !state.trim() ? ["state", "Enter your state"] as [string, string] : null,
-                        !streetAddress.trim() ? ["street", "Enter your complete address"] as [string, string] : null,
+                        !isCompleteStreetAddress(streetAddress) ? ["street", "Enter your complete address (house, area and landmark)"] as [string, string] : null,
                       ].filter(Boolean) as Array<[string, string]>;
                     if (missing.length > 0) {
                       setAddressAttempted(true);
@@ -5437,7 +5447,7 @@ export default function CheckoutV2Page() {
 
 
           {/* Trust footer only shown when payment step isn't below */}
-          {!showPayment && !(pincode && streetAddress && city && state && fullName) && (
+          {!showPayment && !addressComplete && (
             <div className="pt-6 pb-2 text-center">
               <div className="text-[11px] text-muted-foreground mb-1">Powered by</div>
               <div className="inline-flex items-center justify-center gap-1.5 text-[14px] font-bold tracking-tight">
