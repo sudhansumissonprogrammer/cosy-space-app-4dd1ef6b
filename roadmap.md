@@ -27,3 +27,4 @@
 - [x] Store Assistant: short direct answers + per-store business insights (30d orders/revenue/catalog/carts → findings + ranked actions)
 - [x] Reconnect Telegram connector in current workspace (multi-group order alerts); `TELEGRAM_API_KEY` available
 - [ ] Verify other integrations after workspace move if needed.
+- [ ] Preserve customer-entered delivery addresses exactly through checkout/payment retries and show the full saved value in dashboard, without adding stricter validation.
