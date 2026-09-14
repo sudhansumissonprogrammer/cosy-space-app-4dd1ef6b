@@ -1,22 +1,23 @@
-# Permanent checkout address integrity
+# Mobile Combo-set category shortcuts
 
-## Goal
-Ensure a customer’s complete delivery address is preserved exactly, displayed fully, and never replaced by a partial value during checkout or payment retries.
+## Scope
+- Apply only to the **Combo-set** category for the two requested Serdiya stores: `serdiyajewellers.shop` and `serdiya.com`.
+- Show only on mobile; desktop and every other store/category remain unchanged.
 
 ## Changes
-- Use one consistent completeness rule across current checkout, legacy checkout, saved addresses, location popup, and returning-customer autofill.
-- Validate name, Indian phone, six-digit pincode, city, state, and a meaningful full street address before saving or paying.
-- On payment retries, preserve an already-complete stored address if a browser sends an empty or partial replacement.
-- Add strict length limits and normalized whitespace before address data is stored.
-- Keep the full address wrapped and visible in checkout and order details rather than clipping it.
-- Add focused tests for partial typing, stale payment callbacks, retries, and full-address persistence.
+- Add two compact cards directly below the existing filter row, side by side.
+- **Chains:** show four chain product photos in one small collage with a **Shop Chains** action.
+- **Rings:** show four Ring-1 product photos in one small collage with a **Shop Rings** action.
+- Make the entire card and its action open the corresponding category page.
+- Use existing image optimization, storefront paths, theme colors, and accessible labels.
 
-## Safety
-- Server validation remains the final authority, so older clients cannot save incomplete delivery details.
-- Existing complete addresses are never overwritten by shorter in-progress text.
-- Ambiguous historical addresses will not be guessed or bulk-replaced.
+## Loading and safety
+- Fetch only eight lightweight preview records for these cards.
+- On the targeted mobile Combo-set page, render the shortcut cards first and wait for their images to settle before revealing the normal Combo-set product grid.
+- Treat failed/missing images safely so one bad photo cannot leave the page stuck.
+- Keep current category caching, filtering, pagination, analytics, and desktop behavior intact.
 
 ## Verification
-- Test the mobile checkout with a long multi-line address through address save, payment opening, and order persistence.
-- Confirm the stored order, checkout summary, dashboard detail, Telegram/copy text, and invoice all receive the complete value.
-- Check current diagnostics and focused tests before completion.
+- Check both requested stores at a 360px mobile viewport.
+- Confirm placement under the filter, compact sizing, four images per card, correct Chain/Ring navigation, shortcut-first loading, and no console/runtime errors.
+- Confirm another category and desktop view do not show the cards.
