@@ -1078,10 +1078,9 @@ Deno.serve(async (req) => {
     const shipCity = keep(order.city, reusableOrder?.city);
     const shipState = keep(order.state, reusableOrder?.state);
     const shipPincode = keep(order.pincode, reusableOrder?.pincode);
-    const streetLength = shipStreet.replace(/\s/g, "").length;
-    if (!shipName || streetLength < 10 || !shipCity || !shipState || !/^\d{6}$/.test(shipPincode.replace(/\D/g, ""))) {
+    if (!shipName || !shipStreet || !shipCity || !shipState || !/^\d{6}$/.test(shipPincode.replace(/\D/g, ""))) {
       return new Response(
-        JSON.stringify({ error: "Delivery address is incomplete — enter house/flat, area and landmark." }),
+        JSON.stringify({ error: "Delivery address is required." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
