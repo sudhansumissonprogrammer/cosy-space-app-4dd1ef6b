@@ -407,6 +407,7 @@ export default function CategoryDetail() {
         <ComboSetCategoryShortcuts
           storeId={store.id}
           storeSlug={slug || store.slug}
+          active={isMobileViewport}
           onReady={markComboShortcutsReady}
         />
       )}

@@ -27,6 +27,7 @@ const GROUPS: ShortcutGroup[] = [
 interface ComboSetCategoryShortcutsProps {
   storeId: string;
   storeSlug: string;
+  active: boolean;
   onReady: () => void;
 }
 
@@ -49,6 +50,7 @@ async function preloadImages(urls: string[]): Promise<void> {
 export default function ComboSetCategoryShortcuts({
   storeId,
   storeSlug,
+  active,
   onReady,
 }: ComboSetCategoryShortcutsProps) {
   const { data, isLoading } = useQuery({
@@ -73,6 +75,7 @@ export default function ComboSetCategoryShortcuts({
     },
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
+    enabled: active,
   });
 
   const imageUrls = useMemo(
@@ -123,8 +126,10 @@ export default function ComboSetCategoryShortcuts({
                     loading="eager"
                     className="h-full w-full object-cover"
                   />
-                ) : (
+                ) : isLoading ? (
                   <Skeleton key={index} className="h-full w-full rounded-none" />
+                ) : (
+                  <div key={index} className="h-full w-full bg-muted" aria-hidden="true" />
                 );
               })}
             </div>
