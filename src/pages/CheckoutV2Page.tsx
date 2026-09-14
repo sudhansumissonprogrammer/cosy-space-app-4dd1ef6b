@@ -875,10 +875,6 @@ export default function CheckoutV2Page() {
     setOrderId(null);
     orderIdRef.current = null;
     orderSnapshotRef.current = null;
-    // Allow the UPI intents to re-mint for the new shopper's order once
-    // their address is filled (guard flag was one-shot per checkout).
-    intentsMintedForAddressRef.current = false;
-
   }, [phone]);
 
   const phoneAddressLookupRef = useRef("");
@@ -896,7 +892,7 @@ export default function CheckoutV2Page() {
   useEffect(() => {
     const canon = toCanonicalIndianPhone(phone);
     if (!store?.id || !canon) return;
-    if (isCompleteStreetAddress(streetAddress) && pincode && city && state && fullName) return;
+    if (hasStreetAddress(streetAddress) && pincode && city && state && fullName) return;
     const key = `${store.id}:${canon}`;
     if (phoneAddressLookupRef.current === key) return;
     phoneAddressLookupRef.current = key;
@@ -1234,7 +1230,7 @@ export default function CheckoutV2Page() {
           .limit(1)
           .maybeSingle();
         if (cancelled) return;
-        if (isCompleteStreetAddress(sameStore?.street_address) && sameStore?.pincode) {
+        if (hasStreetAddress(sameStore?.street_address) && sameStore?.pincode) {
           setReturningOrder(sameStore);
           return;
         }
@@ -1249,7 +1245,7 @@ export default function CheckoutV2Page() {
           .limit(1)
           .maybeSingle();
         if (cancelled) return;
-        if (isCompleteStreetAddress(anyStore?.street_address) && anyStore?.pincode) setReturningOrder(anyStore);
+        if (hasStreetAddress(anyStore?.street_address) && anyStore?.pincode) setReturningOrder(anyStore);
         else setReturningOrder(null);
       } catch { if (!cancelled) setReturningOrder(null); }
     })();
