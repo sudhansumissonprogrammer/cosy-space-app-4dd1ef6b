@@ -20,6 +20,7 @@ import BackToTop from "@/components/storefront/BackToTop";
 import { fetchCategoryEdge, CATEGORY_PAGE_LIMIT } from "@/lib/storefrontEdgeApi";
 import { categoryPrefetchCache, categoryPrefetchResolved } from "@/lib/prefetchCategory";
 import CategoryQuickJump from "@/components/storefront/CategoryQuickJump";
+import ComboSetCategoryShortcuts from "@/components/storefront/ComboSetCategoryShortcuts";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 import { hidesCategoryFilters } from "@/components/storefront/pdp/storeSections/config";
@@ -70,6 +71,15 @@ export default function CategoryDetail() {
   const queryClient = useQueryClient();
   const themeConfig = useStorefrontThemeConfig(store.id);
   const storeTheme = (store as any)?.theme || "starter";
+  const showComboShortcuts =
+    categorySlug === "combo-set" &&
+    (store.id === "771a3012-393c-421a-b1c9-2ca918e6917f" || store.id === "04010cad-1cbe-40ac-b818-07d9a79c1bf7");
+  const [isMobileViewport, setIsMobileViewport] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches,
+  );
+  const [comboShortcutsReady, setComboShortcutsReady] = useState(
+    () => !showComboShortcuts || typeof window === "undefined" || !window.matchMedia("(max-width: 767px)").matches,
+  );
   const cardStyle = themeConfig?.product_card_style || (storeTheme === "theme-13" ? "style-4" : "style-1");
   const isMenuStyle = cardStyle === "style-4";
   useCanonical(categorySlug ? `${getStoreBaseUrl(slug || store.slug, (store as any)?.custom_domain)}/category/${categorySlug}` : null);
@@ -86,6 +96,20 @@ export default function CategoryDetail() {
 
   const [sort, setSort] = useState<SortKey>("default");
   const [categorySearchOpen, setCategorySearchOpen] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 767px)");
+    const sync = () => setIsMobileViewport(media.matches);
+    media.addEventListener("change", sync);
+    sync();
+    return () => media.removeEventListener("change", sync);
+  }, []);
+
+  useEffect(() => {
+    setComboShortcutsReady(!showComboShortcuts || !isMobileViewport);
+  }, [showComboShortcuts, isMobileViewport]);
+
+  const markComboShortcutsReady = useCallback(() => setComboShortcutsReady(true), []);
 
   // Worker-inlined category payload (Phase A): { category, products, total }
   const getInlineCategory = () => {
@@ -379,10 +403,19 @@ export default function CategoryDetail() {
         </Suspense>
       )}
 
+      {showComboShortcuts && (
+        <ComboSetCategoryShortcuts
+          storeId={store.id}
+          storeSlug={slug || store.slug}
+          active={isMobileViewport}
+          onReady={markComboShortcutsReady}
+        />
+      )}
+
       {/* Reserve the product area so the footer does not jump up the page
           while the app boots (carousel rails are far taller than a grid page). */}
       <div style={{ minHeight: useBrandCarousels ? 2200 : 600 }} className={hideFilters ? "mt-1" : "mt-3"}>
-        {categoryLoading || productsLoading ? (
+        {!comboShortcutsReady || categoryLoading || productsLoading ? (
           <div className={gridClass}>
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="overflow-hidden rounded-2xl border border-border bg-card">

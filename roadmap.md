@@ -28,3 +28,4 @@
 - [x] Reconnect Telegram connector in current workspace (multi-group order alerts); `TELEGRAM_API_KEY` available
 - [ ] Verify other integrations after workspace move if needed.
 - [x] Preserve customer-entered delivery addresses exactly through checkout/payment retries and show the full saved value in dashboard, without adding stricter validation.
+- [x] Serdiya Combo-set mobile shortcuts: compact four-image Chain and Ring cards below filters, loaded before the product grid and hidden everywhere else.
