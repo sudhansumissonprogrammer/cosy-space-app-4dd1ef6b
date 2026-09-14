@@ -17,6 +17,7 @@
 ## Open
 - [x] Freshly connect Telegram after the latest workspace move and redeploy the order-alert function.
 - [x] Checkout loading/buffering glitch: removed address-sync dead taps; bounded payment-settings, transaction creation, and PayU opening; added retry recovery; verified production activity.
+- [x] Checkout address integrity: submit live completed address values, reject one-letter/partial addresses, show the full address, and repair Serdiya order #8812.
 - [x] Maviratra Imitation: compressed nine customer-feedback screenshots to WebP and added them as visible store reviews on product pages and checkout.
 - [x] Reconnect Telegram in the new workspace and refresh the order-alert function.
 - [x] Connect Telegram in the current workspace and redeploy the order-alert function.
