@@ -3,6 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Star, Check, ThumbsUp } from "lucide-react";
 import { hasCustomPdpSections } from "@/components/storefront/pdp/storeSections/config";
+import { Link } from "react-router-dom";
+import { storefrontPath } from "@/lib/subdomain";
+import { useStoreReviews } from "@/hooks/useStoreReviews";
 
 interface FakeReview {
   id: string;
@@ -22,7 +25,7 @@ interface Props {
   reviewCount: number;
   productId: string;
   storeId: string;
-  onReviewSubmitted: () => void;
+  storeSlug: string;
 }
 
 export default function CustomerReviews({
@@ -32,9 +35,8 @@ export default function CustomerReviews({
   reviewCount,
   productId,
   storeId,
-  onReviewSubmitted,
+  storeSlug,
 }: Props) {
-  const [showAll, setShowAll] = useState(false);
   const [activeTab, setActiveTab] = useState<"reviews" | "description" | "returns">("reviews");
   const [showForm, setShowForm] = useState(false);
   const [formName, setFormName] = useState("");
@@ -43,7 +45,8 @@ export default function CustomerReviews({
   const [formText, setFormText] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const realMapped = realReviews.map((r) => ({
+  const { reviews: approvedReviews, total: approvedTotal, average: approvedAverage, counts: approvedCounts } = useStoreReviews(storeId, 12);
+  const realMapped = approvedReviews.map((r) => ({
     id: r.id,
     name: r.customer_name,
     rating: r.rating,
@@ -55,21 +58,14 @@ export default function CustomerReviews({
     isReal: true,
   }));
 
-  const allReviews = [...realMapped, ...reviews.map((r) => ({ ...r, isReal: false }))];
-  const displayed = showAll ? allReviews : allReviews.slice(0, 3);
-  const totalCount = reviewCount + realReviews.length;
-  const avgRating =
-    realReviews.length > 0
-      ? (rating * reviewCount + realReviews.reduce((s, r) => s + r.rating, 0)) / totalCount
-      : rating;
+  const allReviews = realMapped;
+  const displayed = allReviews.slice(0, 12);
+  const totalCount = approvedTotal;
+  const avgRating = approvedAverage;
 
   const starCounts = useMemo(() => {
-    const counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-    allReviews.forEach((r) => {
-      if (counts[r.rating as keyof typeof counts] !== undefined) counts[r.rating as keyof typeof counts]++;
-    });
-    return counts;
-  }, [allReviews]);
+    return approvedCounts;
+  }, [approvedCounts]);
 
   const handleSubmit = async () => {
     if (!formName.trim() || formRating === 0) {
@@ -83,18 +79,19 @@ export default function CustomerReviews({
       customer_name: formName.trim(),
       rating: formRating,
       review_text: formText.trim() || null,
+      is_hidden: true,
+      approval_status: "pending",
     });
     setSubmitting(false);
     if (error) {
       toast.error("Failed to submit review");
       return;
     }
-    toast.success("Review submitted! Thank you 🎉");
+    toast.success("Thanks! Your review was submitted for approval.");
     setFormName("");
     setFormRating(0);
     setFormText("");
     setShowForm(false);
-    onReviewSubmitted();
   };
 
   return (
@@ -249,10 +246,10 @@ export default function CustomerReviews({
             ))}
           </div>
 
-          {allReviews.length > 3 && !showAll && (
-            <button onClick={() => setShowAll(true)} className="mt-3 text-sm font-semibold text-primary hover:underline">
-              View all {allReviews.length} reviews →
-            </button>
+          {totalCount > 12 && (
+            <Link to={storefrontPath(storeSlug, "reviews")} className="mt-3 inline-block text-sm font-semibold text-primary hover:underline">
+              View all {totalCount} reviews →
+            </Link>
           )}
         </div>
       )}
