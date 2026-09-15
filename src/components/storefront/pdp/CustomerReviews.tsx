@@ -7,32 +7,13 @@ import { Link } from "react-router-dom";
 import { storefrontPath } from "@/lib/subdomain";
 import { useStoreReviews } from "@/hooks/useStoreReviews";
 
-interface FakeReview {
-  id: string;
-  name: string;
-  rating: number;
-  text: string;
-  daysAgo: number;
-  verified: boolean;
-  helpful: number;
-  avatar: string;
-}
-
 interface Props {
-  reviews: FakeReview[];
-  realReviews: { id: string; customer_name: string; rating: number; review_text: string | null; is_verified: boolean; created_at: string }[];
-  rating: number;
-  reviewCount: number;
   productId: string;
   storeId: string;
   storeSlug: string;
 }
 
 export default function CustomerReviews({
-  reviews,
-  realReviews,
-  rating,
-  reviewCount,
   productId,
   storeId,
   storeSlug,
@@ -54,7 +35,6 @@ export default function CustomerReviews({
     daysAgo: Math.max(1, Math.floor((Date.now() - new Date(r.created_at).getTime()) / 86400000)),
     verified: r.is_verified,
     helpful: 0,
-    avatar: `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(r.customer_name)}&backgroundColor=c0aede,d1d4f9,b6e3f4,ffd5dc,ffdfbf`,
     isReal: true,
   }));
 
@@ -217,7 +197,9 @@ export default function CustomerReviews({
             {displayed.map((review) => (
               <div key={review.id} className="rounded-xl border border-border p-4 transition-[transform,opacity,colors,box-shadow] hover:shadow-sm">
                 <div className="flex items-start gap-3">
-                  <img src={review.avatar} alt={review.name} className="h-9 w-9 rounded-full bg-accent" loading="lazy" />
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-bold text-accent-foreground" aria-hidden>
+                    {review.name.charAt(0).toUpperCase()}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-foreground">{review.name}</span>
