@@ -9,6 +9,7 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { canonicalPhone } from "./wa-autologin-token.ts";
+import { mintUserSession } from "./auth-session-mint.ts";
 
 export type MintedSession = {
   access_token: string;
@@ -64,22 +65,12 @@ export async function mintSessionForPhone(
 
     if (!userId) return null;
 
-    const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
-      type: "magiclink",
-      email: phoneEmail,
-    });
-    const tokenHash = (linkData as any)?.properties?.hashed_token;
-    if (linkErr || !tokenHash) return null;
-
-    const { data: vData, error: vErr } = await anon.auth.verifyOtp({
-      type: "magiclink",
-      token_hash: tokenHash,
-    });
-    if (vErr || !vData?.session) return null;
+    const session = await mintUserSession(admin, anon, userId, phoneEmail, "wa-mint-session");
+    if (!session) return null;
 
     return {
-      access_token: vData.session.access_token,
-      refresh_token: vData.session.refresh_token,
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
       phone,
       user_id: userId,
     };

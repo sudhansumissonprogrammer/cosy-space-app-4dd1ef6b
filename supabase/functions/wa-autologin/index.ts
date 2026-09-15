@@ -14,6 +14,7 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { verifyAutoLoginToken } from "../_shared/wa-autologin-token.ts";
+import { mintUserSession } from "../_shared/auth-session-mint.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -107,23 +108,9 @@ Deno.serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Mint session via magiclink → verifyOtp (no password rotation, so the
-    // user's other devices stay signed in). Mirrors phone-login.
-    const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
-      type: "magiclink",
-      email: phoneEmail,
-    });
-    const tokenHash = (linkData as any)?.properties?.hashed_token;
-    if (linkErr || !tokenHash) {
+    const session = await mintUserSession(admin, anon, userId, phoneEmail, "wa-autologin");
+    if (!session) {
       return new Response(JSON.stringify({ error: "Could not mint session" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-    const { data: vData, error: vErr } = await anon.auth.verifyOtp({
-      type: "magiclink",
-      token_hash: tokenHash,
-    });
-    if (vErr || !vData?.session) {
-      return new Response(JSON.stringify({ error: "Could not verify magiclink" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
@@ -132,8 +119,8 @@ Deno.serve(async (req) => {
       phone,
       address,
       session: {
-        access_token: vData.session.access_token,
-        refresh_token: vData.session.refresh_token,
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
       },
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {

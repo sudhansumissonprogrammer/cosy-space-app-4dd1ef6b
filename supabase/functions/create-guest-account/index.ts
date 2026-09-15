@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { mintUserSession } from "../_shared/auth-session-mint.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -394,7 +395,7 @@ Deno.serve(async (req) => {
     }
 
     // 5) Mint session WITHOUT rotating password.
-    const session = await mintSession(supabase, anonClient, phoneEmail, userId);
+    const session = await mintUserSession(supabase, anonClient, userId, phoneEmail, "create-guest-account");
 
     return new Response(
       JSON.stringify({
@@ -415,72 +416,3 @@ Deno.serve(async (req) => {
   }
 });
 
-/**
- * Mint a session WITHOUT changing the user's password.
- * Uses admin.generateLink({type:'magiclink'}) → anon.verifyOtp.
- *
- * IMPORTANT: on rate-limit (429) we return null instead of rotating the
- * password — rotating would invalidate every refresh token on the user's
- * other devices. The caller proceeds without a new session in that case.
- */
-async function mintSession(
-  admin: any,
-  anon: any,
-  email: string,
-  userId: string
-): Promise<{ access_token: string; refresh_token: string } | null> {
-  let rateLimited = false;
-  try {
-    const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
-      type: "magiclink",
-      email,
-    });
-    const tokenHash = linkData?.properties?.hashed_token;
-    if (!linkErr && tokenHash) {
-      const { data: vData, error: vErr } = await anon.auth.verifyOtp({
-        type: "magiclink",
-        token_hash: tokenHash,
-      });
-      if (!vErr && vData?.session) {
-        return {
-          access_token: vData.session.access_token,
-          refresh_token: vData.session.refresh_token,
-        };
-      }
-      console.warn("[create-guest-account] verifyOtp failed:", vErr?.message);
-    } else {
-      const msg = (linkErr?.message || "").toLowerCase();
-      const status = (linkErr as any)?.status;
-      rateLimited =
-        status === 429 ||
-        msg.includes("rate limit") ||
-        msg.includes("too many") ||
-        msg.includes("over_email_send_rate_limit");
-      console.warn("[create-guest-account] generateLink failed:", linkErr?.message, "rateLimited=", rateLimited);
-    }
-  } catch (e) {
-    console.warn("[create-guest-account] magiclink mint threw:", (e as Error).message);
-  }
-
-  if (rateLimited) return null;
-
-  // Fallback (non-rate-limit failures only): rotate password.
-  try {
-    const freshPassword = crypto.randomUUID().slice(0, 16) + "Aa1!";
-    const { error: updErr } = await admin.auth.admin.updateUserById(userId, {
-      password: freshPassword,
-    });
-    if (updErr) return null;
-    const { data: sData, error: sErr } = await anon.auth.signInWithPassword({
-      email,
-      password: freshPassword,
-    });
-    if (sErr || !sData?.session) return null;
-    return {
-      access_token: sData.session.access_token,
-      refresh_token: sData.session.refresh_token,
-    };
-  } catch {
-    return null;
-  }
-}
