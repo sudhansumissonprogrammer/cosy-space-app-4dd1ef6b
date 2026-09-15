@@ -2588,6 +2588,7 @@ export type Database = {
       }
       product_reviews: {
         Row: {
+          approval_status: string
           created_at: string
           customer_name: string
           id: string
@@ -2602,6 +2603,7 @@ export type Database = {
           title: string | null
         }
         Insert: {
+          approval_status?: string
           created_at?: string
           customer_name: string
           id?: string
@@ -2616,6 +2618,7 @@ export type Database = {
           title?: string | null
         }
         Update: {
+          approval_status?: string
           created_at?: string
           customer_name?: string
           id?: string
