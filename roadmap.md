@@ -33,4 +33,3 @@
 - [x] Serdiya Combo-set mobile shortcuts: compact four-image Chain and Ring cards below filters, loaded before the product grid and hidden everywhere else.
 - [x] PDP carousel spacing: disable grid-only off-screen height reservation inside horizontal recommendation rows.
 - [x] Serdiya Ring-1 and Chain mobile categories: add a first-position four-image card linking to the opposite category.
-- [x] Shopper sign-in reliability: serialize one-time session links, preserve other-device sessions, align stale-lock recovery, and never report success without a session.

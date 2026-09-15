@@ -222,12 +222,8 @@ export default function Login() {
         | { verified?: boolean; message?: string; session?: { access_token: string; refresh_token: string } | null }
         | null;
 
-      if (error || !payload?.verified) {
+      if (error || !payload?.verified || !payload.session) {
         toast.error(payload?.message || "Incorrect or expired code.");
-        return;
-      }
-      if (!payload.session) {
-        toast.error(payload.message || "Your code was verified, but sign-in could not finish. Please try again.");
         return;
       }
 

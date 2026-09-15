@@ -396,12 +396,6 @@ Deno.serve(async (req) => {
 
     // 5) Mint session WITHOUT rotating password.
     const session = await mintUserSession(supabase, anonClient, userId, phoneEmail, "create-guest-account");
-    if (!session) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Could not create session" }),
-        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
 
     return new Response(
       JSON.stringify({

@@ -17,13 +17,9 @@ export async function mintUserSession(
 ): Promise<SessionTokens | null> {
   const owner = crypto.randomUUID();
   let claimed = false;
-  // The database lease lasts 15 seconds. Wait slightly longer than that so a
-  // request can actually recover an abandoned lease instead of giving up at
-  // roughly 7.5 seconds while the stale lease is still active.
-  const claimDeadline = Date.now() + 16_500;
 
   try {
-    while (Date.now() < claimDeadline) {
+    for (let attempt = 0; attempt < 50; attempt += 1) {
       const { data, error } = await admin.rpc("claim_auth_session_mint", {
         _user_id: userId,
         _owner: owner,
@@ -36,11 +32,7 @@ export async function mintUserSession(
         console.warn(`[${logLabel}] session lease failed:`, error.message);
         return null;
       }
-      const remaining = claimDeadline - Date.now();
-      if (remaining <= 0) break;
-      await new Promise((resolve) =>
-        setTimeout(resolve, Math.min(remaining, 125 + Math.floor(Math.random() * 125))),
-      );
+      await new Promise((resolve) => setTimeout(resolve, 100 + Math.floor(Math.random() * 100)));
     }
 
     if (!claimed) {

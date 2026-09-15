@@ -127,10 +127,7 @@ Deno.serve(async (req) => {
 
     const session = await mintUserSession(admin, anon, userId, userEmail, "merchant-otp-verify");
     if (!session) {
-      return json(
-        { verified: true, session: null, error: "session_unavailable", message: "Verified, but sign-in could not finish. Please try again." },
-        503,
-      );
+      return json({ verified: true, session: null, message: "Verified. Please sign in." });
     }
 
     return json({
