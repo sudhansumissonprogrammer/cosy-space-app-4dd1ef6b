@@ -166,6 +166,7 @@ export default function EditReviewDialog({ storeId, review, onClose, onSaved }: 
           product_id: productId || null,
           is_verified: verified,
           is_hidden: false,
+           approval_status: "approved",
           created_at: new Date(createdAt.getTime() - index * 1000).toISOString(),
         }));
         const { error } = await supabase.from("product_reviews").insert(rows);

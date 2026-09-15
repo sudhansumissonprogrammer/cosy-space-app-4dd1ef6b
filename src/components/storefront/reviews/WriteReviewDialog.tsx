@@ -68,7 +68,7 @@ export default function WriteReviewDialog({ productId, storeId, productName, onC
       return;
     }
 
-    toast.success("Thanks! Your review has been posted 🎉");
+    toast.success("Thanks! Your review was submitted for approval.");
     onSubmitted();
     onClose();
   };

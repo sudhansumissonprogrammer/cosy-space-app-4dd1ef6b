@@ -28,7 +28,7 @@ export default function CheckoutReviewsTeaser({ storeId, label }: Props) {
   // Every review (capped at 100) — the SAME shared summary RPC the PDP uses,
   // so a shopper arriving from a PDP reuses the warm cache and pays no extra
   // fetch. The list is JSON only; no review media loads until the sheet opens.
-  const { reviews, total, average } = useStoreReviews(storeId, 100);
+  const { reviews, average } = useStoreReviews(storeId, 1000);
   const [open, setOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
 
