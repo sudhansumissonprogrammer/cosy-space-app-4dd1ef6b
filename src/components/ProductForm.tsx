@@ -590,7 +590,10 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
             name: v.name.trim(),
             sku: null,
             price: null,
-            stock_quantity: 0,
+            // Variant inventory is not edited separately in this form, so it
+            // must follow the product's stock setting. Saving 0 here made every
+            // newly added variant fail checkout as "Out of stock".
+            stock_quantity: productData.stock_quantity,
             display_order: i,
             is_active: v.isActive,
           };
