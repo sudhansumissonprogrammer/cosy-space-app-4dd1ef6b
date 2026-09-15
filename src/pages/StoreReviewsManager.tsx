@@ -146,8 +146,9 @@ export default function StoreReviewsManager() {
     const other = pinned[swapIdx];
     await withBusy(row.id, async () => {
       // Swap ranks safely (avoid unique conflicts by staging one to a high value)
-      const rowRank = row.pinned_rank!;
-      const otherRank = other.pinned_rank!;
+      const rowRank = row.pinned_rank;
+      const otherRank = other.pinned_rank;
+      if (rowRank === null || otherRank === null) return;
       await supabase.from("product_reviews").update({ pinned_rank: 9999 }).eq("id", row.id);
       await supabase.from("product_reviews").update({ pinned_rank: rowRank }).eq("id", other.id);
       await supabase.from("product_reviews").update({ pinned_rank: otherRank }).eq("id", row.id);

@@ -171,7 +171,7 @@ export default function CustomerReviews({
             <div className="mt-5 space-y-2">
               {[5, 4, 3, 2, 1].map((stars) => {
                 const count = starCounts[stars as keyof typeof starCounts];
-                const pct = allReviews.length > 0 ? Math.round((count / allReviews.length) * 100) : 0;
+                 const pct = totalCount > 0 ? Math.round((count / totalCount) * 100) : 0;
                 return (
                   <div key={stars} className="flex items-center gap-2.5">
                     <div className="flex items-center gap-0.5 w-24 shrink-0">
