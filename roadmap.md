@@ -15,6 +15,8 @@
 - Shipped cancellation safety: paid shipped/tracked orders can be manually cancelled with commission reversal; new tracking always starts as shipped
 
 ## Open
+- [ ] Connect Telegram fresh after the latest workspace move and redeploy the order-alert function.
+- [ ] Fix newly added product variants being saved as sold out and repair affected live variants.
 - [x] Connect Telegram fresh in the current workspace and redeploy the order-alert function.
 - [x] Review approval and display consistency: 12 on PDP, all approved reviews in checkout/review page, featured ordering everywhere.
 - [x] Freshly connect Telegram after the latest workspace move and redeploy the order-alert function.
