@@ -2530,8 +2530,10 @@ export default function CheckoutV2Page() {
           const { data, error } = await supabase.functions.invoke("phone-login", {
             body: { phone: normalized, store_id: store.id, name: fullName || null, claim_order_id: orderId || undefined },
           });
-          if (error) throw error;
           const res = data as { session?: { access_token?: string; refresh_token?: string } } | null;
+          if (error || !res?.session?.access_token || !res.session.refresh_token) {
+            throw new Error(error?.message || "Could not sign in to show your orders");
+          }
           if (res?.session?.access_token && res?.session?.refresh_token) {
             await supabaseStorefront.auth.setSession({
               access_token: res.session.access_token,
