@@ -48,16 +48,10 @@ function ReviewCard({ name, text, rating, product, verified }: {
   );
 }
 
-const defaultReviews = [
-  { customer_name: "Arjun K.", review_text: "Amazing quality hoodie! The fabric is so soft and the fit is perfect.", rating: 5, is_verified: true, products: { name: "Premium Hoodie" } },
-  { customer_name: "Priya S.", review_text: "Loved the oversized fit. Exactly as shown in pictures. Very premium feel.", rating: 5, is_verified: true, products: { name: "Oversized Tee" } },
-  { customer_name: "Rahul M.", review_text: "Fast delivery and excellent packaging. The design is unique.", rating: 4, is_verified: true, products: { name: "Graphic Hoodie" } },
-];
-
 export default function ReviewsSection({ storeId }: { storeId: string }) {
   const { reviews } = useStoreReviews(storeId, 12);
 
-  const displayReviews = reviews && reviews.length > 0 ? reviews : defaultReviews;
+  if (reviews.length === 0) return null;
 
   return (
     <section style={{ padding: "48px 15px" }}>
@@ -86,7 +80,7 @@ export default function ReviewsSection({ storeId }: { storeId: string }) {
           Customers love our products and we always strive to please them all.
         </p>
         <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide">
-          {displayReviews.map((r: any, i: number) => (
+          {reviews.map((r, i) => (
             <ReviewCard
               key={i}
               name={r.customer_name}

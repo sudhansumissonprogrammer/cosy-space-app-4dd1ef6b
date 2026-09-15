@@ -70,7 +70,7 @@ export default function ReviewsShowcase({ productId, storeId, storeSlug, product
         </p>
       )}
 
-       {reviews.length > 0 && (
+      {reviews.length > 0 && (
         <div className="mb-5 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 scrollbar-hide">
           {shown.map((r, ri) => (
             <div key={r.id} className="w-[78%] shrink-0 snap-start sm:w-[46%] lg:w-[32%]">
@@ -81,7 +81,6 @@ export default function ReviewsShowcase({ productId, storeId, storeSlug, product
               />
             </div>
           ))}
-
         </div>
       )}
 

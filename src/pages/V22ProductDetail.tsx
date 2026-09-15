@@ -1065,7 +1065,7 @@ export default function V22ProductDetail() {
         {/* Customer Reviews — deferred until near viewport */}
         <DeferUntilVisible rootMargin="600px" minHeight={240}>
           <Suspense fallback={null}>
-             <CustomerReviews reviews={[]} realReviews={[]} rating={stats.rating} reviewCount={stats.reviewCount} productId={product.id} storeId={store.id} storeSlug={store.slug} />
+             <CustomerReviews productId={product.id} storeId={store.id} storeSlug={store.slug} />
           </Suspense>
         </DeferUntilVisible>
       </div>
