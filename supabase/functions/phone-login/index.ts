@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { mintUserSession } from "../_shared/auth-session-mint.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,8 +18,7 @@ const corsHeaders = {
  *     `admin.generateLink({ type: 'magiclink' })` and exchanging the returned
  *     `hashed_token` via anon `auth.verifyOtp({ type: 'magiclink', token_hash })`.
  *     This preserves refresh tokens on the user's other devices.
- *  4. Fallback: if generateLink fails, rotate password + signInWithPassword.
- *  5. Ensure storefront_customers row + optional claim of a fresh order.
+ *  4. Ensure storefront_customers row + optional claim of a fresh order.
  */
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -185,7 +185,7 @@ Deno.serve(async (req) => {
     }
 
     // 5) Mint a session WITHOUT rotating password (preserves other devices).
-    const session = await mintSession(adminClient, anonClient, phoneEmail, userId);
+    const session = await mintUserSession(adminClient, anonClient, userId, phoneEmail, "phone-login");
     if (!session) {
       return new Response(
         JSON.stringify({ error: "Could not create session" }),
@@ -213,75 +213,3 @@ Deno.serve(async (req) => {
   }
 });
 
-/**
- * Mint a session for an existing user WITHOUT changing their password.
- * Uses admin.generateLink({type:'magiclink'}) → anon.verifyOtp.
- *
- * IMPORTANT: if generateLink is rate-limited (429 / "rate limit"), we do NOT
- * fall back to password rotation — that would invalidate every existing
- * refresh token on the user's other devices (the exact bug we just fixed).
- * We only fall back to password rotation on hard, non-rate-limit errors.
- */
-async function mintSession(
-  admin: any,
-  anon: any,
-  email: string,
-  userId: string
-): Promise<{ access_token: string; refresh_token: string } | null> {
-  let rateLimited = false;
-  try {
-    const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
-      type: "magiclink",
-      email,
-    });
-    const tokenHash = linkData?.properties?.hashed_token;
-    if (!linkErr && tokenHash) {
-      const { data: vData, error: vErr } = await anon.auth.verifyOtp({
-        type: "magiclink",
-        token_hash: tokenHash,
-      });
-      if (!vErr && vData?.session) {
-        return {
-          access_token: vData.session.access_token,
-          refresh_token: vData.session.refresh_token,
-        };
-      }
-      console.warn("[phone-login] verifyOtp failed:", vErr?.message);
-    } else {
-      const msg = (linkErr?.message || "").toLowerCase();
-      const status = (linkErr as any)?.status;
-      rateLimited =
-        status === 429 ||
-        msg.includes("rate limit") ||
-        msg.includes("too many") ||
-        msg.includes("over_email_send_rate_limit");
-      console.warn("[phone-login] generateLink failed:", linkErr?.message, "rateLimited=", rateLimited);
-    }
-  } catch (e) {
-    console.warn("[phone-login] magiclink mint threw:", (e as Error).message);
-  }
-
-  // Rate-limited: bail out instead of rotating password. The caller's
-  // existing session (if any) stays valid; UI shows a soft retry message.
-  if (rateLimited) return null;
-
-  // Fallback (non-rate-limit failures only): rotate password.
-  try {
-    const freshPassword = crypto.randomUUID().slice(0, 16) + "Aa1!";
-    const { error: updErr } = await admin.auth.admin.updateUserById(userId, {
-      password: freshPassword,
-    });
-    if (updErr) return null;
-    const { data: sData, error: sErr } = await anon.auth.signInWithPassword({
-      email,
-      password: freshPassword,
-    });
-    if (sErr || !sData?.session) return null;
-    return {
-      access_token: sData.session.access_token,
-      refresh_token: sData.session.refresh_token,
-    };
-  } catch {
-    return null;
-  }
-}

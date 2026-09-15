@@ -10,6 +10,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { buildCors } from "../_shared/security.ts";
 import { canonicalPhone, hashOtp, safeEqual } from "../_shared/otp.ts";
+import { mintUserSession } from "../_shared/auth-session-mint.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -124,29 +125,16 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Mint a session without touching the password.
-    const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
-      type: "magiclink",
-      email: userEmail,
-    });
-    const tokenHash = (linkData as any)?.properties?.hashed_token;
-    if (linkErr || !tokenHash) {
-      return json({ verified: true, session: null, message: "Verified. Please sign in." });
-    }
-
-    const { data: vData, error: vErr } = await anon.auth.verifyOtp({
-      type: "magiclink",
-      token_hash: tokenHash,
-    });
-    if (vErr || !vData?.session) {
+    const session = await mintUserSession(admin, anon, userId, userEmail, "merchant-otp-verify");
+    if (!session) {
       return json({ verified: true, session: null, message: "Verified. Please sign in." });
     }
 
     return json({
       verified: true,
       session: {
-        access_token: vData.session.access_token,
-        refresh_token: vData.session.refresh_token,
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
       },
     });
   } catch (e) {
