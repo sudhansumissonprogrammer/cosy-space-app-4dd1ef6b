@@ -10,6 +10,7 @@ export interface StoreReview {
   media: { url: string; type: "image" | "video" }[];
   pinned_rank?: number | null;
   is_hidden?: boolean;
+  approval_status?: "pending" | "approved";
   products?: { name: string; slug: string } | null;
 }
 

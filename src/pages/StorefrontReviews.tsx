@@ -1,13 +1,11 @@
 import { useMemo, useState, lazy, Suspense } from "react";
 import { useOutletContext, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { storefrontPath } from "@/lib/subdomain";
 import { ArrowLeft, ImageIcon, Loader2 } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import ReviewCard, { ReviewStars } from "@/components/storefront/reviews/ReviewCard";
-import { REVIEW_SELECT, normalizeReview, ratingBreakdown, type StoreReview } from "@/components/storefront/reviews/reviewTypes";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { useStoreReviews } from "@/hooks/useStoreReviews";
 
 const ReviewMediaLightbox = lazy(() => import("@/components/storefront/reviews/ReviewMediaLightbox"));
 
@@ -22,24 +20,7 @@ export default function StorefrontReviews() {
 
   useDocumentTitle(`Customer Reviews — ${store?.name || "Store"}`);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["store-reviews", store?.id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("product_reviews")
-        .select(`${REVIEW_SELECT},products(name,slug)`)
-        .eq("store_id", store.id)
-        .order("created_at", { ascending: false })
-        .limit(60);
-      return (data || []).map(normalizeReview) as StoreReview[];
-    },
-    enabled: !!store?.id,
-    staleTime: 10 * 60 * 1000,
-    refetchOnWindowFocus: false,
-  });
-
-  const reviews = data || [];
-  const { counts, total, average } = useMemo(() => ratingBreakdown(reviews), [reviews]);
+  const { reviews, counts, total, average, isLoading } = useStoreReviews(store?.id, 1000);
 
   const gallery = useMemo(() => reviews.flatMap((r) => r.media), [reviews]);
 
@@ -48,6 +29,8 @@ export default function StorefrontReviews() {
     if (sort === "highest") list.sort((a, b) => b.rating - a.rating);
     else if (sort === "lowest") list.sort((a, b) => a.rating - b.rating);
     else if (sort === "media") list.sort((a, b) => b.media.length - a.media.length);
+    // "recent" intentionally retains the canonical featured-first order from
+    // the shared review feed, then newest approved reviews.
     return list;
   }, [reviews, starFilter, sort]);
 

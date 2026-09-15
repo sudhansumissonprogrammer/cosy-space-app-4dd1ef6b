@@ -21,8 +21,11 @@ export function useStoreReviews(storeId?: string, limit = 20) {
   const query = useQuery({
     queryKey: ["store-pdp-reviews", storeId, limit],
     queryFn: async () => {
+      if (!storeId) {
+        return { reviews: [] as StoreReview[], summary: ratingBreakdown([]) };
+      }
       const { data } = await (supabase as any).rpc("get_store_review_summary", {
-        _store_id: storeId!,
+        _store_id: storeId,
         _limit: limit,
       });
       const payload = (Array.isArray(data) ? data[0] : data) || {};

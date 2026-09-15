@@ -1,5 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useStoreReviews } from "@/hooks/useStoreReviews";
 
 const STAR_COLOR = "var(--v17-primary, #1B5E4B)";
 const STAR_EMPTY = "color-mix(in srgb, var(--v17-text, #1a1a1a) 20%, transparent)";
@@ -56,19 +55,7 @@ const defaultReviews = [
 ];
 
 export default function ReviewsSection({ storeId }: { storeId: string }) {
-  const { data: reviews } = useQuery({
-    queryKey: ["storefront-reviews-v17", storeId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("product_reviews")
-        .select("*, products(name)")
-        .eq("store_id", storeId)
-        .order("created_at", { ascending: false })
-        .limit(10);
-      return data || [];
-    },
-    staleTime: 5 * 60_000,
-  });
+  const { reviews } = useStoreReviews(storeId, 12);
 
   const displayReviews = reviews && reviews.length > 0 ? reviews : defaultReviews;
 
@@ -105,7 +92,7 @@ export default function ReviewsSection({ storeId }: { storeId: string }) {
               name={r.customer_name}
               text={r.review_text || "Great product!"}
               rating={r.rating}
-              product={(r.products as any)?.name || ""}
+              product=""
               verified={r.is_verified}
             />
           ))}

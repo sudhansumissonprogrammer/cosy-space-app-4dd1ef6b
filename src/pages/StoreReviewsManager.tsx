@@ -20,6 +20,7 @@ import {
   Loader2,
   Pencil,
   Plus,
+  CheckCircle2,
 } from "lucide-react";
 import EditReviewDialog from "@/components/dashboard/EditReviewDialog";
 
@@ -35,6 +36,7 @@ interface ReviewRow {
   created_at: string;
   media: any;
   pinned_rank: number | null;
+  approval_status: "pending" | "approved";
   products?: { name: string; slug: string } | null;
 }
 
@@ -62,7 +64,7 @@ export default function StoreReviewsManager() {
       const { data, error } = await supabase
         .from("product_reviews")
         .select(
-          "id,product_id,customer_name,rating,title,review_text,is_verified,is_hidden,created_at,media,pinned_rank,products(name,slug)"
+          "id,product_id,customer_name,rating,title,review_text,is_verified,is_hidden,approval_status,created_at,media,pinned_rank,products(name,slug)"
         )
         .eq("store_id", storeId!)
         .order("pinned_rank", { ascending: true, nullsFirst: false })
@@ -76,12 +78,13 @@ export default function StoreReviewsManager() {
   const pinned = useMemo(
     () =>
       [...rows]
-        .filter((r) => r.pinned_rank !== null && r.pinned_rank !== undefined)
+        .filter((r) => r.approval_status === "approved" && r.pinned_rank !== null && r.pinned_rank !== undefined)
         .sort((a, b) => (a.pinned_rank ?? 99) - (b.pinned_rank ?? 99)),
     [rows]
   );
+  const pending = useMemo(() => rows.filter((r) => r.approval_status === "pending"), [rows]);
   const unpinned = useMemo(
-    () => rows.filter((r) => r.pinned_rank === null || r.pinned_rank === undefined),
+    () => rows.filter((r) => r.approval_status === "approved" && (r.pinned_rank === null || r.pinned_rank === undefined)),
     [rows]
   );
 
@@ -161,6 +164,17 @@ export default function StoreReviewsManager() {
     });
   }
 
+  async function approve(row: ReviewRow) {
+    await withBusy(row.id, async () => {
+      const { error } = await supabase
+        .from("product_reviews")
+        .update({ approval_status: "approved", is_hidden: false })
+        .eq("id", row.id);
+      if (error) throw error;
+      toast.success("Review approved and published");
+    });
+  }
+
   async function del(row: ReviewRow) {
     if (!confirm(`Delete review by ${row.customer_name}? This cannot be undone.`)) return;
     await withBusy(row.id, async () => {
@@ -170,7 +184,7 @@ export default function StoreReviewsManager() {
     });
   }
 
-  function Row({ row, showMoveButtons }: { row: ReviewRow; showMoveButtons?: boolean }) {
+  function Row({ row, showMoveButtons, isPending }: { row: ReviewRow; showMoveButtons?: boolean; isPending?: boolean }) {
     const busy = busyId === row.id;
     const isPinned = row.pinned_rank !== null && row.pinned_rank !== undefined;
     const mediaArr = Array.isArray(row.media) ? row.media : [];
@@ -233,7 +247,11 @@ export default function StoreReviewsManager() {
 
         <div className="mt-3 flex flex-wrap gap-1.5">
           {busy && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-          {isPinned ? (
+          {isPending ? (
+            <Button size="sm" disabled={busy} onClick={() => approve(row)}>
+              <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Approve
+            </Button>
+          ) : isPinned ? (
             <>
               {showMoveButtons && (
                 <>
@@ -263,13 +281,13 @@ export default function StoreReviewsManager() {
           <Button size="sm" variant="outline" disabled={busy} onClick={() => setEditing(row)}>
             <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
           </Button>
-          <Button size="sm" variant="outline" disabled={busy} onClick={() => toggleHidden(row)}>
+          {!isPending && <Button size="sm" variant="outline" disabled={busy} onClick={() => toggleHidden(row)}>
             {row.is_hidden ? (
               <><Eye className="mr-1 h-3.5 w-3.5" /> Unhide</>
             ) : (
               <><EyeOff className="mr-1 h-3.5 w-3.5" /> Hide</>
             )}
-          </Button>
+          </Button>}
           <Button
             size="sm"
             variant="ghost"
@@ -290,8 +308,7 @@ export default function StoreReviewsManager() {
         <div>
           <h1 className="text-2xl font-bold">Reviews</h1>
           <p className="text-sm text-muted-foreground">
-            Add reviews yourself, choose which appear on the product page (up to {MAX_PINNED}), reorder
-            them, hide, or delete.
+             Approve shopper reviews, add reviews yourself, feature them in order, hide, or delete.
           </p>
         </div>
         <Button onClick={() => setAdding(true)} disabled={!storeId}>
@@ -299,6 +316,21 @@ export default function StoreReviewsManager() {
         </Button>
       </div>
 
+
+      <section>
+        <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-muted-foreground">
+          Pending approval ({pending.length})
+        </h2>
+        {pending.length === 0 ? (
+          <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+            No reviews are waiting for approval.
+          </p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {pending.map((r) => <Row key={r.id} row={r} isPending />)}
+          </div>
+        )}
+      </section>
 
       <section>
         <div className="mb-2 flex items-center justify-between">
