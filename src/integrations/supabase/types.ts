@@ -234,6 +234,24 @@ export type Database = {
         }
         Relationships: []
       }
+      auth_session_mint_leases: {
+        Row: {
+          expires_at: string
+          owner: string
+          user_id: string
+        }
+        Insert: {
+          expires_at: string
+          owner: string
+          user_id: string
+        }
+        Update: {
+          expires_at?: string
+          owner?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       back_in_stock_waitlist: {
         Row: {
           created_at: string
@@ -5790,6 +5808,10 @@ export type Database = {
         Returns: string
       }
       check_product_limit: { Args: { _user_id: string }; Returns: Json }
+      claim_auth_session_mint: {
+        Args: { _owner: string; _user_id: string }
+        Returns: boolean
+      }
       claim_coupon: {
         Args: { _coupon_id: string; _store_id: string }
         Returns: boolean
@@ -6178,6 +6200,10 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      release_auth_session_mint: {
+        Args: { _owner: string; _user_id: string }
+        Returns: undefined
       }
       release_wa_marketing_attempt: {
         Args: { _claim_id: string }
