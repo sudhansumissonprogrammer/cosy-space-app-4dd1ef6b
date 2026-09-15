@@ -49,7 +49,7 @@ function ReviewCard({ name, text, rating, product, verified }: {
 }
 
 export default function ReviewsSection({ storeId }: { storeId: string }) {
-  const { reviews } = useStoreReviews(storeId, 12);
+  const { reviews } = useStoreReviews(storeId, 14);
 
   if (reviews.length === 0) return null;
 

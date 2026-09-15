@@ -40,7 +40,7 @@ interface ReviewRow {
   products?: { name: string; slug: string } | null;
 }
 
-const MAX_PINNED = 8;
+const MAX_PINNED = 14;
 
 export default function StoreReviewsManager() {
   const { storeSlug } = useParams<{ storeSlug: string }>();
@@ -274,7 +274,7 @@ export default function StoreReviewsManager() {
               variant="default"
               disabled={busy || !canPinMore || row.is_hidden}
               onClick={() => pin(row)}
-              title={!canPinMore ? "Max 8 featured — unpin one first" : ""}
+              title={!canPinMore ? `Max ${MAX_PINNED} featured — unpin one first` : ""}
             >
               <Pin className="mr-1 h-3.5 w-3.5" /> Feature on PDP
             </Button>

@@ -29,11 +29,11 @@ export default function ReviewsShowcase({ productId, storeId, storeSlug, product
 
   // Store-wide reviews — shared cache with the gallery rating badge, so this
   // section renders instantly when the badge has already fetched them.
-  // Product pages intentionally show at most 12 approved reviews. The complete
+  // Product pages intentionally show at most 14 approved reviews. The complete
   // list remains available on the dedicated reviews page and in checkout.
-  const { reviews, counts, total, average } = useStoreReviews(storeId, 12);
+  const { reviews, counts, total, average } = useStoreReviews(storeId, 14);
 
-  const shown = useMemo(() => reviews.slice(0, 12), [reviews]);
+  const shown = useMemo(() => reviews.slice(0, 14), [reviews]);
 
   // Shared gallery indexes across EVERY loaded review so arrows work in both
   // the strip and the expanded grid.
