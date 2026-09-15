@@ -26,7 +26,7 @@ export default function CustomerReviews({
   const [formText, setFormText] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const { reviews: approvedReviews, total: approvedTotal, average: approvedAverage, counts: approvedCounts } = useStoreReviews(storeId, 12);
+  const { reviews: approvedReviews, total: approvedTotal, average: approvedAverage, counts: approvedCounts } = useStoreReviews(storeId, 14);
   const realMapped = approvedReviews.map((r) => ({
     id: r.id,
     name: r.customer_name,
@@ -39,7 +39,7 @@ export default function CustomerReviews({
   }));
 
   const allReviews = realMapped;
-  const displayed = allReviews.slice(0, 12);
+  const displayed = allReviews.slice(0, 14);
   const totalCount = approvedTotal;
   const avgRating = approvedAverage;
 
