@@ -9,7 +9,7 @@
  *  - Nothing renders (no layout shift, no placeholder) until reviews exist.
  *  - The full review sheet is only mounted on tap.
  */
-import { useEffect, useMemo, useState, lazy, Suspense } from "react";
+import { useEffect, useMemo, useRef, useState, lazy, Suspense, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { BadgeCheck, PenLine, X } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -46,11 +46,25 @@ export default function CheckoutReviewsTeaser({
   // fetch. The list is JSON only; no review media loads until the sheet opens.
   const { reviews, average, total } = useStoreReviews(storeId, limit);
   const [open, setOpen] = useState(false);
+  const { reviews: allReviews, isFetching: allReviewsLoading } = useStoreReviews(open ? storeId : undefined, 1000);
   const [writing, setWriting] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
   const [thumbStart, setThumbStart] = useState(0);
+  const [themeFonts, setThemeFonts] = useState<CSSProperties>({});
+  const teaserRef = useRef<HTMLButtonElement | null>(null);
 
-  const shown = reviews;
+  const shown = open && allReviews.length > 0 ? allReviews : reviews;
+
+  const openReviews = () => {
+    const styles = teaserRef.current ? window.getComputedStyle(teaserRef.current) : null;
+    const headingFont = styles?.getPropertyValue("--storefront-heading-font").trim();
+    const bodyFont = styles?.getPropertyValue("--storefront-body-font").trim();
+    setThemeFonts({
+      ...(headingFont ? { "--review-heading-font": headingFont } : {}),
+      ...(bodyFont ? { "--review-body-font": bodyFont } : {}),
+    } as CSSProperties);
+    setOpen(true);
+  };
 
   // Cards inside the sheet mount 10 at a time while the shopper scrolls, so
   // opening it never floods the checkout with dozens of image requests.
@@ -89,10 +103,12 @@ export default function CheckoutReviewsTeaser({
   return (
     <>
       <Button
+        ref={teaserRef}
         variant="outline"
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={openReviews}
         className="mt-2 h-auto w-full justify-start gap-2 overflow-hidden rounded-lg border-border bg-card px-2 py-1.5 text-left text-card-foreground shadow-sm hover:bg-accent/40"
+        style={{ fontFamily: "var(--storefront-body-font, inherit)" }}
         aria-label="See customer reviews"
       >
         {thumbs.length > 0 && (
@@ -132,10 +148,13 @@ export default function CheckoutReviewsTeaser({
           aria-label="Customer reviews"
         >
           <div className="absolute inset-0 bg-foreground/50" onClick={() => setOpen(false)} aria-hidden />
-          <div className="relative mx-auto flex w-full max-w-md flex-col overflow-hidden rounded-t-2xl bg-background text-foreground max-h-[88dvh]">
+          <div
+            className="relative mx-auto flex w-full max-w-md flex-col overflow-hidden rounded-t-2xl bg-background text-foreground max-h-[88dvh]"
+            style={{ ...themeFonts, fontFamily: "var(--review-body-font, var(--storefront-body-font, inherit))" }}
+          >
             <div className="flex flex-shrink-0 items-center justify-between border-b border-border px-5 py-3">
               <div>
-                <div className="text-[16px] font-bold">Customer reviews</div>
+                <div className="text-[16px] font-bold" style={{ fontFamily: "var(--review-heading-font, var(--storefront-heading-font, inherit))" }}>Customer reviews</div>
                 <div className="mt-0.5 flex items-center gap-1.5">
                   <ReviewStars rating={average} className="h-3.5 w-3.5" activeClassName="fill-warning text-warning" />
                   <span className="text-xs text-muted-foreground">{total} reviews</span>
@@ -159,12 +178,15 @@ export default function CheckoutReviewsTeaser({
                   <ReviewCard
                     key={r.id}
                     review={r}
-                    compact
                     minimalOverlay
+                    showFullText
                     onOpenMedia={r.media.length ? (i) => setGalleryIndex(offsets[ri] + i) : undefined}
                   />
                 ))}
               </div>
+              {allReviewsLoading && allReviews.length === 0 && total > reviews.length && (
+                <p className="py-3 text-center text-xs text-muted-foreground" role="status">Loading all reviews…</p>
+              )}
               {!sheetDone && <div ref={attachSentinel} className="h-8" aria-hidden />}
             </div>
 
