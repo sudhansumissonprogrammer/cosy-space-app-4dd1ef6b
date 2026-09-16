@@ -1,7 +1,7 @@
 # ShopBanao Premium Product Film
 
 ## Goal
-Create a polished 33-second vertical motion-graphics film for ShopBanao, inspired by the uploaded reference’s cinematic depth and pacing—not copied frame-for-frame. The final deliverable will be a 1080×1920 MP4 using ShopBanao’s real logo, real product interface, and accurate feature claims.
+Create a polished 20-second vertical motion-graphics film for ShopBanao, inspired by the uploaded reference’s cinematic depth and pacing—not copied frame-for-frame. The final deliverable will be a 1080×1920 MP4 using ShopBanao’s real logo, real product interface, and accurate feature claims.
 
 ## Creative direction
 - **Style:** cinematic commerce infrastructure; deep near-black background, electric ShopBanao blue, cool white type, restrained cyan highlights.
@@ -11,20 +11,18 @@ Create a polished 33-second vertical motion-graphics film for ShopBanao, inspire
 - **Pacing:** immediate visual hook, rapid feature proof in the middle, confident slower brand close.
 
 ## Script and scene flow
-1. **0–3s — Hook**  
-   Darkness reveals the ShopBanao bag-and-lightning logo. Copy: **“Your business deserves more than a basic store.”**
-2. **3–7s — Store creation**  
-   A cursor selects **“Create your store”**; a premium storefront expands from a compact setup panel. Copy: **“Build a premium ecommerce store.”**
-3. **7–11s — Commerce experience**  
-   Product discovery, product page, cart, and compact checkout flow through one continuous floating-phone move. Copy: **“Designed to convert.”**
-4. **11–15s — Payments and orders**  
-   UPI, Razorpay, Cashfree, PayU, and COD signals resolve into a confirmed order. Copy: **“Payments that fit India.”**
-5. **15–20s — Operations**  
-   Dashboard cards reveal orders, inventory, customers, analytics, shipping, and recovery workflows. Copy: **“Run everything from one place.”**
-6. **20–24s — Conversations and automation**  
-   WhatsApp ordering, Telegram alerts, and the AI store assistant connect across luminous paths. Copy: **“Sell. Support. Automate.”**
-7. **24–28s — Scale proof**  
-   Store themes and mobile storefronts multiply into a controlled visual field; contour rings expand behind them. Copy: **“Everything you need to scale.”**
+1. **0–2s — Hook**  
+   A sharp light sweep reveals the ShopBanao bag-and-lightning logo. Copy: **“Build more than a store.”**
+2. **2–5s — Premium store**  
+   A compact setup panel transforms into a polished mobile storefront, product page, and cart. Copy: **“Premium ecommerce. Ready to sell.”**
+3. **5–8s — Conversion**  
+   Product discovery flows directly into the compact checkout and a confirmed order. Copy: **“Designed to convert.”**
+4. **8–11s — Payments**  
+   UPI, Razorpay, Cashfree, PayU, and COD signals orbit the confirmed order. Copy: **“Payments built for India.”**
+5. **11–14s — Operations**  
+   Orders, inventory, customers, analytics, shipping, and recovery cards assemble into one dashboard. Copy: **“Run everything in one place.”**
+6. **14–17s — Automation and scale**  
+   WhatsApp, Telegram, AI tools, and multiple storefront themes connect across luminous paths. Copy: **“Everything you need to scale.”**
 8. **28–33s — Brand close**  
    Panels collapse into the ShopBanao logo. Final copy: **“ShopBanao”** / **“Build and scale your business with no subscription.”** Small truthful qualifier: **“2% per order.”**
 
