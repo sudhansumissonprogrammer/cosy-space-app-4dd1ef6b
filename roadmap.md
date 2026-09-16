@@ -45,4 +45,4 @@
 
 - [x] Polish the approved 30-second ShopBanao v3 film without changing its core story or narration.
 - [ ] Create a second 33-second ShopBanao SaaS explainer inspired by the uploaded cinematic AI-agent reference.
-- [ ] Connect Telegram fresh for the new workspace and redeploy the affected notification function.
+- [x] Connect Telegram fresh for the new workspace and redeploy the affected notification function.
