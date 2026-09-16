@@ -58,7 +58,7 @@ import AutoCouponHint from "@/components/storefront/AutoCouponHint";
 import { useWaCouponPreview } from "@/hooks/useWaCouponPreview";
 
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
-const ReviewsShowcase = lazy(() => import("@/components/storefront/pdp/ReviewsShowcase"));
+const CheckoutReviewsTeaser = lazy(() => import("@/components/storefront/checkout/CheckoutReviewsTeaser"));
 import PdpReviewsBadge from "@/components/storefront/pdp/PdpReviewsBadge";
 const PdpCarousels = lazy(() => import("@/components/storefront/pdp/PdpCarousels"));
 const WristlifeSections = lazy(() => import("@/components/storefront/pdp/storeSections/WristlifeSections"));
@@ -1198,6 +1198,20 @@ export default function ProductDetail() {
             </div>
           )}
 
+          <div id="reviews-anchor">
+            <DeferUntilVisible rootMargin="200px" minHeight={54}>
+              <Suspense fallback={null}>
+                <CheckoutReviewsTeaser
+                  storeId={store.id}
+                  storeSlug={store.slug}
+                  productId={product.id}
+                  productName={product.name}
+                  limit={14}
+                />
+              </Suspense>
+            </DeferUntilVisible>
+          </div>
+
           {/* Delivery timeline (Order → Shipping → Delivery) */}
           {!isOutOfStock && <DeliveryTimeline storeId={store.id} />}
 
@@ -1286,16 +1300,6 @@ export default function ProductDetail() {
 
       <div className="px-4 sm:px-0">
 
-
-
-        {/* Customer Reviews — shown above "Complete the look" */}
-        <div id="reviews-anchor">
-          <DeferUntilVisible rootMargin="600px" minHeight={240}>
-            <Suspense fallback={null}>
-              <ReviewsShowcase productId={product.id} storeId={store.id} storeSlug={store.slug} productName={product.name} />
-            </Suspense>
-          </DeferUntilVisible>
-        </div>
 
 
         {/* Complete the Look — deferred until near viewport */}
