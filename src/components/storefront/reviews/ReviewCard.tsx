@@ -3,11 +3,21 @@ import { Star, BadgeCheck, Play, Expand } from "lucide-react";
 import ReviewMediaLightbox from "./ReviewMediaLightbox";
 import { formatReviewDate, type StoreReview } from "./reviewTypes";
 
-export function ReviewStars({ rating, className = "h-4 w-4" }: { rating: number; className?: string }) {
+export function ReviewStars({
+  rating,
+  className = "h-4 w-4",
+  activeClassName = "fill-emerald-500 text-emerald-500",
+  inactiveClassName = "text-foreground/20",
+}: {
+  rating: number;
+  className?: string;
+  activeClassName?: string;
+  inactiveClassName?: string;
+}) {
   return (
     <div className="flex items-center gap-0.5" aria-label={`${rating} out of 5 stars`}>
       {[1, 2, 3, 4, 5].map((s) => (
-        <Star key={s} className={`${className} ${s <= Math.round(rating) ? "fill-emerald-500 text-emerald-500" : "text-black/20"}`} />
+        <Star key={s} className={`${className} ${s <= Math.round(rating) ? activeClassName : inactiveClassName}`} />
       ))}
     </div>
   );

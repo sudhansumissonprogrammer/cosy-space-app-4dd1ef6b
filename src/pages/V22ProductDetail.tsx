@@ -45,7 +45,7 @@ import PartialPaymentTrustCard from "@/components/storefront/PartialPaymentTrust
 import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
-const CustomerReviews = lazy(() => import("@/components/storefront/pdp/CustomerReviews"));
+const CheckoutReviewsTeaser = lazy(() => import("@/components/storefront/checkout/CheckoutReviewsTeaser"));
 const PdpCarousels = lazy(() => import("@/components/storefront/pdp/PdpCarousels"));
 import PdpUpsellSection from "@/components/storefront/apps/Upsell/PdpUpsellSection";
 
@@ -967,6 +967,20 @@ export default function V22ProductDetail() {
             </div>
           )}
 
+          <div id="reviews-anchor">
+            <DeferUntilVisible rootMargin="200px" minHeight={54}>
+              <Suspense fallback={null}>
+                <CheckoutReviewsTeaser
+                  storeId={store.id}
+                  storeSlug={store.slug}
+                  productId={product.id}
+                  productName={product.name}
+                  limit={14}
+                />
+              </Suspense>
+            </DeferUntilVisible>
+          </div>
+
           {/* Delivery timeline (Order → Shipping → Delivery) */}
           {!isOutOfStock && <DeliveryTimeline storeId={store.id} />}
 
@@ -1062,12 +1076,6 @@ export default function V22ProductDetail() {
           </Suspense>
         </DeferUntilVisible>
 
-        {/* Customer Reviews — deferred until near viewport */}
-        <DeferUntilVisible rootMargin="600px" minHeight={240}>
-          <Suspense fallback={null}>
-             <CustomerReviews productId={product.id} storeId={store.id} storeSlug={store.slug} />
-          </Suspense>
-        </DeferUntilVisible>
       </div>
 
       {/* Portal: render fixed elements outside PageTransition animation container */}

@@ -9,28 +9,46 @@
  *  - Nothing renders (no layout shift, no placeholder) until reviews exist.
  *  - The full review sheet is only mounted on tap.
  */
-import { useMemo, useState, lazy, Suspense } from "react";
+import { useEffect, useMemo, useState, lazy, Suspense } from "react";
 import { createPortal } from "react-dom";
-import { X } from "lucide-react";
+import { BadgeCheck, PenLine, X } from "lucide-react";
+import { Link } from "react-router-dom";
 import ReviewCard, { ReviewStars } from "@/components/storefront/reviews/ReviewCard";
 import { useStoreReviews } from "@/hooks/useStoreReviews";
 import { useVisibleBatch } from "@/components/storefront/reviews/useVisibleBatch";
+import { Button } from "@/components/ui/button";
+import { storefrontPath } from "@/lib/subdomain";
 
 const ReviewMediaLightbox = lazy(() => import("@/components/storefront/reviews/ReviewMediaLightbox"));
+const importWriteReviewDialog = () => import("@/components/storefront/reviews/WriteReviewDialog");
+const WriteReviewDialog = lazy(importWriteReviewDialog);
 
 interface Props {
   storeId?: string;
   /** Optional caption override shown next to the thumbnails. */
   label?: string;
+  limit?: number;
+  productId?: string;
+  productName?: string;
+  storeSlug?: string;
 }
 
-export default function CheckoutReviewsTeaser({ storeId, label }: Props) {
-  // Every review (capped at 100) — the SAME shared summary RPC the PDP uses,
+export default function CheckoutReviewsTeaser({
+  storeId,
+  label,
+  limit = 1000,
+  productId,
+  productName,
+  storeSlug,
+}: Props) {
+  // The SAME shared summary RPC the PDP uses,
   // so a shopper arriving from a PDP reuses the warm cache and pays no extra
   // fetch. The list is JSON only; no review media loads until the sheet opens.
-  const { reviews, average } = useStoreReviews(storeId, 1000);
+  const { reviews, average, total } = useStoreReviews(storeId, limit);
   const [open, setOpen] = useState(false);
+  const [writing, setWriting] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
+  const [thumbStart, setThumbStart] = useState(0);
 
   const shown = reviews;
 
@@ -41,15 +59,20 @@ export default function CheckoutReviewsTeaser({ storeId, label }: Props) {
     10,
   );
 
-  const thumbs = useMemo(
-    () =>
-      shown
-        .slice(0, 8)
-        .flatMap((r) => r.media)
-        .filter((m) => m.type === "image")
-        .slice(0, 4),
+  const photoPool = useMemo(
+    () => shown.flatMap((r) => r.media).filter((m) => m.type === "image"),
     [shown],
   );
+  const thumbs = useMemo(
+    () => Array.from({ length: Math.min(3, photoPool.length) }, (_, i) => photoPool[(thumbStart + i) % photoPool.length]),
+    [photoPool, thumbStart],
+  );
+
+  useEffect(() => {
+    if (photoPool.length <= 3) return;
+    const timer = window.setInterval(() => setThumbStart((index) => (index + 1) % photoPool.length), 1800);
+    return () => window.clearInterval(timer);
+  }, [photoPool.length]);
 
   const { gallery, offsets } = useMemo(() => {
     const g: { url: string; type: "image" | "video" }[] = [];
@@ -65,38 +88,41 @@ export default function CheckoutReviewsTeaser({ storeId, label }: Props) {
 
   return (
     <>
-      <button
+      <Button
+        variant="outline"
         type="button"
         onClick={() => setOpen(true)}
-        className="mt-2 w-full flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50/30 px-2 py-1.5 text-left active:bg-emerald-50"
+        className="mt-2 h-auto w-full justify-start gap-2 overflow-hidden rounded-lg border-border bg-card px-2 py-1.5 text-left text-card-foreground shadow-sm hover:bg-accent/40"
         aria-label="See customer reviews"
       >
         {thumbs.length > 0 && (
-          <span className="flex -space-x-2 shrink-0">
+          <span className="flex -space-x-2 shrink-0" aria-hidden="true">
             {thumbs.map((m, i) => (
               <img
-                key={i}
+                key={`${thumbStart}-${m.url}-${i}`}
                 src={m.url}
                 alt=""
                 width={38}
                 height={38}
                 loading="lazy"
                 decoding="async"
-                className="h-[38px] w-[38px] rounded-full border-2 border-emerald-400 object-cover shadow-sm"
+                className="h-[38px] w-[38px] animate-in rounded-full border-2 border-card object-cover shadow-sm fade-in slide-in-from-bottom-2 duration-500 motion-reduce:animate-none"
               />
             ))}
           </span>
         )}
         <span className="min-w-0 flex-1">
-          <span className="block text-[11px] font-semibold text-gray-900 truncate">
-            {label || "Real customer photos & reviews"}
+          <span className="flex min-w-0 items-center gap-1 text-[10px] font-semibold leading-tight text-card-foreground sm:text-[11px]">
+            <span className="truncate">{label || "Real customer reviews"}</span>
+            <BadgeCheck className="h-3.5 w-3.5 shrink-0 fill-bauhaus-blue text-card" aria-label="Verified reviews" />
           </span>
           <span className="mt-0.5 flex items-center gap-1 text-[10px] text-muted-foreground">
-            <ReviewStars rating={average} className="h-3 w-3" />
+            <ReviewStars rating={average} className="h-3 w-3" activeClassName="fill-warning text-warning" />
+            <span>{total} reviews</span>
           </span>
         </span>
-        <span className="shrink-0 text-[10px] font-bold text-emerald-700">View</span>
-      </button>
+        <span className="shrink-0 text-[10px] font-bold text-foreground">View</span>
+      </Button>
 
       {open && typeof document !== "undefined" && createPortal(
         <div
@@ -105,23 +131,26 @@ export default function CheckoutReviewsTeaser({ storeId, label }: Props) {
           aria-modal="true"
           aria-label="Customer reviews"
         >
-          <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} aria-hidden />
-          <div className="relative mx-auto flex w-full max-w-md flex-col overflow-hidden rounded-t-2xl bg-white max-h-[88dvh]">
-            <div className="flex flex-shrink-0 items-center justify-between border-b border-[#ECECEC] px-5 py-3">
+          <div className="absolute inset-0 bg-foreground/50" onClick={() => setOpen(false)} aria-hidden />
+          <div className="relative mx-auto flex w-full max-w-md flex-col overflow-hidden rounded-t-2xl bg-background text-foreground max-h-[88dvh]">
+            <div className="flex flex-shrink-0 items-center justify-between border-b border-border px-5 py-3">
               <div>
                 <div className="text-[16px] font-bold">Customer reviews</div>
                 <div className="mt-0.5 flex items-center gap-1.5">
-                  <ReviewStars rating={average} className="h-3.5 w-3.5" />
+                  <ReviewStars rating={average} className="h-3.5 w-3.5" activeClassName="fill-warning text-warning" />
+                  <span className="text-xs text-muted-foreground">{total} reviews</span>
                 </div>
               </div>
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Close"
-                className="-mr-2 flex h-9 w-9 items-center justify-center rounded-full hover:bg-black/5 active:bg-black/10"
+                className="-mr-2 h-9 w-9 rounded-full"
               >
                 <X className="h-5 w-5" />
-              </button>
+              </Button>
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3">
@@ -138,6 +167,24 @@ export default function CheckoutReviewsTeaser({ storeId, label }: Props) {
               </div>
               {!sheetDone && <div ref={attachSentinel} className="h-8" aria-hidden />}
             </div>
+
+            {productId && storeId && (
+              <div className="grid grid-cols-2 gap-2 border-t border-border bg-background p-3">
+                {storeSlug && (
+                  <Button variant="outline" asChild>
+                    <Link to={storefrontPath(storeSlug, "reviews")} onClick={() => setOpen(false)}>View all reviews</Link>
+                  </Button>
+                )}
+                <Button
+                  className={storeSlug ? "" : "col-span-2"}
+                  onPointerEnter={() => { importWriteReviewDialog().catch(() => {}); }}
+                  onTouchStart={() => { importWriteReviewDialog().catch(() => {}); }}
+                  onClick={() => setWriting(true)}
+                >
+                  <PenLine className="h-4 w-4" /> Write a review
+                </Button>
+              </div>
+            )}
           </div>
 
           {galleryIndex !== null && gallery.length > 0 && (
@@ -151,6 +198,18 @@ export default function CheckoutReviewsTeaser({ storeId, label }: Props) {
           )}
         </div>,
         document.body,
+      )}
+
+      {writing && productId && storeId && (
+        <Suspense fallback={null}>
+          <WriteReviewDialog
+            productId={productId}
+            storeId={storeId}
+            productName={productName}
+            onClose={() => setWriting(false)}
+            onSubmitted={() => setWriting(false)}
+          />
+        </Suspense>
       )}
     </>
   );
