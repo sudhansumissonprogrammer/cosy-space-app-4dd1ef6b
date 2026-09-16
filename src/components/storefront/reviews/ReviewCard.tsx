@@ -122,12 +122,11 @@ export default function ReviewCard({
                 {genericName ? "Customer" : review.customer_name}
               </span>
               {review.is_verified && (
-                <span className="flex shrink-0 items-center gap-0.5 text-[9px] font-semibold text-primary-foreground" aria-label="Verified buyer">
+                <span className="flex shrink-0 items-center text-primary-foreground" aria-label="Verified buyer">
                   <BadgeCheck className="h-3.5 w-3.5 fill-bauhaus-blue text-primary-foreground" aria-hidden="true" />
-                  <span>Verified</span>
                 </span>
               )}
-              <ReviewStars rating={review.rating} className="h-2.5 w-2.5" />
+              <ReviewStars rating={review.rating} className="h-2 w-2" />
             </div>
           ) : anonymousPhotoOnly ? (
             <div className="pointer-events-none absolute inset-x-2 bottom-2 flex items-center justify-between rounded-xl border border-white/20 bg-white/10 px-3 py-2 backdrop-blur-md">
