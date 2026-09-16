@@ -41,3 +41,4 @@
 - [x] Shopper sign-in reliability: serialize one-time session links, preserve other-device sessions, align stale-lock recovery, and never report success without a session.
 
 - [x] Rebuild ShopBanao product film as a 30-second premium vertical video with real store screens and human voiceover.
+- [ ] Produce a fully rebuilt high-end 30-second ShopBanao launch film with real product proof, cinematic motion, and clean narration.
