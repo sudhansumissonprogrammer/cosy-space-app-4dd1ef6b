@@ -40,4 +40,4 @@
 - [x] Serdiya Ring-1 and Chain mobile categories: add a first-position four-image card linking to the opposite category.
 - [x] Shopper sign-in reliability: serialize one-time session links, preserve other-device sessions, align stale-lock recovery, and never report success without a session.
 
-- [ ] Rebuild ShopBanao product film as a 30-second premium vertical video with real store screens and human voiceover.
+- [x] Rebuild ShopBanao product film as a 30-second premium vertical video with real store screens and human voiceover.
