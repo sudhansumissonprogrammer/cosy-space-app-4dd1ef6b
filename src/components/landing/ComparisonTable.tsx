@@ -55,7 +55,7 @@ const ComparisonTable = () => {
             </div>
           ))}
         </div>
-        <p className="text-center text-muted-foreground text-xs mt-4">Prices and features as of 2025. ShopBanao charges 0% commission on all plans, always.</p>
+        <p className="text-center text-muted-foreground text-xs mt-4">Prices and features as of 2026. ShopBanao has ₹0 subscription and charges a flat 2% on every order.</p>
 
       </div>
     </section>
