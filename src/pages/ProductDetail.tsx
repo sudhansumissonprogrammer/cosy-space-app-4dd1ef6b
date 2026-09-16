@@ -628,7 +628,7 @@ export default function ProductDetail() {
   })();
 
 
-  // Reviews (incl. photo/video) are fetched inside <ReviewsShowcase />
+  // Reviews (incl. photo/video) are fetched inside the deferred compact teaser.
 
 
   // Display-only WhatsApp coupon price (no cart/order pricing change).

@@ -117,7 +117,7 @@ export default function CheckoutReviewsTeaser({
             <BadgeCheck className="h-3.5 w-3.5 shrink-0 fill-bauhaus-blue text-card" aria-label="Verified reviews" />
           </span>
           <span className="mt-0.5 flex items-center gap-1 text-[10px] text-muted-foreground">
-            <ReviewStars rating={average} className="h-3 w-3" />
+            <ReviewStars rating={average} className="h-3 w-3" activeClassName="fill-warning text-warning" />
             <span>{total} reviews</span>
           </span>
         </span>
@@ -137,7 +137,7 @@ export default function CheckoutReviewsTeaser({
               <div>
                 <div className="text-[16px] font-bold">Customer reviews</div>
                 <div className="mt-0.5 flex items-center gap-1.5">
-                  <ReviewStars rating={average} className="h-3.5 w-3.5" />
+                  <ReviewStars rating={average} className="h-3.5 w-3.5" activeClassName="fill-warning text-warning" />
                   <span className="text-xs text-muted-foreground">{total} reviews</span>
                 </div>
               </div>
