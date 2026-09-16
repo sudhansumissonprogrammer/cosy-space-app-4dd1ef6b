@@ -27,12 +27,15 @@ export default function ReviewCard({
   review,
   compact = false,
   minimalOverlay = false,
+  showFullText = false,
   onOpenMedia,
 }: {
   review: StoreReview;
   compact?: boolean;
   /** Checkout-only presentation: keep media visible with a single-line caption. */
   minimalOverlay?: boolean;
+  /** Show the complete written review below its media instead of truncating it over the photo. */
+  showFullText?: boolean;
   /** When provided, media clicks open a shared gallery lightbox instead of a per-card one. */
   onOpenMedia?: (indexWithinReview: number) => void;
 }) {
@@ -118,6 +121,12 @@ export default function ReviewCard({
               <span className="min-w-0 flex-1 truncate text-[10px] font-semibold text-white">
                 {genericName ? "Customer" : review.customer_name}
               </span>
+              {review.is_verified && (
+                <span className="flex shrink-0 items-center gap-0.5 text-[9px] font-semibold text-white" aria-label="Verified buyer">
+                  <BadgeCheck className="h-3.5 w-3.5 fill-bauhaus-blue text-white" aria-hidden="true" />
+                  <span>Verified</span>
+                </span>
+              )}
               <ReviewStars rating={review.rating} className="h-2.5 w-2.5" />
             </div>
           ) : anonymousPhotoOnly ? (
@@ -144,6 +153,15 @@ export default function ReviewCard({
                 </p>
               )}
               <span className="mt-0.5 block text-[10px] text-white/60">{formatReviewDate(review.created_at)}</span>
+            </div>
+          )}
+          {showFullText && (review.title || review.review_text) && (
+            <div className="border-t border-border bg-card px-3 py-2.5 text-card-foreground" style={{ fontFamily: "var(--review-body-font, var(--storefront-body-font, inherit))" }}>
+              {review.title && (
+                <h4 className="text-xs font-bold" style={{ fontFamily: "var(--review-heading-font, var(--storefront-heading-font, inherit))" }}>{review.title}</h4>
+              )}
+              {review.review_text && <p className="mt-0.5 whitespace-pre-wrap break-words text-xs leading-relaxed">{review.review_text}</p>}
+              <span className="mt-1 block text-[10px] text-muted-foreground">{formatReviewDate(review.created_at)}</span>
             </div>
           )}
         </>

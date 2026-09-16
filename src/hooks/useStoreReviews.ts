@@ -24,10 +24,11 @@ export function useStoreReviews(storeId?: string, limit = 20) {
       if (!storeId) {
         return { reviews: [] as StoreReview[], summary: ratingBreakdown([]) };
       }
-      const { data } = await (supabase as any).rpc("get_store_review_summary", {
+      const { data, error } = await (supabase as any).rpc("get_store_review_summary", {
         _store_id: storeId,
         _limit: limit,
       });
+      if (error) throw error;
       const payload = (Array.isArray(data) ? data[0] : data) || {};
       const counts = payload.counts || {};
       return {
