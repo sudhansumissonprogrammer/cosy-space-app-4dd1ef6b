@@ -122,8 +122,8 @@ export default function ReviewCard({
                 {genericName ? "Customer" : review.customer_name}
               </span>
               {review.is_verified && (
-                <span className="flex shrink-0 items-center gap-0.5 text-[9px] font-semibold text-white" aria-label="Verified buyer">
-                  <BadgeCheck className="h-3.5 w-3.5 fill-bauhaus-blue text-white" aria-hidden="true" />
+                <span className="flex shrink-0 items-center gap-0.5 text-[9px] font-semibold text-primary-foreground" aria-label="Verified buyer">
+                  <BadgeCheck className="h-3.5 w-3.5 fill-bauhaus-blue text-primary-foreground" aria-hidden="true" />
                   <span>Verified</span>
                 </span>
               )}
