@@ -15,6 +15,7 @@
 - Shipped cancellation safety: paid shipped/tracked orders can be manually cancelled with commission reversal; new tracking always starts as shipped
 
 ## Open
+- [x] Rebuild the handbag footage as a luxury cinematic product advertisement with editorial captions and natural Indian male narration.
 - [x] Create a creator-style Indian Hinglish UGC handbag advertisement with dynamic product proof, captions, and clear narration.
 - [x] Connect Telegram fresh after this workspace move and redeploy the order-alert function.
 - [ ] Produce a premium 20-second vertical ShopBanao motion-graphics film using the real logo and platform features.
