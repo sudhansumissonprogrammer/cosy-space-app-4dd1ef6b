@@ -15,6 +15,7 @@
 - Shipped cancellation safety: paid shipped/tracked orders can be manually cancelled with commission reversal; new tracking always starts as shipped
 
 ## Open
+- [ ] Connect Telegram fresh after this workspace move and redeploy the order-alert function.
 - [ ] Produce a premium 20-second vertical ShopBanao motion-graphics film using the real logo and platform features.
 - [x] PDP opened review panel: load every approved review, show complete text and mobile verified badges, and inherit store theme fonts.
 - [x] Replace bulky PDP review sections with the compact checkout-style review strip, neutral styling, and lazy loading.
