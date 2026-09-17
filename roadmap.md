@@ -46,4 +46,4 @@
 - [x] Polish the approved 30-second ShopBanao v3 film without changing its core story or narration.
 - [x] Create a second 33-second ShopBanao SaaS explainer inspired by the uploaded cinematic AI-agent reference.
 - [x] Connect Telegram fresh for the new workspace and redeploy the affected notification function.
-- [ ] Create a fully promotional Hindi–English handbag video with voiceover, timed captions, polished effects, and no price.
+- [x] Create a fully promotional Hindi–English handbag video with voiceover, timed captions, polished effects, and no price.
