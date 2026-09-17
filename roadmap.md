@@ -15,7 +15,7 @@
 - Shipped cancellation safety: paid shipped/tracked orders can be manually cancelled with commission reversal; new tracking always starts as shipped
 
 ## Open
-- [ ] Rebuild the two-colour watch Reel with Utkal Watch-only branding, animated logo ending, richer chronograph details, reference-style captions, stronger transitions, and clearer Indian-English narration.
+- [x] Rebuild the two-colour watch Reel with Utkal Watch-only branding, animated logo ending, richer chronograph details, reference-style captions, stronger transitions, and clearer Indian-English narration.
 - [x] Produce an exact 25-second premium two-colour watch Instagram Reel from the two authentic uploaded videos.
 - [x] Rebuild the handbag footage as a luxury cinematic product advertisement with editorial captions and natural Indian male narration.
 - [x] Create a creator-style Indian Hinglish UGC handbag advertisement with dynamic product proof, captions, and clear narration.
