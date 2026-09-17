@@ -1,24 +1,32 @@
-# Indian Hinglish UGC Handbag Advertisement
+# Luxury Cinematic Handbag Advertisement
 
 ## Goal
-Create a new 20–25 second vertical UGC/influencer-style advertisement from the existing handbag recording. It should feel like a genuine creator recommendation while remaining polished enough for Instagram and paid social use.
+Transform the original vertical handbag footage into a premium fashion-film advertisement that feels elegant, deliberate, and commercially polished rather than creator-style UGC.
 
 ## Creative direction
-- Open immediately with a personal Hinglish hook rather than a formal product title.
-- Use a natural young Indian female delivery: warm, conversational, slightly excited, and not announcer-like.
-- Structure the story as: relatable discovery → close product proof → two-colour choice → personal recommendation → clean final product moment.
-- Use creator-style pacing: purposeful jump cuts, handheld-feeling punch-ins, freeze-frame emphasis, quick detail crops, subtle speed ramps, and restrained flash/whip transitions.
-- Keep the visual palette warm and fashion-led, with cream, charcoal, and muted gold captions.
+- **Style:** luxury editorial with warm ivory, charcoal, and muted gold accents.
+- **Typography:** one refined serif display face paired with one clean sans-serif caption face.
+- **Pacing:** a strong opening detail, slow product reveals, controlled macro cuts, elegant speed ramps, and a resolved two-colour beauty shot.
+- **Motion:** smooth push-ins, restrained parallax crops, match cuts around hand movement, soft light sweeps, and minimal flash transitions.
+- **Sound:** natural Indian male Hinglish narration, low cinematic music, tactile chain/zip accents, subtle whooshes, and clear voice ducking without buzzing or rising tones.
 
-## Script approach
-The voiceover will describe only details visible in the footage: quilted mini-handbag styling, gold-chain detail, compact fashionable form, and two colour options. No price, material, capacity, durability, or brand claims will be invented.
+## Story
+1. Immediate quilted-detail hook.
+2. Full white handbag reveal.
+3. Gold-chain and hardware close-ups.
+4. Compact silhouette and styling moment.
+5. Two-colour comparison.
+6. Final premium product composition and concise recommendation.
 
-## Captions and sound
-- Large, readable Hinglish captions with word-level emphasis and safe mobile placement.
-- Pair an elegant display face with a clean sans-serif caption font.
-- Add a light social-reel music bed, tactile product sounds, whooshes, and beat accents while keeping narration consistently clear.
-
-## Production and checks
-- Re-edit the original vertical footage rather than recycling the previous promotional export.
+## Execution
+- Re-edit the original 1080×1920 recording, not the previous UGC export.
+- Use only visible, defensible product details; no price, material, capacity, durability, or brand claims.
+- Rewrite the Hinglish voiceover for luxury pacing and generate a natural Indian male performance.
+- Replace creator captions with sparse editorial titles and accurately timed supporting captions.
+- Apply a cohesive warm grade, selective sharpening, cinematic crops, transitions, and premium audio mastering.
 - Export a new versioned 1080×1920 MP4 under 30 seconds.
-- Inspect representative frames, caption readability, audio balance, full decode, duration, and output format before delivery.
+
+## Quality checks
+- Inspect representative frames for crop quality, readable captions, product colour, and visual continuity.
+- Verify full playback/decode, duration, resolution, frame rate, and audio loudness.
+- Confirm narration remains clear throughout and the film works visually when muted.
