@@ -101,5 +101,5 @@ export async function refreshShipmentNow(shipmentId: string, opts?: { asCustomer
     body: { shipment_id: shipmentId, ...(opts?.asCustomer ? { public: true } : {}) },
   });
   if (error) throw error;
-  return data as { throttled?: boolean; status?: string; manual?: boolean; message?: string };
+  return data as { throttled?: boolean; unavailable?: boolean; blocked?: boolean; error?: string; status?: string; manual?: boolean; message?: string };
 }

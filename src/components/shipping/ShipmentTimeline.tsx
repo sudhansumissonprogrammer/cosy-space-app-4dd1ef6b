@@ -45,7 +45,12 @@ export default function ShipmentTimeline({ shipment }: { shipment: ShipmentTrack
   const status = shipment.status;
   const currentIdx = shipmentStatusRank(status);
   const failed = status === "cancelled" || status === "returned";
-  const official = shipment.tracking_url || officialTrackingUrl(shipment.tracking_slug || shipment.provider, shipment.awb);
+  const slug = shipment.tracking_slug || shipment.provider;
+  // Older India Post rows saved a 17TRACK link. Prefer the official portal now
+  // because the unauthenticated aggregator no longer returns fresh scans.
+  const official = slug === "india_post"
+    ? officialTrackingUrl(slug, shipment.awb)
+    : shipment.tracking_url || officialTrackingUrl(slug, shipment.awb);
 
   const events = shipment.events ?? [];
   const availability = trackingAvailability(shipment.last_error);

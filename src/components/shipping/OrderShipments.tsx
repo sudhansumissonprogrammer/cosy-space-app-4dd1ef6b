@@ -20,7 +20,7 @@ export default function OrderShipments({ orderId, client }: { orderId: string; c
     try {
       const res = await refreshShipmentNow(id, { asCustomer: true });
       if (res?.throttled) toast.info(res.message || "Just checked — try again in a few minutes.");
-      else if (res?.blocked || res?.error) toast.info("Live courier scans are temporarily unavailable. Your saved tracking remains visible.");
+      else if (res?.unavailable || res?.blocked || res?.error) toast.info("Live courier scans are temporarily unavailable. Your saved tracking remains visible.");
       else toast.success("Tracking updated");
       qc.invalidateQueries({ queryKey: ["shipment-tracking", orderId] });
     } catch {
