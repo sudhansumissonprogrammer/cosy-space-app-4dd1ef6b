@@ -53,4 +53,4 @@
 - [x] Connect Telegram fresh for the new workspace and redeploy the affected notification function.
 - [x] Create a fully promotional Hindi–English handbag video with voiceover, timed captions, polished effects, and no price.
 
-- [ ] Audit all currently shipped Serdiya orders: count, uniqueness, tracking health, live carrier status, and destination match.
+- [x] Audit all currently shipped Serdiya orders: count, uniqueness, tracking health, live carrier status, and destination match.
