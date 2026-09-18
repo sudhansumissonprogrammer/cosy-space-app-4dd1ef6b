@@ -22,6 +22,8 @@ export interface ShipmentTracking {
   estimated_delivery: string | null;
   tracking_url: string | null;
   last_synced_at: string | null;
+  next_sync_at: string | null;
+  last_error: string | null;
   created_at: string;
   events: ShipmentEvent[];
 }

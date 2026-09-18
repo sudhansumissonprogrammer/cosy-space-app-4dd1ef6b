@@ -4,6 +4,7 @@ import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useShipmentTracking, refreshShipmentNow } from "@/hooks/useShipmentTracking";
 import { courierMeta, isTerminal } from "@/lib/shipping/courierRegistry";
+import { Button } from "@/components/ui/button";
 import ShipmentTimeline from "./ShipmentTimeline";
 
 /** Renders every shipment attached to an order. Nothing renders when there are none. */
@@ -19,6 +20,7 @@ export default function OrderShipments({ orderId, client }: { orderId: string; c
     try {
       const res = await refreshShipmentNow(id, { asCustomer: true });
       if (res?.throttled) toast.info(res.message || "Just checked — try again in a few minutes.");
+      else if (res?.blocked || res?.error) toast.info("Live courier scans are temporarily unavailable. Your saved tracking remains visible.");
       else toast.success("Tracking updated");
       qc.invalidateQueries({ queryKey: ["shipment-tracking", orderId] });
     } catch {
@@ -34,15 +36,17 @@ export default function OrderShipments({ orderId, client }: { orderId: string; c
         <div key={s.id} className="relative">
           <ShipmentTimeline shipment={s} />
           {courierMeta(s.tracking_slug).api && !isTerminal(s.status) && (
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={() => refresh(s.id)}
               disabled={busy === s.id}
-              className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full border bg-background/80 px-2.5 py-1 text-[11px] text-muted-foreground backdrop-blur transition hover:text-foreground disabled:opacity-50"
+              className="absolute right-2 top-2 h-7 rounded-full bg-background/80 px-2.5 text-[11px] text-muted-foreground backdrop-blur hover:text-foreground"
             >
               <RefreshCw className={`h-3 w-3 ${busy === s.id ? "animate-spin" : ""}`} />
               {busy === s.id ? "Checking…" : "Refresh"}
-            </button>
+            </Button>
           )}
         </div>
       ))}

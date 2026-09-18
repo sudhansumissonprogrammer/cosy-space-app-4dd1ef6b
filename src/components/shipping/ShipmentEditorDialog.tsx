@@ -123,11 +123,10 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
                 ))}
               </SelectContent>
             </Select>
-            {!meta.api && (
+            {slug === "india_post" && (
               <p className="text-[11px] text-muted-foreground">
-                This courier has no live API (India Post is captcha-gated) — set the status here
-                and customers see the same timeline. Use "Returned to seller (RTO)" when the parcel
-                comes back, and "Cancelled" only when the shipment never went out.
+                India Post tracking is checked automatically. When its CAPTCHA blocks a check, the
+                last confirmed scans remain visible and the official tracking page is available.
               </p>
             )}
           </div>
