@@ -22,6 +22,8 @@ export interface ShipmentTracking {
   estimated_delivery: string | null;
   tracking_url: string | null;
   last_synced_at: string | null;
+  next_sync_at: string | null;
+  last_error: string | null;
   created_at: string;
   events: ShipmentEvent[];
 }
@@ -99,5 +101,5 @@ export async function refreshShipmentNow(shipmentId: string, opts?: { asCustomer
     body: { shipment_id: shipmentId, ...(opts?.asCustomer ? { public: true } : {}) },
   });
   if (error) throw error;
-  return data as { throttled?: boolean; status?: string; manual?: boolean; message?: string };
+  return data as { throttled?: boolean; unavailable?: boolean; blocked?: boolean; error?: string; status?: string; manual?: boolean; message?: string };
 }

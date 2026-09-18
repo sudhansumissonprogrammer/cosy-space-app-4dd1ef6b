@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Check, Copy, ExternalLink, MapPin, PackageCheck } from "lucide-react";
+import { AlertTriangle, Check, Copy, ExternalLink, MapPin, PackageCheck } from "lucide-react";
 import {
   SHIPMENT_STATUS_LABEL, SHIPMENT_STEPS, courierMeta, isTerminal,
   officialTrackingUrl, shipmentStatusRank, type ShipmentStatus,
 } from "@/lib/shipping/courierRegistry";
 import type { ShipmentTracking } from "@/hooks/useShipmentTracking";
 import CourierLogo from "./CourierLogo";
+import { trackingAvailability, trackingUnavailableMessage } from "@/lib/shipping/trackingAvailability";
 
 const softText = "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 60%, transparent)";
 const softBorder = "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 12%, transparent)";
@@ -44,9 +45,16 @@ export default function ShipmentTimeline({ shipment }: { shipment: ShipmentTrack
   const status = shipment.status;
   const currentIdx = shipmentStatusRank(status);
   const failed = status === "cancelled" || status === "returned";
-  const official = shipment.tracking_url || officialTrackingUrl(shipment.tracking_slug || shipment.provider, shipment.awb);
+  const slug = shipment.tracking_slug || shipment.provider;
+  // Older India Post rows saved a 17TRACK link. Prefer the official portal now
+  // because the unauthenticated aggregator no longer returns fresh scans.
+  const official = slug === "india_post"
+    ? officialTrackingUrl(slug, shipment.awb)
+    : shipment.tracking_url || officialTrackingUrl(slug, shipment.awb);
 
   const events = shipment.events ?? [];
+  const availability = trackingAvailability(shipment.last_error);
+  const hasCourierScans = events.some((event) => !!event.location);
   const visible = expanded ? events : events.slice(0, 4);
   // Manual merchant updates ("status updated by seller") are stamped with the
   // save time, so they can sit above the courier's own scans. Anything shown
@@ -93,6 +101,13 @@ export default function ShipmentTimeline({ shipment }: { shipment: ShipmentTrack
           <p className="text-xs font-semibold">
             Delivered{deliveredAt ? ` on ${fmtDate(deliveredAt)}` : ""}
           </p>
+        </div>
+      )}
+
+      {availability === "temporarily_unavailable" && !isTerminal(status) && (
+        <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-amber-900 dark:text-amber-200">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <p className="text-xs leading-relaxed">{trackingUnavailableMessage(hasCourierScans)}</p>
         </div>
       )}
 
@@ -174,7 +189,7 @@ export default function ShipmentTimeline({ shipment }: { shipment: ShipmentTrack
 
       {shipment.last_synced_at && (
         <p className="mt-3 text-[11px]" style={{ color: softText }}>
-          Updated {fmtAgo(shipment.last_synced_at)} · {courierName}
+          {availability === "live" ? "Updated" : "Last checked"} {fmtAgo(shipment.last_synced_at)} · {courierName}
         </p>
       )}
 

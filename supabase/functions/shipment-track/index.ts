@@ -50,7 +50,8 @@ Deno.serve(async (req) => {
   // trigger the same courier fetch — and every non-internal caller shares one
   // 10-minute-per-shipment throttle so courier quota can't be burned.
   const authHeader = req.headers.get("Authorization") ?? "";
-  const isInternal = authHeader === `Bearer ${SERVICE_KEY}` || body.internal === true;
+  // Never trust a caller-provided flag to bypass ownership and rate limits.
+  const isInternal = authHeader === `Bearer ${SERVICE_KEY}`;
   const isPublic = body.public === true;
 
   const { data: shipment, error: shipErr } = await admin
@@ -141,7 +142,9 @@ Deno.serve(async (req) => {
       ).toISOString(),
       is_active: blocked ? true : attempts < 20,
     }).eq("id", shipmentId);
-    return json({ error: msg, blocked }, 502);
+    // Provider outages are a valid tracking state, not an application failure.
+    // Return 200 so the UI can explain the outage while retaining cached scans.
+    return json({ unavailable: true, error: msg, blocked, status: shipment.normalized_status });
   }
 
 

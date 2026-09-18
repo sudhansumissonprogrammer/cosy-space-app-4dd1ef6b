@@ -46,7 +46,9 @@ export const COURIERS: CourierMeta[] = [
   { slug: "shiprocket", name: "Shiprocket", api: true, domain: "shiprocket.in" },
   { slug: "delhivery", name: "Delhivery", api: true, domain: "delhivery.com" },
   { slug: "ekart", name: "Ekart Logistics", api: true, domain: "ekartlogistics.com" },
-  { slug: "india_post", name: "India Post", api: false, domain: "indiapost.gov.in" },
+  // The backend retries India Post's public feed and its fallback aggregator.
+  // Availability can be temporary because India Post may require a CAPTCHA.
+  { slug: "india_post", name: "India Post", api: true, domain: "indiapost.gov.in" },
   { slug: "bluedart", name: "Blue Dart", api: true, domain: "bluedart.com" },
   { slug: "dtdc", name: "DTDC", api: false, domain: "dtdc.in" },
   { slug: "xpressbees", name: "Xpressbees", api: false, domain: "xpressbees.com" },
@@ -90,7 +92,9 @@ export function officialTrackingUrl(slug: string | null | undefined, awb: string
     case "amazon_shipping": return `https://track.amazon.in/tracking/${a}`;
     // India Post + DTDC have no public deep link (session/JS gated portals) —
     // the aggregator resolves the same scans by AWB.
-    case "india_post": return aggregatorTrackingUrl(awb);
+    // India Post currently requires a CAPTCHA. Send customers to its official
+    // page rather than implying the unauthenticated aggregator is authoritative.
+    case "india_post": return "https://www.indiapost.gov.in/";
     case "dtdc": return `https://www.dtdc.in/tracking/shipment-tracking?strCnno=${a}`;
     default: return aggregatorTrackingUrl(awb);
   }

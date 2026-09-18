@@ -54,3 +54,4 @@
 - [x] Create a fully promotional Hindi–English handbag video with voiceover, timed captions, polished effects, and no price.
 
 - [x] Audit all currently shipped Serdiya orders: count, uniqueness, tracking health, live carrier status, and destination match.
+- [x] Restore trustworthy India Post tracking states for Serdiya: retry support, outage messaging, cached-scan preservation, and official fallback.
