@@ -1,4 +1,4 @@
-import { CheckCircle2, Clock, PackageCheck, Truck, Home, XCircle } from "lucide-react";
+import { CheckCircle2, Clock, PackageCheck, Truck, Home, RotateCcw, XCircle } from "lucide-react";
 
 const STEPS = [
   { key: "pending",   label: "Placed",     icon: Clock },
@@ -12,6 +12,21 @@ const STEPS = [
 const orderRank: Record<string, number> = { pending: 0, confirmed: 1, partially_paid: 1, shipped: 2, delivered: 3 };
 
 export default function OrderStatusTimeline({ status, createdAt, updatedAt }: { status: string; createdAt: string; updatedAt?: string }) {
+  if (status === "rto") {
+    return (
+      <div className="flex items-center gap-3 rounded-2xl border border-orange-200 bg-orange-50/60 p-4 dark:border-orange-900 dark:bg-orange-950/30">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/50">
+          <RotateCcw className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-orange-700 dark:text-orange-300">Returned to Seller (RTO)</p>
+          <p className="text-xs text-orange-600/80 dark:text-orange-400/80">
+            {updatedAt ? new Date(updatedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : ""}
+          </p>
+        </div>
+      </div>
+    );
+  }
   if (status === "cancelled") {
     return (
       <div className="flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50/60 p-4 dark:border-red-900 dark:bg-red-950/30">

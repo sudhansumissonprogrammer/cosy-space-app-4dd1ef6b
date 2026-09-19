@@ -24,7 +24,7 @@ const STATUS_STEPS = [
 
 function StatusTimeline({ status }: { status: string }) {
   const currentIdx = orderStatusRank(status);
-  const isCancelled = status === "cancelled";
+  const isCancelled = status === "cancelled" || status === "rto";
 
   return (
     <div className="flex items-center justify-between w-full py-4">
@@ -193,11 +193,11 @@ export default function OrderTrackingPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                {order.status !== "cancelled" ? (
+                {order.status !== "cancelled" && order.status !== "rto" ? (
                   <StatusTimeline status={order.status} />
                 ) : (
                   <div className="py-4 text-center text-sm text-destructive">
-                    This order has been cancelled.
+                     {order.status === "rto" ? "This parcel was returned to the seller (RTO)." : "This order has been cancelled."}
                   </div>
                 )}
               </CardContent>

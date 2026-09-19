@@ -16,6 +16,7 @@ const subtitle = (status: string, createdAt: string) => {
   switch (status) {
     case "delivered":      return `Delivered`;
     case "shipped":        return `Arriving soon`;
+    case "rto":            return `Returned to seller`;
     case "cancelled":      return `Cancelled`;
     case "confirmed":      return `Order confirmed`;
     case "partially_paid": return `Advance received`;

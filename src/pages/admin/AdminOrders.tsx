@@ -19,16 +19,9 @@ import PaginationControls from "@/components/PaginationControls";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { orderStatusBadgeClass, orderStatusLabel } from "@/lib/orderStatus";
 
-const statusColor = (status: string) => {
-  switch (status) {
-    case "confirmed": return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
-    case "shipped": return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400";
-    case "delivered": return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
-    case "cancelled": return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
-    default: return "bg-muted text-muted-foreground";
-  }
-};
+const statusColor = (status: string) => orderStatusBadgeClass(status);
 
 export default function AdminOrders() {
   useDocumentTitle("Orders · Admin");
@@ -123,7 +116,7 @@ export default function AdminOrders() {
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="font-mono text-xs font-semibold text-foreground">#{order.id.slice(0, 8)}</span>
                           <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold", statusColor(order.status))}>
-                            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                             {orderStatusLabel(order.status)}
                           </span>
                         </div>
                         <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -207,7 +200,7 @@ export default function AdminOrders() {
                           <div className="flex items-center gap-2 min-w-0">
                             <span className="font-mono text-xs font-semibold text-foreground">{displayId}</span>
                             <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold", statusColor(order.status))}>
-                              {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                               {orderStatusLabel(order.status)}
                             </span>
                           </div>
                           <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -260,7 +253,7 @@ export default function AdminOrders() {
                             <TableCell className="text-xs uppercase">{order.payment_method || "cod"}</TableCell>
                             <TableCell>
                               <Badge variant={order.status === "delivered" ? "default" : order.status === "cancelled" ? "destructive" : "secondary"}>
-                                {order.status}
+                                 {orderStatusLabel(order.status)}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground">{format(new Date(order.created_at), "MMM d, HH:mm")}</TableCell>

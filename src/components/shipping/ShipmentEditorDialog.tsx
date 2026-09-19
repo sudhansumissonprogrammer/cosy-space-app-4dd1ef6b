@@ -158,7 +158,7 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
             <div className="space-y-1.5">
               <Label>Current status</Label>
               <p className="text-[11px] text-muted-foreground">
-                Delivered updates the order to delivered. RTO or Cancelled updates it to cancelled.
+                Returned to seller marks the order as RTO. No customer payment or ShopBanao fee is refunded automatically.
               </p>
               <Select value={status} onValueChange={setStatus}>
                 <SelectTrigger><SelectValue /></SelectTrigger>

@@ -438,17 +438,17 @@ Search Console:
     body: `1. Open the order → Shipment.
 2. Choose the courier, paste the tracking/AWB number and save.
 3. The customer automatically gets the tracking link on WhatsApp and on the order-tracking page.
-4. Update the shipment status as it moves (shipped → out for delivery → delivered, or returned/cancelled for RTO).
-For any commission query on a cancelled, returned or RTO order, contact customer care — they review it and settle it.`,
+4. Update the shipment status as it moves (shipped → out for delivery → delivered, or returned for RTO).
+RTO is available only after shipment with a verified parcel photo. Changing status never automatically refunds customer money or the ShopBanao fee.`,
   },
   {
     id: "rto-returns",
     title: "RTO, returns and refunds",
     route: "{s}/orders",
     keywords: ["rto", "return", "refund", "returned to seller", "not delivered", "money back"],
-    body: `1. When a parcel comes back, set the shipment status to Returned/Cancelled on the order.
-2. The order status becomes cancelled and the platform commission for it is credited back to your wallet.
-3. Prepaid refunds are made by you from the payment gateway's own dashboard (Razorpay/Cashfree/PayU) — we never hold your money.
+    body: `1. When a shipped parcel comes back, set its shipment status to Returned to Seller (RTO). A verified parcel photo must already be attached from shipping.
+2. The order gets its own RTO status. Changing any order status does not refund the ShopBanao fee or customer payment.
+3. Any customer payment refund must be handled separately by the store owner through the payment provider.
 4. Add your return window and any proof requirement (e.g. an unboxing video) in Pages & Policies → Return & Refund so it shows on every product page.`,
   },
   {
@@ -597,14 +597,15 @@ paid / confirmed — money received (or COD accepted). Pack and ship.
 processing — you are preparing it.
 shipped — handed to the courier. Shipped means fulfilment only, NOT that the parcel was delivered or that the money is final.
 delivered — customer received it.
-cancelled — order closed; no revenue counted. For commission questions on cancelled orders, contact customer care.`,
+cancelled — order closed; changing the status does not automatically refund any payment or ShopBanao fee.
+rto — a shipped parcel was returned to the seller; verified parcel evidence is required and the ShopBanao fee remains charged.`,
   },
   {
-    id: "commission-2-percent",
-    title: "How much the platform charges (2%)",
+    id: "commission-3-percent",
+    title: "How much the platform charges (3%)",
     route: "{s}/wallet",
-    keywords: ["commission", "charges", "fee", "2%", "subscription", "monthly", "kitna charge", "cost", "pricing"],
-    body: `There is no monthly subscription. The platform takes a flat 2% of every order, including orders that come back as RTO. It is deducted from your store wallet, not from the customer.
+    keywords: ["commission", "charges", "fee", "3%", "subscription", "monthly", "kitna charge", "cost", "pricing"],
+    body: `There is no monthly subscription. The platform takes a flat 3% of every order, including orders that come back as RTO. It is deducted from your store wallet, not from the customer.
 Payment gateway charges (Razorpay/Cashfree/PayU) are separate and charged by that gateway.
 Keep your wallet topped up — if the balance runs out, new orders can be blocked. See Wallet for the ledger of every deduction.`,
   },
