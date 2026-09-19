@@ -82,6 +82,22 @@ Deno.serve(async (req) => {
     const { data: isAdmin } = ownedStore ? { data: false } : await admin.rpc("has_role", { _user_id: callerUserId, _role: "admin" });
     if (!ownedStore && isAdmin !== true) return json({ error: "forbidden" }, 403);
   }
+  const discardSubmittedParcelPhoto = async () => {
+    if (!body.parcel_scan_id) return;
+    const { data: scan } = await admin
+      .from("parcel_label_scans")
+      .select("id,temp_object_path")
+      .eq("id", body.parcel_scan_id)
+      .eq("order_id", o.id)
+      .eq("store_id", o.store_id)
+      .maybeSingle();
+    const path = String((scan as any)?.temp_object_path || "");
+    if (path) await admin.storage.from("parcel-label-temp").remove([path]);
+    if (scan) await admin.from("parcel_label_scans").update({
+      temp_object_path: null,
+      photo_deleted_at: new Date().toISOString(),
+    }).eq("id", (scan as any).id);
+  };
 
   // 🔒 Master switch is authoritative for EVERY event (marketing AND transactional).
   // If the store owner has WhatsApp OFF, nothing goes out on their behalf.
@@ -91,6 +107,7 @@ Deno.serve(async (req) => {
     .eq("store_id", o.store_id)
     .maybeSingle();
   if (!storeSettings || (storeSettings as any).platform_marketing_enabled !== true) {
+    await discardSubmittedParcelPhoto();
     return json({ skipped: true, reason: "store_disabled" });
   }
   // Per-event toggle — default OFF, must be explicitly enabled by the store.
@@ -99,6 +116,7 @@ Deno.serve(async (req) => {
     (body.event === "order_shipped" && (storeSettings as any).send_order_shipped === true) ||
     (body.event === "cod_confirmation" && (storeSettings as any).send_cod_confirmation === true);
   if (!perEventOn) {
+    await discardSubmittedParcelPhoto();
     return json({ skipped: true, reason: "event_toggle_off" });
   }
 
@@ -134,6 +152,7 @@ Deno.serve(async (req) => {
       .order("updated_at", { ascending: false })
       .limit(1).maybeSingle();
     if (shipRow && (shipRow as any).notify_customer === false) {
+      await discardSubmittedParcelPhoto();
       return json({ skipped: true, reason: "seller_muted_notification" });
     }
   }

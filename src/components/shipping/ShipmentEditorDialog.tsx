@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { COURIERS, SHIPMENT_STATUS_LABEL, SHIPMENT_STEPS, courierMeta, officialTrackingUrl } from "@/lib/shipping/courierRegistry";
+import { COURIERS, SHIPMENT_STATUS_LABEL, SHIPMENT_STEPS, aggregatorTrackingUrl, courierMeta } from "@/lib/shipping/courierRegistry";
 import type { ShipmentTracking } from "@/hooks/useShipmentTracking";
 import CourierLogo from "./CourierLogo";
 import ParcelLabelScanner from "./ParcelLabelScanner";
@@ -56,7 +56,7 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
         _slug: slug,
         _courier_name: meta.name,
         _awb: awb.trim(),
-        _tracking_url: officialTrackingUrl(slug, awb.trim()),
+        _tracking_url: aggregatorTrackingUrl(awb.trim()),
         // A new AWB always starts as shipped. RTO/cancelled are outcomes that
         // can only be recorded later while editing the existing shipment.
         _status: isNewShipment ? "shipped" : status,
@@ -76,7 +76,7 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
       // idempotency (one row per order + event), so a re-save never spams.
       let waResult: any = null;
       const savedStatus = isNewShipment ? "shipped" : status;
-      if (notify && (savedStatus === "shipped" || savedStatus === "in_transit")) {
+      if ((notify || verifiedScanId) && (savedStatus === "shipped" || savedStatus === "in_transit")) {
         const { data: waData } = await supabase.functions.invoke("wa-order-event", {
           body: { event: "order_shipped", order_id: orderId, parcel_scan_id: verifiedScanId },
         });

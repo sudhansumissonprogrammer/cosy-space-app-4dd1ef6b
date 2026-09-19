@@ -27,6 +27,24 @@ async function removeParcelPhoto(admin: any, row: any) {
   }).eq("id", scanId);
 }
 
+async function removeExpiredParcelPhotos(admin: any) {
+  const { data: scans } = await admin
+    .from("parcel_label_scans")
+    .select("id,temp_object_path")
+    .not("temp_object_path", "is", null)
+    .is("photo_deleted_at", null)
+    .lte("temp_expires_at", new Date().toISOString())
+    .limit(100);
+  for (const scan of scans ?? []) {
+    const path = String((scan as any).temp_object_path || "");
+    if (path) await admin.storage.from("parcel-label-temp").remove([path]);
+    await admin.from("parcel_label_scans").update({
+      temp_object_path: null,
+      photo_deleted_at: new Date().toISOString(),
+    }).eq("id", (scan as any).id);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -49,6 +67,7 @@ Deno.serve(async (req) => {
   if (!authorized) {
     return json({ error: "unauthorized" }, 401);
   }
+  await removeExpiredParcelPhotos(admin);
 
   const cfg = await loadPlatformConfig(admin);
   if (!platformConfigUsable(cfg)) return json({ skipped: true, reason: "wa_disabled" });
@@ -182,6 +201,30 @@ Deno.serve(async (req) => {
 
 
 
+    let sendTemplateName = row.template_name;
+    const sendTemplateVars = { ...(row.template_vars || {}) };
+    const parcelScanId = String(sendTemplateVars.parcel_scan_id || "");
+    if (row.message_type === "order_shipped" && parcelScanId) {
+      const { data: scan } = await admin
+        .from("parcel_label_scans")
+        .select("temp_object_path,temp_expires_at,photo_deleted_at")
+        .eq("id", parcelScanId)
+        .eq("order_id", row.order_id)
+        .maybeSingle();
+      const usable = scan && !(scan as any).photo_deleted_at && (scan as any).temp_object_path &&
+        new Date((scan as any).temp_expires_at || 0).getTime() > Date.now();
+      if (usable) {
+        const { data: signed } = await admin.storage
+          .from("parcel-label-temp")
+          .createSignedUrl((scan as any).temp_object_path, 15 * 60);
+        if (signed?.signedUrl) sendTemplateVars.header_media_url = signed.signedUrl;
+        else sendTemplateName = "order_shipped_v3";
+      } else {
+        sendTemplateName = "order_shipped_v3";
+        delete sendTemplateVars.header_media_url;
+      }
+    }
+
     const resp = await fetch(`${SUPABASE_URL}/functions/v1/wa-platform-send`, {
       method: "POST",
       headers: {
@@ -195,9 +238,9 @@ Deno.serve(async (req) => {
         store_id: row.store_id,
         recipient_phone: row.recipient_phone,
         recipient_name: row.recipient_name,
-        template_name: row.template_name,
+        template_name: sendTemplateName,
         template_params: row.params,
-        template_vars: row.template_vars || undefined,
+        template_vars: sendTemplateVars,
         message_type: row.message_type,
         order_id: row.order_id,
         abandoned_cart_id: row.abandoned_cart_id,
