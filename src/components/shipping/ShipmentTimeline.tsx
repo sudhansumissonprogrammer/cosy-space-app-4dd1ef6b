@@ -193,7 +193,7 @@ export default function ShipmentTimeline({ shipment }: { shipment: ShipmentTrack
         <a href={official} target="_blank" rel="noopener noreferrer"
            className="mt-4 inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold"
            style={{ borderColor: softBorder }}>
-          Track on 17TRACK <ExternalLink className="h-3 w-3" />
+           Track on Speed Post Track <ExternalLink className="h-3 w-3" />
         </a>
       )}
     </div>

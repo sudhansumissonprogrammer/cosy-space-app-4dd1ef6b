@@ -49,6 +49,7 @@ import { ORDER_STATUS_OPTIONS, orderStatusBadgeClass, orderStatusLabel } from "@
 import { buildOrderCopyText } from "@/lib/orderCopyText";
 import { buildOrderBreakdown } from "@/lib/orderPaymentBreakdown";
 import { waPhoneNumber } from "@/lib/phoneUtils";
+import { aggregatorTrackingUrl } from "@/lib/shipping/courierRegistry";
 const STATUS_OPTIONS = ORDER_STATUS_OPTIONS.map(o => o.value);
 const BULK_STATUS_OPTIONS = STATUS_OPTIONS.filter((status) => status !== "rto");
 const statusColor = (status: string) => orderStatusBadgeClass(status);
@@ -1143,8 +1144,8 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
                 </button>
               </div>
             )}
-            {order.tracking_url && (
-              <a href={order.tracking_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline">
+            {order.tracking_number && (
+              <a href={aggregatorTrackingUrl(order.tracking_number)} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline">
                 Track shipment →
               </a>
             )}
