@@ -55,3 +55,5 @@
 
 - [x] Audit all currently shipped Serdiya orders: count, uniqueness, tracking health, live carrier status, and destination match.
 - [x] Restore trustworthy India Post tracking states for Serdiya: retry support, outage messaging, cached-scan preservation, and official fallback.
+- [ ] Add safe parcel-label scanning: extract AWB/barcode, match recipient to the open order, and block mismatched labels before shipping.
+- [ ] Connect Telegram fresh after the latest workspace move and redeploy the order-alert function.
