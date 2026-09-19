@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS public.order_shipments_store_awb_active_uniq;
