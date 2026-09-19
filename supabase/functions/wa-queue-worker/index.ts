@@ -49,7 +49,6 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
-  await removeExpiredParcelPhotos(admin);
   const cronHeader = req.headers.get("x-cron-secret") || "";
   const authHeader = req.headers.get("Authorization") || "";
   let authorized = await isValidCronHeader(admin, cronHeader);
@@ -68,6 +67,7 @@ Deno.serve(async (req) => {
   if (!authorized) {
     return json({ error: "unauthorized" }, 401);
   }
+  await removeExpiredParcelPhotos(admin);
 
   const cfg = await loadPlatformConfig(admin);
   if (!platformConfigUsable(cfg)) return json({ skipped: true, reason: "wa_disabled" });
