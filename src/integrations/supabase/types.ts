@@ -6242,10 +6242,6 @@ export type Database = {
         Returns: boolean
       }
       is_user_blocked: { Args: never; Returns: boolean }
-      lock_shipment_awb: {
-        Args: { _awb: string; _store_id: string }
-        Returns: undefined
-      }
       log_partner_audit: {
         Args: {
           _action: string
