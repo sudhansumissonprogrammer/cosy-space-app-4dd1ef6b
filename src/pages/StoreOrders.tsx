@@ -434,6 +434,10 @@ export default function StoreOrders() {
       setTrackingOrder({ order, mode: "shipping" });
       return;
     }
+    if (v === "rto") {
+      setTrackingOrder({ order, mode: "rto" });
+      return;
+    }
     if (v === "cancelled") {
       const ok = window.confirm(
         "Cancel this order? This changes only the order status. Customer payment and the ShopBanao fee will not be refunded automatically.",

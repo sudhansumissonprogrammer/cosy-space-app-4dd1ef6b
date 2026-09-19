@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,7 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
   const [slug, setSlug] = useState(shipment?.tracking_slug || "india_post");
   const [awb, setAwb] = useState(shipment?.awb || "");
   const [verifiedScanId, setVerifiedScanId] = useState<string | null>(null);
+  const [matchedShipmentId, setMatchedShipmentId] = useState<string | null>(shipment?.id ?? null);
   const isNewShipment = !shipment;
   const [status, setStatus] = useState<string>(isRto ? "returned" : shipment?.status || "shipped");
   const [notify, setNotify] = useState<boolean>(() =>
@@ -51,6 +52,36 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
 
   const meta = courierMeta(slug);
 
+  useEffect(() => {
+    if (!open || !isRto) return;
+    let active = true;
+    void (async () => {
+      const { data: scan } = await (supabase as any)
+        .from("parcel_label_scans")
+        .select("id,tracking_number,courier_slug")
+        .eq("order_id", orderId)
+        .eq("decision", "accepted")
+        .not("tracking_number", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!active || !scan?.tracking_number) return;
+      setVerifiedScanId(scan.id);
+      setAwb(scan.tracking_number);
+      setSlug(COURIERS.some((courier) => courier.slug === scan.courier_slug) ? scan.courier_slug : "india_post");
+      const { data: existingShipment } = await (supabase as any)
+        .from("order_shipments")
+        .select("id")
+        .eq("order_id", orderId)
+        .ilike("awb", scan.tracking_number)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (active) setMatchedShipmentId(existingShipment?.id ?? null);
+    })();
+    return () => { active = false; };
+  }, [isRto, open, orderId]);
+
   const save = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.rpc("store_upsert_shipment", {
@@ -60,7 +91,7 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
         _awb: awb.trim(),
         _tracking_url: aggregatorTrackingUrl(awb.trim()),
         _status: isRto ? "returned" : isNewShipment ? "shipped" : status,
-        _shipment_id: shipment?.id ?? null,
+        _shipment_id: matchedShipmentId,
         // 🔕 Persisted with the shipment so every later path (courier auto-sync,
         // status flips) also respects this choice — not just this save.
         _notify: isRto ? false : notify,
@@ -121,7 +152,7 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
               onAccepted={(result) => {
                 if (COURIERS.some((courier) => courier.slug === result.courier_slug)) {
                   setAwb(result.tracking_number);
-                  setSlug(result.courier_slug);
+                  setSlug(result.courier_slug === "other" ? "india_post" : result.courier_slug);
                   setVerifiedScanId(result.scan_id);
                 }
               }}

@@ -3,6 +3,6 @@
 - [x] Ensure status changes never automatically refund payments or the 3% platform fee.
 - [x] Add dashboard RTO filter and verify affected order flows.
 - [x] Connect Telegram fresh for the new workspace and redeploy its notification function.
-- [ ] Make RTO available on every order with scan-first evidence when tracking is missing.
-- [ ] Default new shipment and RTO parcel scans to India Post.
-- [ ] Guarantee RTO never sends a customer message.
+- [x] Make RTO available on every order with scan-first evidence when tracking is missing.
+- [x] Default new shipment and RTO parcel scans to India Post.
+- [x] Guarantee RTO never sends a customer message.
