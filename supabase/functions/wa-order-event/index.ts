@@ -138,6 +138,7 @@ Deno.serve(async (req) => {
 
   // Gate: "shipped" must have a tracking number, otherwise customer gets a useless message.
   if (body.event === "order_shipped" && (!o.tracking_number || String(o.tracking_number).trim() === "")) {
+    await discardSubmittedParcelPhoto();
     return json({ skipped: true, reason: "no_tracking_number" });
   }
 
@@ -165,7 +166,10 @@ Deno.serve(async (req) => {
     .eq("message_type", body.event)
     .in("status", ["pending", "sending", "sent", "skipped"])
     .limit(1).maybeSingle();
-  if (existing) return json({ ok: true, queued: false, reason: "already_enqueued" });
+  if (existing) {
+    await discardSubmittedParcelPhoto();
+    return json({ ok: true, queued: false, reason: "already_enqueued" });
+  }
 
   const orderNum = o.order_number || String(o.id).slice(0, 8).toUpperCase();
   const sym = o.currency === "INR" || !o.currency ? "₹" : `${o.currency} `;
@@ -268,6 +272,7 @@ Deno.serve(async (req) => {
         verifiedParcelScanId = String((scan as any).id);
       }
     }
+    if (!verifiedParcelScanId) await discardSubmittedParcelPhoto();
   }
 
   // Prefer the approved image-header shipment template only when the scan,
@@ -286,6 +291,7 @@ Deno.serve(async (req) => {
     else if (usable("order_shipped_v3")) templateName = "order_shipped_v3";
     else {
       console.warn("order_shipped skipped: no approved shipping template", { order_id: o.id });
+      await discardSubmittedParcelPhoto();
       return json({ skipped: true, reason: "no_approved_shipping_template" });
     }
   }
@@ -331,6 +337,7 @@ Deno.serve(async (req) => {
 
   // 23505 = unique_violation from the partial unique index → treat as dedup, not error.
   if (qErr) {
+    await discardSubmittedParcelPhoto();
     if ((qErr as any).code === "23505") return json({ ok: true, queued: false, reason: "already_enqueued" });
     return json({ error: qErr.message }, 500);
   }

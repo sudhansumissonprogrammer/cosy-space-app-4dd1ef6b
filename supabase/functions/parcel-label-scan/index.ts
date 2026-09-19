@@ -200,7 +200,10 @@ Deno.serve(async (req) => {
     const barcodeHint = normalizeAwb(form?.get("barcode_hint"));
     if (!(image instanceof File) || !orderId) return json({ error: "Take a parcel-label photo first" }, 400);
     if (image.size < 1000 || image.size > MAX_IMAGE_BYTES) return json({ error: "Use a clear photo smaller than 8 MB" }, 413);
-    if (!new Set(["image/jpeg", "image/png", "image/webp"]).has(image.type)) return json({ error: "Use a JPG, PNG, or WebP photo" }, 415);
+    // WhatsApp IMAGE template headers accept JPEG/PNG. The browser converts
+    // WebP selections to JPEG before upload so an accepted scan is always
+    // directly usable by Meta without keeping a second converted copy.
+    if (!new Set(["image/jpeg", "image/png"]).has(image.type)) return json({ error: "Use a JPG or PNG photo" }, 415);
 
     const admin = createClient(url, serviceKey);
     const { data: expiredPhotos } = await admin
@@ -249,7 +252,7 @@ Deno.serve(async (req) => {
     if (reusedImage?.tracking_number && reusedImage.order_id === orderId) {
       const reusableUntil = reusedImage.temp_expires_at ? new Date(reusedImage.temp_expires_at).getTime() : 0;
       if (!reusedImage.temp_object_path || reusableUntil <= Date.now()) {
-        const extension = image.type === "image/png" ? "png" : image.type === "image/webp" ? "webp" : "jpg";
+        const extension = image.type === "image/png" ? "png" : "jpg";
         const objectPath = `${order.store_id}/${orderId}/${reusedImage.id}.${extension}`;
         const expiresAt = new Date(Date.now() + TEMP_PHOTO_TTL_MS).toISOString();
         const { error: uploadError } = await admin.storage.from(TEMP_PHOTO_BUCKET).upload(objectPath, bytes, {
@@ -395,7 +398,7 @@ Deno.serve(async (req) => {
     if (decision === "review") return json({ decision, confidence, error: allReasons[0] || "We could not safely verify this label. Take a clearer photo or enter the tracking number manually.", reasons: allReasons }, 422);
 
     if (!scanId) throw new Error("The verified scan could not be saved");
-    const extension = image.type === "image/png" ? "png" : image.type === "image/webp" ? "webp" : "jpg";
+    const extension = image.type === "image/png" ? "png" : "jpg";
     const objectPath = `${order.store_id}/${orderId}/${scanId}.${extension}`;
     const expiresAt = new Date(Date.now() + TEMP_PHOTO_TTL_MS).toISOString();
     const { error: uploadError } = await admin.storage.from(TEMP_PHOTO_BUCKET).upload(objectPath, bytes, {
