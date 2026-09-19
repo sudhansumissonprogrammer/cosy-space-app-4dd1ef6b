@@ -4,6 +4,8 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/responses";
 const AWB_RE = /^[A-Z0-9._-]{4,40}$/i;
+const TEMP_PHOTO_BUCKET = "parcel-label-temp";
+const TEMP_PHOTO_TTL_MS = 6 * 60 * 60 * 1000;
 
 type Extraction = {
   readable: boolean;
@@ -221,7 +223,7 @@ Deno.serve(async (req) => {
     const imageHash = await sha256(bytes);
     const { data: reusedImage } = await admin
       .from("parcel_label_scans")
-      .select("order_id,tracking_number,courier_slug,confidence")
+      .select("id,order_id,tracking_number,courier_slug,confidence,temp_object_path,temp_expires_at")
       .eq("store_id", order.store_id)
       .eq("image_sha256", imageHash)
       .eq("decision", "accepted")
@@ -230,8 +232,26 @@ Deno.serve(async (req) => {
       return json({ decision: "rejected", error: "This parcel photo was already used for another order." }, 409);
     }
     if (reusedImage?.tracking_number && reusedImage.order_id === orderId) {
+      const reusableUntil = reusedImage.temp_expires_at ? new Date(reusedImage.temp_expires_at).getTime() : 0;
+      if (!reusedImage.temp_object_path || reusableUntil <= Date.now()) {
+        const extension = image.type === "image/png" ? "png" : image.type === "image/webp" ? "webp" : "jpg";
+        const objectPath = `${order.store_id}/${orderId}/${reusedImage.id}.${extension}`;
+        const expiresAt = new Date(Date.now() + TEMP_PHOTO_TTL_MS).toISOString();
+        const { error: uploadError } = await admin.storage.from(TEMP_PHOTO_BUCKET).upload(objectPath, bytes, {
+          contentType: image.type,
+          upsert: true,
+          cacheControl: "300",
+        });
+        if (uploadError) throw new Error("The label matched, but its temporary photo could not be prepared. Please retry.");
+        await admin.from("parcel_label_scans").update({
+          temp_object_path: objectPath,
+          temp_expires_at: expiresAt,
+          photo_deleted_at: null,
+        }).eq("id", reusedImage.id);
+      }
       return json({
         decision: "accepted",
+        scan_id: reusedImage.id,
         confidence: Number(reusedImage.confidence ?? 1),
         courier_slug: reusedImage.courier_slug || "other",
         tracking_number: reusedImage.tracking_number,
@@ -338,7 +358,9 @@ Deno.serve(async (req) => {
         .limit(1)
       : { data: [] as Array<{ id: string }> };
 
-    if (!(decision === "accepted" && (alreadyAcceptedForOrder.data ?? []).length > 0)) await admin.from("parcel_label_scans").insert({
+    let scanId = (alreadyAcceptedForOrder.data ?? [])[0]?.id || null;
+    if (!(decision === "accepted" && scanId)) {
+      const { data: insertedScan, error: insertError } = await admin.from("parcel_label_scans").insert({
       store_id: order.store_id,
       order_id: orderId,
       scanned_by: userId,
@@ -349,13 +371,37 @@ Deno.serve(async (req) => {
       tracking_number: candidateAwb || null,
       evidence,
       reasons: allReasons,
-    });
+      }).select("id").single();
+      if (insertError) throw insertError;
+      scanId = insertedScan?.id || null;
+    }
 
     if (decision === "rejected") return json({ decision, confidence, error: "Wrong parcel — this label does not match this customer.", reasons: allReasons }, 422);
     if (decision === "review") return json({ decision, confidence, error: allReasons[0] || "We could not safely verify this label. Take a clearer photo or enter the tracking number manually.", reasons: allReasons }, 422);
 
+    if (!scanId) throw new Error("The verified scan could not be saved");
+    const extension = image.type === "image/png" ? "png" : image.type === "image/webp" ? "webp" : "jpg";
+    const objectPath = `${order.store_id}/${orderId}/${scanId}.${extension}`;
+    const expiresAt = new Date(Date.now() + TEMP_PHOTO_TTL_MS).toISOString();
+    const { error: uploadError } = await admin.storage.from(TEMP_PHOTO_BUCKET).upload(objectPath, bytes, {
+      contentType: image.type,
+      upsert: true,
+      cacheControl: "300",
+    });
+    if (uploadError) throw new Error("The label matched, but its temporary photo could not be prepared. Please retry.");
+    const { error: photoRecordError } = await admin.from("parcel_label_scans").update({
+      temp_object_path: objectPath,
+      temp_expires_at: expiresAt,
+      photo_deleted_at: null,
+    }).eq("id", scanId).eq("order_id", orderId).eq("scanned_by", userId);
+    if (photoRecordError) {
+      await admin.storage.from(TEMP_PHOTO_BUCKET).remove([objectPath]);
+      throw new Error("The temporary parcel photo could not be secured. Please retry.");
+    }
+
     return json({
       decision,
+      scan_id: scanId,
       confidence,
       courier_slug: courierSlug(extracted.courier_name),
       tracking_number: candidateAwb,

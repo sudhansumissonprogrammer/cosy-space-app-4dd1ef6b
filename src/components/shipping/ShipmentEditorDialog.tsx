@@ -35,6 +35,7 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
   const qc = useQueryClient();
   const [slug, setSlug] = useState(shipment?.tracking_slug || "delhivery");
   const [awb, setAwb] = useState(shipment?.awb || "");
+  const [verifiedScanId, setVerifiedScanId] = useState<string | null>(null);
   const isNewShipment = !shipment;
   const [status, setStatus] = useState<string>(shipment?.status || "shipped");
   const [notify, setNotify] = useState<boolean>(() =>
@@ -77,7 +78,7 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
       const savedStatus = isNewShipment ? "shipped" : status;
       if (notify && (savedStatus === "shipped" || savedStatus === "in_transit")) {
         const { data: waData } = await supabase.functions.invoke("wa-order-event", {
-          body: { event: "order_shipped", order_id: orderId },
+          body: { event: "order_shipped", order_id: orderId, parcel_scan_id: verifiedScanId },
         });
         waResult = waData;
       }
@@ -115,11 +116,13 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
               onScanStart={() => {
                 setAwb("");
                 setSlug("");
+                setVerifiedScanId(null);
               }}
               onAccepted={(result) => {
                 if (COURIERS.some((courier) => courier.slug === result.courier_slug)) {
                   setAwb(result.tracking_number);
                   setSlug(result.courier_slug);
+                  setVerifiedScanId(result.scan_id);
                 }
               }}
             />
