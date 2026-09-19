@@ -30,7 +30,7 @@ type Meta = {
 };
 
 // Colors are locked: confirmed=blue, partially_paid=purple, shipped=violet,
-// delivered=emerald, cancelled=red, pending=amber. Do not diverge per surface.
+// delivered=emerald, RTO=orange, cancelled=red, pending=amber. Do not diverge per surface.
 export const ORDER_STATUS_META: Record<OrderStatus, Meta> = {
   pending: {
     label: "Pending", rank: 0,
