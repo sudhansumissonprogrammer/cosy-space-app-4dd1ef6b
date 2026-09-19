@@ -201,6 +201,7 @@ Deno.serve(async (req) => {
   // Keep the order row in sync so existing screens / WA templates work.
   if (changed) {
     const orderStatus = next === "delivered" ? "delivered"
+      : next === "returned" ? "rto"
       : statusRank(next) >= statusRank("shipped") && statusRank(next) < 99 ? "shipped"
       : null;
     const patch: Record<string, unknown> = {

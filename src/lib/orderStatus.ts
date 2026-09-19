@@ -7,6 +7,7 @@ export type OrderStatus =
   | "partially_paid"
   | "shipped"
   | "delivered"
+  | "rto"
   | "cancelled";
 
 export const ORDER_STATUSES: OrderStatus[] = [
@@ -15,6 +16,7 @@ export const ORDER_STATUSES: OrderStatus[] = [
   "partially_paid",
   "shipped",
   "delivered",
+  "rto",
   "cancelled",
 ];
 
@@ -28,7 +30,7 @@ type Meta = {
 };
 
 // Colors are locked: confirmed=blue, partially_paid=purple, shipped=violet,
-// delivered=emerald, cancelled=red, pending=amber. Do not diverge per surface.
+// delivered=emerald, RTO=orange, cancelled=red, pending=amber. Do not diverge per surface.
 export const ORDER_STATUS_META: Record<OrderStatus, Meta> = {
   pending: {
     label: "Pending", rank: 0,
@@ -54,6 +56,11 @@ export const ORDER_STATUS_META: Record<OrderStatus, Meta> = {
     label: "Delivered", rank: 3,
     dot: "bg-emerald-500", text: "text-emerald-700", bg: "bg-emerald-50",
     badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
+  },
+  rto: {
+    label: "RTO", rank: -1,
+    dot: "bg-orange-500", text: "text-orange-700", bg: "bg-orange-50",
+    badge: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
   },
   cancelled: {
     label: "Cancelled", rank: -1,
@@ -86,6 +93,7 @@ export const ORDER_STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
   { value: "partially_paid", label: ORDER_STATUS_META.partially_paid.label },
   { value: "shipped",        label: ORDER_STATUS_META.shipped.label },
   { value: "delivered",      label: ORDER_STATUS_META.delivered.label },
+  { value: "rto",            label: ORDER_STATUS_META.rto.label },
   { value: "cancelled",      label: ORDER_STATUS_META.cancelled.label },
 ];
 
@@ -106,6 +114,7 @@ export function paymentDisplay(order: {
   const status = order.status || "";
 
   if (status === "partially_paid") return { label: "Advance paid · Balance on delivery", tone: "paid" };
+  if (status === "rto")           return { label: verified ? "Paid · Returned to seller" : "Returned to seller", tone: verified ? "paid" : "cod" };
   if (status === "cancelled")     return { label: isCod ? "Pay on Delivery" : verified ? "Paid" : "Not paid", tone: isCod ? "cod" : verified ? "paid" : "pending" };
 
   if (isPartial && !verified)     return { label: "Advance payment pending", tone: "pending" };

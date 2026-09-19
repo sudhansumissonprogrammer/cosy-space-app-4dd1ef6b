@@ -298,9 +298,9 @@ Changes save from the sticky Save bar at the bottom.`,
     id: "wallet-billing",
     title: "Wallet, commission and billing",
     route: "{s}/wallet",
-    keywords: ["wallet", "balance", "recharge", "commission", "2%", "fee", "billing", "top up", "invoice"],
+    keywords: ["wallet", "balance", "recharge", "commission", "3%", "fee", "billing", "top up", "invoice"],
     body: `1. Open Wallet to see your balance, commission charges and recharge history.
-2. Billing is a flat 2% platform commission on every order — there is no monthly subscription.
+2. Billing is a flat 3% platform commission on every order — there is no monthly subscription.
 3. Commission is deducted from the wallet as orders come in, so keep a positive balance or the dashboard will prompt you to recharge.
 4. Recharge from the Wallet page; the balance updates as soon as payment is confirmed.
 5. For any commission query on a cancelled or returned order, contact customer care.`,
@@ -438,17 +438,17 @@ Search Console:
     body: `1. Open the order → Shipment.
 2. Choose the courier, paste the tracking/AWB number and save.
 3. The customer automatically gets the tracking link on WhatsApp and on the order-tracking page.
-4. Update the shipment status as it moves (shipped → out for delivery → delivered, or returned/cancelled for RTO).
-For any commission query on a cancelled, returned or RTO order, contact customer care — they review it and settle it.`,
+4. Update the shipment status as it moves (shipped → out for delivery → delivered, or returned for RTO).
+RTO is available only after shipment with a verified parcel photo. Changing status never automatically refunds customer money or the ShopBanao fee.`,
   },
   {
     id: "rto-returns",
     title: "RTO, returns and refunds",
     route: "{s}/orders",
     keywords: ["rto", "return", "refund", "returned to seller", "not delivered", "money back"],
-    body: `1. When a parcel comes back, set the shipment status to Returned/Cancelled on the order.
-2. The order status becomes cancelled and the platform commission for it is credited back to your wallet.
-3. Prepaid refunds are made by you from the payment gateway's own dashboard (Razorpay/Cashfree/PayU) — we never hold your money.
+    body: `1. When a shipped parcel comes back, set its shipment status to Returned to Seller (RTO). A verified parcel photo must already be attached from shipping.
+2. The order gets its own RTO status. Changing any order status does not refund the ShopBanao fee or customer payment.
+3. Any customer payment refund must be handled separately by the store owner through the payment provider.
 4. Add your return window and any proof requirement (e.g. an unboxing video) in Pages & Policies → Return & Refund so it shows on every product page.`,
   },
   {
@@ -597,14 +597,15 @@ paid / confirmed — money received (or COD accepted). Pack and ship.
 processing — you are preparing it.
 shipped — handed to the courier. Shipped means fulfilment only, NOT that the parcel was delivered or that the money is final.
 delivered — customer received it.
-cancelled — order closed; no revenue counted. For commission questions on cancelled orders, contact customer care.`,
+cancelled — order closed; changing the status does not automatically refund any payment or ShopBanao fee.
+rto — a shipped parcel was returned to the seller; verified parcel evidence is required and the ShopBanao fee remains charged.`,
   },
   {
-    id: "commission-2-percent",
-    title: "How much the platform charges (2%)",
+    id: "commission-3-percent",
+    title: "How much the platform charges (3%)",
     route: "{s}/wallet",
-    keywords: ["commission", "charges", "fee", "2%", "subscription", "monthly", "kitna charge", "cost", "pricing"],
-    body: `There is no monthly subscription. The platform takes a flat 2% of every order, including orders that come back as RTO. It is deducted from your store wallet, not from the customer.
+    keywords: ["commission", "charges", "fee", "3%", "subscription", "monthly", "kitna charge", "cost", "pricing"],
+    body: `There is no monthly subscription. The platform takes a flat 3% of every order, including orders that come back as RTO. It is deducted from your store wallet, not from the customer.
 Payment gateway charges (Razorpay/Cashfree/PayU) are separate and charged by that gateway.
 Keep your wallet topped up — if the balance runs out, new orders can be blocked. See Wallet for the ledger of every deduction.`,
   },
@@ -615,7 +616,7 @@ Keep your wallet topped up — if the balance runs out, new orders can be blocke
     keywords: ["payout", "settlement", "when money", "paisa kab", "bank", "withdraw", "kab milega", "t+2"],
     body: `Online payments go straight to YOUR gateway account (Razorpay/Cashfree/PayU/UPI), not to us. The gateway settles to your bank on its own cycle — usually T+2 working days. Check the payout schedule inside your gateway's own dashboard.
 COD money is collected by the courier and remitted by them, usually 7-10 days after delivery.
-The platform only deducts its 2% commission from your store wallet — it never holds your order money.`,
+The platform only deducts its 3% commission from your store wallet — it never holds your order money.`,
   },
   {
     id: "test-order",
@@ -656,7 +657,7 @@ What to fix instead of worrying: enable UPI + one card gateway, keep COD on, and
     body: `1. Cancel the order in Orders (open the order → Cancel) so revenue and stock are corrected.
 2. Refund the actual money from the gateway that took it — Razorpay/Cashfree/PayU dashboards each have a Refund button on that transaction. Refunds reach the customer in 3-7 working days.
 3. For UPI-direct payments you refund manually from your own UPI/bank app.
-4. If the order was already shipped and you cancel it, the platform's 2% commission is automatically credited back to your wallet.
+4. Changing an order to Cancelled or RTO never automatically refunds customer money or the 3% ShopBanao fee.
 5. Tell the customer the refund reference on WhatsApp.`,
   },
   {
@@ -772,7 +773,7 @@ The storefront is served from a global CDN, so after the first load repeat visit
     title: "Wallet empty / store blocked",
     route: "{s}/wallet",
     keywords: ["wallet blocked", "recharge", "balance low", "negative", "orders blocked", "top up"],
-    body: `The 2% commission is deducted per order from the store wallet. If the balance goes to zero, order creation can be blocked so you don't run up dues.
+    body: `The 3% commission is deducted per order from the store wallet. If the balance goes to zero, order creation can be blocked so you don't run up dues.
 Fix: Wallet → Recharge → pay via UPI/gateway; the balance updates within a minute or two of a successful payment.
 Keep a buffer of at least a few hundred rupees when running ads, and check the ledger to see every deduction with its order number.`,
   },

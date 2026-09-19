@@ -50,6 +50,7 @@ import { buildOrderCopyText } from "@/lib/orderCopyText";
 import { buildOrderBreakdown } from "@/lib/orderPaymentBreakdown";
 import { waPhoneNumber } from "@/lib/phoneUtils";
 const STATUS_OPTIONS = ORDER_STATUS_OPTIONS.map(o => o.value);
+const BULK_STATUS_OPTIONS = STATUS_OPTIONS.filter((status) => status !== "rto");
 const statusColor = (status: string) => orderStatusBadgeClass(status);
 
 
@@ -259,7 +260,11 @@ export default function StoreOrders() {
         for (const [key, data] of ctx.snapshots) queryClient.setQueryData(key as any, data);
       }
       toast.error(
-        /cannot_cancel_paid_(?:unshipped_)?order/.test(String(err?.message || ""))
+        /rto_requires_shipped_order/.test(String(err?.message || ""))
+          ? "RTO is available only after the order has been shipped."
+          : /rto_requires_verified_parcel_photo/.test(String(err?.message || ""))
+          ? "RTO requires the verified parcel-label photo used when shipping this order."
+          : /cannot_cancel_paid_(?:unshipped_)?order/.test(String(err?.message || ""))
           ? "A paid order can be cancelled here only after it is marked shipped with tracking."
           : err.message,
       );
@@ -425,14 +430,13 @@ export default function StoreOrders() {
       setTrackingOrder(order);
       return;
     }
-    if (v === "cancelled" && order.payment_verified) {
-      const wasShipped = order.status === "shipped" || !!order.tracking_number;
-      if (!wasShipped) {
-        toast.error("A paid order can be cancelled here only after it is marked shipped with tracking.");
-        return;
-      }
+    if (v === "rto" && order.status !== "shipped") {
+      toast.error("RTO is available only after the order has been shipped.");
+      return;
+    }
+    if (v === "cancelled") {
       const ok = window.confirm(
-        "Cancel this shipped order? ShopBanao commission will be refunded to the wallet. This does not refund the customer's gateway payment.",
+        "Cancel this order? This changes only the order status. Customer payment and the ShopBanao fee will not be refunded automatically.",
       );
       if (!ok) return;
     }
@@ -601,7 +605,7 @@ export default function StoreOrders() {
                     <SelectValue placeholder="Set status..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {STATUS_OPTIONS.map(s => (
+                    {BULK_STATUS_OPTIONS.map(s => (
                       <SelectItem key={s} value={s}>{orderStatusLabel(s)}</SelectItem>
                     ))}
                   </SelectContent>
@@ -826,7 +830,7 @@ export default function StoreOrders() {
                                 <Select value={order.status} onValueChange={(v) => handleStatusChange(order, v)}>
                                   <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
                                   <SelectContent>
-                                    {STATUS_OPTIONS.map((s) => (
+                                    {STATUS_OPTIONS.filter((s) => s !== "rto" || order.status === "shipped").map((s) => (
                                       <SelectItem key={s} value={s}>{orderStatusLabel(s)}</SelectItem>
                                     ))}
                                   </SelectContent>
@@ -1270,7 +1274,7 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
                 </div>
               </SelectTrigger>
               <SelectContent>
-                {STATUS_OPTIONS.map(s => (
+                {STATUS_OPTIONS.filter((s) => s !== "rto" || order.status === "shipped").map(s => (
                   <SelectItem key={s} value={s}>{orderStatusLabel(s)}</SelectItem>
                 ))}
               </SelectContent>
