@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   orderId: string;
   shipment?: ShipmentTracking | null;
+  mode?: "shipping" | "rto";
   /** Fired after a successful save so parent views can close or refresh. */
   onSaved?: (status: string) => void;
 }
@@ -31,13 +32,15 @@ function readNotifyPref(): boolean {
   try { return localStorage.getItem(NOTIFY_PREF_KEY) !== "0"; } catch { return true; }
 }
 
-export default function ShipmentEditorDialog({ open, onOpenChange, orderId, shipment, onSaved }: Props) {
+export default function ShipmentEditorDialog({ open, onOpenChange, orderId, shipment, mode = "shipping", onSaved }: Props) {
   const qc = useQueryClient();
-  const [slug, setSlug] = useState(shipment?.tracking_slug || "delhivery");
+  const isRto = mode === "rto";
+  const [slug, setSlug] = useState(shipment?.tracking_slug || "india_post");
   const [awb, setAwb] = useState(shipment?.awb || "");
   const [verifiedScanId, setVerifiedScanId] = useState<string | null>(null);
+  const [matchedShipmentId, setMatchedShipmentId] = useState<string | null>(shipment?.id ?? null);
   const isNewShipment = !shipment;
-  const [status, setStatus] = useState<string>(shipment?.status || "shipped");
+  const [status, setStatus] = useState<string>(isRto ? "returned" : shipment?.status || "shipped");
   const [notify, setNotify] = useState<boolean>(() =>
     (shipment as any)?.notify_customer === false ? false : readNotifyPref(),
   );
@@ -49,6 +52,36 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
 
   const meta = courierMeta(slug);
 
+  useEffect(() => {
+    if (!open || !isRto) return;
+    let active = true;
+    void (async () => {
+      const { data: scan } = await (supabase as any)
+        .from("parcel_label_scans")
+        .select("id,tracking_number,courier_slug")
+        .eq("order_id", orderId)
+        .eq("decision", "accepted")
+        .not("tracking_number", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!active || !scan?.tracking_number) return;
+      setVerifiedScanId(scan.id);
+      setAwb(scan.tracking_number);
+      setSlug(COURIERS.some((courier) => courier.slug === scan.courier_slug) ? scan.courier_slug : "india_post");
+      const { data: existingShipment } = await (supabase as any)
+        .from("order_shipments")
+        .select("id")
+        .eq("order_id", orderId)
+        .ilike("awb", scan.tracking_number)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (active) setMatchedShipmentId(existingShipment?.id ?? null);
+    })();
+    return () => { active = false; };
+  }, [isRto, open, orderId]);
+
   const save = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.rpc("store_upsert_shipment", {
@@ -57,13 +90,11 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
         _courier_name: meta.name,
         _awb: awb.trim(),
         _tracking_url: aggregatorTrackingUrl(awb.trim()),
-        // A new AWB always starts as shipped. RTO/cancelled are outcomes that
-        // can only be recorded later while editing the existing shipment.
-        _status: isNewShipment ? "shipped" : status,
-        _shipment_id: shipment?.id ?? null,
+        _status: isRto ? "returned" : isNewShipment ? "shipped" : status,
+        _shipment_id: matchedShipmentId,
         // 🔕 Persisted with the shipment so every later path (courier auto-sync,
         // status flips) also respects this choice — not just this save.
-        _notify: notify,
+        _notify: isRto ? false : notify,
       } as any);
       if (error) throw error;
       // Kick an immediate sync for API-backed couriers (best effort).
@@ -75,8 +106,8 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
       // messages. wa-order-event handles template choice, branding and
       // idempotency (one row per order + event), so a re-save never spams.
       let waResult: any = null;
-      const savedStatus = isNewShipment ? "shipped" : status;
-      if ((notify || verifiedScanId) && (savedStatus === "shipped" || savedStatus === "in_transit")) {
+      const savedStatus = isRto ? "returned" : isNewShipment ? "shipped" : status;
+      if (!isRto && (notify || verifiedScanId) && (savedStatus === "shipped" || savedStatus === "in_transit")) {
         const { data: waData } = await supabase.functions.invoke("wa-order-event", {
           body: { event: "order_shipped", order_id: orderId, parcel_scan_id: verifiedScanId },
         });
@@ -93,7 +124,7 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
       qc.invalidateQueries({ queryKey: ["shipment-tracking", orderId] });
       qc.invalidateQueries({ queryKey: ["store-orders"] });
       qc.invalidateQueries({ queryKey: ["website-orders-all"] });
-      onSaved?.(isNewShipment ? "shipped" : status);
+      onSaved?.(isRto ? "rto" : isNewShipment ? "shipped" : status);
       onOpenChange(false);
 
     },
@@ -105,23 +136,23 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{shipment ? "Update shipment" : "Add shipment"}</DialogTitle>
+          <DialogTitle>{isRto ? "Mark order as RTO" : shipment ? "Update shipment" : "Add shipment"}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
-          {isNewShipment && (
+          {(isNewShipment || isRto) && (
             <ParcelLabelScanner
               orderId={orderId}
               disabled={save.isPending}
               onScanStart={() => {
                 setAwb("");
-                setSlug("");
+                setSlug("india_post");
                 setVerifiedScanId(null);
               }}
               onAccepted={(result) => {
                 if (COURIERS.some((courier) => courier.slug === result.courier_slug)) {
                   setAwb(result.tracking_number);
-                  setSlug(result.courier_slug);
+                  setSlug(result.courier_slug === "other" ? "india_post" : result.courier_slug);
                   setVerifiedScanId(result.scan_id);
                 }
               }}
@@ -147,7 +178,14 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
             </div>
           )}
 
-          {isNewShipment ? (
+          {isRto ? (
+            <div className="rounded-md border bg-muted/40 px-3 py-2.5">
+              <p className="text-sm font-medium">Status: Returned to seller</p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                Upload this customer&apos;s parcel label. The tracking number must be extracted and verified before RTO can be saved. No customer message or automatic refund will be sent.
+              </p>
+            </div>
+          ) : isNewShipment ? (
             <div className="rounded-md border bg-muted/40 px-3 py-2.5">
               <p className="text-sm font-medium">Status: Shipped</p>
               <p className="mt-0.5 text-[11px] text-muted-foreground">
@@ -171,7 +209,7 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
             </div>
           )}
 
-          <label className="flex items-start gap-2.5 rounded-lg border p-3 cursor-pointer">
+          {!isRto && <label className="flex items-start gap-2.5 rounded-lg border p-3 cursor-pointer">
             <Checkbox checked={notify} onCheckedChange={(v) => setNotifyPref(v === true)} className="mt-0.5" />
             <span className="text-sm">
               Notify customer on WhatsApp
@@ -184,14 +222,14 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
                 Your choice is saved with the shipment and used as the default next time.
               </span>
             </span>
-          </label>
+          </label>}
         </div>
 
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={() => save.mutate()} disabled={save.isPending || awb.trim().length < 4}>
-            {save.isPending ? "Saving…" : "Save shipment"}
+          <Button onClick={() => save.mutate()} disabled={save.isPending || awb.trim().length < 4 || (isRto && !verifiedScanId)}>
+            {save.isPending ? "Saving…" : isRto ? "Mark RTO" : "Save shipment"}
           </Button>
         </DialogFooter>
       </DialogContent>

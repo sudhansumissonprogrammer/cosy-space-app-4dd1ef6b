@@ -62,7 +62,7 @@ export default function StoreOrders() {
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
   useRealtimeStore(storeId, "orders");
-  const [trackingOrder, setTrackingOrder] = useState<any>(null);
+  const [trackingOrder, setTrackingOrder] = useState<{ order: any; mode: "shipping" | "rto" } | null>(null);
   const [invoiceOrder, setInvoiceOrder] = useState<any>(null);
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [bulkStatus, setBulkStatus] = useState<string>("");
@@ -254,16 +254,20 @@ export default function StoreOrders() {
       );
       return { snapshots };
     },
-    onError: (err: any, _vars, ctx) => {
+    onError: (err: any, vars, ctx) => {
       // Roll back optimistic patch
       if (ctx?.snapshots) {
         for (const [key, data] of ctx.snapshots) queryClient.setQueryData(key as any, data);
       }
+      const errorMessage = String(err?.message || "");
+      if (vars.status === "rto" && /rto_requires_(?:verified_parcel_photo|tracking_number)/.test(errorMessage)) {
+        const order = allOrders?.find((item: any) => item.id === vars.orderId);
+        if (order) setTrackingOrder({ order, mode: "rto" });
+        return;
+      }
       toast.error(
-        /rto_requires_shipped_order/.test(String(err?.message || ""))
-          ? "RTO is available only after the order has been shipped."
-          : /rto_requires_verified_parcel_photo/.test(String(err?.message || ""))
-          ? "RTO requires the verified parcel-label photo used when shipping this order."
+        /rto_requires_verified_parcel_photo/.test(errorMessage)
+          ? "RTO requires a verified photo of this customer's parcel label."
           : /cannot_cancel_paid_(?:unshipped_)?order/.test(String(err?.message || ""))
           ? "A paid order can be cancelled here only after it is marked shipped with tracking."
           : err.message,
@@ -427,11 +431,11 @@ export default function StoreOrders() {
 
   const handleStatusChange = (order: any, v: string) => {
     if (v === "shipped" && !order.tracking_number) {
-      setTrackingOrder(order);
+      setTrackingOrder({ order, mode: "shipping" });
       return;
     }
-    if (v === "rto" && order.status !== "shipped") {
-      toast.error("RTO is available only after the order has been shipped.");
+    if (v === "rto") {
+      setTrackingOrder({ order, mode: "rto" });
       return;
     }
     if (v === "cancelled") {
@@ -830,7 +834,7 @@ export default function StoreOrders() {
                                 <Select value={order.status} onValueChange={(v) => handleStatusChange(order, v)}>
                                   <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
                                   <SelectContent>
-                                    {STATUS_OPTIONS.filter((s) => s !== "rto" || order.status === "shipped").map((s) => (
+                                    {STATUS_OPTIONS.map((s) => (
                                       <SelectItem key={s} value={s}>{orderStatusLabel(s)}</SelectItem>
                                     ))}
                                   </SelectContent>
@@ -922,10 +926,11 @@ export default function StoreOrders() {
           shipped, enables tracking, and sends the customer notification. */}
       {trackingOrder && (
         <ShipmentEditorDialog
-          key={trackingOrder.id}
+          key={`${trackingOrder.order.id}-${trackingOrder.mode}`}
           open={!!trackingOrder}
           onOpenChange={(v) => { if (!v) setTrackingOrder(null); }}
-          orderId={trackingOrder.id}
+          orderId={trackingOrder.order.id}
+          mode={trackingOrder.mode}
           onSaved={() => setTrackingOrder(null)}
         />
       )}
@@ -1274,7 +1279,7 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
                 </div>
               </SelectTrigger>
               <SelectContent>
-                {STATUS_OPTIONS.filter((s) => s !== "rto" || order.status === "shipped").map(s => (
+                {STATUS_OPTIONS.map(s => (
                   <SelectItem key={s} value={s}>{orderStatusLabel(s)}</SelectItem>
                 ))}
               </SelectContent>

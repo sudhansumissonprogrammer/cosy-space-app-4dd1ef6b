@@ -7,7 +7,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 /** Statuses worth interrupting a customer for. */
-export const NOTIFY_STATUSES = ["shipped", "out_for_delivery", "delivered", "returned", "exception"];
+export const NOTIFY_STATUSES = ["shipped", "out_for_delivery", "delivered", "exception"];
 
 const WA_EVENT_BY_STATUS: Record<string, string> = {
   shipped: "order_shipped",
