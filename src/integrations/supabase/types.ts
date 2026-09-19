@@ -1748,9 +1748,12 @@ export type Database = {
           id: string
           image_sha256: string
           order_id: string
+          photo_deleted_at: string | null
           reasons: string[]
           scanned_by: string
           store_id: string
+          temp_expires_at: string | null
+          temp_object_path: string | null
           tracking_number: string | null
         }
         Insert: {
@@ -1762,9 +1765,12 @@ export type Database = {
           id?: string
           image_sha256: string
           order_id: string
+          photo_deleted_at?: string | null
           reasons?: string[]
           scanned_by: string
           store_id: string
+          temp_expires_at?: string | null
+          temp_object_path?: string | null
           tracking_number?: string | null
         }
         Update: {
@@ -1776,9 +1782,12 @@ export type Database = {
           id?: string
           image_sha256?: string
           order_id?: string
+          photo_deleted_at?: string | null
           reasons?: string[]
           scanned_by?: string
           store_id?: string
+          temp_expires_at?: string | null
+          temp_object_path?: string | null
           tracking_number?: string | null
         }
         Relationships: [
