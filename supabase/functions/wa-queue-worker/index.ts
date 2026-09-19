@@ -201,6 +201,30 @@ Deno.serve(async (req) => {
 
 
 
+    let sendTemplateName = row.template_name;
+    const sendTemplateVars = { ...(row.template_vars || {}) };
+    const parcelScanId = String(sendTemplateVars.parcel_scan_id || "");
+    if (row.message_type === "order_shipped" && parcelScanId) {
+      const { data: scan } = await admin
+        .from("parcel_label_scans")
+        .select("temp_object_path,temp_expires_at,photo_deleted_at")
+        .eq("id", parcelScanId)
+        .eq("order_id", row.order_id)
+        .maybeSingle();
+      const usable = scan && !(scan as any).photo_deleted_at && (scan as any).temp_object_path &&
+        new Date((scan as any).temp_expires_at || 0).getTime() > Date.now();
+      if (usable) {
+        const { data: signed } = await admin.storage
+          .from("parcel-label-temp")
+          .createSignedUrl((scan as any).temp_object_path, 15 * 60);
+        if (signed?.signedUrl) sendTemplateVars.header_media_url = signed.signedUrl;
+        else sendTemplateName = "order_shipped_v3";
+      } else {
+        sendTemplateName = "order_shipped_v3";
+        delete sendTemplateVars.header_media_url;
+      }
+    }
+
     const resp = await fetch(`${SUPABASE_URL}/functions/v1/wa-platform-send`, {
       method: "POST",
       headers: {
@@ -214,9 +238,9 @@ Deno.serve(async (req) => {
         store_id: row.store_id,
         recipient_phone: row.recipient_phone,
         recipient_name: row.recipient_name,
-        template_name: row.template_name,
+        template_name: sendTemplateName,
         template_params: row.params,
-        template_vars: row.template_vars || undefined,
+        template_vars: sendTemplateVars,
         message_type: row.message_type,
         order_id: row.order_id,
         abandoned_cart_id: row.abandoned_cart_id,
