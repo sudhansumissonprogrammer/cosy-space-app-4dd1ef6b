@@ -221,13 +221,23 @@ Deno.serve(async (req) => {
     const imageHash = await sha256(bytes);
     const { data: reusedImage } = await admin
       .from("parcel_label_scans")
-      .select("order_id")
+      .select("order_id,tracking_number,courier_slug,confidence")
       .eq("store_id", order.store_id)
       .eq("image_sha256", imageHash)
       .eq("decision", "accepted")
-      .neq("order_id", orderId)
       .maybeSingle();
-    if (reusedImage) return json({ decision: "rejected", error: "This parcel photo was already used for another order." }, 409);
+    if (reusedImage && reusedImage.order_id !== orderId) {
+      return json({ decision: "rejected", error: "This parcel photo was already used for another order." }, 409);
+    }
+    if (reusedImage?.tracking_number && reusedImage.order_id === orderId) {
+      return json({
+        decision: "accepted",
+        confidence: Number(reusedImage.confidence ?? 1),
+        courier_slug: reusedImage.courier_slug || "other",
+        tracking_number: reusedImage.tracking_number,
+        matched: { name: true },
+      });
+    }
 
     const extracted = await inspectLabel(bytes, image.type, barcodeHint);
     const printedAwb = normalizeAwb(extracted.printed_tracking_number);
@@ -275,6 +285,16 @@ Deno.serve(async (req) => {
     }
 
     if (candidateAwb) {
+      const { data: priorAcceptedAwb } = await admin
+        .from("parcel_label_scans")
+        .select("order_id")
+        .eq("store_id", order.store_id)
+        .ilike("tracking_number", candidateAwb)
+        .eq("decision", "accepted")
+        .limit(1);
+      if ((priorAcceptedAwb ?? []).some((scan) => scan.order_id !== orderId)) {
+        hardFailures.push("This tracking number was already verified for another order.");
+      }
       const { data: usedAwb } = await admin
         .from("order_shipments")
         .select("order_id")
@@ -307,7 +327,18 @@ Deno.serve(async (req) => {
       pincode: actualPin,
     };
 
-    await admin.from("parcel_label_scans").insert({
+    const alreadyAcceptedForOrder = candidateAwb
+      ? await admin
+        .from("parcel_label_scans")
+        .select("id")
+        .eq("store_id", order.store_id)
+        .eq("order_id", orderId)
+        .ilike("tracking_number", candidateAwb)
+        .eq("decision", "accepted")
+        .limit(1)
+      : { data: [] as Array<{ id: string }> };
+
+    if (!(decision === "accepted" && (alreadyAcceptedForOrder.data ?? []).length > 0)) await admin.from("parcel_label_scans").insert({
       store_id: order.store_id,
       order_id: orderId,
       scanned_by: userId,
