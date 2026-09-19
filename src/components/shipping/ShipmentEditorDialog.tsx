@@ -86,7 +86,7 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
       return waResult;
     },
     onSuccess: (waResult: any) => {
-      if (waResult?.queued) toast.success("Shipment saved · WhatsApp sent to customer");
+      if (waResult?.queued) toast.success("Shipment saved · WhatsApp message queued");
       else if (waResult?.reason === "already_enqueued") toast.success("Shipment saved · WhatsApp already sent");
       else if (waResult?.skipped) toast.success(`Shipment saved · WhatsApp skipped (${waResult.reason})`);
       else toast.success("Shipment saved");

@@ -19,6 +19,24 @@ type Props = {
   onAccepted: (result: ScanResult) => void;
 };
 
+async function prepareWhatsAppImage(file: File): Promise<File> {
+  if (file.type !== "image/webp") return file;
+  const bitmap = await createImageBitmap(file);
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Could not prepare this photo");
+    context.drawImage(bitmap, 0, 0);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.9));
+    if (!blob) throw new Error("Could not prepare this photo");
+    return new File([blob], file.name.replace(/\.webp$/i, ".jpg"), { type: "image/jpeg" });
+  } finally {
+    bitmap.close();
+  }
+}
+
 async function detectBarcode(file: File): Promise<string> {
   const Detector = (window as unknown as { BarcodeDetector?: new (options: { formats: string[] }) => { detect: (source: ImageBitmap) => Promise<Array<{ rawValue?: string }>> } }).BarcodeDetector;
   if (!Detector || typeof createImageBitmap !== "function") return "";
@@ -44,11 +62,19 @@ export default function ParcelLabelScanner({ orderId, disabled, onScanStart, onA
     onScanStart();
     setStage("reading");
     setMessage("Reading label…");
-    const barcodeHint = await detectBarcode(file);
+    let preparedFile: File;
+    try {
+      preparedFile = await prepareWhatsAppImage(file);
+    } catch {
+      setStage("error");
+      setMessage("Could not prepare this photo. Try taking a new photo.");
+      return;
+    }
+    const barcodeHint = await detectBarcode(preparedFile);
     setStage("checking");
     setMessage("Checking customer…");
     const form = new FormData();
-    form.append("image", file);
+    form.append("image", preparedFile);
     form.append("order_id", orderId);
     if (barcodeHint) form.append("barcode_hint", barcodeHint);
 
