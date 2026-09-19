@@ -24,6 +24,7 @@
 - [x] PDP opened review panel: load every approved review, show complete text and mobile verified badges, and inherit store theme fonts.
 - [x] Replace bulky PDP review sections with the compact checkout-style review strip, neutral styling, and lazy loading.
 - [x] Connect Telegram fresh after the latest workspace move and redeploy the order-alert function.
+- [x] Make new shipment entry scan-only with separate camera/gallery capture and locked verified tracking details.
 - [x] Fix newly added product variants being saved as sold out and repair affected live variants.
 - [x] Connect Telegram fresh in the current workspace and redeploy the order-alert function.
 - [x] Review approval and display consistency: 14 on PDP, up to 14 featured reviews, all approved reviews in checkout/review page, featured ordering everywhere.
