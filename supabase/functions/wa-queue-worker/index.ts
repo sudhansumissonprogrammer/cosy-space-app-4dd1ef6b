@@ -27,10 +27,29 @@ async function removeParcelPhoto(admin: any, row: any) {
   }).eq("id", scanId);
 }
 
+async function removeExpiredParcelPhotos(admin: any) {
+  const { data: scans } = await admin
+    .from("parcel_label_scans")
+    .select("id,temp_object_path")
+    .not("temp_object_path", "is", null)
+    .is("photo_deleted_at", null)
+    .lte("temp_expires_at", new Date().toISOString())
+    .limit(100);
+  for (const scan of scans ?? []) {
+    const path = String((scan as any).temp_object_path || "");
+    if (path) await admin.storage.from("parcel-label-temp").remove([path]);
+    await admin.from("parcel_label_scans").update({
+      temp_object_path: null,
+      photo_deleted_at: new Date().toISOString(),
+    }).eq("id", (scan as any).id);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+  await removeExpiredParcelPhotos(admin);
   const cronHeader = req.headers.get("x-cron-secret") || "";
   const authHeader = req.headers.get("Authorization") || "";
   let authorized = await isValidCronHeader(admin, cronHeader);
