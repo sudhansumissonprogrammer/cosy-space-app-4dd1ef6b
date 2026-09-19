@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -109,52 +108,47 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="space-y-1.5">
-            <Label>Courier</Label>
-            <Select value={slug} onValueChange={setSlug}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {COURIERS.map((c) => (
-                  <SelectItem key={c.slug} value={c.slug}>
-                    <span className="flex items-center gap-2">
-                      <CourierLogo slug={c.slug} size={20} />
-                      <span>{c.name}{c.api ? " · auto-tracking" : ""}</span>
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {slug === "india_post" && (
-              <p className="text-[11px] text-muted-foreground">
-                India Post tracking is checked automatically. When its CAPTCHA blocks a check, the
-                last confirmed scans remain visible and the official tracking page is available.
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Tracking number (AWB)</Label>
-            <Input value={awb} onChange={(e) => setAwb(e.target.value)} placeholder="e.g. 1234567890" autoComplete="off" />
-          </div>
-
           {isNewShipment && (
             <ParcelLabelScanner
               orderId={orderId}
               disabled={save.isPending}
+              onScanStart={() => {
+                setAwb("");
+                setSlug("");
+              }}
               onAccepted={(result) => {
-                setAwb(result.tracking_number);
                 if (COURIERS.some((courier) => courier.slug === result.courier_slug)) {
+                  setAwb(result.tracking_number);
                   setSlug(result.courier_slug);
                 }
               }}
             />
           )}
 
+          {awb && slug && (
+            <div className="space-y-2 rounded-md border bg-muted/40 px-3 py-3">
+              <p className="text-xs font-medium text-muted-foreground">Verified label details</p>
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <CourierLogo slug={slug} size={22} />
+                <span>{meta.name}</span>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Tracking number</Label>
+                <p className="break-all font-mono text-sm font-semibold">{awb}</p>
+              </div>
+              {slug === "india_post" && (
+                <p className="text-[11px] text-muted-foreground">
+                  India Post tracking is checked automatically. Saved movements remain visible if its live service is unavailable.
+                </p>
+              )}
+            </div>
+          )}
+
           {isNewShipment ? (
             <div className="rounded-md border bg-muted/40 px-3 py-2.5">
               <p className="text-sm font-medium">Status: Shipped</p>
               <p className="mt-0.5 text-[11px] text-muted-foreground">
-                Adding this tracking number marks the order as shipped. You can record delivery or RTO later.
+                Saving the verified label marks the order as shipped. You can record delivery or RTO later.
               </p>
             </div>
           ) : (
