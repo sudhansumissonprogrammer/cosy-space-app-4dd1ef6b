@@ -267,7 +267,7 @@ export default function StoreOrders() {
       }
       toast.error(
         /rto_requires_verified_parcel_photo/.test(errorMessage)
-          ? "RTO requires a verified photo of this customer&apos;s parcel label."
+          ? "RTO requires a verified photo of this customer's parcel label."
           : /cannot_cancel_paid_(?:unshipped_)?order/.test(String(err?.message || ""))
           ? "A paid order can be cancelled here only after it is marked shipped with tracking."
           : err.message,
