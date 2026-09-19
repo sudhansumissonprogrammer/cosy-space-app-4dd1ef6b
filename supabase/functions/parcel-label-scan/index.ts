@@ -9,12 +9,7 @@ const TEMP_PHOTO_TTL_MS = 6 * 60 * 60 * 1000;
 
 type Extraction = {
   readable: boolean;
-  recipient_name: string;
   phone: string;
-  pincode: string;
-  address: string;
-  order_reference: string;
-  payable_amount: number | null;
   courier_name: string;
   printed_tracking_number: string;
   barcode_value: string;
@@ -36,27 +31,11 @@ function digits(value: unknown): string {
 }
 
 function normalizePhone(value: unknown): string {
-  const valueDigits = digits(value);
-  return valueDigits.length >= 10 ? valueDigits.slice(-10) : valueDigits;
-}
-
-function normalizeName(value: unknown): string[] {
-  const ignored = new Set(["mr", "mrs", "ms", "miss", "shri", "smt", "ji"]);
-  return clean(value)
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[^a-z0-9 ]/g, " ")
-    .split(/\s+/)
-    .filter((part) => part.length > 1 && !ignored.has(part));
-}
-
-function nameScore(expected: string, actual: string): number {
-  const a = new Set(normalizeName(expected));
-  const b = new Set(normalizeName(actual));
-  if (!a.size || !b.size) return 0;
-  let shared = 0;
-  for (const token of a) if (b.has(token)) shared += 1;
-  return (2 * shared) / (a.size + b.size);
+  let local = digits(value);
+  if (local.length === 13 && local.startsWith("091")) local = local.slice(3);
+  else if (local.length === 12 && local.startsWith("91")) local = local.slice(2);
+  else if (local.length === 11 && local.startsWith("0")) local = local.slice(1);
+  return local.length === 10 && /^[6-9]\d{9}$/.test(local) ? local : "";
 }
 
 function normalizeAwb(value: unknown): string {
@@ -128,17 +107,12 @@ async function inspectLabel(bytes: Uint8Array, mime: string, barcodeHint: string
     additionalProperties: false,
     properties: {
       readable: { type: "boolean" },
-      recipient_name: { type: "string" },
       phone: { type: "string" },
-      pincode: { type: "string" },
-      address: { type: "string" },
-      order_reference: { type: "string" },
-      payable_amount: { type: ["number", "null"] },
       courier_name: { type: "string" },
       printed_tracking_number: { type: "string" },
       barcode_value: { type: "string" },
     },
-    required: ["readable", "recipient_name", "phone", "pincode", "address", "order_reference", "payable_amount", "courier_name", "printed_tracking_number", "barcode_value"],
+    required: ["readable", "phone", "courier_name", "printed_tracking_number", "barcode_value"],
   };
   const response = await fetch(GATEWAY_URL, {
     method: "POST",
@@ -154,7 +128,7 @@ async function inspectLabel(bytes: Uint8Array, mime: string, barcodeHint: string
       input: [{
         role: "user",
         content: [
-          { type: "input_text", text: `Read this Indian courier parcel label. Extract only clearly visible values; use empty strings and null rather than guessing. Tracking values must contain only the actual AWB characters. The browser independently saw this possible barcode: ${barcodeHint || "none"}. Treat it only as a hint and independently inspect the image.` },
+          { type: "input_text", text: `Read this Indian courier parcel label. Extract only the clearly visible recipient mobile number, courier, and tracking number; use empty strings rather than guessing. Preserve any visible +91, 91, or 0 phone prefix. Tracking values must contain only the actual AWB characters. The browser independently saw this possible barcode: ${barcodeHint || "none"}. Treat it only as a hint and independently inspect the image.` },
           { type: "input_image", image_url: `data:${mime};base64,${bytesToBase64(bytes)}` },
         ],
       }],
@@ -223,7 +197,7 @@ Deno.serve(async (req) => {
     }
     const { data: order } = await admin
       .from("orders")
-      .select("id,store_id,order_number,customer_name,customer_phone,street_address,city,state,pincode,total,balance_due,status,stores!inner(owner_id)")
+      .select("id,store_id,customer_phone,stores!inner(owner_id)")
       .eq("id", orderId)
       .maybeSingle();
     const ownerId = (order as any)?.stores?.owner_id;
@@ -273,7 +247,7 @@ Deno.serve(async (req) => {
         confidence: Number(reusedImage.confidence ?? 1),
         courier_slug: reusedImage.courier_slug || "other",
         tracking_number: reusedImage.tracking_number,
-        matched: { name: true },
+        matched: { phone: true },
       });
     }
 
@@ -289,38 +263,12 @@ Deno.serve(async (req) => {
     if (imageBarcode && printedAwb && imageBarcode !== printedAwb) hardFailures.push("The barcode and printed tracking number do not agree.");
     if (barcodeHint && imageBarcode && barcodeHint !== imageBarcode) hardFailures.push("The detected barcode could not be confirmed from the label.");
 
-    const expectedPin = digits(order.pincode).slice(-6);
-    const actualPin = digits(extracted.pincode).slice(-6);
-    if (expectedPin && actualPin && expectedPin !== actualPin) hardFailures.push("The PIN code belongs to a different delivery address.");
-
     const expectedPhone = normalizePhone(order.customer_phone);
     const actualPhone = normalizePhone(extracted.phone);
-    const phoneExact = expectedPhone.length === 10 && actualPhone.length === 10 && expectedPhone === actualPhone;
-    if (expectedPhone.length === 10 && actualPhone.length === 10 && !phoneExact) hardFailures.push("The phone number belongs to a different customer.");
-
-    const recipientScore = nameScore(order.customer_name, extracted.recipient_name);
-    if (extracted.recipient_name && recipientScore < 0.5) hardFailures.push("The recipient name does not match this order.");
-    if (!extracted.recipient_name) reasons.push("The recipient name was not readable.");
-
-    const referenceDigits = digits(extracted.order_reference);
-    const orderReferenceMatch = !!referenceDigits && referenceDigits.includes(String(order.order_number));
-    if (referenceDigits && !orderReferenceMatch) hardFailures.push("The printed order reference does not match this order.");
-
-    const expectedAmount = Number(order.balance_due ?? order.total ?? 0);
-    const amountRead = typeof extracted.payable_amount === "number" ? extracted.payable_amount : null;
-    const amountMatch = amountRead !== null && Math.abs(amountRead - expectedAmount) <= 1;
-    if (amountRead !== null && !amountMatch) hardFailures.push("The payable amount does not match this order.");
-
-    const { count: similarOpenOrders } = await admin
-      .from("orders")
-      .select("id", { count: "exact", head: true })
-      .eq("store_id", order.store_id)
-      .neq("id", orderId)
-      .in("status", ["pending", "confirmed", "partially_paid", "shipped"])
-      .eq("customer_phone", order.customer_phone);
-    if ((similarOpenOrders ?? 0) > 0 && !orderReferenceMatch && !amountMatch) {
-      reasons.push("This customer has another open order; the label needs a matching order reference or payable amount.");
-    }
+    const phoneExact = !!expectedPhone && !!actualPhone && expectedPhone === actualPhone;
+    if (!expectedPhone) reasons.push("This order does not have a valid 10-digit mobile number.");
+    if (!actualPhone) reasons.push("The full 10-digit mobile number was not readable on the label.");
+    if (expectedPhone && actualPhone && !phoneExact) hardFailures.push("The phone number belongs to a different customer.");
 
     if (candidateAwb) {
       const { data: priorAcceptedAwb } = await admin
@@ -343,26 +291,12 @@ Deno.serve(async (req) => {
       if ((usedAwb ?? []).length > 0) hardFailures.push("This tracking number is already attached to another order.");
     }
 
-    let confidence = 0;
-    if (candidateAwb) confidence += 0.25;
-    if (recipientScore >= 0.8) confidence += 0.25;
-    else if (recipientScore >= 0.5) confidence += 0.12;
-    if (phoneExact) confidence += 0.25;
-    if (expectedPin && actualPin === expectedPin) confidence += 0.15;
-    if (orderReferenceMatch || amountMatch) confidence += 0.1;
-    confidence = Math.min(1, confidence);
-
-    const hasHardIdentity = phoneExact || (expectedPin && actualPin === expectedPin && recipientScore >= 0.8);
-    const decision = hardFailures.length > 0 ? "rejected" : extracted.readable && candidateAwb && hasHardIdentity && reasons.length === 0 && confidence >= 0.75 ? "accepted" : "review";
+    const confidence = extracted.readable && candidateAwb && phoneExact ? 1 : 0;
+    const decision = hardFailures.length > 0 ? "rejected" : extracted.readable && candidateAwb && phoneExact && reasons.length === 0 ? "accepted" : "review";
     const allReasons = [...hardFailures, ...reasons];
     const evidence = {
-      name_match: Number(recipientScore.toFixed(2)),
       phone_match: phoneExact,
-      pincode_match: !!expectedPin && actualPin === expectedPin,
-      order_reference_match: orderReferenceMatch,
-      amount_match: amountMatch,
       phone_last4: actualPhone.slice(-4),
-      pincode: actualPin,
     };
 
     const alreadyAcceptedForOrder = candidateAwb
@@ -423,7 +357,7 @@ Deno.serve(async (req) => {
       confidence,
       courier_slug: courierSlug(extracted.courier_name),
       tracking_number: candidateAwb,
-      matched: { name: true, phone: phoneExact, pincode: !!expectedPin && actualPin === expectedPin },
+      matched: { phone: phoneExact },
     });
   } catch (error) {
     console.error("[parcel-label-scan] unexpected", error);

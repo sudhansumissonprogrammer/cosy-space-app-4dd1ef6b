@@ -9,7 +9,7 @@ type ScanResult = {
   tracking_number: string;
   courier_slug: string;
   confidence: number;
-  matched?: { name?: boolean; phone?: boolean; pincode?: boolean };
+  matched?: { phone?: boolean };
 };
 
 type Props = {
@@ -99,7 +99,7 @@ export default function ParcelLabelScanner({ orderId, disabled, onScanStart, onA
       return;
     }
     setStage("ready");
-    setMessage("Customer matched · tracking details ready");
+    setMessage("Phone number matched · tracking details ready");
     onAccepted(data as ScanResult);
   };
 
@@ -165,7 +165,7 @@ export default function ParcelLabelScanner({ orderId, disabled, onScanStart, onA
       {stage === "idle" && (
         <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
           <ScanLine className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          Keep the recipient name, address and barcode clearly visible. A wrong customer label will be blocked.
+          Keep the full mobile number and barcode clearly visible. A different or incomplete number will be blocked.
         </p>
       )}
     </div>
