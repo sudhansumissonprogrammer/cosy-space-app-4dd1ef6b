@@ -4,7 +4,7 @@
 //
 // Token formats:
 //   o-<order_uuid>      → /account/orders/<id> on store's domain  (stable → 301 + long cache)
-//   t-<order_uuid>      → tracking_url (fall back to order page)  (302 + short cache)
+//   t-<order_uuid>      → prefilled Speed Post Track page (fall back to order page)
 //   r-<order_uuid>      → /checkout?recover_order=<id> on store's domain (302 no-store)
 //   c-<cart_id_or_token>→ /cart?recover=<token> on store's domain (302 no-store)
 //   p-<product_uuid>    → /product/<slug> on store's domain       (302 + medium cache)
@@ -38,6 +38,11 @@ const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 // Module-scope client → connection pool + TLS reuse across invocations.
 const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+
+function speedPostTrackingUrl(awb: string): string {
+  const payload = btoa(JSON.stringify({ t: awb.trim(), c: "speedpost" }));
+  return `https://speedposttrack.io/tracking-result?d=${encodeURIComponent(payload)}&utm_source=copy&utm_medium=share&utm_campaign=parcel_tracking`;
+}
 
 /**
  * Kick off a pre-mint as early as possible (in parallel with the DB lookup)
@@ -234,10 +239,10 @@ Deno.serve(async (req) => {
       if (kind === "t-") {
         const awb = String((o as any).tracking_number || "").trim();
         if (awb) {
-          return redirect(`https://t.17track.net/en#nums=${encodeURIComponent(awb)}`, {
+          return redirect(speedPostTrackingUrl(awb), {
             status: 302,
             maxAge: 0,
-            preconnectHosts: ["t.17track.net"],
+            preconnectHosts: ["speedposttrack.io"],
           });
         }
       }

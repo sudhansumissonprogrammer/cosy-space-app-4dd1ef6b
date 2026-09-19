@@ -20,6 +20,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { orderStatusBadgeClass, orderStatusLabel } from "@/lib/orderStatus";
+import { aggregatorTrackingUrl } from "@/lib/shipping/courierRegistry";
 
 const statusColor = (status: string) => orderStatusBadgeClass(status);
 
@@ -455,8 +456,8 @@ function AdminWebOrderDetail({ order, onCopy }: { order: any; onCopy: (t: string
                 </button>
               </div>
             )}
-            {order.tracking_url && (
-              <a href={order.tracking_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline">
+            {order.tracking_number && (
+              <a href={aggregatorTrackingUrl(order.tracking_number)} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline">
                 Track shipment →
               </a>
             )}

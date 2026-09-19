@@ -14,6 +14,7 @@ import {
 import { format } from "date-fns";
 import { orderStatusBadgeClass, orderStatusLabel, orderStatusRank } from "@/lib/orderStatus";
 import OrderShipments from "@/components/shipping/OrderShipments";
+import { aggregatorTrackingUrl } from "@/lib/shipping/courierRegistry";
 
 const STATUS_STEPS = [
   { key: "pending", label: "Placed", icon: Clock },
@@ -215,9 +216,9 @@ export default function OrderTrackingPage() {
                     <span className="font-medium">Tracking:</span>
                     <span className="text-muted-foreground">{order.tracking_number}</span>
                   </div>
-                  {order.tracking_url && (
+                  {order.tracking_number && (
                     <a
-                      href={order.tracking_url}
+                      href={aggregatorTrackingUrl(order.tracking_number)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="mt-2 inline-flex items-center gap-1 text-sm text-primary hover:underline"

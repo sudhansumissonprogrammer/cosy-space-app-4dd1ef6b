@@ -73,9 +73,11 @@ export function courierLogo(slug?: string | null, size = 64): string | null {
 }
 
 
-/** Universal fallback aggregator when the courier has no deep link. */
+/** Prefilled Speed Post Track destination used for customer tracking links. */
 export function aggregatorTrackingUrl(awb: string) {
-  return `https://t.17track.net/en#nums=${encodeURIComponent(awb)}`;
+  const payload = JSON.stringify({ t: awb.trim(), c: "speedpost" });
+  const encoded = btoa(payload);
+  return `https://speedposttrack.io/tracking-result?d=${encodeURIComponent(encoded)}&utm_source=copy&utm_medium=share&utm_campaign=parcel_tracking`;
 }
 
 export function officialTrackingUrl(slug: string | null | undefined, awb: string | null | undefined): string | null {
@@ -90,9 +92,8 @@ export function officialTrackingUrl(slug: string | null | undefined, awb: string
     case "shadowfax": return `https://tracker.shadowfax.in/#/consignment/${a}`;
     case "ecom_express": return `https://ecomexpress.in/tracking/?awb_field=${a}`;
     case "amazon_shipping": return `https://track.amazon.in/tracking/${a}`;
-    // India Post's own portal is CAPTCHA/session gated. 17TRACK still gives
-    // customers a useful AWB-prefilled destination while our cached timeline
-    // remains visible on the ShopBanao order page.
+    // India Post's own portal is CAPTCHA/session gated. Speed Post Track gives
+    // customers an AWB-prefilled destination while the saved ShopBanao timeline remains visible.
     case "india_post": return aggregatorTrackingUrl(awb);
     case "dtdc": return `https://www.dtdc.in/tracking/shipment-tracking?strCnno=${a}`;
     default: return aggregatorTrackingUrl(awb);

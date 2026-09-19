@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Loader2, Truck, ExternalLink } from "lucide-react";
+import { aggregatorTrackingUrl } from "@/lib/shipping/courierRegistry";
 
 type Order = {
   id: string; store_id: string; pincode?: string | null;
@@ -133,7 +134,7 @@ export default function ShipOrderPanel({ order }: { order: Order }) {
                 </div>
                 {s.awb && <div>AWB: <code className="text-xs">{s.awb}</code></div>}
                 <div className="flex gap-3">
-                  {s.tracking_url && <a href={s.tracking_url} target="_blank" rel="noreferrer" className="text-primary text-xs flex items-center gap-1">Track <ExternalLink className="h-3 w-3" /></a>}
+                  {s.awb && <a href={aggregatorTrackingUrl(s.awb)} target="_blank" rel="noreferrer" className="text-primary text-xs flex items-center gap-1">Track <ExternalLink className="h-3 w-3" /></a>}
                   {s.label_url && <a href={s.label_url} target="_blank" rel="noreferrer" className="text-primary text-xs flex items-center gap-1">Label <ExternalLink className="h-3 w-3" /></a>}
                 </div>
                 {s.last_error && <div className="text-destructive text-xs">{s.last_error}</div>}

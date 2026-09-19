@@ -8,3 +8,4 @@
 - [x] Guarantee RTO never sends a customer message.
 - [x] Connect Telegram fresh for the new workspace and redeploy order notifications.
 - [x] Verify parcel labels only by normalized 10-digit customer phone number.
+- [x] Replace customer-facing 17TRACK links with prefilled Speed Post Track links.
