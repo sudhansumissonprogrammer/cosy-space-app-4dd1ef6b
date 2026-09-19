@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
 type ScanResult = {
+  scan_id: string;
   tracking_number: string;
   courier_slug: string;
   confidence: number;

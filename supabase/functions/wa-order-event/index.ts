@@ -30,14 +30,20 @@ Deno.serve(async (req) => {
   const cronHeader = req.headers.get("x-cron-secret") || "";
   const authHeader = req.headers.get("Authorization") || "";
   let isAuthorized = false;
+  let callerUserId: string | null = null;
+  let isInternal = false;
   if (cronHeader && (await isValidCronHeader(admin, cronHeader))) {
     isAuthorized = true;
+    isInternal = true;
   } else if (authHeader.startsWith("Bearer ")) {
     const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: { user } } = await userClient.auth.getUser();
-    if (user) isAuthorized = true; // store ownership re-checked below against the order's store_id
+    if (user) {
+      isAuthorized = true;
+      callerUserId = user.id;
+    }
   }
   if (!isAuthorized) return json({ error: "unauthorized" }, 401);
 
@@ -45,7 +51,7 @@ Deno.serve(async (req) => {
   if (!platformConfigUsable(cfg)) return json({ skipped: true, reason: "wa_disabled" });
 
 
-  let body: { event: Event; order_id: string };
+  let body: { event: Event; order_id: string; parcel_scan_id?: string | null };
   try { body = await req.json(); } catch { return json({ error: "bad json" }, 400); }
   if (!body.event || !body.order_id) return json({ error: "event + order_id required" }, 400);
 
@@ -66,6 +72,16 @@ Deno.serve(async (req) => {
   if (!phone) return json({ skipped: true, reason: "no_phone" });
 
   const o = order as any;
+  if (!isInternal && callerUserId) {
+    const { data: ownedStore } = await admin
+      .from("stores")
+      .select("id")
+      .eq("id", o.store_id)
+      .eq("owner_id", callerUserId)
+      .maybeSingle();
+    const { data: isAdmin } = ownedStore ? { data: false } : await admin.rpc("has_role", { _user_id: callerUserId, _role: "admin" });
+    if (!ownedStore && isAdmin !== true) return json({ error: "forbidden" }, 403);
+  }
 
   // 🔒 Master switch is authoritative for EVERY event (marketing AND transactional).
   // If the store owner has WhatsApp OFF, nothing goes out on their behalf.
@@ -206,21 +222,49 @@ Deno.serve(async (req) => {
     if (!ok) return json({ skipped: true, reason: "no_approved_cod_template" });
   }
 
-  // 🧩 Template resolution for shipping: TEXT-ONLY by choice — merchants asked
-  // for the plain `order_shipped_v3` template (no image header) so the tracking
-  // details are the first thing the customer reads. The image variant stays
-  // registered on Meta but is intentionally never selected here.
+  let parcelPhotoUrl = "";
+  let verifiedParcelScanId = "";
+  if (body.event === "order_shipped" && body.parcel_scan_id) {
+    const nowIso = new Date().toISOString();
+    const { data: scan } = await admin
+      .from("parcel_label_scans")
+      .select("id,order_id,store_id,scanned_by,tracking_number,temp_object_path,temp_expires_at,photo_deleted_at")
+      .eq("id", body.parcel_scan_id)
+      .eq("order_id", o.id)
+      .eq("store_id", o.store_id)
+      .eq("decision", "accepted")
+      .is("photo_deleted_at", null)
+      .gt("temp_expires_at", nowIso)
+      .maybeSingle();
+    const scanAwb = String((scan as any)?.tracking_number || "").replace(/\s+/g, "").toUpperCase();
+    const orderAwb = String(o.tracking_number || "").replace(/\s+/g, "").toUpperCase();
+    const operatorMatches = isInternal || (scan as any)?.scanned_by === callerUserId;
+    if (scan && operatorMatches && scanAwb === orderAwb && (scan as any).temp_object_path) {
+      const secondsLeft = Math.max(60, Math.floor((new Date((scan as any).temp_expires_at).getTime() - Date.now()) / 1000));
+      const { data: signed } = await admin.storage
+        .from("parcel-label-temp")
+        .createSignedUrl((scan as any).temp_object_path, Math.min(secondsLeft, 4 * 60 * 60));
+      if (signed?.signedUrl) {
+        parcelPhotoUrl = signed.signedUrl;
+        verifiedParcelScanId = String((scan as any).id);
+      }
+    }
+  }
+
+  // Prefer the approved image-header shipment template only when the scan,
+  // order, operator, AWB, expiry and private object all still agree.
   let templateName = TEMPLATE_BY_EVENT[body.event];
   if (body.event === "order_shipped") {
     const { data: tpls } = await admin
       .from("platform_wa_templates")
       .select("name, is_active, paused, meta_status")
-      .in("name", ["order_shipped_v3"]);
+       .in("name", ["order_shipped_v3", "order_shipped_v3_img"]);
     const usable = (name: string) =>
       (tpls || []).some((t: any) =>
         t.name === name && t.is_active && !t.paused &&
         String(t.meta_status || "").toUpperCase() === "APPROVED");
-    if (usable("order_shipped_v3")) templateName = "order_shipped_v3";
+    if (parcelPhotoUrl && usable("order_shipped_v3_img")) templateName = "order_shipped_v3_img";
+    else if (usable("order_shipped_v3")) templateName = "order_shipped_v3";
     else {
       console.warn("order_shipped skipped: no approved shipping template", { order_id: o.id });
       return json({ skipped: true, reason: "no_approved_shipping_template" });
@@ -256,7 +300,7 @@ Deno.serve(async (req) => {
       review_url: reviewUrl,
       cta_token: ctaToken,
       delivery_address: deliveryAddress,
-      // Shipping is text-only now, so never attach a media header for it.
+      ...(parcelPhotoUrl ? { header_media_url: parcelPhotoUrl, parcel_scan_id: verifiedParcelScanId } : {}),
       ...(headerImage && body.event !== "order_shipped" ? { header_media_url: headerImage } : {}),
 
     },

@@ -24,6 +24,8 @@
 - [x] PDP opened review panel: load every approved review, show complete text and mobile verified badges, and inherit store theme fonts.
 - [x] Replace bulky PDP review sections with the compact checkout-style review strip, neutral styling, and lazy loading.
 - [x] Connect Telegram fresh after the latest workspace move and redeploy the order-alert function.
+- [ ] Reconnect Telegram fresh after the current workspace move and redeploy the order-alert function.
+- [x] Send verified parcel photos with shipment WhatsApp messages, expire them safely, and deep-link Track Order to prefilled 17TRACK.
 - [x] Make new shipment entry scan-only with separate camera/gallery capture and locked verified tracking details.
 - [x] Fix newly added product variants being saved as sold out and repair affected live variants.
 - [x] Connect Telegram fresh in the current workspace and redeploy the order-alert function.

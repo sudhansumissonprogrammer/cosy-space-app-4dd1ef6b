@@ -224,19 +224,26 @@ Deno.serve(async (req) => {
     if (kind === "o-" || kind === "t-") {
       const { data: o } = await admin
         .from("orders")
-        .select("id, tracking_url, customer_phone, stores:store_id(name, slug, custom_domain)")
+        .select("id, tracking_url, tracking_number, customer_phone, stores:store_id(name, slug, custom_domain)")
         .eq("id", id).maybeSingle();
       if (!o) return redirect("https://shopbanao.in");
       const storeRow = (o as any).stores;
       const base = storeBase(storeRow);
       const host = base.replace(/^https?:\/\//, "");
       const phone = (o as any).customer_phone as string | null;
-      // `t-` used to bounce to the courier's own site (India Post etc.).
-      // Customers now land on OUR order detail page, which renders the full
-      // live shipment timeline + courier deep-link — branded, auto-logged in.
+      if (kind === "t-") {
+        const awb = String((o as any).tracking_number || "").trim();
+        if (awb) {
+          return redirect(`https://t.17track.net/en#nums=${encodeURIComponent(awb)}`, {
+            status: 302,
+            maxAge: 0,
+            preconnectHosts: ["t.17track.net"],
+          });
+        }
+      }
       const mintP = startPreMint(phone);
       const target = await withAutoLogin(
-        `${base}/account/orders/${(o as any).id}${kind === "t-" ? "#shipment" : ""}`,
+        `${base}/account/orders/${(o as any).id}`,
         phone,
         mintP,
       );

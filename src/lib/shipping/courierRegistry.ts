@@ -90,11 +90,10 @@ export function officialTrackingUrl(slug: string | null | undefined, awb: string
     case "shadowfax": return `https://tracker.shadowfax.in/#/consignment/${a}`;
     case "ecom_express": return `https://ecomexpress.in/tracking/?awb_field=${a}`;
     case "amazon_shipping": return `https://track.amazon.in/tracking/${a}`;
-    // India Post + DTDC have no public deep link (session/JS gated portals) —
-    // the aggregator resolves the same scans by AWB.
-    // India Post currently requires a CAPTCHA. Send customers to its official
-    // page rather than implying the unauthenticated aggregator is authoritative.
-    case "india_post": return "https://www.indiapost.gov.in/";
+    // India Post's own portal is CAPTCHA/session gated. 17TRACK still gives
+    // customers a useful AWB-prefilled destination while our cached timeline
+    // remains visible on the ShopBanao order page.
+    case "india_post": return aggregatorTrackingUrl(awb);
     case "dtdc": return `https://www.dtdc.in/tracking/shipment-tracking?strCnno=${a}`;
     default: return aggregatorTrackingUrl(awb);
   }
