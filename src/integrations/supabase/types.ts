@@ -1738,6 +1738,73 @@ export type Database = {
         }
         Relationships: []
       }
+      parcel_label_scans: {
+        Row: {
+          confidence: number
+          courier_slug: string | null
+          created_at: string
+          decision: string
+          evidence: Json
+          id: string
+          image_sha256: string
+          order_id: string
+          reasons: string[]
+          scanned_by: string
+          store_id: string
+          tracking_number: string | null
+        }
+        Insert: {
+          confidence?: number
+          courier_slug?: string | null
+          created_at?: string
+          decision: string
+          evidence?: Json
+          id?: string
+          image_sha256: string
+          order_id: string
+          reasons?: string[]
+          scanned_by: string
+          store_id: string
+          tracking_number?: string | null
+        }
+        Update: {
+          confidence?: number
+          courier_slug?: string | null
+          created_at?: string
+          decision?: string
+          evidence?: Json
+          id?: string
+          image_sha256?: string
+          order_id?: string
+          reasons?: string[]
+          scanned_by?: string
+          store_id?: string
+          tracking_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parcel_label_scans_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parcel_label_scans_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parcel_label_scans_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partner_audit_logs: {
         Row: {
           action: string
