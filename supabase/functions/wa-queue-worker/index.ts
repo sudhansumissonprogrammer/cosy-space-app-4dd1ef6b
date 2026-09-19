@@ -10,6 +10,23 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const BACKOFF_MIN = [1, 5, 30, 120]; // minutes per attempt (1 → 5 → 30 → 2h)
 
+async function removeParcelPhoto(admin: any, row: any) {
+  const scanId = String(row?.template_vars?.parcel_scan_id || "");
+  if (!scanId) return;
+  const { data: scan } = await admin
+    .from("parcel_label_scans")
+    .select("id,temp_object_path")
+    .eq("id", scanId)
+    .eq("order_id", row.order_id)
+    .maybeSingle();
+  const path = String((scan as any)?.temp_object_path || "");
+  if (path) await admin.storage.from("parcel-label-temp").remove([path]);
+  await admin.from("parcel_label_scans").update({
+    temp_object_path: null,
+    photo_deleted_at: new Date().toISOString(),
+  }).eq("id", scanId);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -198,6 +215,7 @@ Deno.serve(async (req) => {
         locked_until: null,
       } as any).eq("id", row.id);
       await markAbandonedCartSent(admin, row, j?.message_id ?? null, sentAt);
+      await removeParcelPhoto(admin, row);
       sent++;
     } else if (resp.ok && j?.skipped) {
       await admin.from("wa_send_queue").update({
@@ -205,6 +223,7 @@ Deno.serve(async (req) => {
         last_error: j?.reason || "skipped",
         locked_until: null,
       } as any).eq("id", row.id);
+      await removeParcelPhoto(admin, row);
       // Cart-recovery skips caused by temporary platform conditions can be
       // is a TRANSIENT skip. Unstamp abandoned_carts.recovery_sent_at so the
       // next cron cycle can retry (still bounded by wa_max_cart_age_hours).
@@ -226,6 +245,7 @@ Deno.serve(async (req) => {
           last_error_class: cls,
           locked_until: null,
         } as any).eq("id", row.id);
+        await removeParcelPhoto(admin, row);
         failed++;
         // 🩹 R3: on transient permanent-cap-exhaustion for cart recovery,
         // unstamp so a fresh cart-recovery attempt is possible next window.

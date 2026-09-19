@@ -203,6 +203,21 @@ Deno.serve(async (req) => {
     if (!new Set(["image/jpeg", "image/png", "image/webp"]).has(image.type)) return json({ error: "Use a JPG, PNG, or WebP photo" }, 415);
 
     const admin = createClient(url, serviceKey);
+    const { data: expiredPhotos } = await admin
+      .from("parcel_label_scans")
+      .select("id,temp_object_path")
+      .not("temp_object_path", "is", null)
+      .is("photo_deleted_at", null)
+      .lte("temp_expires_at", new Date().toISOString())
+      .limit(50);
+    for (const expired of expiredPhotos ?? []) {
+      const path = String((expired as any).temp_object_path || "");
+      if (path) await admin.storage.from(TEMP_PHOTO_BUCKET).remove([path]);
+      await admin.from("parcel_label_scans").update({
+        temp_object_path: null,
+        photo_deleted_at: new Date().toISOString(),
+      }).eq("id", (expired as any).id);
+    }
     const { data: order } = await admin
       .from("orders")
       .select("id,store_id,order_number,customer_name,customer_phone,street_address,city,state,pincode,total,balance_due,status,stores!inner(owner_id)")

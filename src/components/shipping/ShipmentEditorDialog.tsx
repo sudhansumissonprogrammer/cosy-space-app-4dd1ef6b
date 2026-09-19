@@ -177,7 +177,7 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
               Notify customer on WhatsApp
               <span className="block text-[11px] text-muted-foreground">
                 {notify
-                  ? "Sends the tracking number, courier and expected delivery date. Sent only once per order."
+                  ? "Sends the verified parcel photo, tracking number, courier and expected delivery date. Sent only once per order."
                   : "Off — no shipping message will be sent for this order, including later automatic tracking updates."}
               </span>
               <span className="mt-1 block text-[11px] text-muted-foreground">
