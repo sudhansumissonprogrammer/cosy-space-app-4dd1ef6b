@@ -76,7 +76,7 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
       // idempotency (one row per order + event), so a re-save never spams.
       let waResult: any = null;
       const savedStatus = isNewShipment ? "shipped" : status;
-      if (notify && (savedStatus === "shipped" || savedStatus === "in_transit")) {
+      if ((notify || verifiedScanId) && (savedStatus === "shipped" || savedStatus === "in_transit")) {
         const { data: waData } = await supabase.functions.invoke("wa-order-event", {
           body: { event: "order_shipped", order_id: orderId, parcel_scan_id: verifiedScanId },
         });
