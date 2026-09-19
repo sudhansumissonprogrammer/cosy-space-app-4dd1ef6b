@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { COURIERS, SHIPMENT_STATUS_LABEL, SHIPMENT_STEPS, courierMeta, officialTrackingUrl } from "@/lib/shipping/courierRegistry";
 import type { ShipmentTracking } from "@/hooks/useShipmentTracking";
 import CourierLogo from "./CourierLogo";
+import ParcelLabelScanner from "./ParcelLabelScanner";
 
 interface Props {
   open: boolean;
@@ -135,6 +136,19 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
             <Label>Tracking number (AWB)</Label>
             <Input value={awb} onChange={(e) => setAwb(e.target.value)} placeholder="e.g. 1234567890" autoComplete="off" />
           </div>
+
+          {isNewShipment && (
+            <ParcelLabelScanner
+              orderId={orderId}
+              disabled={save.isPending}
+              onAccepted={(result) => {
+                setAwb(result.tracking_number);
+                if (COURIERS.some((courier) => courier.slug === result.courier_slug)) {
+                  setSlug(result.courier_slug);
+                }
+              }}
+            />
+          )}
 
           {isNewShipment ? (
             <div className="rounded-md border bg-muted/40 px-3 py-2.5">
