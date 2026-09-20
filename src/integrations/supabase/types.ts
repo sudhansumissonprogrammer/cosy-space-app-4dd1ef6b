@@ -360,6 +360,45 @@ export type Database = {
           },
         ]
       }
+      category_featured_products: {
+        Row: {
+          category_id: string
+          created_at: string
+          position: number
+          product_id: string
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          position: number
+          product_id: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          position?: number
+          product_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "category_featured_products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "category_featured_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coupons: {
         Row: {
           auto_apply: boolean
@@ -5965,6 +6004,10 @@ export type Database = {
         Returns: {
           id: string
         }[]
+      }
+      get_category_collage_urls: {
+        Args: { _category_id: string }
+        Returns: Json
       }
       get_category_page: {
         Args: { _category_slug: string; _limit?: number; _store_slug: string }
