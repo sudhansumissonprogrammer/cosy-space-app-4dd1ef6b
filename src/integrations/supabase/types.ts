@@ -6229,6 +6229,7 @@ export type Database = {
       }
       get_store_wa_toggles: { Args: { _store_id: string }; Returns: Json }
       get_store_wallet_summary: { Args: { _store_id: string }; Returns: Json }
+      get_storefront_categories: { Args: { _store_id: string }; Returns: Json }
       get_storefront_products_page: {
         Args: {
           _category?: string
