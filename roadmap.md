@@ -9,3 +9,6 @@
 - [x] Connect Telegram fresh for the new workspace and redeploy order notifications.
 - [x] Verify parcel labels only by normalized 10-digit customer phone number.
 - [x] Replace customer-facing 17TRACK links with prefilled Speed Post Track links.
+- [ ] Add automatic four-product category collages to every storefront homepage without extra per-category requests.
+- [ ] Add owner controls to select and order four category display products.
+- [ ] Validate category collage security, cache refresh, performance, and mobile/desktop rendering.
