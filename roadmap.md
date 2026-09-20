@@ -12,3 +12,4 @@
 - [ ] Add automatic four-product category collages to every storefront homepage without extra per-category requests.
 - [ ] Add owner controls to select and order four category display products.
 - [ ] Validate category collage security, cache refresh, performance, and mobile/desktop rendering.
+- [ ] Connect Telegram fresh in the current workspace and verify order-notification delivery setup.

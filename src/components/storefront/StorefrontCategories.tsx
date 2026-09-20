@@ -1,16 +1,10 @@
-import { Tag } from "lucide-react";
 import SectionHeading from "@/components/storefront/SectionHeading";
 import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
-import { optimizeImageUrl } from "@/lib/imageOptimize";
+import CategoryCollageImage, { type StorefrontCategoryImage } from "./CategoryCollageImage";
 
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  image_url: string | null;
-}
+type Category = StorefrontCategoryImage;
 
 interface StorefrontCategoriesProps {
   categories: Category[] | undefined;
@@ -45,13 +39,7 @@ export default function StorefrontCategories({ categories, storeSlug, isLoading 
                 className="chip-magnetic flex flex-col items-center gap-1.5 flex-shrink-0 transition-[transform,opacity,colors,box-shadow]"
               >
                 <div className="h-20 w-20 rounded-full border-2 overflow-hidden transition-[transform,opacity,colors,box-shadow] sm:h-20 sm:w-20 border-border" style={{ "--tw-border-opacity": 1 } as any} onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--storefront-primary, hsl(var(--primary)))"} onMouseLeave={(e) => e.currentTarget.style.borderColor = ""}>
-                  {cat.image_url ? (
-                    <img src={optimizeImageUrl(cat.image_url, 200, 80)} alt={cat.name} className="h-full w-full object-cover" loading="lazy" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--accent)))" }}>
-                      <Tag className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: "var(--storefront-text, hsl(var(--muted-foreground)))", opacity: 0.5 }} />
-                    </div>
-                  )}
+                  <CategoryCollageImage category={cat} size={200} />
                 </div>
                 <span className="text-[11px] font-semibold tracking-wide text-center leading-tight truncate max-w-[80px]" style={{ color: "var(--storefront-text, hsl(var(--foreground)))", fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif" }}>
                   {cat.name}

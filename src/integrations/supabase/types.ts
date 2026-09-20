@@ -6229,6 +6229,7 @@ export type Database = {
       }
       get_store_wa_toggles: { Args: { _store_id: string }; Returns: Json }
       get_store_wallet_summary: { Args: { _store_id: string }; Returns: Json }
+      get_storefront_categories: { Args: { _store_id: string }; Returns: Json }
       get_storefront_products_page: {
         Args: {
           _category?: string
@@ -6380,6 +6381,10 @@ export type Database = {
           kind: string
           term: string
         }[]
+      }
+      set_category_featured_products: {
+        Args: { _category_id: string; _product_ids: string[] }
+        Returns: undefined
       }
       set_store_platform_marketing: {
         Args: { _enabled: boolean; _store_id: string }
