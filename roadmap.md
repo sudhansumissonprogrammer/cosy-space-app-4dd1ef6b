@@ -1,6 +1,7 @@
 ## Active work
 - [ ] Fix shipped-order parcel photos being deleted before WhatsApp finishes downloading them.
 - [ ] Deploy and verify the shipped-photo WhatsApp fix for Serdiyajewellers.shop.
+- [ ] Connect Telegram fresh in the new workspace and verify order notifications.
 - [x] Add shipment-only RTO status requiring parcel photo evidence.
 - [x] Ensure status changes never automatically refund payments or the 3% platform fee.
 - [x] Add dashboard RTO filter and verify affected order flows.
