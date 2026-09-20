@@ -17,4 +17,4 @@
 - [ ] Copy missing Serdiya Jewellers reviews into serdiya.com in matching display order.
 - [ ] Make every product-page review trigger open the shared review popup.
 - [ ] Verify review data, storefront behavior, and build health.
-- [ ] Connect Telegram fresh in the newly moved workspace and verify the bot connection.
+- [x] Connect Telegram fresh in the newly moved workspace and verify the bot connection.
