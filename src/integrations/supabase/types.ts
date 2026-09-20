@@ -6381,6 +6381,10 @@ export type Database = {
           term: string
         }[]
       }
+      set_category_featured_products: {
+        Args: { _category_id: string; _product_ids: string[] }
+        Returns: undefined
+      }
       set_store_platform_marketing: {
         Args: { _enabled: boolean; _store_id: string }
         Returns: boolean
