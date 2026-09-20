@@ -13,3 +13,7 @@
 - [x] Add owner controls to select and order four category display products.
 - [x] Validate category collage security, cache refresh, performance, and mobile/desktop rendering.
 - [x] Connect Telegram fresh in the current workspace and verify order-notification delivery setup.
+
+- [ ] Copy missing Serdiya Jewellers reviews into serdiya.com in matching display order.
+- [ ] Make every product-page review trigger open the shared review popup.
+- [ ] Verify review data, storefront behavior, and build health.
