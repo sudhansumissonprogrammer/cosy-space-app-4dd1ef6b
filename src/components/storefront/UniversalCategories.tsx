@@ -1,10 +1,9 @@
-import { Tag } from "lucide-react";
 import SectionHeading from "@/components/storefront/SectionHeading";
 import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
-import { optimizeImageUrl } from "@/lib/imageOptimize";
 import { lazy, Suspense } from "react";
+import CategoryCollageImage, { type StorefrontCategoryImage } from "./CategoryCollageImage";
 
 // Heavy category variants: lazy-loaded so a store using style-1 (default)
 // never downloads Reveal/Spotlight/Magazine/TwoRow code (~12KB saved).
@@ -13,12 +12,7 @@ const SpotlightCarouselCategories = lazy(() => import("./categories/SpotlightCar
 const MagazineStripCategories = lazy(() => import("./categories/MagazineStripCategories"));
 const TwoRowCircleCarouselCategories = lazy(() => import("./categories/TwoRowCircleCarouselCategories"));
 
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  image_url: string | null;
-}
+type Category = StorefrontCategoryImage;
 
 interface Props {
   categories: Category[] | undefined;
@@ -58,16 +52,7 @@ function PillSkeleton() {
   return <Skeleton className="h-10 w-28 rounded-full flex-shrink-0" />;
 }
 
-function CategoryImage({ cat, size = 300, className = "h-full w-full object-cover" }: { cat: Category; size?: number; className?: string }) {
-  if (cat.image_url) {
-    return <img src={optimizeImageUrl(cat.image_url, size, 85)} alt={cat.name} className={className} loading="lazy" width={size} height={size} />;
-  }
-  return (
-    <div className="flex h-full w-full items-center justify-center" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--accent)))" }}>
-      <Tag className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: "var(--storefront-text, hsl(var(--muted-foreground)))", opacity: 0.5 }} />
-    </div>
-  );
-}
+const CategoryImage = ({ cat, size, className }: { cat: Category; size?: number; className?: string }) => <CategoryCollageImage category={cat} size={size} className={className} />;
 
 /** Style 1: Small circles in horizontal carousel */
 function CircleCarousel({ categories, storeSlug }: { categories: Category[]; storeSlug: string }) {

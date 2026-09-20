@@ -16,12 +16,13 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Upload, Loader2, FolderOpen, Image as ImageIcon, GripVertical, ArrowUp, ArrowDown, Eye, EyeOff } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, Loader2, FolderOpen, Image as ImageIcon, GripVertical, ArrowUp, ArrowDown, Eye, EyeOff, Images } from "lucide-react";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
 import { Skeleton } from "@/components/ui/skeleton";
 import MediaLibraryPicker from "@/components/MediaLibraryPicker";
 import CategoryProductsDialog from "@/components/CategoryProductsDialog";
+import CategoryFeaturedProductsDialog from "@/components/CategoryFeaturedProductsDialog";
 import FAB from "@/components/dashboard/FAB";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import PullToRefreshIndicator from "@/components/dashboard/PullToRefreshIndicator";
@@ -42,6 +43,7 @@ export default function CategoryManagement() {
   const [saving, setSaving] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [productsDialogCat, setProductsDialogCat] = useState<string | null>(null);
+  const [featuredDialogCat, setFeaturedDialogCat] = useState<{ id: string; name: string } | null>(null);
 
   const { data: categories, isLoading } = useQuery({
     queryKey: ["categories", storeId],
@@ -377,6 +379,14 @@ export default function CategoryManagement() {
                     <><EyeOff className="mr-1.5 h-3.5 w-3.5" /> Hide from store</>
                   )}
                 </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-2 h-8 w-full text-xs"
+                  onClick={(e) => { e.stopPropagation(); setFeaturedDialogCat({ id: cat.id, name: cat.name }); }}
+                >
+                  <Images className="mr-1.5 h-3.5 w-3.5" /> Display photos
+                </Button>
               </CardContent>
             </Card>
           ))}
@@ -466,6 +476,21 @@ export default function CategoryManagement() {
           onClose={() => setProductsDialogCat(null)}
           categoryName={productsDialogCat}
           storeId={storeId}
+        />
+      )}
+
+      {storeId && featuredDialogCat && (
+        <CategoryFeaturedProductsDialog
+          open
+          categoryId={featuredDialogCat.id}
+          categoryName={featuredDialogCat.name}
+          storeId={storeId}
+          onClose={() => setFeaturedDialogCat(null)}
+          onSaved={() => {
+            queryClient.invalidateQueries({ queryKey: ["category-featured-products", featuredDialogCat.id] });
+            queryClient.invalidateQueries({ queryKey: ["storefront-categories", storeId] });
+            purgeStore({ shell: true, force: true });
+          }}
         />
       )}
     </div>

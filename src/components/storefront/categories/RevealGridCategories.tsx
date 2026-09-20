@@ -1,19 +1,12 @@
 import { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Tag } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { storefrontPath } from "@/lib/subdomain";
-import { optimizeImageUrl } from "@/lib/imageOptimize";
+import CategoryCollageImage, { type StorefrontCategoryImage } from "../CategoryCollageImage";
 
-interface Category { id: string; name: string; slug: string; image_url: string | null; }
+type Category = StorefrontCategoryImage;
 
-function CategoryImage({ cat, size = 500, className = "h-full w-full object-cover" }: { cat: Category; size?: number; className?: string }) {
-  if (cat.image_url) return <img src={optimizeImageUrl(cat.image_url, size, 85)} alt={cat.name} className={className} loading="lazy" width={size} height={size} />;
-  return (
-    <div className="flex h-full w-full items-center justify-center" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--accent)))" }}>
-      <Tag className="h-5 w-5" style={{ color: "var(--storefront-text, hsl(var(--muted-foreground)))", opacity: 0.5 }} />
-    </div>
-  );
-}
+const CategoryImage = ({ cat, size, className }: { cat: Category; size?: number; className?: string }) => <CategoryCollageImage category={cat} size={size} className={className} />;
 
 export default function RevealGridCategories({ categories, storeSlug }: { categories: Category[]; storeSlug: string }) {
   const [page, setPage] = useState(0);

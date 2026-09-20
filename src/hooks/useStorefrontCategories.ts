@@ -20,12 +20,7 @@ export function useStorefrontCategories(storeId?: string) {
   const { data } = useQuery({
     queryKey: ["storefront-categories", storeId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("categories")
-        .select("id, name, slug, image_url, display_order")
-        .eq("store_id", storeId!)
-        .order("display_order" as any)
-        .order("name");
+      const { data, error } = await (supabase as any).rpc("get_storefront_categories", { _store_id: storeId });
       if (error) throw error;
       return data ?? [];
     },

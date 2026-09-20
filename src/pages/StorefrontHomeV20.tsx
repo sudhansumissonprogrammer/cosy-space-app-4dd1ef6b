@@ -6,18 +6,18 @@ import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
 import { buildStorefrontH1 } from "@/lib/storefrontSeoH1";
-import { ChevronRight, ChevronLeft, Tag } from "lucide-react";
+import { ChevronRight, ChevronLeft } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import V20ProductCard from "@/components/storefront/v20/V20ProductCard";
 import { storefrontPath } from "@/lib/subdomain";
-import { optimizeImageUrl } from "@/lib/imageOptimize";
+import CategoryCollageImage, { type StorefrontCategoryImage } from "@/components/storefront/CategoryCollageImage";
 import MobileHeroCarousel from "@/components/storefront/MobileHeroCarousel";
 import HeroVideo from "@/components/storefront/HeroVideo";
 import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 import { supabase } from "@/integrations/supabase/client";
 import { HomeShopByVideoSection } from "@/components/storefront/HomeSharedSections";
 
-interface Category { id: string; name: string; slug: string; image_url: string | null; show_on_home?: boolean; }
+interface Category extends StorefrontCategoryImage { show_on_home?: boolean; }
 
 const PROMO_CARDS = [
   { bg: "linear-gradient(135deg, #FFD33D 0%, #FFC107 100%)", title: "Fresh deals", subtitle: "in minutes", darkText: true },
@@ -155,10 +155,7 @@ export default function StorefrontHomeV20() {
     queryKey: ["storefront-categories-all", store?.id],
     queryFn: async () => {
       const { data } = await supabase
-        .from("categories")
-        .select("id, name, slug, image_url, show_on_home")
-        .eq("store_id", store!.id)
-        .order("display_order", { ascending: true });
+        .rpc("get_storefront_categories" as any, { _store_id: store!.id } as any);
       return (data || []) as Category[];
     },
     enabled: !!store?.id,
@@ -313,18 +310,7 @@ export default function StorefrontHomeV20() {
                   className="relative w-full overflow-hidden rounded-xl transition-transform group-active:scale-95 bg-muted"
                   style={{ aspectRatio: "1 / 1" }}
                 >
-                  {cat.image_url ? (
-                    <img
-                      src={optimizeImageUrl(cat.image_url, 300, 85)}
-                      alt={cat.name}
-                      className="absolute inset-0 w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Tag className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                  )}
+                  <CategoryCollageImage category={cat} size={300} />
                 </div>
                 <span className="mt-1.5 text-[12px] sm:text-[13px] font-medium text-center text-gray-800 line-clamp-2 leading-tight">
                   {cat.name}
