@@ -14,6 +14,7 @@ function humanReason(err?: string | null): { label: string; hint: string } {
   if (e.includes("131047")) return { label: "24-hour window closed", hint: "Customer hasn't messaged in 24h and template rules blocked it." };
   if (e.includes("130472")) return { label: "User in Meta experiment", hint: "Meta A/B experiment blocked delivery. No charge." };
   if (e.includes("131051")) return { label: "Unsupported message type", hint: "Template payload rejected." };
+  if (e.includes("131053")) return { label: "Parcel photo failed", hint: "WhatsApp could not download the parcel photo, so this message was not delivered." };
   if (e.includes("invalid") && e.includes("phone")) return { label: "Invalid phone number", hint: "Number format is wrong." };
   if (e.includes("daily_cap")) return { label: "Daily limit reached", hint: "You already sent max messages to this number today." };
   if (e.includes("cooldown")) return { label: "Cooldown active", hint: "A recent message was sent to this number." };
