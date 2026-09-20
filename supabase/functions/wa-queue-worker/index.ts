@@ -258,7 +258,10 @@ Deno.serve(async (req) => {
         locked_until: null,
       } as any).eq("id", row.id);
       await markAbandonedCartSent(admin, row, j?.message_id ?? null, sentAt);
-      await removeParcelPhoto(admin, row);
+      // Meta accepts template sends before it fetches an image-header URL.
+      // Keep the private parcel photo available until its short TTL expires;
+      // deleting it here causes the later delivery callback to fail with 131053.
+      // removeExpiredParcelPhotos() remains the sole successful-send cleanup path.
       sent++;
     } else if (resp.ok && j?.skipped) {
       await admin.from("wa_send_queue").update({
