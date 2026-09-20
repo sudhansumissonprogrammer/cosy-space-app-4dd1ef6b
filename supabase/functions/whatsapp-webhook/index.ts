@@ -113,11 +113,9 @@ Deno.serve(async (req) => {
             .update(update)
             .eq("meta_message_id", metaMessageId);
 
-          // Meta accepts an image-template request before downloading its
-          // header. If that later download fails, retry exactly once with the
-          // approved text shipment template so the customer still receives
-          // their tracking details. The existing order-event queue uniqueness
-          // is preserved by reusing the same row rather than inserting another.
+          // Never silently replace a requested parcel-photo shipment with the
+          // text template. Keep the image failure visible so the owner can
+          // upload a fresh parcel photo and explicitly resend it.
           if (statusValue === "failed" && String(errorInfo?.code || "") === "131053") {
             const { data: sentQueue } = await adminClient
               .from("wa_send_queue")
@@ -125,26 +123,18 @@ Deno.serve(async (req) => {
               .eq("sent_message_id", metaMessageId)
               .maybeSingle();
             if (sentQueue?.message_type === "order_shipped" && sentQueue.template_name === "order_shipped_v3_img") {
-              const fallbackVars = { ...((sentQueue as any).template_vars || {}) };
-              delete fallbackVars.header_media_url;
-              delete fallbackVars.parcel_scan_id;
-              const { error: fallbackError } = await adminClient
+              const { error: imageFailureError } = await adminClient
                 .from("wa_send_queue")
                 .update({
-                  template_name: "order_shipped_v3",
-                  template_vars: fallbackVars,
-                  status: "pending",
-                  attempts: 0,
-                  scheduled_at: new Date().toISOString(),
-                  sent_message_id: null,
-                  last_error: "photo_failed_131053_text_fallback",
-                  last_error_class: "transient",
+                  status: "failed",
+                  last_error: "parcel_photo_failed_131053_reupload_required",
+                  last_error_class: "permanent",
                   locked_until: null,
                 })
                 .eq("id", sentQueue.id)
                 .eq("status", "sent")
                 .eq("template_name", "order_shipped_v3_img");
-              if (fallbackError) console.error("shipment text fallback enqueue failed", fallbackError.message, { metaMessageId });
+              if (imageFailureError) console.error("shipment image failure update failed", imageFailureError.message, { metaMessageId });
             }
           }
 

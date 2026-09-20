@@ -204,7 +204,19 @@ Deno.serve(async (req) => {
     let sendTemplateName = row.template_name;
     const sendTemplateVars = { ...(row.template_vars || {}) };
     const parcelScanId = String(sendTemplateVars.parcel_scan_id || "");
-    if (row.message_type === "order_shipped" && parcelScanId) {
+    const requiresParcelPhoto = row.message_type === "order_shipped" && row.template_name === "order_shipped_v3_img";
+    if (requiresParcelPhoto) {
+      if (!parcelScanId) {
+        await admin.from("wa_send_queue").update({
+          status: "failed",
+          attempts: (row.attempts || 0) + 1,
+          last_error: "parcel_photo_required_but_scan_missing",
+          last_error_class: "permanent",
+          locked_until: null,
+        } as any).eq("id", row.id);
+        failed++;
+        continue;
+      }
       const { data: scan } = await admin
         .from("parcel_label_scans")
         .select("temp_object_path,temp_expires_at,photo_deleted_at")
@@ -214,14 +226,24 @@ Deno.serve(async (req) => {
       const usable = scan && !(scan as any).photo_deleted_at && (scan as any).temp_object_path &&
         new Date((scan as any).temp_expires_at || 0).getTime() > Date.now();
       if (usable) {
+        const secondsLeft = Math.max(60, Math.floor(
+          (new Date((scan as any).temp_expires_at).getTime() - Date.now()) / 1000,
+        ));
         const { data: signed } = await admin.storage
           .from("parcel-label-temp")
-          .createSignedUrl((scan as any).temp_object_path, 15 * 60);
+          .createSignedUrl((scan as any).temp_object_path, secondsLeft);
         if (signed?.signedUrl) sendTemplateVars.header_media_url = signed.signedUrl;
-        else sendTemplateName = "order_shipped_v3";
-      } else {
-        sendTemplateName = "order_shipped_v3";
-        delete sendTemplateVars.header_media_url;
+      }
+      if (!usable || !sendTemplateVars.header_media_url) {
+        await admin.from("wa_send_queue").update({
+          status: "failed",
+          attempts: (row.attempts || 0) + 1,
+          last_error: usable ? "parcel_photo_signed_url_failed" : "parcel_photo_unavailable_or_expired",
+          last_error_class: "permanent",
+          locked_until: null,
+        } as any).eq("id", row.id);
+        failed++;
+        continue;
       }
     }
 
