@@ -136,6 +136,7 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
       else if (waResult?.skipped) toast.success(`Shipment saved · WhatsApp skipped (${waResult.reason})`);
       else toast.success("Shipment saved");
       qc.invalidateQueries({ queryKey: ["shipment-tracking", orderId] });
+      qc.invalidateQueries({ queryKey: ["parcel-photo", orderId] });
       qc.invalidateQueries({ queryKey: ["store-orders"] });
       qc.invalidateQueries({ queryKey: ["website-orders-all"] });
       onSaved?.(isRto ? "rto" : isNewShipment ? "shipped" : status);

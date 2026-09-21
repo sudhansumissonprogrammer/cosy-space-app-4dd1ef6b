@@ -143,20 +143,56 @@ Deno.serve(async (req) => {
     if (action === "photo") {
       const { data: savedScan } = await admin
         .from("parcel_label_scans")
-        .select("photo_object_path")
+        .select("id,photo_object_path,temp_object_path")
         .eq("order_id", orderId)
         .eq("store_id", order.store_id)
         .eq("decision", "accepted")
-        .not("photo_object_path", "is", null)
+        .or("photo_object_path.not.is.null,temp_object_path.not.is.null")
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (!savedScan?.photo_object_path) return json({ photo_url: null });
-      const { data: signed, error: signedError } = await admin.storage
+      if (!savedScan) return json({ photo_url: null });
+
+      if (savedScan.photo_object_path) {
+        const { data: signed } = await admin.storage
+          .from(SAVED_PHOTO_BUCKET)
+          .createSignedUrl(savedScan.photo_object_path, 5 * 60);
+        if (signed?.signedUrl) return json({ photo_url: signed.signedUrl });
+      }
+
+      // Photos captured before permanent storage was introduced still live in
+      // the private temporary bucket. Recover each one into permanent storage
+      // the first time its order is opened, without exposing either bucket.
+      if (!savedScan.temp_object_path) return json({ photo_url: null });
+      const { data: legacyPhoto, error: downloadError } = await admin.storage
+        .from(TEMP_PHOTO_BUCKET)
+        .download(savedScan.temp_object_path);
+      if (downloadError || !legacyPhoto) return json({ photo_url: null });
+
+      const legacyBytes = new Uint8Array(await legacyPhoto.arrayBuffer());
+      const { error: copyError } = await admin.storage
         .from(SAVED_PHOTO_BUCKET)
-        .createSignedUrl(savedScan.photo_object_path, 5 * 60);
-      if (signedError || !signed?.signedUrl) return json({ photo_url: null });
-      return json({ photo_url: signed.signedUrl });
+        .upload(savedScan.temp_object_path, legacyBytes, {
+          contentType: legacyPhoto.type || "image/jpeg",
+          upsert: true,
+          cacheControl: "3600",
+        });
+      if (copyError) return json({ photo_url: null });
+
+      const { error: linkError } = await admin
+        .from("parcel_label_scans")
+        .update({ photo_object_path: savedScan.temp_object_path })
+        .eq("id", savedScan.id)
+        .eq("order_id", orderId);
+      if (linkError) {
+        await admin.storage.from(SAVED_PHOTO_BUCKET).remove([savedScan.temp_object_path]);
+        return json({ photo_url: null });
+      }
+
+      const { data: recovered } = await admin.storage
+        .from(SAVED_PHOTO_BUCKET)
+        .createSignedUrl(savedScan.temp_object_path, 5 * 60);
+      return json({ photo_url: recovered?.signedUrl ?? null });
     }
 
     if (reviewScanId || manualAwb) {
