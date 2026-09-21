@@ -882,6 +882,8 @@ export default function CheckoutV2Page() {
   // re-running the effect (and without clobbering what the shopper typed).
   const streetAddressRef = useRef("");
   useEffect(() => { streetAddressRef.current = streetAddress; }, [streetAddress]);
+  const phoneRef = useRef("");
+  useEffect(() => { phoneRef.current = phone; }, [phone]);
   // Tracks whether the async `create-guest-account` lookup for the current
   // phone has settled. While `pending`, we suppress auto-opening the address
   // sheet so returning shoppers (address on file) don't see a flash-of-form
@@ -918,7 +920,13 @@ export default function CheckoutV2Page() {
         });
         if (cancelled || error) return;
         const addr = (data as any)?.address;
-        if (addr) applyPhoneLookupAddress(addr);
+        if (
+          addr &&
+          !cancelled &&
+          toCanonicalIndianPhone(phoneRef.current) === canon
+        ) {
+          applyPhoneLookupAddress(addr);
+        }
       } catch {
         // Ignore — the shopper can still type a fresh address.
       } finally {
@@ -945,7 +953,12 @@ export default function CheckoutV2Page() {
         }
         // Only autofill from the slow track if the shopper hasn't already
         // started typing their own address — never clobber live input.
-        if (!cancelled && result?.address && !streetAddressRef.current) {
+        if (
+          !cancelled &&
+          result?.address &&
+          !streetAddressRef.current &&
+          toCanonicalIndianPhone(phoneRef.current) === canon
+        ) {
           applyPhoneLookupAddress(result.address);
         }
       } catch {
@@ -1178,23 +1191,22 @@ export default function CheckoutV2Page() {
       return;
     }
     try {
-      const { count } = await supabaseStorefront
-        .from("customer_addresses")
-        .select("id", { count: "exact", head: true })
-        .eq("storefront_customer_id", customer.id);
-      const { data, error } = await supabaseStorefront.from("customer_addresses").insert({
-        storefront_customer_id: customer.id,
-        label: newAddr.label || "Home",
-        full_name: newAddr.full_name.trim(),
-        phone: normalizePhone(newAddr.phone),
-        street_address: newAddr.street_address.trim(),
-        city: newAddr.city.trim(),
-        state: newAddr.state.trim(),
-        pincode: newAddr.pincode.trim(),
-        is_default: (count ?? 0) === 0,
-      }).select().single();
+      const { data: rows, error } = await (supabaseStorefront as any).rpc(
+        "replace_customer_address",
+        {
+          _storefront_customer_id: customer.id,
+          _label: newAddr.label || "Home",
+          _full_name: newAddr.full_name.trim(),
+          _phone: toCanonicalIndianPhone(newAddr.phone) || normalizePhone(newAddr.phone),
+          _street_address: newAddr.street_address.trim(),
+          _city: newAddr.city.trim(),
+          _state: newAddr.state.trim(),
+          _pincode: newAddr.pincode.trim(),
+        },
+      );
       if (error) throw error;
-      qc.invalidateQueries({ queryKey: ["checkoutv2-saved-addresses", customer.id] });
+      const data = Array.isArray(rows) ? rows[0] : rows;
+      await qc.invalidateQueries({ queryKey: ["checkoutv2-saved-addresses", customer.id] });
       if (data) selectAddress(data);
       setShowAddAddress(false);
       setShowAddressDialog(false);
@@ -1985,27 +1997,19 @@ export default function CheckoutV2Page() {
   const saveAddressToAccount = async () => {
     if (!customer?.id) return;
     try {
-      const { data: existing } = await supabaseStorefront
-        .from("customer_addresses")
-        .select("id")
-        .eq("storefront_customer_id", customer.id)
-        .eq("street_address", streetAddress.trim())
-        .eq("pincode", pincode.trim())
-        .maybeSingle();
-      if (existing) return;
-      const { count } = await supabaseStorefront
-        .from("customer_addresses")
-        .select("id", { count: "exact", head: true })
-        .eq("storefront_customer_id", customer.id);
-      await supabaseStorefront.from("customer_addresses").insert({
-        storefront_customer_id: customer.id,
-        label: addrLabel || "Home",
-        full_name: fullName.trim(),
-        phone: toCanonicalIndianPhone(phone) || normalizePhone(phone),
-        street_address: streetAddress.trim(),
-        city: city.trim(), state: state.trim(), pincode: pincode.trim(),
-        is_default: (count ?? 0) === 0,
+      const live = addrFieldsRef.current;
+      const { error } = await (supabaseStorefront as any).rpc("replace_customer_address", {
+        _storefront_customer_id: customer.id,
+        _label: addrLabel || "Home",
+        _full_name: live.fullName.trim(),
+        _phone: toCanonicalIndianPhone(live.phone) || normalizePhone(live.phone),
+        _street_address: live.streetAddress.trim(),
+        _city: live.city.trim(),
+        _state: live.state.trim(),
+        _pincode: live.pincode.trim(),
       });
+      if (error) throw error;
+      await qc.invalidateQueries({ queryKey: ["checkoutv2-saved-addresses", customer.id] });
     } catch (err) { console.error("Failed to save address to account:", err); }
   };
 
@@ -5374,7 +5378,7 @@ export default function CheckoutV2Page() {
               <div className="flex-shrink-0 border-t border-[#ECECEC] p-3 bg-white pb-[max(env(safe-area-inset-bottom),0.75rem)]">
                 <Button
                   className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 disabled:bg-gray-300 disabled:text-white rounded-lg"
-                  onClick={() => {
+                  onClick={async () => {
                     // Find the FIRST missing field so we can tell the shopper
                     // exactly what's wrong and scroll it into view. Previously
                     // this silently set red borders — which are invisible if
@@ -5405,6 +5409,7 @@ export default function CheckoutV2Page() {
                     }
 
                     setAddressAttempted(false);
+                    if (customer?.id) await saveAddressToAccount();
                     setShowAddressFormSheet(false);
                     // Resume the exact payment action the shopper selected.
                     // Android can launch immediately; the resumed iOS handler

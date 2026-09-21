@@ -6354,6 +6354,37 @@ export type Database = {
         Returns: undefined
       }
       reorder_products: { Args: { _ids: string[] }; Returns: undefined }
+      replace_customer_address: {
+        Args: {
+          _city: string
+          _full_name: string
+          _label: string
+          _phone: string
+          _pincode: string
+          _state: string
+          _storefront_customer_id: string
+          _street_address: string
+        }
+        Returns: {
+          city: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          is_default: boolean
+          label: string
+          phone: string | null
+          pincode: string | null
+          state: string | null
+          storefront_customer_id: string
+          street_address: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "customer_addresses"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       rollup_customer_cohorts_monthly: {
         Args: { _months_back?: number }
         Returns: number
