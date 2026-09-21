@@ -5365,7 +5365,7 @@ export default function CheckoutV2Page() {
               <div className="flex-shrink-0 border-t border-[#ECECEC] p-3 bg-white pb-[max(env(safe-area-inset-bottom),0.75rem)]">
                 <Button
                   className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 disabled:bg-gray-300 disabled:text-white rounded-lg"
-                  onClick={() => {
+                  onClick={async () => {
                     // Find the FIRST missing field so we can tell the shopper
                     // exactly what's wrong and scroll it into view. Previously
                     // this silently set red borders — which are invisible if
@@ -5396,6 +5396,7 @@ export default function CheckoutV2Page() {
                     }
 
                     setAddressAttempted(false);
+                    if (customer?.id) await saveAddressToAccount();
                     setShowAddressFormSheet(false);
                     // Resume the exact payment action the shopper selected.
                     // Android can launch immediately; the resumed iOS handler

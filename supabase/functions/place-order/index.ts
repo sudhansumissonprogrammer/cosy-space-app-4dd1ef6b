@@ -1295,6 +1295,31 @@ Deno.serve(async (req) => {
       throw orderErr ?? new Error("Failed to create order");
     }
 
+    // Keep one authoritative current address for known returning shoppers.
+    // The order itself remains an immutable delivery snapshot; only the
+    // account address book is replaced with the live values submitted above.
+    if (storefrontCustomerId) {
+      const { error: addressErr } = await supabase
+        .from("customer_addresses")
+        .upsert(
+          {
+            storefront_customer_id: storefrontCustomerId,
+            label: "Home",
+            full_name: shipName,
+            phone: order.customer_phone,
+            street_address: shipStreet,
+            city: shipCity,
+            state: shipState,
+            pincode: shipPincode,
+            is_default: true,
+          },
+          { onConflict: "storefront_customer_id" },
+        );
+      if (addressErr) {
+        console.error("Current address sync failed:", addressErr.message);
+      }
+    }
+
 
     const orderItems = items.map((item) => ({
       order_id: createdOrder.id,
