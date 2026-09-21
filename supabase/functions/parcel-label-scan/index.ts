@@ -285,7 +285,7 @@ Deno.serve(async (req) => {
         confidence: Number(reusedImage.confidence ?? 1),
         courier_slug: reusedImage.courier_slug || "other",
         tracking_number: reusedImage.tracking_number,
-        matched: {},
+        matched: { phone: true },
       });
     }
 
