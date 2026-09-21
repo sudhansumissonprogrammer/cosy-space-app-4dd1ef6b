@@ -183,6 +183,50 @@ function metaContent(html: string, prop: string, attr: "property" | "name" = "pr
   return html.match(re)?.[1] ?? html.match(alt)?.[1] ?? null;
 }
 
+function stripTags(value: string): string {
+  return value.replace(/<script[\s\S]*?<\/script>/gi, "").replace(/<style[\s\S]*?<\/style>/gi, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+export interface PublicSiteProfile {
+  platform: "shopify" | "woocommerce" | "dukaan" | "generic";
+  title: string | null;
+  description: string | null;
+  logo_url: string | null;
+  hero_url: string | null;
+  pages: Array<{ type: "about" | "contact" | "privacy" | "terms" | "shipping" | "returns"; title: string; url: string }>;
+}
+
+export async function inspectPublicSite(siteUrl: string): Promise<PublicSiteProfile> {
+  const base = root(siteUrl);
+  const html = await fetchText(base, 15_000);
+  const lower = html.toLowerCase();
+  const platform: PublicSiteProfile["platform"] = lower.includes("cdn.shopify.com") || lower.includes("shopify.theme") ? "shopify" : lower.includes("woocommerce") || lower.includes("wp-content/plugins/woocommerce") ? "woocommerce" : lower.includes("dukaan") ? "dukaan" : "generic";
+  const title = metaContent(html, "og:site_name") || metaContent(html, "og:title") || stripTags(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || "") || null;
+  const description = metaContent(html, "og:description") || metaContent(html, "description", "name");
+  const logoMatch = html.match(/<img[^>]+(?:class|id)=["'][^"']*logo[^"']*["'][^>]+src=["']([^"']+)["']/i) || html.match(/<img[^>]+src=["']([^"']+)["'][^>]+(?:class|id)=["'][^"']*logo/i);
+  const definitions: Array<[PublicSiteProfile["pages"][number]["type"], string, RegExp]> = [["about", "About Us", /\/(about|about-us)(\/|$)/i], ["contact", "Contact", /\/(contact|contact-us)(\/|$)/i], ["privacy", "Privacy Policy", /\/(privacy|privacy-policy)(\/|$)/i], ["terms", "Terms", /\/(terms|terms-and-conditions|terms-of-service)(\/|$)/i], ["shipping", "Shipping Policy", /\/(shipping|shipping-policy)(\/|$)/i], ["returns", "Returns Policy", /\/(returns?|refund|refund-policy|return-policy)(\/|$)/i]];
+  const pages: PublicSiteProfile["pages"] = [];
+  const anchorRe = /<a[^>]+href=["']([^"']+)["']/gi;
+  let match: RegExpExecArray | null;
+  while ((match = anchorRe.exec(html)) && pages.length < definitions.length) {
+    const absolute = absolutize(match[1], base).split("#")[0];
+    try {
+      if (new URL(absolute).hostname !== new URL(base).hostname) continue;
+      const page = definitions.find(([type, , pattern]) => pattern.test(new URL(absolute).pathname) && !pages.some((p) => p.type === type));
+      if (page) pages.push({ type: page[0], title: page[1], url: absolute });
+    } catch { /* ignore malformed links */ }
+  }
+  const hero = metaContent(html, "og:image");
+  return { platform, title: title?.slice(0, 200) || null, description: description?.slice(0, 500) || null, logo_url: logoMatch?.[1] ? absolutize(logoMatch[1], base) : null, hero_url: hero ? absolutize(hero, base) : null, pages };
+}
+
+export async function scrapePublicPage(url: string): Promise<string | null> {
+  const html = await fetchText(url, 15_000);
+  const main = html.match(/<main[^>]*>([\s\S]*?)<\/main>/i)?.[1] || html.match(/<article[^>]*>([\s\S]*?)<\/article>/i)?.[1] || html.match(/<body[^>]*>([\s\S]*?)<\/body>/i)?.[1] || "";
+  const text = stripTags(main).slice(0, 12_000);
+  return text.length >= 40 ? text : null;
+}
+
 function slugFromUrl(u: string): string | null {
   try {
     const p = new URL(u).pathname.replace(/\/+$/, "");

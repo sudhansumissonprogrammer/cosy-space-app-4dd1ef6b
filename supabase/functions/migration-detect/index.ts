@@ -14,7 +14,8 @@ import {
   wooCountOrders,
   wooCountCustomers,
 } from "../_shared/migration/woocommerce.ts";
-import { discoverProductUrls } from "../_shared/migration/generic.ts";
+import { discoverProductUrls, inspectPublicSite } from "../_shared/migration/generic.ts";
+import { assertSafePublicUrl } from "../_shared/migration/safe-fetch.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -37,11 +38,18 @@ Deno.serve(async (req) => {
     if (!claims?.claims?.sub) return json({ error: "Unauthorized" }, 401);
 
     const body = await req.json().catch(() => ({}));
-    const platform = String(body.platform || "").toLowerCase();
+    const platform = String(body.platform || "auto").toLowerCase();
     const sourceUrl = String(body.source_url || "").trim();
     const creds = (body.credentials ?? {}) as Record<string, string>;
 
     if (!sourceUrl) return json({ error: "source_url is required" }, 400);
+    const normalizedUrl = assertSafePublicUrl(sourceUrl).toString();
+
+    if (platform === "auto") {
+      const profile = await inspectPublicSite(normalizedUrl);
+      const urls = await discoverProductUrls(normalizedUrl, 500).catch(() => [] as string[]);
+      return json({ ok: true, platform: profile.platform, import_platform: "generic", counts: { products: urls.length, collections: 0, pages: profile.pages.length, orders: 0, customers: 0 }, profile, warnings: urls.length ? [] : ["No public product pages were found. You can still create the store and retry later."] });
+    }
 
     if (platform === "shopify") {
       const token = creds.access_token?.trim();
@@ -73,13 +81,14 @@ Deno.serve(async (req) => {
     }
 
     if (platform === "generic" || platform === "dukaan") {
-      const urls = await discoverProductUrls(sourceUrl, 500).catch(() => [] as string[]);
+      const urls = await discoverProductUrls(normalizedUrl, 500).catch(() => [] as string[]);
       if (!urls.length) {
         return json({
           error: "No product URLs found in the site's sitemap. The store may not expose /sitemap.xml or product pages use an unusual URL structure.",
         }, 400);
       }
-      return json({ ok: true, counts: { products: urls.length, collections: 0, orders: 0, customers: 0 } });
+      const profile = await inspectPublicSite(normalizedUrl).catch(() => null);
+      return json({ ok: true, platform: profile?.platform ?? platform, import_platform: "generic", counts: { products: urls.length, collections: 0, pages: profile?.pages.length ?? 0, orders: 0, customers: 0 }, profile });
     }
 
     return json({ error: `Platform "${platform}" is not yet supported.` }, 400);
