@@ -66,6 +66,8 @@ interface CheckoutAwareLayoutProps {
   showDarkToggle?: boolean;
   /** Merchant-chosen night-mode switch animation (theme setting) */
   darkToggleEffect?: string | null;
+  /** Keep mobile and desktop headers visible while the shopper scrolls. */
+  fixedHeader?: boolean;
 }
 
 export default function CheckoutAwareLayout({
@@ -84,6 +86,7 @@ export default function CheckoutAwareLayout({
   swapCartWhatsApp = false,
   showDarkToggle = false,
   darkToggleEffect,
+  fixedHeader = false,
 }: CheckoutAwareLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -224,12 +227,12 @@ export default function CheckoutAwareLayout({
       {/* Desktop nav bar — hidden on mobile, hidden during checkout */}
       {!isCheckout && (
         <Suspense fallback={null}>
-          <LazyDesktopNavBar store={store} onSearchOpen={() => setSearchOpen(true)} extra={showDarkToggle ? <Suspense fallback={<div className="h-9 w-9" aria-hidden />}><LazySfDarkToggle size={30} effect={darkToggleEffect} /></Suspense> : undefined} style={headerBg ? ({ backgroundColor: headerBg, color: headerFg || undefined, "--storefront-text": headerFg || undefined, borderBottom: `1px solid ${headerFg || '#fff'}12` } as any) : undefined} />
+          <LazyDesktopNavBar store={store} onSearchOpen={() => setSearchOpen(true)} alwaysVisible={fixedHeader} extra={showDarkToggle ? <Suspense fallback={<div className="h-9 w-9" aria-hidden />}><LazySfDarkToggle size={30} effect={darkToggleEffect} /></Suspense> : undefined} style={headerBg ? ({ backgroundColor: headerBg, color: headerFg || undefined, "--storefront-text": headerFg || undefined, borderBottom: `1px solid ${headerFg || '#fff'}12` } as any) : undefined} />
         </Suspense>
       )}
 
       {/* Mobile header + legacy checkout header. Checkout V2 renders its own header. */}
-      {!checkoutOwnsHeader && <nav className={`${isCheckout ? 'sticky top-0' : 'md:hidden'} ${mobileNavEnabled && headerStyle === 'normal' ? 'sm:sticky sm:top-0' : isCheckout ? '' : 'sticky top-0'} z-30 smart-header ${!isCheckout && !headerVisible ? 'smart-header-hidden' : ''} ${
+      {!checkoutOwnsHeader && <nav className={`${isCheckout ? 'sticky top-0' : 'md:hidden'} ${mobileNavEnabled && headerStyle === 'normal' ? 'sm:sticky sm:top-0' : isCheckout ? '' : 'sticky top-0'} z-30 smart-header ${!isCheckout && !fixedHeader && !headerVisible ? 'smart-header-hidden' : ''} ${
         headerClassName ? headerClassName :
         headerBg ? '' :
         isCheckout ? '' :
