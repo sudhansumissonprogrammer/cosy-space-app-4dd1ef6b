@@ -1788,6 +1788,7 @@ export type Database = {
           image_sha256: string
           order_id: string
           photo_deleted_at: string | null
+          photo_object_path: string | null
           reasons: string[]
           scanned_by: string
           store_id: string
@@ -1805,6 +1806,7 @@ export type Database = {
           image_sha256: string
           order_id: string
           photo_deleted_at?: string | null
+          photo_object_path?: string | null
           reasons?: string[]
           scanned_by: string
           store_id: string
@@ -1822,6 +1824,7 @@ export type Database = {
           image_sha256?: string
           order_id?: string
           photo_deleted_at?: string | null
+          photo_object_path?: string | null
           reasons?: string[]
           scanned_by?: string
           store_id?: string

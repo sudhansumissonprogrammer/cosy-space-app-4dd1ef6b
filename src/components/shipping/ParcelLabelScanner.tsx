@@ -23,19 +23,20 @@ type Props = {
   onAccepted: (result: ScanResult) => void;
 };
 
-async function prepareWhatsAppImage(file: File): Promise<File> {
-  if (file.type !== "image/webp") return file;
+async function prepareParcelImage(file: File): Promise<File> {
   const bitmap = await createImageBitmap(file);
   try {
+    const maxEdge = 1600;
+    const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
     const canvas = document.createElement("canvas");
-    canvas.width = bitmap.width;
-    canvas.height = bitmap.height;
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
     const context = canvas.getContext("2d");
     if (!context) throw new Error("Could not prepare this photo");
-    context.drawImage(bitmap, 0, 0);
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.9));
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.84));
     if (!blob) throw new Error("Could not prepare this photo");
-    return new File([blob], file.name.replace(/\.webp$/i, ".jpg"), { type: "image/jpeg" });
+    return new File([blob], file.name.replace(/\.[^.]+$/i, ".jpg"), { type: "image/jpeg" });
   } finally {
     bitmap.close();
   }
@@ -46,7 +47,8 @@ async function detectBarcode(file: File): Promise<string> {
   if (!Detector || typeof createImageBitmap !== "function") return "";
   try {
     const bitmap = await createImageBitmap(file);
-    const detector = new Detector({ formats: ["code_128", "code_39", "qr_code", "data_matrix", "ean_13"] });
+    // QR/data-matrix payloads often contain booking URLs or JSON, not the AWB.
+    const detector = new Detector({ formats: ["code_128", "code_39"] });
     const codes = await detector.detect(bitmap);
     bitmap.close();
     return String(codes[0]?.rawValue ?? "").replace(/\s+/g, "").slice(0, 40);
@@ -72,7 +74,7 @@ export default function ParcelLabelScanner({ orderId, disabled, onScanStart, onA
     setMessage("Reading label…");
     let preparedFile: File;
     try {
-      preparedFile = await prepareWhatsAppImage(file);
+      preparedFile = await prepareParcelImage(file);
     } catch {
       setStage("error");
       setMessage("Could not prepare this photo. Try taking a new photo.");
@@ -80,7 +82,7 @@ export default function ParcelLabelScanner({ orderId, disabled, onScanStart, onA
     }
     const barcodeHint = await detectBarcode(preparedFile);
     setStage("checking");
-    setMessage("Checking customer…");
+    setMessage("Checking tracking number…");
     const form = new FormData();
     form.append("image", preparedFile);
     form.append("order_id", orderId);
@@ -101,11 +103,11 @@ export default function ParcelLabelScanner({ orderId, disabled, onScanStart, onA
       setMessage(detail);
       return;
     }
-    if (data?.decision === "review" && data?.scan_id && data?.matched?.phone && data?.needs_tracking_confirmation) {
+    if (data?.decision === "review" && data?.scan_id && data?.needs_tracking_confirmation) {
       setReviewResult(data as ScanResult);
       setManualAwb(String(data.tracking_number || ""));
       setStage("ready");
-      setMessage(data.message || "Phone number matched. Enter the tracking number printed on this label.");
+      setMessage(data.message || "Enter the complete tracking number printed on this label.");
       return;
     }
     if (!data?.tracking_number || !data?.courier_slug) {
@@ -114,7 +116,7 @@ export default function ParcelLabelScanner({ orderId, disabled, onScanStart, onA
       return;
     }
     setStage("ready");
-    setMessage("Phone number matched · tracking details ready");
+    setMessage("Tracking number ready");
     onAccepted(data as ScanResult);
   };
 
@@ -146,7 +148,7 @@ export default function ParcelLabelScanner({ orderId, disabled, onScanStart, onA
     }
     setStage("ready");
     setReviewResult(null);
-    setMessage("Phone number matched · tracking details ready");
+    setMessage("Tracking number ready");
     onAccepted(data as ScanResult);
   };
 
@@ -199,7 +201,7 @@ export default function ParcelLabelScanner({ orderId, disabled, onScanStart, onA
       </div>
       {reviewResult && (
         <div className="space-y-2 rounded-md border bg-muted/40 p-3">
-          <p className="text-xs font-medium text-foreground">Phone number matched</p>
+          <p className="text-xs font-medium text-foreground">Confirm tracking number</p>
           <Input
             value={manualAwb}
             onChange={(event) => setManualAwb(event.target.value.toUpperCase().replace(/\s+/g, "").slice(0, 40))}
@@ -229,7 +231,7 @@ export default function ParcelLabelScanner({ orderId, disabled, onScanStart, onA
       {stage === "idle" && (
         <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
           <ScanLine className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          Keep the full mobile number and barcode clearly visible. A different or incomplete number will be blocked.
+          Keep the printed tracking number and its barcode clear and fully visible.
         </p>
       )}
     </div>

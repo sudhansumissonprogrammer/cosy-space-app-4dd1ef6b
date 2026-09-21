@@ -5,12 +5,11 @@ const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/responses";
 const AWB_RE = /^[A-Z0-9._-]{4,40}$/i;
 const TEMP_PHOTO_BUCKET = "parcel-label-temp";
+const SAVED_PHOTO_BUCKET = "parcel-label-photos";
 const TEMP_PHOTO_TTL_MS = 6 * 60 * 60 * 1000;
 
 type Extraction = {
   readable: boolean;
-  phone: string;
-  courier_name: string;
   printed_tracking_number: string;
   barcode_value: string;
 };
@@ -26,34 +25,12 @@ function clean(value: unknown, max = 180): string {
   return String(value ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 }
 
-function digits(value: unknown): string {
-  return String(value ?? "").replace(/\D/g, "");
-}
-
-function normalizePhone(value: unknown): string {
-  let local = digits(value);
-  if (local.length === 13 && local.startsWith("091")) local = local.slice(3);
-  else if (local.length === 12 && local.startsWith("91")) local = local.slice(2);
-  else if (local.length === 11 && local.startsWith("0")) local = local.slice(1);
-  return local.length === 10 && /^[6-9]\d{9}$/.test(local) ? local : "";
-}
-
 function normalizeAwb(value: unknown): string {
   return clean(value, 40).replace(/\s+/g, "").toUpperCase();
 }
 
-function courierSlug(value: unknown): string {
-  const v = clean(value).toLowerCase();
-  if (/india\s*post|speed\s*post/.test(v)) return "india_post";
-  if (/delhivery/.test(v)) return "delhivery";
-  if (/xpressbees/.test(v)) return "xpressbees";
-  if (/ecom\s*express/.test(v)) return "ecom_express";
-  if (/blue\s*dart/.test(v)) return "bluedart";
-  if (/dtdc/.test(v)) return "dtdc";
-  if (/ekart/.test(v)) return "ekart";
-  if (/shadowfax/.test(v)) return "shadowfax";
-  if (/amazon/.test(v)) return "amazon_shipping";
-  return "other";
+function courierFromAwb(value: string): string {
+  return /^[A-Z]{2}\d{9}IN$/.test(value) ? "india_post" : "other";
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
@@ -107,12 +84,10 @@ async function inspectLabel(bytes: Uint8Array, mime: string, barcodeHint: string
     additionalProperties: false,
     properties: {
       readable: { type: "boolean" },
-      phone: { type: "string" },
-      courier_name: { type: "string" },
       printed_tracking_number: { type: "string" },
       barcode_value: { type: "string" },
     },
-    required: ["readable", "phone", "courier_name", "printed_tracking_number", "barcode_value"],
+    required: ["readable", "printed_tracking_number", "barcode_value"],
   };
   const response = await fetch(GATEWAY_URL, {
     method: "POST",
@@ -124,11 +99,11 @@ async function inspectLabel(bytes: Uint8Array, mime: string, barcodeHint: string
     body: JSON.stringify({
       model: "openai/gpt-6-astra",
       stream: true,
-      reasoning: { effort: "low", summary: "auto" },
+      reasoning: { effort: "none" },
       input: [{
         role: "user",
         content: [
-          { type: "input_text", text: `Read this Indian courier parcel label. Extract only the clearly visible recipient mobile number, courier, and tracking number; use empty strings rather than guessing. Preserve any visible +91, 91, or 0 phone prefix. Tracking values must contain only the actual AWB characters. The browser independently saw this possible barcode: ${barcodeHint || "none"}. Treat it only as a hint and independently inspect the image.` },
+          { type: "input_text", text: `Extract only the shipment tracking/AWB number from this Indian courier label. Do not read names, phone numbers, addresses, prices, or any other text. Return an empty string rather than guessing. The printed value and tracking barcode should agree. Browser 1D-barcode hint: ${barcodeHint || "none"}.` },
           { type: "input_image", image_url: `data:${mime};base64,${bytesToBase64(bytes)}` },
         ],
       }],
@@ -170,6 +145,7 @@ Deno.serve(async (req) => {
 
     const form = await req.formData().catch(() => null);
     const image = form?.get("image");
+    const action = clean(form?.get("action"), 20);
     const orderId = clean(form?.get("order_id"), 50);
     const barcodeHint = normalizeAwb(form?.get("barcode_hint"));
     const reviewScanId = clean(form?.get("review_scan_id"), 50);
@@ -177,28 +153,32 @@ Deno.serve(async (req) => {
     if (!orderId) return json({ error: "Order is required" }, 400);
 
     const admin = createClient(url, serviceKey);
-    const { data: expiredPhotos } = await admin
-      .from("parcel_label_scans")
-      .select("id,temp_object_path")
-      .not("temp_object_path", "is", null)
-      .is("photo_deleted_at", null)
-      .lte("temp_expires_at", new Date().toISOString())
-      .limit(50);
-    for (const expired of expiredPhotos ?? []) {
-      const path = String((expired as any).temp_object_path || "");
-      if (path) await admin.storage.from(TEMP_PHOTO_BUCKET).remove([path]);
-      await admin.from("parcel_label_scans").update({
-        temp_object_path: null,
-        photo_deleted_at: new Date().toISOString(),
-      }).eq("id", (expired as any).id);
-    }
     const { data: order } = await admin
       .from("orders")
-      .select("id,store_id,customer_phone,stores!inner(owner_id)")
+      .select("id,store_id,stores!inner(owner_id)")
       .eq("id", orderId)
       .maybeSingle();
     const ownerId = (order as any)?.stores?.owner_id;
     if (!order || ownerId !== userId) return json({ error: "Order not found" }, 404);
+
+    if (action === "photo") {
+      const { data: savedScan } = await admin
+        .from("parcel_label_scans")
+        .select("photo_object_path")
+        .eq("order_id", orderId)
+        .eq("store_id", order.store_id)
+        .eq("decision", "accepted")
+        .not("photo_object_path", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!savedScan?.photo_object_path) return json({ photo_url: null });
+      const { data: signed, error: signedError } = await admin.storage
+        .from(SAVED_PHOTO_BUCKET)
+        .createSignedUrl(savedScan.photo_object_path, 5 * 60);
+      if (signedError || !signed?.signedUrl) return json({ photo_url: null });
+      return json({ photo_url: signed.signedUrl });
+    }
 
     if (reviewScanId || manualAwb) {
       if (!reviewScanId || !manualAwb || !AWB_RE.test(manualAwb)) {
@@ -213,11 +193,11 @@ Deno.serve(async (req) => {
         .eq("scanned_by", userId)
         .eq("decision", "review")
         .maybeSingle();
-      const phoneMatched = (reviewScan?.evidence as Record<string, unknown> | null)?.phone_match === true;
+      const trackingOnlyScan = (reviewScan?.evidence as Record<string, unknown> | null)?.tracking_only === true;
       const photoAvailable = !!reviewScan?.temp_object_path
         && !!reviewScan?.temp_expires_at
         && new Date(reviewScan.temp_expires_at).getTime() > Date.now();
-      if (!reviewScan || !phoneMatched || !photoAvailable) {
+      if (!reviewScan || !trackingOnlyScan || !photoAvailable) {
         return json({ error: "Take a new label photo before entering the tracking number" }, 409);
       }
       const [{ data: priorScan }, { data: priorShipment }] = await Promise.all([
@@ -240,7 +220,7 @@ Deno.serve(async (req) => {
         confidence: 1,
         courier_slug: reviewScan.courier_slug || "other",
         tracking_number: manualAwb,
-        matched: { phone: true },
+        matched: {},
       });
     }
 
@@ -277,14 +257,14 @@ Deno.serve(async (req) => {
         const extension = image.type === "image/png" ? "png" : "jpg";
         const objectPath = `${order.store_id}/${orderId}/${reusedImage.id}.${extension}`;
         const expiresAt = new Date(Date.now() + TEMP_PHOTO_TTL_MS).toISOString();
-        const { error: uploadError } = await admin.storage.from(TEMP_PHOTO_BUCKET).upload(objectPath, bytes, {
-          contentType: image.type,
-          upsert: true,
-          cacheControl: "300",
-        });
-        if (uploadError) throw new Error("The label matched, but its temporary photo could not be prepared. Please retry.");
+        const [tempUpload, savedUpload] = await Promise.all([
+          admin.storage.from(TEMP_PHOTO_BUCKET).upload(objectPath, bytes, { contentType: image.type, upsert: true, cacheControl: "300" }),
+          admin.storage.from(SAVED_PHOTO_BUCKET).upload(objectPath, bytes, { contentType: image.type, upsert: true, cacheControl: "3600" }),
+        ]);
+        if (tempUpload.error || savedUpload.error) throw new Error("The label matched, but its parcel photo could not be saved. Please retry.");
         await admin.from("parcel_label_scans").update({
           temp_object_path: objectPath,
+          photo_object_path: objectPath,
           temp_expires_at: expiresAt,
           photo_deleted_at: null,
         }).eq("id", reusedImage.id);
@@ -295,11 +275,14 @@ Deno.serve(async (req) => {
         confidence: Number(reusedImage.confidence ?? 1),
         courier_slug: reusedImage.courier_slug || "other",
         tracking_number: reusedImage.tracking_number,
-        matched: { phone: true },
+        matched: {},
       });
     }
 
-    const extracted = await inspectLabel(bytes, image.type, barcodeHint);
+    const strongBarcodeHint = /^[A-Z]{2}\d{9}IN$/.test(barcodeHint) ? barcodeHint : "";
+    const extracted = strongBarcodeHint
+      ? { readable: true, printed_tracking_number: strongBarcodeHint, barcode_value: strongBarcodeHint }
+      : await inspectLabel(bytes, image.type, barcodeHint);
     const printedAwb = normalizeAwb(extracted.printed_tracking_number);
     const imageBarcode = normalizeAwb(extracted.barcode_value);
     const candidateAwb = imageBarcode || printedAwb || barcodeHint;
@@ -309,16 +292,8 @@ Deno.serve(async (req) => {
     if (!extracted.readable) reasons.push("The label is not clear enough to verify.");
     if (!candidateAwb || !AWB_RE.test(candidateAwb)) reasons.push("No valid tracking number was found.");
     if (imageBarcode && printedAwb && imageBarcode !== printedAwb) hardFailures.push("The barcode and printed tracking number do not agree.");
-    // Browser BarcodeDetector may select a QR payload or a secondary barcode.
-    // It is only a speed hint; never reject a phone-matched label because this
-    // client-side hint differs from the tracking barcode read from the image.
-
-    const expectedPhone = normalizePhone(order.customer_phone);
-    const actualPhone = normalizePhone(extracted.phone);
-    const phoneExact = !!expectedPhone && !!actualPhone && expectedPhone === actualPhone;
-    if (!expectedPhone) reasons.push("This order does not have a valid 10-digit mobile number.");
-    if (!actualPhone) reasons.push("The full 10-digit mobile number was not readable on the label.");
-    if (expectedPhone && actualPhone && !phoneExact) hardFailures.push("The phone number belongs to a different customer.");
+    // Browser BarcodeDetector is only trusted for the strict India Post AWB
+    // shape. Every other label is independently read from the image.
 
     if (candidateAwb) {
       const { data: priorAcceptedAwb } = await admin
@@ -341,12 +316,11 @@ Deno.serve(async (req) => {
       if ((usedAwb ?? []).length > 0) hardFailures.push("This tracking number is already attached to another order.");
     }
 
-    const confidence = extracted.readable && candidateAwb && phoneExact ? 1 : 0;
-    const decision = hardFailures.length > 0 ? "rejected" : extracted.readable && candidateAwb && phoneExact && reasons.length === 0 ? "accepted" : "review";
+    const confidence = extracted.readable && candidateAwb ? 1 : 0;
+    const decision = hardFailures.length > 0 ? "rejected" : extracted.readable && candidateAwb && reasons.length === 0 ? "accepted" : "review";
     const allReasons = [...hardFailures, ...reasons];
     const evidence = {
-      phone_match: phoneExact,
-      phone_last4: actualPhone.slice(-4),
+      tracking_only: true,
     };
 
     const alreadyAcceptedForOrder = candidateAwb
@@ -369,7 +343,7 @@ Deno.serve(async (req) => {
       image_sha256: imageHash,
       decision,
       confidence,
-      courier_slug: candidateAwb ? courierSlug(extracted.courier_name) : null,
+       courier_slug: candidateAwb ? courierFromAwb(candidateAwb) : null,
       tracking_number: candidateAwb || null,
       evidence,
       reasons: allReasons,
@@ -378,59 +352,62 @@ Deno.serve(async (req) => {
       scanId = insertedScan?.id || null;
     }
 
-    if (decision === "rejected") return json({ decision, confidence, error: "Wrong parcel — this label does not match this customer.", reasons: allReasons }, 422);
+    if (decision === "rejected") return json({ decision, confidence, error: allReasons[0] || "This tracking number could not be verified.", reasons: allReasons }, 422);
 
     if (decision === "review") {
-      if (!phoneExact || !scanId) {
+      if (!candidateAwb || !scanId) {
         return json({ decision, confidence, error: allReasons[0] || "We could not safely verify this label. Take a clearer photo.", reasons: allReasons }, 422);
       }
       const extension = image.type === "image/png" ? "png" : "jpg";
       const objectPath = `${order.store_id}/${orderId}/${scanId}.${extension}`;
       const expiresAt = new Date(Date.now() + TEMP_PHOTO_TTL_MS).toISOString();
-      const { error: uploadError } = await admin.storage.from(TEMP_PHOTO_BUCKET).upload(objectPath, bytes, {
-        contentType: image.type,
-        upsert: true,
-        cacheControl: "300",
-      });
-      if (uploadError) throw new Error("The label matched, but its temporary photo could not be prepared. Please retry.");
+      const [tempUpload, savedUpload] = await Promise.all([
+        admin.storage.from(TEMP_PHOTO_BUCKET).upload(objectPath, bytes, { contentType: image.type, upsert: true, cacheControl: "300" }),
+        admin.storage.from(SAVED_PHOTO_BUCKET).upload(objectPath, bytes, { contentType: image.type, upsert: true, cacheControl: "3600" }),
+      ]);
+      if (tempUpload.error || savedUpload.error) throw new Error("The label matched, but its parcel photo could not be saved. Please retry.");
       const { error: photoRecordError } = await admin.from("parcel_label_scans").update({
         temp_object_path: objectPath,
+        photo_object_path: objectPath,
         temp_expires_at: expiresAt,
         photo_deleted_at: null,
       }).eq("id", scanId).eq("order_id", orderId).eq("scanned_by", userId);
       if (photoRecordError) {
         await admin.storage.from(TEMP_PHOTO_BUCKET).remove([objectPath]);
-        throw new Error("The temporary parcel photo could not be secured. Please retry.");
+        await admin.storage.from(SAVED_PHOTO_BUCKET).remove([objectPath]);
+        throw new Error("The parcel photo could not be secured. Please retry.");
       }
       return json({
         decision,
         scan_id: scanId,
         confidence,
-        courier_slug: courierSlug(extracted.courier_name),
+        courier_slug: courierFromAwb(candidateAwb),
         tracking_number: candidateAwb || "",
-        matched: { phone: true },
+        matched: {},
         needs_tracking_confirmation: true,
-        message: "Phone number matched. Enter the tracking number printed on this label.",
+        message: "Enter the complete tracking number printed on this label.",
       });
     }
 
     if (!scanId) throw new Error("The verified scan could not be saved");
     const extension = image.type === "image/png" ? "png" : "jpg";
     const objectPath = `${order.store_id}/${orderId}/${scanId}.${extension}`;
+    const savedObjectPath = `${order.store_id}/${orderId}/${scanId}.${extension}`;
     const expiresAt = new Date(Date.now() + TEMP_PHOTO_TTL_MS).toISOString();
-    const { error: uploadError } = await admin.storage.from(TEMP_PHOTO_BUCKET).upload(objectPath, bytes, {
-      contentType: image.type,
-      upsert: true,
-      cacheControl: "300",
-    });
-    if (uploadError) throw new Error("The label matched, but its temporary photo could not be prepared. Please retry.");
+    const [tempUpload, savedUpload] = await Promise.all([
+      admin.storage.from(TEMP_PHOTO_BUCKET).upload(objectPath, bytes, { contentType: image.type, upsert: true, cacheControl: "300" }),
+      admin.storage.from(SAVED_PHOTO_BUCKET).upload(savedObjectPath, bytes, { contentType: image.type, upsert: true, cacheControl: "3600" }),
+    ]);
+    if (tempUpload.error || savedUpload.error) throw new Error("The label matched, but its parcel photo could not be saved. Please retry.");
     const { error: photoRecordError } = await admin.from("parcel_label_scans").update({
       temp_object_path: objectPath,
+      photo_object_path: savedObjectPath,
       temp_expires_at: expiresAt,
       photo_deleted_at: null,
     }).eq("id", scanId).eq("order_id", orderId).eq("scanned_by", userId);
     if (photoRecordError) {
       await admin.storage.from(TEMP_PHOTO_BUCKET).remove([objectPath]);
+      await admin.storage.from(SAVED_PHOTO_BUCKET).remove([savedObjectPath]);
       throw new Error("The temporary parcel photo could not be secured. Please retry.");
     }
 
@@ -438,9 +415,9 @@ Deno.serve(async (req) => {
       decision,
       scan_id: scanId,
       confidence,
-      courier_slug: courierSlug(extracted.courier_name),
+      courier_slug: courierFromAwb(candidateAwb),
       tracking_number: candidateAwb,
-      matched: { phone: phoneExact },
+      matched: {},
     });
   } catch (error) {
     console.error("[parcel-label-scan] unexpected", error);

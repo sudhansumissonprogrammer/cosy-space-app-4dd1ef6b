@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useShipmentTracking } from "@/hooks/useShipmentTracking";
 import ShipmentTimeline from "./ShipmentTimeline";
 import ShipmentEditorDialog from "./ShipmentEditorDialog";
+import ParcelPhoto from "./ParcelPhoto";
 
 /**
  * Merchant-side shipment block: shows every parcel attached to an order and
@@ -19,6 +20,7 @@ export default function OrderShipmentSection({ orderId, orderStatus }: { orderId
 
   return (
     <section>
+      <div className="mb-3"><ParcelPhoto orderId={orderId} /></div>
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Shipment tracking</h3>
         {orderStatus === "shipped" && (
