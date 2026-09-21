@@ -193,11 +193,11 @@ Deno.serve(async (req) => {
         .eq("scanned_by", userId)
         .eq("decision", "review")
         .maybeSingle();
-      const phoneMatched = (reviewScan?.evidence as Record<string, unknown> | null)?.phone_match === true;
+      const trackingOnlyScan = (reviewScan?.evidence as Record<string, unknown> | null)?.tracking_only === true;
       const photoAvailable = !!reviewScan?.temp_object_path
         && !!reviewScan?.temp_expires_at
         && new Date(reviewScan.temp_expires_at).getTime() > Date.now();
-      if (!reviewScan || !phoneMatched || !photoAvailable) {
+      if (!reviewScan || !trackingOnlyScan || !photoAvailable) {
         return json({ error: "Take a new label photo before entering the tracking number" }, 409);
       }
       const [{ data: priorScan }, { data: priorShipment }] = await Promise.all([
@@ -257,23 +257,17 @@ Deno.serve(async (req) => {
         const extension = image.type === "image/png" ? "png" : "jpg";
         const objectPath = `${order.store_id}/${orderId}/${reusedImage.id}.${extension}`;
         const expiresAt = new Date(Date.now() + TEMP_PHOTO_TTL_MS).toISOString();
-        const { error: uploadError } = await admin.storage.from(TEMP_PHOTO_BUCKET).upload(objectPath, bytes, {
-          contentType: image.type,
-          upsert: true,
-          cacheControl: "300",
-        });
-        if (uploadError) throw new Error("The label matched, but its temporary photo could not be prepared. Please retry.");
+        const [tempUpload, savedUpload] = await Promise.all([
+          admin.storage.from(TEMP_PHOTO_BUCKET).upload(objectPath, bytes, { contentType: image.type, upsert: true, cacheControl: "300" }),
+          admin.storage.from(SAVED_PHOTO_BUCKET).upload(objectPath, bytes, { contentType: image.type, upsert: true, cacheControl: "3600" }),
+        ]);
+        if (tempUpload.error || savedUpload.error) throw new Error("The label matched, but its parcel photo could not be saved. Please retry.");
         await admin.from("parcel_label_scans").update({
           temp_object_path: objectPath,
           photo_object_path: objectPath,
           temp_expires_at: expiresAt,
           photo_deleted_at: null,
         }).eq("id", reusedImage.id);
-        await admin.storage.from(SAVED_PHOTO_BUCKET).upload(objectPath, bytes, {
-          contentType: image.type,
-          upsert: true,
-          cacheControl: "3600",
-        });
       }
       return json({
         decision: "accepted",
@@ -367,20 +361,21 @@ Deno.serve(async (req) => {
       const extension = image.type === "image/png" ? "png" : "jpg";
       const objectPath = `${order.store_id}/${orderId}/${scanId}.${extension}`;
       const expiresAt = new Date(Date.now() + TEMP_PHOTO_TTL_MS).toISOString();
-      const { error: uploadError } = await admin.storage.from(TEMP_PHOTO_BUCKET).upload(objectPath, bytes, {
-        contentType: image.type,
-        upsert: true,
-        cacheControl: "300",
-      });
-      if (uploadError) throw new Error("The label matched, but its temporary photo could not be prepared. Please retry.");
+      const [tempUpload, savedUpload] = await Promise.all([
+        admin.storage.from(TEMP_PHOTO_BUCKET).upload(objectPath, bytes, { contentType: image.type, upsert: true, cacheControl: "300" }),
+        admin.storage.from(SAVED_PHOTO_BUCKET).upload(objectPath, bytes, { contentType: image.type, upsert: true, cacheControl: "3600" }),
+      ]);
+      if (tempUpload.error || savedUpload.error) throw new Error("The label matched, but its parcel photo could not be saved. Please retry.");
       const { error: photoRecordError } = await admin.from("parcel_label_scans").update({
         temp_object_path: objectPath,
+        photo_object_path: objectPath,
         temp_expires_at: expiresAt,
         photo_deleted_at: null,
       }).eq("id", scanId).eq("order_id", orderId).eq("scanned_by", userId);
       if (photoRecordError) {
         await admin.storage.from(TEMP_PHOTO_BUCKET).remove([objectPath]);
-        throw new Error("The temporary parcel photo could not be secured. Please retry.");
+        await admin.storage.from(SAVED_PHOTO_BUCKET).remove([objectPath]);
+        throw new Error("The parcel photo could not be secured. Please retry.");
       }
       return json({
         decision,
