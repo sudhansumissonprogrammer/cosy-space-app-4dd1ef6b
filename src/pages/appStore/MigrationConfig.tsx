@@ -10,16 +10,27 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle2, DownloadCloud, Loader2, ShoppingBag, Store, Package, Users, Clock } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  DownloadCloud,
+  Loader2,
+  ShoppingBag,
+  Store,
+  Package,
+  Users,
+  Clock,
+} from "lucide-react";
 import { toast } from "sonner";
 import { AppConfigShell } from "@/components/appStore/AppConfigShell";
 
-type Platform = "shopify" | "woocommerce" | "dukaan" | "bigcommerce" | "magento" | "generic";
+type Platform =
+  "shopify" | "woocommerce" | "dukaan" | "bigcommerce" | "magento" | "generic";
 
 interface JobRow {
   id: string;
   status: "pending" | "running" | "completed" | "failed" | "cancelled";
-  source_platform: Platform;
+  source_platform: Platform | "shopify-public";
   source_url: string;
   entities: string[];
   progress: any;
@@ -29,18 +40,62 @@ interface JobRow {
   discovered_counts?: Record<string, number>;
 }
 
-const PLATFORMS: { id: Platform; name: string; supported: boolean; description: string }[] = [
-  { id: "shopify", name: "Shopify", supported: true, description: "Products, images, variants, SEO. Uses Admin API access token." },
-  { id: "woocommerce", name: "WooCommerce", supported: true, description: "Products, images, prices via REST API (consumer key + secret)." },
-  { id: "dukaan", name: "Dukaan", supported: true, description: "Auto-discover via sitemap + product page scrape. No credentials needed." },
-  { id: "generic", name: "Other / Custom store", supported: true, description: "Any store with a sitemap — Shopdeck, custom-coded, WordPress etc." },
-  { id: "bigcommerce", name: "BigCommerce", supported: false, description: "Coming soon." },
-  { id: "magento", name: "Magento 2", supported: false, description: "Coming soon." },
+const PLATFORMS: {
+  id: Platform;
+  name: string;
+  supported: boolean;
+  description: string;
+}[] = [
+  {
+    id: "shopify",
+    name: "Shopify",
+    supported: true,
+    description:
+      "Products, images, variants, SEO. Uses Admin API access token.",
+  },
+  {
+    id: "woocommerce",
+    name: "WooCommerce",
+    supported: true,
+    description:
+      "Products, images, prices via REST API (consumer key + secret).",
+  },
+  {
+    id: "dukaan",
+    name: "Dukaan",
+    supported: true,
+    description:
+      "Auto-discover via sitemap + product page scrape. No credentials needed.",
+  },
+  {
+    id: "generic",
+    name: "Other / Custom store",
+    supported: true,
+    description:
+      "Any store with a sitemap — Shopdeck, custom-coded, WordPress etc.",
+  },
+  {
+    id: "bigcommerce",
+    name: "BigCommerce",
+    supported: false,
+    description: "Coming soon.",
+  },
+  {
+    id: "magento",
+    name: "Magento 2",
+    supported: false,
+    description: "Coming soon.",
+  },
 ];
 
 const ENTITIES = [
   { id: "products", label: "Products", icon: Package, defaultOn: true },
-  { id: "categories", label: "Categories / Collections", icon: ShoppingBag, defaultOn: true },
+  {
+    id: "categories",
+    label: "Categories / Collections",
+    icon: ShoppingBag,
+    defaultOn: true,
+  },
   { id: "customers", label: "Customers", icon: Users, defaultOn: false },
   { id: "orders", label: "Order history", icon: Clock, defaultOn: false },
 ];
@@ -56,7 +111,7 @@ export default function MigrationConfig() {
   const [consumerKey, setConsumerKey] = useState("");
   const [consumerSecret, setConsumerSecret] = useState("");
   const [selectedEntities, setSelectedEntities] = useState<string[]>(
-    ENTITIES.filter(e => e.defaultOn).map(e => e.id),
+    ENTITIES.filter((e) => e.defaultOn).map((e) => e.id),
   );
   const [detecting, setDetecting] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -70,7 +125,9 @@ export default function MigrationConfig() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("migration_jobs")
-        .select("id,status,source_platform,source_url,entities,progress,error_log,created_at,completed_at")
+        .select(
+          "id,status,source_platform,source_url,entities,progress,discovered_counts,error_log,created_at,completed_at",
+        )
         .eq("store_id", storeId!)
         .order("created_at", { ascending: false })
         .limit(10);
@@ -81,43 +138,61 @@ export default function MigrationConfig() {
 
   useEffect(() => {
     if (!history?.length) return;
-    const running = history.find(j => j.status === "running" || j.status === "pending");
+    const running = history.find(
+      (j) => j.status === "running" || j.status === "pending",
+    );
     if (running && !activeJobId) setActiveJobId(running.id);
   }, [history, activeJobId]);
 
   const activeJob = useMemo(
-    () => history?.find(j => j.id === activeJobId) ?? null,
+    () => history?.find((j) => j.id === activeJobId) ?? null,
     [history, activeJobId],
   );
 
   useEffect(() => {
-    if (activeJob && (activeJob.status === "completed" || activeJob.status === "failed" || activeJob.status === "cancelled")) {
+    if (
+      activeJob &&
+      (activeJob.status === "completed" ||
+        activeJob.status === "failed" ||
+        activeJob.status === "cancelled")
+    ) {
       qc.invalidateQueries({ queryKey: ["migration-jobs", storeId] });
     }
   }, [activeJob?.status, storeId, qc]);
 
   function buildCredentials(): Record<string, string> {
     if (platform === "shopify") return { access_token: accessToken.trim() };
-    if (platform === "woocommerce") return { consumer_key: consumerKey.trim(), consumer_secret: consumerSecret.trim() };
+    if (platform === "woocommerce")
+      return {
+        consumer_key: consumerKey.trim(),
+        consumer_secret: consumerSecret.trim(),
+      };
     return {};
   }
 
   async function handleDetect() {
     if (!sourceUrl.trim()) return toast.error("Enter your store URL");
-    if (platform === "shopify" && !accessToken.trim()) return toast.error("Enter your Shopify Admin access token");
-    if (platform === "woocommerce" && (!consumerKey.trim() || !consumerSecret.trim())) {
+    if (platform === "shopify" && !accessToken.trim())
+      return toast.error("Enter your Shopify Admin access token");
+    if (
+      platform === "woocommerce" &&
+      (!consumerKey.trim() || !consumerSecret.trim())
+    ) {
       return toast.error("Enter your WooCommerce consumer key and secret");
     }
     setDetecting(true);
     setCounts(null);
     try {
-      const { data, error } = await supabase.functions.invoke("migration-detect", {
-        body: {
-          platform,
-          source_url: sourceUrl.trim(),
-          credentials: buildCredentials(),
+      const { data, error } = await supabase.functions.invoke(
+        "migration-detect",
+        {
+          body: {
+            platform,
+            source_url: sourceUrl.trim(),
+            credentials: buildCredentials(),
+          },
         },
-      });
+      );
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       setCounts((data as any).counts);
@@ -132,8 +207,12 @@ export default function MigrationConfig() {
 
   async function handleCancel() {
     if (!activeJobId) return;
-    const { data, error } = await (supabase as any).rpc("cancel_own_migration", { _job_id: activeJobId });
-    if (error || !data) return toast.error(error?.message || "Could not cancel migration");
+    const { data, error } = await (supabase as any).rpc(
+      "cancel_own_migration",
+      { _job_id: activeJobId },
+    );
+    if (error || !data)
+      return toast.error(error?.message || "Could not cancel migration");
     toast.success("Migration cancelled");
     await qc.invalidateQueries({ queryKey: ["migration-jobs", storeId] });
   }
@@ -142,15 +221,18 @@ export default function MigrationConfig() {
     if (!storeId) return;
     setStarting(true);
     try {
-      const { data, error } = await supabase.functions.invoke("migration-start", {
-        body: {
-          store_id: storeId,
-          platform,
-          source_url: sourceUrl.trim(),
-          credentials: buildCredentials(),
-          entities: selectedEntities,
+      const { data, error } = await supabase.functions.invoke(
+        "migration-start",
+        {
+          body: {
+            store_id: storeId,
+            platform,
+            source_url: sourceUrl.trim(),
+            credentials: buildCredentials(),
+            entities: selectedEntities,
+          },
         },
-      });
+      );
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       const jobId = (data as any).job_id as string;
@@ -165,14 +247,25 @@ export default function MigrationConfig() {
     }
   }
 
-  const productCount = counts?.products ?? activeJob?.discovered_counts?.products ?? 0;
+  const productCount =
+    counts?.products ?? activeJob?.discovered_counts?.products ?? 0;
   const productsDone = Number(activeJob?.progress?.products?.done ?? 0);
   const productsFailed = Number(activeJob?.progress?.products?.failed ?? 0);
   const productsTotal = Math.max(productCount, productsDone + productsFailed);
-  const pct = productsTotal > 0 ? Math.min(100, Math.round(((productsDone + productsFailed) / productsTotal) * 100)) : (activeJob?.status === "running" ? 8 : 0);
+  const pct =
+    productsTotal > 0
+      ? Math.min(
+          100,
+          Math.round(((productsDone + productsFailed) / productsTotal) * 100),
+        )
+      : activeJob?.status === "running"
+        ? 8
+        : 0;
 
   if (!storeId) {
-    return <div className="p-8 text-sm text-muted-foreground">Loading store…</div>;
+    return (
+      <div className="p-8 text-sm text-muted-foreground">Loading store…</div>
+    );
   }
 
   return (
@@ -203,7 +296,9 @@ export default function MigrationConfig() {
 
       {step === 1 && (
         <Card>
-          <CardHeader><CardTitle>Choose your source platform</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Choose your source platform</CardTitle>
+          </CardHeader>
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {PLATFORMS.map((p) => (
               <button
@@ -218,9 +313,15 @@ export default function MigrationConfig() {
                     <Store className="h-4 w-4 text-muted-foreground" />
                     <span className="font-semibold">{p.name}</span>
                   </div>
-                  {p.supported ? <Badge variant="default">Available</Badge> : <Badge variant="secondary">Soon</Badge>}
+                  {p.supported ? (
+                    <Badge variant="default">Available</Badge>
+                  ) : (
+                    <Badge variant="secondary">Soon</Badge>
+                  )}
                 </div>
-                <p className="mt-2 text-xs text-muted-foreground">{p.description}</p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {p.description}
+                </p>
               </button>
             ))}
           </CardContent>
@@ -229,27 +330,42 @@ export default function MigrationConfig() {
 
       {step === 2 && (
         <Card>
-          <CardHeader><CardTitle>Connect your {PLATFORMS.find(p => p.id === platform)?.name} store</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>
+              Connect your {PLATFORMS.find((p) => p.id === platform)?.name}{" "}
+              store
+            </CardTitle>
+          </CardHeader>
           <CardContent className="space-y-4">
             <div>
               <Label>Store URL</Label>
               <Input
                 placeholder={
-                  platform === "shopify" ? "mystore.myshopify.com" :
-                  platform === "woocommerce" ? "https://mystore.com" :
-                  "https://mystore.com"
+                  platform === "shopify"
+                    ? "mystore.myshopify.com"
+                    : platform === "woocommerce"
+                      ? "https://mystore.com"
+                      : "https://mystore.com"
                 }
                 value={sourceUrl}
                 onChange={(e) => setSourceUrl(e.target.value)}
               />
               {platform === "shopify" && (
-                <p className="mt-1 text-[11px] text-muted-foreground">Your <code>*.myshopify.com</code> URL, or your custom domain.</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Your <code>*.myshopify.com</code> URL, or your custom domain.
+                </p>
               )}
               {platform === "woocommerce" && (
-                <p className="mt-1 text-[11px] text-muted-foreground">The homepage URL of your WordPress site (with WooCommerce installed).</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  The homepage URL of your WordPress site (with WooCommerce
+                  installed).
+                </p>
               )}
               {(platform === "dukaan" || platform === "generic") && (
-                <p className="mt-1 text-[11px] text-muted-foreground">Any storefront URL. We'll read <code>/sitemap.xml</code> to find your products.</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Any storefront URL. We'll read <code>/sitemap.xml</code> to
+                  find your products.
+                </p>
               )}
             </div>
 
@@ -263,7 +379,14 @@ export default function MigrationConfig() {
                   onChange={(e) => setAccessToken(e.target.value)}
                 />
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  In Shopify admin: <b>Settings → Apps and sales channels → Develop apps → Create an app</b>. Add Admin API scopes <code>read_products</code>, <code>read_orders</code>, <code>read_customers</code>. Install, then copy the Admin API access token.
+                  In Shopify admin:{" "}
+                  <b>
+                    Settings → Apps and sales channels → Develop apps → Create
+                    an app
+                  </b>
+                  . Add Admin API scopes <code>read_products</code>,{" "}
+                  <code>read_orders</code>, <code>read_customers</code>.
+                  Install, then copy the Admin API access token.
                 </p>
               </div>
             )}
@@ -272,13 +395,27 @@ export default function MigrationConfig() {
               <>
                 <div>
                   <Label>Consumer Key</Label>
-                  <Input placeholder="ck_…" value={consumerKey} onChange={(e) => setConsumerKey(e.target.value)} />
+                  <Input
+                    placeholder="ck_…"
+                    value={consumerKey}
+                    onChange={(e) => setConsumerKey(e.target.value)}
+                  />
                 </div>
                 <div>
                   <Label>Consumer Secret</Label>
-                  <Input type="password" placeholder="cs_…" value={consumerSecret} onChange={(e) => setConsumerSecret(e.target.value)} />
+                  <Input
+                    type="password"
+                    placeholder="cs_…"
+                    value={consumerSecret}
+                    onChange={(e) => setConsumerSecret(e.target.value)}
+                  />
                   <p className="mt-1 text-[11px] text-muted-foreground">
-                    In WordPress admin: <b>WooCommerce → Settings → Advanced → REST API → Add key</b>. Set permissions to <b>Read</b>, then copy the consumer key + secret.
+                    In WordPress admin:{" "}
+                    <b>
+                      WooCommerce → Settings → Advanced → REST API → Add key
+                    </b>
+                    . Set permissions to <b>Read</b>, then copy the consumer key
+                    + secret.
                   </p>
                 </div>
               </>
@@ -288,7 +425,10 @@ export default function MigrationConfig() {
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription className="text-xs">
-                  No login needed. We only read <b>publicly visible</b> product pages. Works best when the store publishes a sitemap and each product page has Schema.org / Open Graph tags (most modern stores do).
+                  No login needed. We only read <b>publicly visible</b> product
+                  pages. Works best when the store publishes a sitemap and each
+                  product page has Schema.org / Open Graph tags (most modern
+                  stores do).
                 </AlertDescription>
               </Alert>
             )}
@@ -296,14 +436,24 @@ export default function MigrationConfig() {
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription className="text-xs">
-                We only <b>read</b> from your source store. Nothing is modified there. Credentials are stored securely and never exposed to your browser.
+                We only <b>read</b> from your source store. Nothing is modified
+                there. Credentials are stored securely and never exposed to your
+                browser.
               </AlertDescription>
             </Alert>
 
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setStep(1)}>Back</Button>
+              <Button variant="outline" onClick={() => setStep(1)}>
+                Back
+              </Button>
               <Button onClick={handleDetect} disabled={detecting}>
-                {detecting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Testing…</> : "Test connection"}
+                {detecting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Testing…
+                  </>
+                ) : (
+                  "Test connection"
+                )}
               </Button>
             </div>
           </CardContent>
@@ -312,7 +462,9 @@ export default function MigrationConfig() {
 
       {step === 3 && counts && (
         <Card>
-          <CardHeader><CardTitle>What should we import?</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>What should we import?</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
               <Stat label="Products" value={counts.products} />
@@ -327,20 +479,29 @@ export default function MigrationConfig() {
                 const checked = selectedEntities.includes(e.id);
                 const disabled = e.id !== "products" && e.id !== "categories";
                 return (
-                  <label key={e.id} className={`flex items-start gap-3 rounded-lg border p-3 ${disabled ? "opacity-50" : ""}`}>
+                  <label
+                    key={e.id}
+                    className={`flex items-start gap-3 rounded-lg border p-3 ${disabled ? "opacity-50" : ""}`}
+                  >
                     <Checkbox
                       checked={checked}
                       disabled={disabled}
                       onCheckedChange={(v) => {
                         setSelectedEntities((prev) =>
-                          v ? Array.from(new Set([...prev, e.id])) : prev.filter(x => x !== e.id),
+                          v
+                            ? Array.from(new Set([...prev, e.id]))
+                            : prev.filter((x) => x !== e.id),
                         );
                       }}
                     />
                     <Icon className="h-4 w-4 mt-0.5 text-muted-foreground" />
                     <div className="flex-1">
                       <div className="text-sm font-medium">{e.label}</div>
-                      {disabled && <div className="text-[11px] text-muted-foreground">Available in the next update.</div>}
+                      {disabled && (
+                        <div className="text-[11px] text-muted-foreground">
+                          Available in the next update.
+                        </div>
+                      )}
                     </div>
                   </label>
                 );
@@ -350,14 +511,27 @@ export default function MigrationConfig() {
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription className="text-xs">
-                Products will be imported as <b>drafts</b> so you can review before publishing. Images are mirrored to our CDN. Re-running is safe — already imported items are skipped.
+                Products will be imported as <b>drafts</b> so you can review
+                before publishing. Images are mirrored to our CDN. Re-running is
+                safe — already imported items are skipped.
               </AlertDescription>
             </Alert>
 
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
-              <Button onClick={handleStart} disabled={starting || !selectedEntities.length}>
-                {starting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Starting…</> : "Start migration"}
+              <Button variant="outline" onClick={() => setStep(2)}>
+                Back
+              </Button>
+              <Button
+                onClick={handleStart}
+                disabled={starting || !selectedEntities.length}
+              >
+                {starting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Starting…
+                  </>
+                ) : (
+                  "Start migration"
+                )}
               </Button>
             </div>
           </CardContent>
@@ -366,35 +540,60 @@ export default function MigrationConfig() {
 
       {step === 4 && activeJob && (
         <Card>
-          <CardHeader><CardTitle>Migration in progress</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Migration in progress</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-2">
               {activeJob.status === "completed" ? (
-                <><CheckCircle2 className="h-5 w-5 text-emerald-600" /> <span className="font-semibold text-emerald-700">Completed</span></>
+                <>
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600" />{" "}
+                  <span className="font-semibold text-emerald-700">
+                    Completed
+                  </span>
+                </>
               ) : activeJob.status === "failed" ? (
-                <><AlertCircle className="h-5 w-5 text-destructive" /> <span className="font-semibold text-destructive">Failed</span></>
+                <>
+                  <AlertCircle className="h-5 w-5 text-destructive" />{" "}
+                  <span className="font-semibold text-destructive">Failed</span>
+                </>
               ) : (
-                <><Loader2 className="h-5 w-5 animate-spin text-primary" /> <span className="font-semibold">Running…</span></>
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />{" "}
+                  <span className="font-semibold">Running…</span>
+                </>
               )}
             </div>
 
             <div>
               <div className="flex items-center justify-between text-xs mb-1">
                 <span>Products</span>
-                <span className="text-muted-foreground">{productsDone} imported{productsFailed ? ` · ${productsFailed} failed` : ""}{productsTotal ? ` / ${productsTotal}` : ""}</span>
+                <span className="text-muted-foreground">
+                  {productsDone} imported
+                  {productsFailed ? ` · ${productsFailed} failed` : ""}
+                  {productsTotal ? ` / ${productsTotal}` : ""}
+                </span>
               </div>
               <Progress value={pct} />
             </div>
 
             <div className="grid grid-cols-3 gap-2 text-center">
               <Stat label="Products" value={productsDone} />
-              <Stat label="Categories" value={Number(activeJob.progress?.categories?.done ?? 0)} />
-              <Stat label="Pages" value={Number(activeJob.progress?.pages?.done ?? 0)} />
+              <Stat
+                label="Categories"
+                value={Number(activeJob.progress?.categories?.done ?? 0)}
+              />
+              <Stat
+                label="Pages"
+                value={Number(activeJob.progress?.pages?.done ?? 0)}
+              />
             </div>
 
             {activeJob.error_log?.length > 0 && (
               <details className="text-xs">
-                <summary className="cursor-pointer text-muted-foreground">Recent warnings ({activeJob.error_log.length})</summary>
+                <summary className="cursor-pointer text-muted-foreground">
+                  Recent warnings ({activeJob.error_log.length})
+                </summary>
                 <ul className="mt-2 space-y-1 list-disc pl-4">
                   {activeJob.error_log.slice(-5).map((e: any, i: number) => (
                     <li key={i}>{e.msg}</li>
@@ -404,8 +603,22 @@ export default function MigrationConfig() {
             )}
 
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => { setStep(1); setActiveJobId(null); setCounts(null); }}>New migration</Button>
-              {(activeJob.status === "pending" || activeJob.status === "running") && <Button variant="destructive" onClick={handleCancel}>Cancel</Button>}
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setStep(1);
+                  setActiveJobId(null);
+                  setCounts(null);
+                }}
+              >
+                New migration
+              </Button>
+              {(activeJob.status === "pending" ||
+                activeJob.status === "running") && (
+                <Button variant="destructive" onClick={handleCancel}>
+                  Cancel
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -413,17 +626,40 @@ export default function MigrationConfig() {
 
       {history && history.length > 0 && (
         <Card>
-          <CardHeader><CardTitle className="text-base">Recent migrations</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">Recent migrations</CardTitle>
+          </CardHeader>
           <CardContent className="divide-y">
             {history.map((j) => (
-              <div key={j.id} className="flex items-center justify-between py-2 text-sm">
+              <div
+                key={j.id}
+                className="flex items-center justify-between py-2 text-sm"
+              >
                 <div>
-                  <div className="font-medium capitalize">{j.source_platform} · {new URL(j.source_url.startsWith("http") ? j.source_url : `https://${j.source_url}`).host}</div>
+                  <div className="font-medium capitalize">
+                    {j.source_platform} ·{" "}
+                    {
+                      new URL(
+                        j.source_url.startsWith("http")
+                          ? j.source_url
+                          : `https://${j.source_url}`,
+                      ).host
+                    }
+                  </div>
                   <div className="text-[11px] text-muted-foreground">
-                    {new Date(j.created_at).toLocaleString()} · {Number(j.progress?.products?.done ?? 0)} products
+                    {new Date(j.created_at).toLocaleString()} ·{" "}
+                    {Number(j.progress?.products?.done ?? 0)} products
                   </div>
                 </div>
-                <Badge variant={j.status === "completed" ? "default" : j.status === "failed" ? "destructive" : "secondary"}>
+                <Badge
+                  variant={
+                    j.status === "completed"
+                      ? "default"
+                      : j.status === "failed"
+                        ? "destructive"
+                        : "secondary"
+                  }
+                >
                   {j.status}
                 </Badge>
               </div>
