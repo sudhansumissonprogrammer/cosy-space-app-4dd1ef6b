@@ -15,6 +15,8 @@ import {
 } from "../_shared/migration/woocommerce.ts";
 import {
   discoverProductUrls,
+  inspectPublicSite,
+  scrapePublicPage,
   scrapeProduct,
   scrapedToStorivoProduct,
 } from "../_shared/migration/generic.ts";
@@ -30,6 +32,11 @@ const PAGE_SIZE = 50;
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!serviceKey || req.headers.get("Authorization") !== `Bearer ${serviceKey}`) {
+    return json({ error: "Unauthorized" }, 401);
+  }
+
   const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -41,31 +48,47 @@ Deno.serve(async (req) => {
       const body = await req.json().catch(() => ({}));
       jobId = body.job_id || null;
     }
-    let job: any = null;
-    if (jobId) {
-      const { data } = await admin.from("migration_jobs").select("*").eq("id", jobId).maybeSingle();
-      job = data;
-    } else {
-      const { data } = await admin
-        .from("migration_jobs")
-        .select("*")
-        .in("status", ["pending", "running"])
-        .order("created_at", { ascending: true })
-        .limit(1);
-      job = data?.[0] ?? null;
-    }
+    const { data: claimedId, error: claimError } = await admin.rpc("claim_migration_job", { _job_id: jobId });
+    if (claimError) throw claimError;
+    if (!claimedId) return json({ ok: true, idle: true });
+    const { data: job } = await admin.from("migration_jobs").select("*").eq("id", claimedId).maybeSingle();
     if (!job) return json({ ok: true, idle: true });
-
-    await admin
-      .from("migration_jobs")
-      .update({ status: "running", started_at: job.started_at ?? new Date().toISOString() })
-      .eq("id", job.id);
+    if (job.cancel_requested) return json({ ok: true, cancelled: true });
 
     const platform = String(job.source_platform);
     const creds = (job.credentials ?? {}) as Record<string, string>;
     const host = String(job.source_url).replace(/^https?:\/\//, "").replace(/\/.*/, "");
     const entities: string[] = Array.isArray(job.entities) ? job.entities : ["products"];
     const wantCategories = entities.includes("categories");
+
+    if (!(job.cursor as any)?.site_profile_done && (platform === "generic" || platform === "dukaan")) {
+      try {
+        const profile = await inspectPublicSite(String(job.source_url));
+        const storePatch: Record<string, string> = {};
+        if (profile.description) storePatch.description = profile.description;
+        if (profile.logo_url) {
+          const mirrored = await mirrorImageToR2(profile.logo_url, `store-logos/migrated/${job.store_id}/logo.${extFromUrl(profile.logo_url)}`);
+          if (mirrored) storePatch.logo_url = mirrored;
+        }
+        if (profile.hero_url) {
+          const mirrored = await mirrorImageToR2(profile.hero_url, `store-banners/migrated/${job.store_id}/hero.${extFromUrl(profile.hero_url)}`);
+          if (mirrored) storePatch.banner_url = mirrored;
+        }
+        if (Object.keys(storePatch).length) await admin.from("stores").update(storePatch).eq("id", job.store_id);
+        let pagesDone = 0;
+        for (const page of profile.pages) {
+          const content = await scrapePublicPage(page.url).catch(() => null);
+          if (!content) continue;
+          const slug = page.type === "about" ? "about-us" : `${page.type}-policy`;
+          const { error } = await admin.from("store_pages").upsert({ store_id: job.store_id, page_type: page.type, title: page.title, slug, content, is_active: false }, { onConflict: "store_id,page_type" });
+          if (!error) pagesDone++;
+        }
+        job.progress = { ...(job.progress || {}), pages: { done: pagesDone, failed: Math.max(0, profile.pages.length - pagesDone) } };
+      } catch (profileError) {
+        await appendError(admin, job.id, `site profile: ${profileError instanceof Error ? profileError.message : profileError}`);
+      }
+      job.cursor = { ...(job.cursor || {}), site_profile_done: true };
+    }
 
     const { data: storeRow } = await admin
       .from("stores")
@@ -137,7 +160,7 @@ Deno.serve(async (req) => {
           }
         }
         const nextOffset = offset + slice.length;
-        nextCursor = { ...nextCursor, urls, offset: nextOffset };
+        nextCursor = { ...nextCursor, urls, offset: nextOffset, site_profile_done: true };
         hasMore = nextOffset < urls.length;
       } else {
         throw new Error(`Platform ${platform} not supported`);
@@ -206,8 +229,9 @@ Deno.serve(async (req) => {
 
     for (const { row, sourceId, images, categoryName } of normalizedRows) {
       try {
-        await ensureCategory(categoryName);
+        const categoryId = await ensureCategory(categoryName);
         row.currency = storeCurrency;
+        row.is_active = false;
 
         if (row.image_url) {
           const ext = extFromUrl(row.image_url, "jpg");
@@ -243,6 +267,10 @@ Deno.serve(async (req) => {
         } else {
           await recordMap(admin, job.id, "product", sourceId, upsert.data.id, "ok");
           productId = upsert.data.id;
+        }
+
+        if (productId && categoryId) {
+          await admin.from("product_categories").upsert({ product_id: productId, category_id: categoryId }, { onConflict: "product_id,category_id" });
         }
 
         if (productId && images && images.length > 1) {
@@ -293,9 +321,11 @@ Deno.serve(async (req) => {
         cursor: nextCursor,
         status: hasMore ? "running" : "completed",
         completed_at: hasMore ? null : new Date().toISOString(),
+        lease_until: null,
         ...(hasMore ? {} : { credentials: {} }),
       })
-      .eq("id", job.id);
+      .eq("id", job.id)
+      .eq("cancel_requested", false);
 
     if (hasMore) {
       fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/migration-worker`, {
