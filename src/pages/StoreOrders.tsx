@@ -353,18 +353,24 @@ export default function StoreOrders() {
 
   const bulkUpdateStatus = useMutation({
     mutationFn: async ({ orderIds, status }: { orderIds: string[]; status: string }) => {
+      const locked = new Set(
+        (allOrders || [])
+          .filter((o: any) => o?.status === "cancelled")
+          .map((o: any) => o.id as string),
+      );
       // A paid order may be cancelled only after shipping. Skip paid orders
       // with no shipped/tracked history so one unsafe row cannot fail the batch.
-      let ids = orderIds;
-      let skipped = 0;
+      let ids = orderIds.filter((id) => !locked.has(id));
+      let skipped = orderIds.length - ids.length;
       if (status === "cancelled") {
         const paid = new Set(
           (allOrders || [])
             .filter((o: any) => o?.payment_verified && o?.status !== "shipped" && !o?.tracking_number)
             .map((o: any) => o.id as string),
         );
-        ids = orderIds.filter((id) => !paid.has(id));
-        skipped = orderIds.length - ids.length;
+        const beforePaidCheck = ids.length;
+        ids = ids.filter((id) => !paid.has(id));
+        skipped += beforePaidCheck - ids.length;
       }
       if (ids.length) {
         // Single atomic round-trip via `.in('id', ids)` — no partial-failure state.
@@ -382,7 +388,7 @@ export default function StoreOrders() {
       queryClient.invalidateQueries({ queryKey: ["website-orders-count", storeId] });
       toast.success(`${res.updated} orders updated to ${vars.status}`);
       if (res.skipped > 0) {
-        toast.error(`${res.skipped} paid unshipped order(s) skipped.`);
+        toast.error(`${res.skipped} locked or ineligible order(s) skipped.`);
       }
       setSelectedOrders(new Set());
       setBulkStatus("");
