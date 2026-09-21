@@ -2,7 +2,11 @@
  * Shopify Admin REST adapter.
  */
 
-export interface ShopifyImage { id: number; src: string; alt?: string | null; }
+export interface ShopifyImage {
+  id: number;
+  src: string;
+  alt?: string | null;
+}
 export interface ShopifyVariant {
   id: number;
   price: string;
@@ -10,6 +14,7 @@ export interface ShopifyVariant {
   sku?: string | null;
   inventory_quantity?: number;
   title?: string;
+  available?: boolean;
 }
 export interface ShopifyProduct {
   id: number;
@@ -22,11 +27,14 @@ export interface ShopifyProduct {
   images?: ShopifyImage[];
   image?: ShopifyImage | null;
   variants?: ShopifyVariant[];
-  tags?: string;
+  tags?: string | string[];
 }
 
 function normHost(url: string): string {
-  return url.replace(/^https?:\/\//, "").replace(/\/.*/, "").trim();
+  return url
+    .replace(/^https?:\/\//, "")
+    .replace(/\/.*/, "")
+    .trim();
 }
 
 export async function shopifyFetch(
@@ -46,16 +54,27 @@ export async function shopifyFetch(
   });
 }
 
-export async function shopifyCountProducts(host: string, token: string): Promise<number> {
+export async function shopifyCountProducts(
+  host: string,
+  token: string,
+): Promise<number> {
   const res = await shopifyFetch(host, token, "/products/count.json");
-  if (!res.ok) throw new Error(`Shopify count failed: ${res.status} ${await res.text()}`);
+  if (!res.ok)
+    throw new Error(`Shopify count failed: ${res.status} ${await res.text()}`);
   const j = await res.json();
   return Number(j.count ?? 0);
 }
 
-export async function shopifyCountCollections(host: string, token: string): Promise<number> {
+export async function shopifyCountCollections(
+  host: string,
+  token: string,
+): Promise<number> {
   try {
-    const r1 = await shopifyFetch(host, token, "/custom_collections/count.json");
+    const r1 = await shopifyFetch(
+      host,
+      token,
+      "/custom_collections/count.json",
+    );
     const r2 = await shopifyFetch(host, token, "/smart_collections/count.json");
     const j1 = r1.ok ? await r1.json() : { count: 0 };
     const j2 = r2.ok ? await r2.json() : { count: 0 };
@@ -65,14 +84,20 @@ export async function shopifyCountCollections(host: string, token: string): Prom
   }
 }
 
-export async function shopifyCountOrders(host: string, token: string): Promise<number> {
+export async function shopifyCountOrders(
+  host: string,
+  token: string,
+): Promise<number> {
   const res = await shopifyFetch(host, token, "/orders/count.json?status=any");
   if (!res.ok) return 0;
   const j = await res.json();
   return Number(j.count ?? 0);
 }
 
-export async function shopifyCountCustomers(host: string, token: string): Promise<number> {
+export async function shopifyCountCustomers(
+  host: string,
+  token: string,
+): Promise<number> {
   const res = await shopifyFetch(host, token, "/customers/count.json");
   if (!res.ok) return 0;
   const j = await res.json();
@@ -90,10 +115,12 @@ export async function shopifyListProducts(
     token,
     `/products.json?limit=${limit}&since_id=${sinceId}`,
   );
-  if (!res.ok) throw new Error(`Shopify list failed: ${res.status} ${await res.text()}`);
+  if (!res.ok)
+    throw new Error(`Shopify list failed: ${res.status} ${await res.text()}`);
   const j = await res.json();
   const products = (j.products ?? []) as ShopifyProduct[];
-  const nextSinceId = products.length === limit ? products[products.length - 1].id : null;
+  const nextSinceId =
+    products.length === limit ? products[products.length - 1].id : null;
   return { products, nextSinceId };
 }
 
@@ -102,6 +129,17 @@ export function stripHtml(html: string | null | undefined): string {
   return html
     .replace(/<script[\s\S]*?<\/script>/gi, "")
     .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<\/(p|div|h[1-6]|li|ul|ol)>/gi, "\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;|&#160;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;|&#34;/gi, '"')
+    .replace(/&#39;|&#x27;|&apos;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n\s*\n\s*\n+/g, "\n\n")
     .trim();
 }
 
@@ -124,7 +162,7 @@ export function shopifyToStorivoProduct(p: ShopifyProduct, storeId: string) {
     price: finalPrice,
     sale_price: salePrice,
     sku: v?.sku ?? null,
-    stock_quantity: v?.inventory_quantity ?? 0,
+    stock_quantity: v?.inventory_quantity ?? (v?.available ? 1 : 0),
     category: p.product_type ?? null,
     is_active: false,
     image_url: p.image?.src ?? p.images?.[0]?.src ?? null,
