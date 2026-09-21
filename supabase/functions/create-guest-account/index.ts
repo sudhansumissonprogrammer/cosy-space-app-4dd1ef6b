@@ -305,17 +305,26 @@ Deno.serve(async (req) => {
 
       hydratedAddress = toAddressPayload(existingAddr);
 
+      // A newly submitted order is the shopper's explicit current address.
+      // Prefer it over any older saved default, then replace that old row below.
+      let orderAddress: any | null = null;
+      if (order_id) {
+        const { data } = await supabase
+          .from("orders")
+          .select("street_address, city, state, pincode, customer_name, customer_phone")
+          .eq("id", order_id)
+          .eq("store_id", store_id)
+          .eq("customer_phone", normalizedPhone)
+          .maybeSingle();
+        orderAddress = data;
+        const submittedAddress = toAddressPayload(data);
+        if (submittedAddress) hydratedAddress = submittedAddress;
+      }
+
       if (!hydratedAddress) {
         let seedFrom: any | null = null;
 
-        if (order_id) {
-          const { data } = await supabase
-            .from("orders")
-            .select("street_address, city, state, pincode, customer_name, customer_phone")
-            .eq("id", order_id)
-            .maybeSingle();
-          if (data?.street_address) seedFrom = data as any;
-        }
+        if (orderAddress?.street_address) seedFrom = orderAddress;
 
         if (!seedFrom) {
           // Prefer paid/confirmed history so cancelled/pending test addresses
@@ -352,7 +361,13 @@ Deno.serve(async (req) => {
         hydratedAddress = toAddressPayload(seedFrom);
       }
 
-      if (!existingAddr && hydratedAddress?.street_address && hydratedAddress?.pincode) {
+      if (hydratedAddress?.street_address && hydratedAddress?.pincode && (!existingAddr || !!orderAddress)) {
+        if (existingAddr) {
+          await supabase
+            .from("customer_addresses")
+            .delete()
+            .eq("storefront_customer_id", customerId);
+        }
         const { data: insertedAddress } = await supabase
           .from("customer_addresses")
           .insert({

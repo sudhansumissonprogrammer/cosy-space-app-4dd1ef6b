@@ -1178,23 +1178,22 @@ export default function CheckoutV2Page() {
       return;
     }
     try {
-      const { count } = await supabaseStorefront
-        .from("customer_addresses")
-        .select("id", { count: "exact", head: true })
-        .eq("storefront_customer_id", customer.id);
-      const { data, error } = await supabaseStorefront.from("customer_addresses").insert({
-        storefront_customer_id: customer.id,
-        label: newAddr.label || "Home",
-        full_name: newAddr.full_name.trim(),
-        phone: normalizePhone(newAddr.phone),
-        street_address: newAddr.street_address.trim(),
-        city: newAddr.city.trim(),
-        state: newAddr.state.trim(),
-        pincode: newAddr.pincode.trim(),
-        is_default: (count ?? 0) === 0,
-      }).select().single();
+      const { data: rows, error } = await (supabaseStorefront as any).rpc(
+        "replace_customer_address",
+        {
+          _storefront_customer_id: customer.id,
+          _label: newAddr.label || "Home",
+          _full_name: newAddr.full_name.trim(),
+          _phone: toCanonicalIndianPhone(newAddr.phone) || normalizePhone(newAddr.phone),
+          _street_address: newAddr.street_address.trim(),
+          _city: newAddr.city.trim(),
+          _state: newAddr.state.trim(),
+          _pincode: newAddr.pincode.trim(),
+        },
+      );
       if (error) throw error;
-      qc.invalidateQueries({ queryKey: ["checkoutv2-saved-addresses", customer.id] });
+      const data = Array.isArray(rows) ? rows[0] : rows;
+      await qc.invalidateQueries({ queryKey: ["checkoutv2-saved-addresses", customer.id] });
       if (data) selectAddress(data);
       setShowAddAddress(false);
       setShowAddressDialog(false);
@@ -1985,27 +1984,19 @@ export default function CheckoutV2Page() {
   const saveAddressToAccount = async () => {
     if (!customer?.id) return;
     try {
-      const { data: existing } = await supabaseStorefront
-        .from("customer_addresses")
-        .select("id")
-        .eq("storefront_customer_id", customer.id)
-        .eq("street_address", streetAddress.trim())
-        .eq("pincode", pincode.trim())
-        .maybeSingle();
-      if (existing) return;
-      const { count } = await supabaseStorefront
-        .from("customer_addresses")
-        .select("id", { count: "exact", head: true })
-        .eq("storefront_customer_id", customer.id);
-      await supabaseStorefront.from("customer_addresses").insert({
-        storefront_customer_id: customer.id,
-        label: addrLabel || "Home",
-        full_name: fullName.trim(),
-        phone: toCanonicalIndianPhone(phone) || normalizePhone(phone),
-        street_address: streetAddress.trim(),
-        city: city.trim(), state: state.trim(), pincode: pincode.trim(),
-        is_default: (count ?? 0) === 0,
+      const live = addrFieldsRef.current;
+      const { error } = await (supabaseStorefront as any).rpc("replace_customer_address", {
+        _storefront_customer_id: customer.id,
+        _label: addrLabel || "Home",
+        _full_name: live.fullName.trim(),
+        _phone: toCanonicalIndianPhone(live.phone) || normalizePhone(live.phone),
+        _street_address: live.streetAddress.trim(),
+        _city: live.city.trim(),
+        _state: live.state.trim(),
+        _pincode: live.pincode.trim(),
       });
+      if (error) throw error;
+      await qc.invalidateQueries({ queryKey: ["checkoutv2-saved-addresses", customer.id] });
     } catch (err) { console.error("Failed to save address to account:", err); }
   };
 
