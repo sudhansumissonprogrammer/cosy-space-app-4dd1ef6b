@@ -3,6 +3,7 @@ import { BadgeCheck, Camera, Images, Loader2, ScanLine, XCircle } from "lucide-r
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type ScanResult = {
   scan_id: string;
@@ -10,6 +11,9 @@ type ScanResult = {
   courier_slug: string;
   confidence: number;
   matched?: { phone?: boolean };
+  decision?: "accepted" | "review";
+  needs_tracking_confirmation?: boolean;
+  message?: string;
 };
 
 type Props = {
@@ -56,10 +60,14 @@ export default function ParcelLabelScanner({ orderId, disabled, onScanStart, onA
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const [stage, setStage] = useState<"idle" | "reading" | "checking" | "ready" | "error">("idle");
   const [message, setMessage] = useState("");
+  const [reviewResult, setReviewResult] = useState<ScanResult | null>(null);
+  const [manualAwb, setManualAwb] = useState("");
 
   const scan = async (file?: File) => {
     if (!file) return;
     onScanStart();
+    setReviewResult(null);
+    setManualAwb("");
     setStage("reading");
     setMessage("Reading label…");
     let preparedFile: File;
@@ -93,12 +101,51 @@ export default function ParcelLabelScanner({ orderId, disabled, onScanStart, onA
       setMessage(detail);
       return;
     }
+    if (data?.decision === "review" && data?.scan_id && data?.matched?.phone && data?.needs_tracking_confirmation) {
+      setReviewResult(data as ScanResult);
+      setManualAwb(String(data.tracking_number || ""));
+      setStage("ready");
+      setMessage(data.message || "Phone number matched. Enter the tracking number printed on this label.");
+      return;
+    }
     if (!data?.tracking_number || !data?.courier_slug) {
       setStage("error");
       setMessage("We could not safely verify this label. Try a clearer photo.");
       return;
     }
     setStage("ready");
+    setMessage("Phone number matched · tracking details ready");
+    onAccepted(data as ScanResult);
+  };
+
+  const confirmTracking = async () => {
+    const value = manualAwb.replace(/\s+/g, "").toUpperCase();
+    if (!reviewResult?.scan_id || !/^[A-Z0-9._-]{4,40}$/.test(value)) {
+      setStage("error");
+      setMessage("Enter the complete tracking number printed on the label.");
+      return;
+    }
+    setStage("checking");
+    setMessage("Checking tracking number…");
+    const form = new FormData();
+    form.append("order_id", orderId);
+    form.append("review_scan_id", reviewResult.scan_id);
+    form.append("manual_awb", value);
+    const { data, error } = await supabase.functions.invoke("parcel-label-scan", { body: form });
+    if (error || !data?.tracking_number) {
+      let detail = error?.message || "Could not confirm this tracking number";
+      if (error instanceof FunctionsHttpError) {
+        try {
+          const body = await error.context.clone().json();
+          detail = body?.error || detail;
+        } catch { /* keep SDK message */ }
+      }
+      setStage("error");
+      setMessage(detail);
+      return;
+    }
+    setStage("ready");
+    setReviewResult(null);
     setMessage("Phone number matched · tracking details ready");
     onAccepted(data as ScanResult);
   };
@@ -150,6 +197,23 @@ export default function ParcelLabelScanner({ orderId, disabled, onScanStart, onA
           Gallery
         </Button>
       </div>
+      {reviewResult && (
+        <div className="space-y-2 rounded-md border bg-muted/40 p-3">
+          <p className="text-xs font-medium text-foreground">Phone number matched</p>
+          <Input
+            value={manualAwb}
+            onChange={(event) => setManualAwb(event.target.value.toUpperCase().replace(/\s+/g, "").slice(0, 40))}
+            placeholder="Tracking number"
+            autoCapitalize="characters"
+            autoCorrect="off"
+            disabled={disabled || stage === "checking"}
+            aria-label="Tracking number"
+          />
+          <Button type="button" className="w-full" disabled={disabled || stage === "checking" || manualAwb.length < 4} onClick={() => void confirmTracking()}>
+            Confirm tracking number
+          </Button>
+        </div>
+      )}
       {(stage === "reading" || stage === "checking") && (
         <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-xs text-foreground">
           <Loader2 className="h-4 w-4 shrink-0 animate-spin" />

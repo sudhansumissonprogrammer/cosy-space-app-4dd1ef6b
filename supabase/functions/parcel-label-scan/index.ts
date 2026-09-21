@@ -172,12 +172,9 @@ Deno.serve(async (req) => {
     const image = form?.get("image");
     const orderId = clean(form?.get("order_id"), 50);
     const barcodeHint = normalizeAwb(form?.get("barcode_hint"));
-    if (!(image instanceof File) || !orderId) return json({ error: "Take a parcel-label photo first" }, 400);
-    if (image.size < 1000 || image.size > MAX_IMAGE_BYTES) return json({ error: "Use a clear photo smaller than 8 MB" }, 413);
-    // WhatsApp IMAGE template headers accept JPEG/PNG. The browser converts
-    // WebP selections to JPEG before upload so an accepted scan is always
-    // directly usable by Meta without keeping a second converted copy.
-    if (!new Set(["image/jpeg", "image/png"]).has(image.type)) return json({ error: "Use a JPG or PNG photo" }, 415);
+    const reviewScanId = clean(form?.get("review_scan_id"), 50);
+    const manualAwb = normalizeAwb(form?.get("manual_awb"));
+    if (!orderId) return json({ error: "Order is required" }, 400);
 
     const admin = createClient(url, serviceKey);
     const { data: expiredPhotos } = await admin
@@ -202,6 +199,57 @@ Deno.serve(async (req) => {
       .maybeSingle();
     const ownerId = (order as any)?.stores?.owner_id;
     if (!order || ownerId !== userId) return json({ error: "Order not found" }, 404);
+
+    if (reviewScanId || manualAwb) {
+      if (!reviewScanId || !manualAwb || !AWB_RE.test(manualAwb)) {
+        return json({ error: "Enter a valid tracking number" }, 400);
+      }
+      const { data: reviewScan } = await admin
+        .from("parcel_label_scans")
+        .select("id,evidence,temp_object_path,temp_expires_at,courier_slug")
+        .eq("id", reviewScanId)
+        .eq("order_id", orderId)
+        .eq("store_id", order.store_id)
+        .eq("scanned_by", userId)
+        .eq("decision", "review")
+        .maybeSingle();
+      const phoneMatched = (reviewScan?.evidence as Record<string, unknown> | null)?.phone_match === true;
+      const photoAvailable = !!reviewScan?.temp_object_path
+        && !!reviewScan?.temp_expires_at
+        && new Date(reviewScan.temp_expires_at).getTime() > Date.now();
+      if (!reviewScan || !phoneMatched || !photoAvailable) {
+        return json({ error: "Take a new label photo before entering the tracking number" }, 409);
+      }
+      const [{ data: priorScan }, { data: priorShipment }] = await Promise.all([
+        admin.from("parcel_label_scans").select("order_id").eq("store_id", order.store_id).ilike("tracking_number", manualAwb).eq("decision", "accepted").neq("order_id", orderId).limit(1),
+        admin.from("order_shipments").select("order_id").eq("store_id", order.store_id).ilike("awb", manualAwb).neq("order_id", orderId).limit(1),
+      ]);
+      if ((priorScan ?? []).length > 0 || (priorShipment ?? []).length > 0) {
+        return json({ error: "This tracking number is already attached to another order" }, 409);
+      }
+      const { error: confirmError } = await admin.from("parcel_label_scans").update({
+        decision: "accepted",
+        confidence: 1,
+        tracking_number: manualAwb,
+        reasons: [],
+      }).eq("id", reviewScan.id).eq("decision", "review");
+      if (confirmError) throw confirmError;
+      return json({
+        decision: "accepted",
+        scan_id: reviewScan.id,
+        confidence: 1,
+        courier_slug: reviewScan.courier_slug || "other",
+        tracking_number: manualAwb,
+        matched: { phone: true },
+      });
+    }
+
+    if (!(image instanceof File)) return json({ error: "Take a parcel-label photo first" }, 400);
+    if (image.size < 1000 || image.size > MAX_IMAGE_BYTES) return json({ error: "Use a clear photo smaller than 8 MB" }, 413);
+    // WhatsApp IMAGE template headers accept JPEG/PNG. The browser converts
+    // WebP selections to JPEG before upload so an accepted scan is always
+    // directly usable by Meta without keeping a second converted copy.
+    if (!new Set(["image/jpeg", "image/png"]).has(image.type)) return json({ error: "Use a JPG or PNG photo" }, 415);
 
     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
     const { count: recentScans } = await admin
@@ -331,7 +379,40 @@ Deno.serve(async (req) => {
     }
 
     if (decision === "rejected") return json({ decision, confidence, error: "Wrong parcel — this label does not match this customer.", reasons: allReasons }, 422);
-    if (decision === "review") return json({ decision, confidence, error: allReasons[0] || "We could not safely verify this label. Take a clearer photo or enter the tracking number manually.", reasons: allReasons }, 422);
+
+    if (decision === "review") {
+      if (!phoneExact || !scanId) {
+        return json({ decision, confidence, error: allReasons[0] || "We could not safely verify this label. Take a clearer photo.", reasons: allReasons }, 422);
+      }
+      const extension = image.type === "image/png" ? "png" : "jpg";
+      const objectPath = `${order.store_id}/${orderId}/${scanId}.${extension}`;
+      const expiresAt = new Date(Date.now() + TEMP_PHOTO_TTL_MS).toISOString();
+      const { error: uploadError } = await admin.storage.from(TEMP_PHOTO_BUCKET).upload(objectPath, bytes, {
+        contentType: image.type,
+        upsert: true,
+        cacheControl: "300",
+      });
+      if (uploadError) throw new Error("The label matched, but its temporary photo could not be prepared. Please retry.");
+      const { error: photoRecordError } = await admin.from("parcel_label_scans").update({
+        temp_object_path: objectPath,
+        temp_expires_at: expiresAt,
+        photo_deleted_at: null,
+      }).eq("id", scanId).eq("order_id", orderId).eq("scanned_by", userId);
+      if (photoRecordError) {
+        await admin.storage.from(TEMP_PHOTO_BUCKET).remove([objectPath]);
+        throw new Error("The temporary parcel photo could not be secured. Please retry.");
+      }
+      return json({
+        decision,
+        scan_id: scanId,
+        confidence,
+        courier_slug: courierSlug(extracted.courier_name),
+        tracking_number: candidateAwb || "",
+        matched: { phone: true },
+        needs_tracking_confirmation: true,
+        message: "Phone number matched. Enter the tracking number printed on this label.",
+      });
+    }
 
     if (!scanId) throw new Error("The verified scan could not be saved");
     const extension = image.type === "image/png" ? "png" : "jpg";
