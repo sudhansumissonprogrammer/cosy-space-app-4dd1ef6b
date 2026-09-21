@@ -155,9 +155,21 @@ Deno.serve(async (req) => {
     // 1) O(1) lookup
     let userId: string | null = null;
     let isNewUser = false;
-    const { data: existingId } = await supabase
-      .rpc("get_auth_user_id_by_email", { _email: phoneEmail });
-    if (existingId && typeof existingId === "string") userId = existingId;
+    const lookupUserId = async (attempts = 1): Promise<string | null> => {
+      for (let attempt = 0; attempt < attempts; attempt += 1) {
+        const { data } = await supabase
+          .rpc("get_auth_user_id_by_email", { _email: phoneEmail });
+        if (data && typeof data === "string") return data;
+        // A concurrent request may have committed the same phone account just
+        // after our first lookup. Give that transaction a brief chance to land.
+        if (attempt + 1 < attempts) {
+          await new Promise((resolve) => setTimeout(resolve, 75 * (attempt + 1)));
+        }
+      }
+      return null;
+    };
+
+    userId = await lookupUserId();
 
     // 2) Create if missing
     if (!userId) {
@@ -177,19 +189,10 @@ Deno.serve(async (req) => {
         userId = newUser.user.id;
         isNewUser = true;
       } else {
-        const code = (createErr as any)?.code || "";
-        const msg = (createErr?.message || "").toLowerCase();
-        const isDuplicate =
-          code === "email_exists" ||
-          msg.includes("already been registered") ||
-          msg.includes("already registered") ||
-          msg.includes("already") ||
-          msg.includes("exists");
-        if (isDuplicate) {
-          const { data: id2 } = await supabase
-            .rpc("get_auth_user_id_by_email", { _email: phoneEmail });
-          if (id2 && typeof id2 === "string") userId = id2;
-        }
+        // Auth can surface a duplicate-email race as the generic
+        // "Database error creating new user". Always retry the authoritative
+        // lookup before failing; genuine creation errors still return below.
+        userId = await lookupUserId(4);
         if (!userId) {
           console.error("Create user error:", createErr);
           return new Response(
@@ -249,7 +252,9 @@ Deno.serve(async (req) => {
       await supabase
         .from("orders")
         .update({ storefront_customer_id: customerId })
-        .eq("id", order_id);
+        .eq("id", order_id)
+        .eq("store_id", store_id)
+        .eq("customer_phone", normalizedPhone);
     }
 
     // 4b) Hydrate + seed customer_addresses so returning shoppers
