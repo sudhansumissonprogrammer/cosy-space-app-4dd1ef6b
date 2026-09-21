@@ -34,5 +34,5 @@
 - [x] Verify and fix legacy shipment RTO flow
 - [x] Verify and fix review text overlap
 - [x] Verify and fix saved-address fallback
-- [x] Speed parcel gallery scan to tracking-number-only under 4–5 seconds and show saved parcel photo in dashboard order details
+- [x] Speed parcel gallery scan to tracking-number and exact 10-digit phone matching in a 3–5 second target, and show the saved photo in order details
 - [x] Connect Telegram fresh in this workspace and redeploy the affected notification function
