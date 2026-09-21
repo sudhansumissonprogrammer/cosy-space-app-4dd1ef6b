@@ -56,6 +56,20 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
     if (!open || !isRto) return;
     let active = true;
     void (async () => {
+      const { data: currentShipment } = await (supabase as any)
+        .from("order_shipments")
+        .select("id,awb,tracking_slug")
+        .eq("order_id", orderId)
+        .not("awb", "is", null)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!active) return;
+      if (currentShipment?.awb) {
+        setMatchedShipmentId(currentShipment.id);
+        setAwb(currentShipment.awb);
+        setSlug(COURIERS.some((courier) => courier.slug === currentShipment.tracking_slug) ? currentShipment.tracking_slug : "india_post");
+      }
       const { data: scan } = await (supabase as any)
         .from("parcel_label_scans")
         .select("id,tracking_number,courier_slug")
@@ -140,7 +154,7 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
         </DialogHeader>
 
         <div className="space-y-4">
-          {(isNewShipment || isRto) && (
+          {(isNewShipment || (isRto && !matchedShipmentId)) && (
             <ParcelLabelScanner
               orderId={orderId}
               disabled={save.isPending}
@@ -182,7 +196,9 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
             <div className="rounded-md border bg-muted/40 px-3 py-2.5">
               <p className="text-sm font-medium">Status: Returned to seller</p>
               <p className="mt-0.5 text-[11px] text-muted-foreground">
-                Upload this customer&apos;s parcel label. The tracking number must be extracted and verified before RTO can be saved. No customer message or automatic refund will be sent.
+                {matchedShipmentId
+                  ? "This tracked shipment will be marked returned to seller. No customer message or automatic refund will be sent."
+                  : "Upload this customer's parcel label. The phone number must match before RTO can be saved. No customer message or automatic refund will be sent."}
               </p>
             </div>
           ) : isNewShipment ? (
@@ -228,7 +244,7 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={() => save.mutate()} disabled={save.isPending || awb.trim().length < 4 || (isRto && !verifiedScanId)}>
+          <Button onClick={() => save.mutate()} disabled={save.isPending || awb.trim().length < 4 || (isRto && !verifiedScanId && !matchedShipmentId)}>
             {save.isPending ? "Saving…" : isRto ? "Mark RTO" : "Save shipment"}
           </Button>
         </DialogFooter>

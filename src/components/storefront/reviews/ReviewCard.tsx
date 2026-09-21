@@ -55,14 +55,15 @@ export default function ReviewCard({
     <article className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/15 bg-neutral-900 shadow-[0_8px_28px_-10px_rgba(0,0,0,0.5)]">
       {hero ? (
         <>
-          {/* Full-bleed media */}
-          <button
-            type="button"
-            onClick={() => open(0)}
-            className="relative block w-full flex-1 overflow-hidden transition-transform active:scale-[0.99]"
-            aria-label="View media"
-          >
-            <div className="aspect-[3/4.6] w-full">
+          <div className="relative min-h-0 flex-1 overflow-hidden">
+            {/* Full-bleed media */}
+            <button
+              type="button"
+              onClick={() => open(0)}
+              className="relative block h-full w-full overflow-hidden transition-transform active:scale-[0.99]"
+              aria-label="View media"
+            >
+              <div className="aspect-[3/4.6] w-full">
               {hero.type === "video" ? (
                 <>
                   <video src={hero.url} className="h-full w-full object-cover" muted playsInline preload="metadata" />
@@ -73,14 +74,14 @@ export default function ReviewCard({
               ) : (
                 <img src={hero.url} alt="Customer photo" loading="lazy" decoding="async" className="h-full w-full object-cover" />
               )}
-            </div>
-            {/* enlarge affordance */}
-            <span className="pointer-events-none absolute left-2 top-2 flex h-7 w-7 items-center justify-center rounded-full border border-white/30 bg-black/45 backdrop-blur-sm">
-              <Expand className="h-3.5 w-3.5 text-white" />
-            </span>
-            {/* readability scrim */}
-            <span className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/80 via-black/35 to-transparent" />
-          </button>
+              </div>
+              {/* enlarge affordance */}
+              <span className="pointer-events-none absolute left-2 top-2 flex h-7 w-7 items-center justify-center rounded-full border border-white/30 bg-black/45 backdrop-blur-sm">
+                <Expand className="h-3.5 w-3.5 text-white" />
+              </span>
+              {/* readability scrim */}
+              <span className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/80 via-black/35 to-transparent" />
+            </button>
 
 
           {/* extra media thumbs — small, top-right */}
@@ -145,7 +146,7 @@ export default function ReviewCard({
                   <ReviewStars rating={review.rating} className="h-3 w-3" />
                 </span>
               </div>
-              {(review.title || review.review_text) && (
+              {!showFullText && (review.title || review.review_text) && (
                 <p className="mt-1 line-clamp-2 text-[12px] leading-snug text-white/90">
                   {review.title ? <span className="font-semibold">{review.title}. </span> : null}
                   {review.review_text}
@@ -153,7 +154,8 @@ export default function ReviewCard({
               )}
               <span className="mt-0.5 block text-[10px] text-white/60">{formatReviewDate(review.created_at)}</span>
             </div>
-          )}
+            )}
+          </div>
           {showFullText && (review.title || review.review_text) && (
             <div className="border-t border-border bg-card px-3 py-2.5 text-card-foreground" style={{ fontFamily: "var(--review-body-font, var(--storefront-body-font, inherit))" }}>
               {review.title && (
