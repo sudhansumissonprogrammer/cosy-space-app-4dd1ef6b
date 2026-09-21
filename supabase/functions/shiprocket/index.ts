@@ -64,6 +64,10 @@ Deno.serve(async (req) => {
       case "create": {
         const { data: order } = await svc.from("orders").select("*").eq("id", args.order_id).maybeSingle();
         if (!order) return json({ error: "order not found" }, 404);
+        if (order.store_id !== store_id) return json({ error: "order does not belong to this store" }, 403);
+        if (order.status === "cancelled") {
+          return json({ error: "Canceled orders are permanently locked and cannot be shipped." }, 409);
+        }
         const { data: items } = await svc.from("order_items").select("*").eq("order_id", args.order_id);
         const { data: pickup } = await svc.from("store_pickup_addresses")
           .select("*").eq("store_id", store_id).eq("is_default", true).maybeSingle();
