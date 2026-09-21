@@ -3,7 +3,7 @@
 - [x] Move parcel-label phone and tracking extraction to the lowest-priced current Gemini vision model.
 
 ## Active work
-- [ ] Add four uploaded Big Hollow Chain products to a new `new-chaina` category for Serdiya Jewellers, followed by all existing chain products.
+- [x] Add four uploaded Big Hollow Chain products to a new `new-chaina` category for Serdiya Jewellers, followed by all existing chain products.
 - [x] Permanently lock canceled orders against every later status or shipment change.
 - [x] Connect Telegram fresh in this workspace and verify order notifications.
 - [x] Permanently recover existing verified parcel photos and show them immediately inside each shipped/RTO order.
