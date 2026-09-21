@@ -277,7 +277,7 @@ Deno.serve(async (req) => {
         }
 
         if (productId && categoryId) {
-          await admin.from("product_categories").upsert({ product_id: productId, category_id: categoryId }, { onConflict: "product_id,category_id" });
+          await admin.from("product_categories").upsert({ product_id: productId, category_id: categoryId, store_id: job.store_id }, { onConflict: "product_id,category_id" });
         }
 
         if (productId && images && images.length > 1) {
