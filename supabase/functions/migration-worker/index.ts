@@ -499,14 +499,16 @@ Deno.serve(async (req) => {
             .single();
           if (inserted.error) {
             if (inserted.error.code === "23505") {
-            const safeId = sourceId.replace(/[^a-zA-Z0-9]/g, "-").slice(0, 30);
-            const retry = await admin
-              .from("products")
+              const safeId = sourceId
+                .replace(/[^a-zA-Z0-9]/g, "-")
+                .slice(0, 30);
+              const retry = await admin
+                .from("products")
                 .insert({ ...row, slug: `${row.slug || "product"}-${safeId}` })
-              .select("id")
-              .single();
-            if (retry.error) throw retry.error;
-            productId = retry.data.id;
+                .select("id")
+                .single();
+              if (retry.error) throw retry.error;
+              productId = retry.data.id;
             } else {
               throw inserted.error;
             }
@@ -661,19 +663,17 @@ async function recordMap(
   status: "ok" | "skipped" | "failed",
   error?: string,
 ) {
-  await admin
-    .from("migration_source_map")
-    .upsert(
-      {
-        job_id: jobId,
-        entity_type: entityType,
-        source_id: sourceId,
-        target_id: targetId,
-        status,
-        error: error ?? null,
-      },
-      { onConflict: "job_id,entity_type,source_id" },
-    );
+  await admin.from("migration_source_map").upsert(
+    {
+      job_id: jobId,
+      entity_type: entityType,
+      source_id: sourceId,
+      target_id: targetId,
+      status,
+      error: error ?? null,
+    },
+    { onConflict: "job_id,entity_type,source_id" },
+  );
 }
 
 async function appendError(admin: any, jobId: string, msg: string) {
