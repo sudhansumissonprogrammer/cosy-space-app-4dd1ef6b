@@ -26,7 +26,9 @@ type Props = {
 async function prepareParcelImage(file: File): Promise<File> {
   const bitmap = await createImageBitmap(file);
   try {
-    const maxEdge = 1600;
+    // 1280px keeps 10-digit phones and AWBs legible while materially reducing
+    // mobile encoding, upload, and vision-processing time.
+    const maxEdge = 1280;
     const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
     const canvas = document.createElement("canvas");
     canvas.width = Math.max(1, Math.round(bitmap.width * scale));
@@ -34,7 +36,7 @@ async function prepareParcelImage(file: File): Promise<File> {
     const context = canvas.getContext("2d");
     if (!context) throw new Error("Could not prepare this photo");
     context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.84));
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.8));
     if (!blob) throw new Error("Could not prepare this photo");
     return new File([blob], file.name.replace(/\.[^.]+$/i, ".jpg"), { type: "image/jpeg" });
   } finally {
@@ -73,14 +75,17 @@ export default function ParcelLabelScanner({ orderId, disabled, onScanStart, onA
     setStage("reading");
     setMessage("Reading label…");
     let preparedFile: File;
+    let barcodeHint = "";
     try {
-      preparedFile = await prepareParcelImage(file);
+      [preparedFile, barcodeHint] = await Promise.all([
+        prepareParcelImage(file),
+        detectBarcode(file),
+      ]);
     } catch {
       setStage("error");
       setMessage("Could not prepare this photo. Try taking a new photo.");
       return;
     }
-    const barcodeHint = await detectBarcode(preparedFile);
     setStage("checking");
     setMessage("Checking tracking number and phone…");
     const form = new FormData();
