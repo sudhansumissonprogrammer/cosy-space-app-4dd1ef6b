@@ -2,6 +2,7 @@
  * Direct R2 uploader for backend workers (no user JWT required).
  */
 import { AwsClient } from "npm:aws4fetch@1.0.20";
+import { assertSafePublicUrl, safeFetch } from "./safe-fetch.ts";
 
 const R2_ACCOUNT_ID = Deno.env.get("R2_ACCOUNT_ID") || "";
 const R2_ACCESS_KEY_ID = Deno.env.get("R2_ACCESS_KEY_ID") || "";
@@ -31,12 +32,11 @@ export async function mirrorImageToR2(
     return null;
   }
   try {
-    const ctl = new AbortController();
-    const timer = setTimeout(() => ctl.abort(), 20_000);
-    const src = await fetch(sourceUrl, { signal: ctl.signal });
-    clearTimeout(timer);
+    const allowedHost = assertSafePublicUrl(sourceUrl).hostname;
+    const src = await safeFetch(sourceUrl, {}, { timeoutMs: 20_000, maxBytes: 12 * 1024 * 1024, allowedHost });
     if (!src.ok) throw new Error(`fetch ${sourceUrl} -> ${src.status}`);
     const buf = new Uint8Array(await src.arrayBuffer());
+    if (buf.byteLength > 12 * 1024 * 1024) throw new Error("image is too large");
     const contentType = src.headers.get("content-type") || "image/jpeg";
 
     const res = await r2.fetch(`${endpoint}/${keyPath}`, {

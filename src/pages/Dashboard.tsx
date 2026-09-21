@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useDashboardStore } from "@/contexts/DashboardStoreContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Package, Eye, HelpCircle, Plus, Copy, Check, Share2 } from "lucide-react";
+import { Package, Eye, HelpCircle, Plus, Copy, Check, Share2, DownloadCloud, AlertCircle } from "lucide-react";
 import OnboardingWalkthrough from "@/components/OnboardingWalkthrough";
 import { useNavigateTransition } from "@/hooks/useNavigateTransition";
 import HeroRevenue from "@/components/dashboard/HeroRevenue";
@@ -134,6 +134,21 @@ export default function Dashboard() {
 
   const { data: walletSummary } = useStoreWallet(storeId);
   const isCommissionMode = isCommissionBilling(store, walletSummary);
+  const { data: activeMigration } = useQuery({
+    queryKey: ["dashboard-active-migration", storeId],
+    enabled: !!storeId,
+    refetchInterval: (query) => {
+      const status = (query.state.data as any)?.status;
+      return status === "pending" || status === "running" ? 3000 : false;
+    },
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("migration_jobs")
+        .select("id,status,progress,discovered_counts,error_log")
+        .eq("store_id", storeId).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
 
   if (storeLoading) return <DashboardSkeleton />;
 
@@ -219,6 +234,17 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {activeMigration && ["pending", "running", "completed", "failed"].includes(activeMigration.status) && (
+        <div className="flex items-center gap-3 rounded-lg border bg-accent/20 px-3 py-3">
+          {activeMigration.status === "failed" ? <AlertCircle className="h-5 w-5 shrink-0 text-destructive" /> : <DownloadCloud className="h-5 w-5 shrink-0 text-primary" />}
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold">{activeMigration.status === "completed" ? "Website import complete" : activeMigration.status === "failed" ? "Website import needs attention" : "Importing your existing website"}</p>
+            <p className="text-xs text-muted-foreground">{Number(activeMigration.progress?.products?.done || 0)} products copied as drafts{Number(activeMigration.progress?.products?.failed || 0) ? ` · ${activeMigration.progress.products.failed} need review` : ""}</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => navigate(`/dashboard/stores/${storeSlug}/apps/migrate-store`)}>View</Button>
+        </div>
+      )}
 
       {/* 🔥 Hero Revenue — THE biggest number at the top */}
       {storeId && !isWhatsAppOnly && (

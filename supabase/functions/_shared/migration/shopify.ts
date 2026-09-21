@@ -126,7 +126,7 @@ export function shopifyToStorivoProduct(p: ShopifyProduct, storeId: string) {
     sku: v?.sku ?? null,
     stock_quantity: v?.inventory_quantity ?? 0,
     category: p.product_type ?? null,
-    is_active: p.status === "active",
+    is_active: false,
     image_url: p.image?.src ?? p.images?.[0]?.src ?? null,
     image_alt: p.image?.alt ?? p.title,
     source_platform: "shopify",

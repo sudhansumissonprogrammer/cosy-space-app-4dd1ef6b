@@ -1147,13 +1147,18 @@ export type Database = {
       }
       migration_jobs: {
         Row: {
+          attempt_count: number
+          cancel_requested: boolean
           completed_at: string | null
           created_at: string
           credentials: Json
           cursor: Json
+          detected_platform: string | null
+          discovered_counts: Json
           entities: string[]
           error_log: Json
           id: string
+          lease_until: string | null
           progress: Json
           source_platform: string
           source_url: string
@@ -1164,13 +1169,18 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          attempt_count?: number
+          cancel_requested?: boolean
           completed_at?: string | null
           created_at?: string
           credentials?: Json
           cursor?: Json
+          detected_platform?: string | null
+          discovered_counts?: Json
           entities?: string[]
           error_log?: Json
           id?: string
+          lease_until?: string | null
           progress?: Json
           source_platform: string
           source_url: string
@@ -1181,13 +1191,18 @@ export type Database = {
           user_id: string
         }
         Update: {
+          attempt_count?: number
+          cancel_requested?: boolean
           completed_at?: string | null
           created_at?: string
           credentials?: Json
           cursor?: Json
+          detected_platform?: string | null
+          discovered_counts?: Json
           entities?: string[]
           error_log?: Json
           id?: string
+          lease_until?: string | null
           progress?: Json
           source_platform?: string
           source_url?: string
@@ -5892,6 +5907,7 @@ export type Database = {
         Args: { _order_id: string }
         Returns: boolean
       }
+      cancel_own_migration: { Args: { _job_id: string }; Returns: boolean }
       cancel_own_order: {
         Args: { _order_id: string; _reason?: string }
         Returns: boolean
@@ -5934,6 +5950,7 @@ export type Database = {
         Args: { _coupon_id: string; _store_id: string }
         Returns: boolean
       }
+      claim_migration_job: { Args: { _job_id?: string }; Returns: string }
       claim_wa_marketing_attempt: {
         Args: {
           _limit?: number

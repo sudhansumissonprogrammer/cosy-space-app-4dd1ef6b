@@ -2,6 +2,7 @@
  * migration-start — Create a migration_jobs row and kick off the worker.
  */
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { assertSafePublicUrl } from "../_shared/migration/safe-fetch.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,7 +28,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const storeId = String(body.store_id || "");
-    const platform = String(body.platform || "").toLowerCase();
+    const platform = String(body.platform || "generic").toLowerCase();
     const sourceUrl = String(body.source_url || "").trim();
     const credentials = (body.credentials ?? {}) as Record<string, string>;
     const entities = Array.isArray(body.entities) && body.entities.length
@@ -38,12 +39,9 @@ Deno.serve(async (req) => {
       return json({ error: "store_id, platform, and source_url are required" }, 400);
     }
 
-    const normalized = /^https?:\/\//i.test(sourceUrl) ? sourceUrl : `https://${sourceUrl}`;
+    let normalized = "";
     try {
-      const u = new URL(normalized);
-      if (!/^https?:$/i.test(u.protocol) || !u.hostname.includes(".")) {
-        return json({ error: "Enter a valid store URL (e.g. mystore.myshopify.com)" }, 400);
-      }
+      normalized = assertSafePublicUrl(sourceUrl).toString();
     } catch {
       return json({ error: "Enter a valid store URL (e.g. mystore.myshopify.com)" }, 400);
     }
@@ -80,7 +78,9 @@ Deno.serve(async (req) => {
         store_id: storeId,
         user_id: userId,
         source_platform: platform,
-        source_url: sourceUrl,
+        source_url: normalized,
+        detected_platform: body.detected_platform || platform,
+        discovered_counts: body.discovered_counts || {},
         credentials,
         entities,
         status: "pending",

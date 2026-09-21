@@ -96,7 +96,7 @@ export function wooToStorivoProduct(p: WooProduct, storeId: string) {
     sku: p.sku ?? null,
     stock_quantity: typeof p.stock_quantity === "number" ? p.stock_quantity : 0,
     category: p.categories?.[0]?.name ?? null,
-    is_active: p.status === "publish",
+    is_active: false,
     image_url: p.images?.[0]?.src ?? null,
     image_alt: p.images?.[0]?.alt || p.name,
     source_platform: "woocommerce",

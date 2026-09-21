@@ -3,11 +3,14 @@
  * Works for Dukaan, Shopdeck, custom coded stores — anything that exposes a
  * sitemap.xml and Schema.org Product JSON-LD (or Open Graph product metadata).
  */
+import { assertSafePublicUrl, readLimitedText, safeFetch } from "./safe-fetch.ts";
 
 function root(url: string): string {
-  const clean = url.replace(/\/+$/, "");
-  if (clean.startsWith("http")) return clean;
-  return `https://${clean}`;
+  const parsed = assertSafePublicUrl(url);
+  parsed.pathname = parsed.pathname.replace(/\/+$/, "");
+  parsed.search = "";
+  parsed.hash = "";
+  return parsed.toString().replace(/\/$/, "");
 }
 
 function absolutize(maybeRelative: string, pageUrl: string): string {
@@ -15,23 +18,16 @@ function absolutize(maybeRelative: string, pageUrl: string): string {
 }
 
 async function fetchText(url: string, timeoutMs = 15_000): Promise<string> {
-  const ctl = new AbortController();
-  const t = setTimeout(() => ctl.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, {
-      signal: ctl.signal,
+  const allowedHost = assertSafePublicUrl(url).hostname;
+  const res = await safeFetch(url, {
       headers: {
         "User-Agent": "Mozilla/5.0 (compatible; StorivoMigration/1.0; +https://shopbanao.in)",
         "Accept": "text/html,application/xhtml+xml,application/xml,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.9",
       },
-      redirect: "follow",
-    });
-    if (!res.ok) throw new Error(`GET ${url} -> ${res.status}`);
-    return await res.text();
-  } finally {
-    clearTimeout(t);
-  }
+    }, { timeoutMs, maxBytes: 5 * 1024 * 1024, allowedHost });
+  if (!res.ok) throw new Error(`GET ${url} -> ${res.status}`);
+  return readLimitedText(res, 5 * 1024 * 1024);
 }
 
 function extractLocs(xml: string): string[] {
@@ -154,6 +150,8 @@ export interface ScrapedProduct {
   image_alt: string;
   category: string | null;
   image_urls: string[];
+  currency: string | null;
+  availability: string | null;
 }
 
 function extractJsonLd(html: string): any[] {
@@ -183,6 +181,50 @@ function metaContent(html: string, prop: string, attr: "property" | "name" = "pr
   const re = new RegExp(`<meta[^>]+${attr}=["']${prop}["'][^>]*content=["']([^"']+)["']`, "i");
   const alt = new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]*${attr}=["']${prop}["']`, "i");
   return html.match(re)?.[1] ?? html.match(alt)?.[1] ?? null;
+}
+
+function stripTags(value: string): string {
+  return value.replace(/<script[\s\S]*?<\/script>/gi, "").replace(/<style[\s\S]*?<\/style>/gi, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+export interface PublicSiteProfile {
+  platform: "shopify" | "woocommerce" | "dukaan" | "generic";
+  title: string | null;
+  description: string | null;
+  logo_url: string | null;
+  hero_url: string | null;
+  pages: Array<{ type: "about" | "contact" | "privacy" | "terms" | "shipping" | "returns"; title: string; url: string }>;
+}
+
+export async function inspectPublicSite(siteUrl: string): Promise<PublicSiteProfile> {
+  const base = root(siteUrl);
+  const html = await fetchText(base, 15_000);
+  const lower = html.toLowerCase();
+  const platform: PublicSiteProfile["platform"] = lower.includes("cdn.shopify.com") || lower.includes("shopify.theme") ? "shopify" : lower.includes("woocommerce") || lower.includes("wp-content/plugins/woocommerce") ? "woocommerce" : lower.includes("dukaan") ? "dukaan" : "generic";
+  const title = metaContent(html, "og:site_name") || metaContent(html, "og:title") || stripTags(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || "") || null;
+  const description = metaContent(html, "og:description") || metaContent(html, "description", "name");
+  const logoMatch = html.match(/<img[^>]+(?:class|id)=["'][^"']*logo[^"']*["'][^>]+src=["']([^"']+)["']/i) || html.match(/<img[^>]+src=["']([^"']+)["'][^>]+(?:class|id)=["'][^"']*logo/i);
+  const definitions: Array<[PublicSiteProfile["pages"][number]["type"], string, RegExp]> = [["about", "About Us", /\/(about|about-us)(\/|$)/i], ["contact", "Contact", /\/(contact|contact-us)(\/|$)/i], ["privacy", "Privacy Policy", /\/(privacy|privacy-policy)(\/|$)/i], ["terms", "Terms", /\/(terms|terms-and-conditions|terms-of-service)(\/|$)/i], ["shipping", "Shipping Policy", /\/(shipping|shipping-policy)(\/|$)/i], ["returns", "Returns Policy", /\/(returns?|refund|refund-policy|return-policy)(\/|$)/i]];
+  const pages: PublicSiteProfile["pages"] = [];
+  const anchorRe = /<a[^>]+href=["']([^"']+)["']/gi;
+  let match: RegExpExecArray | null;
+  while ((match = anchorRe.exec(html)) && pages.length < definitions.length) {
+    const absolute = absolutize(match[1], base).split("#")[0];
+    try {
+      if (new URL(absolute).hostname !== new URL(base).hostname) continue;
+      const page = definitions.find(([type, , pattern]) => pattern.test(new URL(absolute).pathname) && !pages.some((p) => p.type === type));
+      if (page) pages.push({ type: page[0], title: page[1], url: absolute });
+    } catch { /* ignore malformed links */ }
+  }
+  const hero = metaContent(html, "og:image");
+  return { platform, title: title?.slice(0, 200) || null, description: description?.slice(0, 500) || null, logo_url: logoMatch?.[1] ? absolutize(logoMatch[1], base) : null, hero_url: hero ? absolutize(hero, base) : null, pages };
+}
+
+export async function scrapePublicPage(url: string): Promise<string | null> {
+  const html = await fetchText(url, 15_000);
+  const main = html.match(/<main[^>]*>([\s\S]*?)<\/main>/i)?.[1] || html.match(/<article[^>]*>([\s\S]*?)<\/article>/i)?.[1] || html.match(/<body[^>]*>([\s\S]*?)<\/body>/i)?.[1] || "";
+  const text = stripTags(main).slice(0, 12_000);
+  return text.length >= 40 ? text : null;
 }
 
 function slugFromUrl(u: string): string | null {
@@ -264,6 +306,8 @@ export async function scrapeProduct(url: string): Promise<ScrapedProduct | null>
   let price = 0;
   let salePrice: number | null = null;
   const offer = Array.isArray(node?.offers) ? node.offers[0] : node?.offers;
+  let currency: string | null = null;
+  let availability: string | null = null;
   if (offer) {
     price = parsePrice(offer.price ?? offer.lowPrice ?? offer.highPrice);
     if (offer.priceSpecification?.price) price = parsePrice(offer.priceSpecification.price);
@@ -271,6 +315,8 @@ export async function scrapeProduct(url: string): Promise<ScrapedProduct | null>
       const strike = parsePrice(offer.priceSpecification.strikethroughPrice);
       if (strike > price) { salePrice = price; price = strike; }
     }
+    currency = String(offer.priceCurrency || offer.priceSpecification?.priceCurrency || "").toUpperCase() || null;
+    availability = typeof offer.availability === "string" ? offer.availability : null;
   } else {
     const og = metaContent(html, "product:price:amount") || metaContent(html, "og:price:amount");
     price = parsePrice(og);
@@ -297,6 +343,8 @@ export async function scrapeProduct(url: string): Promise<ScrapedProduct | null>
     image_alt: name,
     category,
     image_urls,
+    currency,
+    availability,
   };
 }
 
@@ -309,7 +357,7 @@ export function scrapedToStorivoProduct(p: ScrapedProduct, storeId: string, plat
     price: p.price,
     sale_price: p.sale_price,
     sku: p.sku,
-    stock_quantity: 0,
+    stock_quantity: /instock/i.test(p.availability || "") ? 1 : 0,
     category: p.category,
     is_active: false,
     image_url: p.image_url,

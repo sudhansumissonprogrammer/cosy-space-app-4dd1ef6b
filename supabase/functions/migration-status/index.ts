@@ -28,14 +28,15 @@ Deno.serve(async (req) => {
 
     const { data, error } = await supa
       .from("migration_jobs")
-      .select("id,store_id,source_platform,source_url,entities,status,progress,error_log,created_at,started_at,completed_at")
+      .select("id,store_id,source_platform,detected_platform,source_url,entities,status,progress,discovered_counts,error_log,created_at,started_at,completed_at,cancel_requested")
       .eq("id", jobId)
       .maybeSingle();
     if (error) return json({ error: error.message }, 500);
     if (!data) return json({ error: "Not found" }, 404);
 
     const isStalled =
-      data.status === "running" &&
+      (data.status === "running" || data.status === "pending") &&
+      !data.cancel_requested &&
       data.completed_at === null &&
       Date.now() - new Date(data.started_at ?? data.created_at).getTime() > 5 * 60 * 1000;
 
