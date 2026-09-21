@@ -431,6 +431,10 @@ export default function StoreOrders() {
     order.order_number ? `#${1000 + order.order_number}` : `#${order.id.slice(0, 8)}`;
 
   const handleStatusChange = (order: any, v: string) => {
+    if (order.status === "cancelled") {
+      toast.error("Canceled orders are permanently locked.");
+      return;
+    }
     if (v === "shipped" && !order.tracking_number) {
       setTrackingOrder({ order, mode: "shipping" });
       return;
@@ -698,6 +702,10 @@ export default function StoreOrders() {
                         window.open(`https://wa.me/${phone}`, "_blank", "noopener,noreferrer");
                       };
                       const markShipped = () => {
+                        if (order.status === "cancelled") {
+                          toast.error("Canceled orders are permanently locked.");
+                          return;
+                        }
                         if (order.status === "shipped" || order.status === "delivered") {
                           toast.info(`Already ${order.status}`);
                           return;
@@ -832,7 +840,7 @@ export default function StoreOrders() {
                               </TableCell>
                               <TableCell className="text-xs uppercase">{order.payment_method || "cod"}</TableCell>
                               <DataTableActionCell>
-                                <Select value={order.status} onValueChange={(v) => handleStatusChange(order, v)}>
+                                <Select value={order.status} onValueChange={(v) => handleStatusChange(order, v)} disabled={order.status === "cancelled"}>
                                   <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
                                   <SelectContent>
                                     {STATUS_OPTIONS.map((s) => (
@@ -1200,7 +1208,7 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
           </a>
           <button
             onClick={() => onStatusChange("shipped")}
-            disabled={order.status === "shipped" || order.status === "delivered"}
+            disabled={order.status === "shipped" || order.status === "delivered" || order.status === "cancelled"}
             className="flex flex-col items-center gap-1 py-2 rounded-lg active:bg-accent transition-colors disabled:opacity-40"
           >
             <div className="h-9 w-9 rounded-full bg-warning/10 flex items-center justify-center">
@@ -1269,7 +1277,7 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
             </Button>
           )}
           <div className="flex gap-2">
-            <Select value={order.status} onValueChange={onStatusChange}>
+            <Select value={order.status} onValueChange={onStatusChange} disabled={order.status === "cancelled"}>
               <SelectTrigger
                 className="flex-1 h-11 text-sm font-semibold border-2 border-primary/40 bg-primary/5 text-primary hover:bg-primary/10 transition-colors shadow-sm [&>svg]:opacity-100 [&>svg]:text-primary"
                 aria-label="Change order status"

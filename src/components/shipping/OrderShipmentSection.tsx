@@ -47,26 +47,30 @@ export default function OrderShipmentSection({ orderId, orderStatus }: { orderId
           {shipments.map((s) => (
             <div key={s.id} className="relative">
               <ShipmentTimeline shipment={s} />
-              <Button
-                size="sm"
-                variant="ghost"
-                className="absolute right-2 top-2 h-7 gap-1 text-[11px]"
-                onClick={() => { setEditing(s); setOpen(true); }}
-              >
-                <Pencil className="h-3 w-3" /> Edit
-              </Button>
+              {orderStatus !== "cancelled" && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="absolute right-2 top-2 h-7 gap-1 text-[11px]"
+                  onClick={() => { setEditing(s); setOpen(true); }}
+                >
+                  <Pencil className="h-3 w-3" /> Edit
+                </Button>
+              )}
             </div>
           ))}
         </div>
       )}
 
-      <ShipmentEditorDialog
-        key={editing?.id || "new"}
-        open={open}
-        onOpenChange={setOpen}
-        orderId={orderId}
-        shipment={editing ?? undefined}
-      />
+      {orderStatus !== "cancelled" && (
+        <ShipmentEditorDialog
+          key={editing?.id || "new"}
+          open={open}
+          onOpenChange={setOpen}
+          orderId={orderId}
+          shipment={editing ?? undefined}
+        />
+      )}
     </section>
   );
 }
