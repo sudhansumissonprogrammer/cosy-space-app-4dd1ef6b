@@ -117,11 +117,12 @@ Deno.serve(async (req) => {
       };
 
       const [{ data: phoneCustomers }, { data: lastOrder }] = await Promise.all([
-        supabase.from("storefront_customers").select("id").eq("phone", normalizedPhone).limit(50),
+        supabase.from("storefront_customers").select("id").eq("phone", normalizedPhone).eq("store_id", store_id).limit(1),
         supabase
           .from("orders")
           .select("street_address, city, state, pincode, customer_name, customer_phone, created_at")
           .eq("customer_phone", normalizedPhone)
+          .eq("store_id", store_id)
           .not("street_address", "is", null)
           .not("pincode", "is", null)
           .order("created_at", { ascending: false })
@@ -258,12 +259,11 @@ Deno.serve(async (req) => {
     }
 
     // 4b) Hydrate + seed customer_addresses so returning shoppers
-    //     (even on a NEW browser / new store) skip the address form entirely.
+    //     (even on a new browser) skip the address form entirely.
     //     Priority:
     //       1) current-store saved address,
-    //       2) ANY saved address attached to this phone across all stores,
-    //       3) latest paid/confirmed order address across all stores,
-    //       4) latest order address as a last resort.
+    //       2) latest paid/confirmed order address in this store,
+    //       3) latest order address in this store as a last resort.
     let hydratedAddress: {
       id?: string | null;
       label?: string | null;
@@ -306,33 +306,6 @@ Deno.serve(async (req) => {
       hydratedAddress = toAddressPayload(existingAddr);
 
       if (!hydratedAddress) {
-        // Saved address in another store for the same canonical phone.
-        const { data: phoneCustomers } = await supabase
-          .from("storefront_customers")
-          .select("id")
-          .eq("phone", normalizedPhone)
-          .limit(50);
-
-        const customerIds = (phoneCustomers || [])
-          .map((c: any) => c.id)
-          .filter((id: string | null | undefined): id is string => !!id);
-
-        if (customerIds.length > 0) {
-          const { data: anySavedAddr } = await supabase
-            .from("customer_addresses")
-            .select("id, label, full_name, phone, street_address, city, state, pincode, is_default, created_at")
-            .in("storefront_customer_id", customerIds)
-            .not("street_address", "is", null)
-            .not("pincode", "is", null)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          hydratedAddress = toAddressPayload(anySavedAddr);
-        }
-      }
-
-      if (!hydratedAddress) {
         let seedFrom: any | null = null;
 
         if (order_id) {
@@ -352,6 +325,7 @@ Deno.serve(async (req) => {
             .from("orders")
             .select("street_address, city, state, pincode, customer_name, customer_phone, created_at, status")
             .eq("customer_phone", normalizedPhone)
+            .eq("store_id", store_id)
             .in("status", paidStatuses)
             .not("street_address", "is", null)
             .not("pincode", "is", null)
@@ -366,6 +340,7 @@ Deno.serve(async (req) => {
             .from("orders")
             .select("street_address, city, state, pincode, customer_name, customer_phone, created_at, status")
             .eq("customer_phone", normalizedPhone)
+            .eq("store_id", store_id)
             .not("street_address", "is", null)
             .not("pincode", "is", null)
             .order("created_at", { ascending: false })
