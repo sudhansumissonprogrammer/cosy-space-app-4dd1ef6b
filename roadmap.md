@@ -26,10 +26,10 @@
 - [x] Produce a detailed WhatsApp marketing performance PDF report.
 
 ## Project monitoring fixes
-- [ ] Verify and fix public product reads
-- [ ] Verify and fix QR parcel scans
-- [ ] Verify and fix payment settings access
-- [ ] Verify and fix repeated category collage images
-- [ ] Verify and fix legacy shipment RTO flow
-- [ ] Verify and fix review text overlap
-- [ ] Verify and fix saved-address fallback
+- [ ] Verify and fix public product reads (restricted grant patch prepared)
+- [ ] Verify and fix QR parcel scans (advisory barcode fix prepared)
+- [ ] Verify and fix payment settings access (column grant prepared)
+- [ ] Verify and fix repeated category collage images (unique-image fallback prepared)
+- [ ] Verify and fix legacy shipment RTO flow (tracked-shipment rule prepared)
+- [ ] Verify and fix review text overlap (media anchoring prepared)
+- [ ] Verify and fix saved-address fallback (session-independent response prepared)

@@ -17,18 +17,15 @@ interface Props {
 
 export default function CategoryCollageImage({ category, size = 300, className = "h-full w-full object-cover" }: Props) {
   const collage = Array.isArray(category.collage_image_urls)
-    ? category.collage_image_urls.filter((url): url is string => typeof url === "string" && url.trim().length > 0).slice(0, 4)
-    : [];
-  const slots = collage.length > 0
-    ? [...collage, ...Array(Math.max(0, 4 - collage.length)).fill(category.image_url || collage[0])].slice(0, 4)
+    ? Array.from(new Set(category.collage_image_urls.filter((url): url is string => typeof url === "string" && url.trim().length > 0))).slice(0, 4)
     : [];
 
-  if (slots.length > 0) {
+  if (collage.length === 4) {
     return (
       <div className="grid h-full w-full grid-cols-2 grid-rows-2 gap-px bg-border" role="img" aria-label={`${category.name} products`}>
-        {slots.map((url, index) => (
+        {collage.map((url) => (
           <img
-            key={`${url}-${index}`}
+            key={url}
             src={optimizeImageUrl(url, Math.max(96, Math.ceil(size / 2)), 78)}
             alt=""
             className={className}
@@ -42,8 +39,9 @@ export default function CategoryCollageImage({ category, size = 300, className =
     );
   }
 
-  if (category.image_url) {
-    return <img src={optimizeImageUrl(category.image_url, size, 82)} alt={category.name} className={className} loading="lazy" decoding="async" width={size} height={size} />;
+  const fallbackImage = category.image_url || collage[0];
+  if (fallbackImage) {
+    return <img src={optimizeImageUrl(fallbackImage, size, 82)} alt={category.name} className={className} loading="lazy" decoding="async" width={size} height={size} />;
   }
 
   return (

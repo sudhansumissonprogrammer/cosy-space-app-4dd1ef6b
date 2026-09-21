@@ -261,7 +261,9 @@ Deno.serve(async (req) => {
     if (!extracted.readable) reasons.push("The label is not clear enough to verify.");
     if (!candidateAwb || !AWB_RE.test(candidateAwb)) reasons.push("No valid tracking number was found.");
     if (imageBarcode && printedAwb && imageBarcode !== printedAwb) hardFailures.push("The barcode and printed tracking number do not agree.");
-    if (barcodeHint && imageBarcode && barcodeHint !== imageBarcode) hardFailures.push("The detected barcode could not be confirmed from the label.");
+    // Browser BarcodeDetector may select a QR payload or a secondary barcode.
+    // It is only a speed hint; never reject a phone-matched label because this
+    // client-side hint differs from the tracking barcode read from the image.
 
     const expectedPhone = normalizePhone(order.customer_phone);
     const actualPhone = normalizePhone(extracted.phone);
