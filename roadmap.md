@@ -34,3 +34,4 @@
 - [x] Verify and fix legacy shipment RTO flow
 - [x] Verify and fix review text overlap
 - [x] Verify and fix saved-address fallback
+- [ ] Speed parcel gallery scan to tracking-number-only under 4–5 seconds and show saved parcel photo in dashboard order details
