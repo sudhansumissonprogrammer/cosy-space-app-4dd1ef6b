@@ -82,7 +82,7 @@ export default function ParcelLabelScanner({ orderId, disabled, onScanStart, onA
     }
     const barcodeHint = await detectBarcode(preparedFile);
     setStage("checking");
-    setMessage("Checking tracking number…");
+    setMessage("Checking tracking number and phone…");
     const form = new FormData();
     form.append("image", preparedFile);
     form.append("order_id", orderId);
@@ -116,7 +116,7 @@ export default function ParcelLabelScanner({ orderId, disabled, onScanStart, onA
       return;
     }
     setStage("ready");
-    setMessage("Tracking number ready");
+    setMessage("Phone matched · tracking number ready");
     onAccepted(data as ScanResult);
   };
 
@@ -231,7 +231,7 @@ export default function ParcelLabelScanner({ orderId, disabled, onScanStart, onA
       {stage === "idle" && (
         <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
           <ScanLine className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          Keep the printed tracking number and its barcode clear and fully visible.
+          Keep the complete phone number, tracking number, and barcode clearly visible.
         </p>
       )}
     </div>

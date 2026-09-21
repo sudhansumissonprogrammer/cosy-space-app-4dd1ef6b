@@ -10,6 +10,7 @@ const TEMP_PHOTO_TTL_MS = 6 * 60 * 60 * 1000;
 
 type Extraction = {
   readable: boolean;
+  recipient_phone: string;
   printed_tracking_number: string;
   barcode_value: string;
 };
@@ -27,6 +28,14 @@ function clean(value: unknown, max = 180): string {
 
 function normalizeAwb(value: unknown): string {
   return clean(value, 40).replace(/\s+/g, "").toUpperCase();
+}
+
+function normalizeIndianPhone(value: unknown): string {
+  let phone = String(value ?? "").replace(/\D/g, "");
+  if (phone.length === 13 && phone.startsWith("091")) phone = phone.slice(3);
+  else if (phone.length === 12 && phone.startsWith("91")) phone = phone.slice(2);
+  else if (phone.length === 11 && phone.startsWith("0")) phone = phone.slice(1);
+  return /^[6-9]\d{9}$/.test(phone) ? phone : "";
 }
 
 function courierFromAwb(value: string): string {
@@ -84,10 +93,11 @@ async function inspectLabel(bytes: Uint8Array, mime: string, barcodeHint: string
     additionalProperties: false,
     properties: {
       readable: { type: "boolean" },
+      recipient_phone: { type: "string" },
       printed_tracking_number: { type: "string" },
       barcode_value: { type: "string" },
     },
-    required: ["readable", "printed_tracking_number", "barcode_value"],
+    required: ["readable", "recipient_phone", "printed_tracking_number", "barcode_value"],
   };
   const response = await fetch(GATEWAY_URL, {
     method: "POST",
@@ -103,7 +113,7 @@ async function inspectLabel(bytes: Uint8Array, mime: string, barcodeHint: string
       input: [{
         role: "user",
         content: [
-          { type: "input_text", text: `Extract only the shipment tracking/AWB number from this Indian courier label. Do not read names, phone numbers, addresses, prices, or any other text. Return an empty string rather than guessing. The printed value and tracking barcode should agree. Browser 1D-barcode hint: ${barcodeHint || "none"}.` },
+          { type: "input_text", text: `Extract only two values from this Indian courier label: (1) the shipment tracking/AWB number and (2) the recipient's complete mobile number. Do not read or return names, addresses, prices, or other text. Keep a visible +91, 91, or leading 0 phone prefix; return an empty phone for masked, partial, or unclear numbers. Return empty strings rather than guessing. The printed tracking value and tracking barcode should agree. Browser 1D-barcode hint: ${barcodeHint || "none"}.` },
           { type: "input_image", image_url: `data:${mime};base64,${bytesToBase64(bytes)}` },
         ],
       }],
@@ -155,7 +165,7 @@ Deno.serve(async (req) => {
     const admin = createClient(url, serviceKey);
     const { data: order } = await admin
       .from("orders")
-      .select("id,store_id,stores!inner(owner_id)")
+      .select("id,store_id,customer_phone,stores!inner(owner_id)")
       .eq("id", orderId)
       .maybeSingle();
     const ownerId = (order as any)?.stores?.owner_id;
@@ -193,11 +203,11 @@ Deno.serve(async (req) => {
         .eq("scanned_by", userId)
         .eq("decision", "review")
         .maybeSingle();
-      const trackingOnlyScan = (reviewScan?.evidence as Record<string, unknown> | null)?.tracking_only === true;
+      const phoneMatched = (reviewScan?.evidence as Record<string, unknown> | null)?.phone_match === true;
       const photoAvailable = !!reviewScan?.temp_object_path
         && !!reviewScan?.temp_expires_at
         && new Date(reviewScan.temp_expires_at).getTime() > Date.now();
-      if (!reviewScan || !trackingOnlyScan || !photoAvailable) {
+      if (!reviewScan || !phoneMatched || !photoAvailable) {
         return json({ error: "Take a new label photo before entering the tracking number" }, 409);
       }
       const [{ data: priorScan }, { data: priorShipment }] = await Promise.all([
@@ -220,7 +230,7 @@ Deno.serve(async (req) => {
         confidence: 1,
         courier_slug: reviewScan.courier_slug || "other",
         tracking_number: manualAwb,
-        matched: {},
+        matched: { phone: true },
       });
     }
 
@@ -275,22 +285,25 @@ Deno.serve(async (req) => {
         confidence: Number(reusedImage.confidence ?? 1),
         courier_slug: reusedImage.courier_slug || "other",
         tracking_number: reusedImage.tracking_number,
-        matched: {},
+        matched: { phone: true },
       });
     }
 
-    const strongBarcodeHint = /^[A-Z]{2}\d{9}IN$/.test(barcodeHint) ? barcodeHint : "";
-    const extracted = strongBarcodeHint
-      ? { readable: true, printed_tracking_number: strongBarcodeHint, barcode_value: strongBarcodeHint }
-      : await inspectLabel(bytes, image.type, barcodeHint);
+    const extracted = await inspectLabel(bytes, image.type, barcodeHint);
     const printedAwb = normalizeAwb(extracted.printed_tracking_number);
     const imageBarcode = normalizeAwb(extracted.barcode_value);
     const candidateAwb = imageBarcode || printedAwb || barcodeHint;
+    const expectedPhone = normalizeIndianPhone(order.customer_phone);
+    const extractedPhone = normalizeIndianPhone(extracted.recipient_phone);
+    const phoneMatched = !!expectedPhone && !!extractedPhone && expectedPhone === extractedPhone;
     const reasons: string[] = [];
     const hardFailures: string[] = [];
 
     if (!extracted.readable) reasons.push("The label is not clear enough to verify.");
     if (!candidateAwb || !AWB_RE.test(candidateAwb)) reasons.push("No valid tracking number was found.");
+    if (!expectedPhone) hardFailures.push("This order does not have a valid 10-digit mobile number.");
+    if (!extractedPhone) hardFailures.push("The complete 10-digit mobile number is not readable on this label.");
+    if (expectedPhone && extractedPhone && !phoneMatched) hardFailures.push("This parcel belongs to a different customer.");
     if (imageBarcode && printedAwb && imageBarcode !== printedAwb) hardFailures.push("The barcode and printed tracking number do not agree.");
     // Browser BarcodeDetector is only trusted for the strict India Post AWB
     // shape. Every other label is independently read from the image.
@@ -316,11 +329,12 @@ Deno.serve(async (req) => {
       if ((usedAwb ?? []).length > 0) hardFailures.push("This tracking number is already attached to another order.");
     }
 
-    const confidence = extracted.readable && candidateAwb ? 1 : 0;
-    const decision = hardFailures.length > 0 ? "rejected" : extracted.readable && candidateAwb && reasons.length === 0 ? "accepted" : "review";
+    const confidence = extracted.readable && candidateAwb && phoneMatched ? 1 : 0;
+    const decision = hardFailures.length > 0 ? "rejected" : extracted.readable && candidateAwb && phoneMatched && reasons.length === 0 ? "accepted" : "review";
     const allReasons = [...hardFailures, ...reasons];
     const evidence = {
-      tracking_only: true,
+      phone_match: phoneMatched,
+      phone_last4: extractedPhone.slice(-4),
     };
 
     const alreadyAcceptedForOrder = candidateAwb
@@ -352,7 +366,7 @@ Deno.serve(async (req) => {
       scanId = insertedScan?.id || null;
     }
 
-    if (decision === "rejected") return json({ decision, confidence, error: allReasons[0] || "This tracking number could not be verified.", reasons: allReasons }, 422);
+    if (decision === "rejected") return json({ decision, confidence, error: allReasons[0] || "This parcel could not be verified.", reasons: allReasons }, 422);
 
     if (decision === "review") {
       if (!candidateAwb || !scanId) {
@@ -383,7 +397,7 @@ Deno.serve(async (req) => {
         confidence,
         courier_slug: courierFromAwb(candidateAwb),
         tracking_number: candidateAwb || "",
-        matched: {},
+        matched: { phone: true },
         needs_tracking_confirmation: true,
         message: "Enter the complete tracking number printed on this label.",
       });
@@ -417,7 +431,7 @@ Deno.serve(async (req) => {
       confidence,
       courier_slug: courierFromAwb(candidateAwb),
       tracking_number: candidateAwb,
-      matched: {},
+      matched: { phone: true },
     });
   } catch (error) {
     console.error("[parcel-label-scan] unexpected", error);
