@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.replace_customer_address(uuid,text,text,text,text,text,text,text) FROM anon;
