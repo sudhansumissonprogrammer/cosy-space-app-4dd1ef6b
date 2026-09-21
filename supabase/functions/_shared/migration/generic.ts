@@ -3,11 +3,14 @@
  * Works for Dukaan, Shopdeck, custom coded stores — anything that exposes a
  * sitemap.xml and Schema.org Product JSON-LD (or Open Graph product metadata).
  */
+import { assertSafePublicUrl, readLimitedText, safeFetch } from "./safe-fetch.ts";
 
 function root(url: string): string {
-  const clean = url.replace(/\/+$/, "");
-  if (clean.startsWith("http")) return clean;
-  return `https://${clean}`;
+  const parsed = assertSafePublicUrl(url);
+  parsed.pathname = parsed.pathname.replace(/\/+$/, "");
+  parsed.search = "";
+  parsed.hash = "";
+  return parsed.toString().replace(/\/$/, "");
 }
 
 function absolutize(maybeRelative: string, pageUrl: string): string {
@@ -15,23 +18,16 @@ function absolutize(maybeRelative: string, pageUrl: string): string {
 }
 
 async function fetchText(url: string, timeoutMs = 15_000): Promise<string> {
-  const ctl = new AbortController();
-  const t = setTimeout(() => ctl.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, {
-      signal: ctl.signal,
+  const allowedHost = assertSafePublicUrl(url).hostname;
+  const res = await safeFetch(url, {
       headers: {
         "User-Agent": "Mozilla/5.0 (compatible; StorivoMigration/1.0; +https://shopbanao.in)",
         "Accept": "text/html,application/xhtml+xml,application/xml,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.9",
       },
-      redirect: "follow",
-    });
-    if (!res.ok) throw new Error(`GET ${url} -> ${res.status}`);
-    return await res.text();
-  } finally {
-    clearTimeout(t);
-  }
+    }, { timeoutMs, maxBytes: 5 * 1024 * 1024, allowedHost });
+  if (!res.ok) throw new Error(`GET ${url} -> ${res.status}`);
+  return readLimitedText(res, 5 * 1024 * 1024);
 }
 
 function extractLocs(xml: string): string[] {
@@ -154,6 +150,8 @@ export interface ScrapedProduct {
   image_alt: string;
   category: string | null;
   image_urls: string[];
+  currency: string | null;
+  availability: string | null;
 }
 
 function extractJsonLd(html: string): any[] {
@@ -264,6 +262,8 @@ export async function scrapeProduct(url: string): Promise<ScrapedProduct | null>
   let price = 0;
   let salePrice: number | null = null;
   const offer = Array.isArray(node?.offers) ? node.offers[0] : node?.offers;
+  let currency: string | null = null;
+  let availability: string | null = null;
   if (offer) {
     price = parsePrice(offer.price ?? offer.lowPrice ?? offer.highPrice);
     if (offer.priceSpecification?.price) price = parsePrice(offer.priceSpecification.price);
@@ -271,6 +271,8 @@ export async function scrapeProduct(url: string): Promise<ScrapedProduct | null>
       const strike = parsePrice(offer.priceSpecification.strikethroughPrice);
       if (strike > price) { salePrice = price; price = strike; }
     }
+    currency = String(offer.priceCurrency || offer.priceSpecification?.priceCurrency || "").toUpperCase() || null;
+    availability = typeof offer.availability === "string" ? offer.availability : null;
   } else {
     const og = metaContent(html, "product:price:amount") || metaContent(html, "og:price:amount");
     price = parsePrice(og);
@@ -297,6 +299,8 @@ export async function scrapeProduct(url: string): Promise<ScrapedProduct | null>
     image_alt: name,
     category,
     image_urls,
+    currency,
+    availability,
   };
 }
 
@@ -309,7 +313,7 @@ export function scrapedToStorivoProduct(p: ScrapedProduct, storeId: string, plat
     price: p.price,
     sale_price: p.sale_price,
     sku: p.sku,
-    stock_quantity: 0,
+    stock_quantity: /instock/i.test(p.availability || "") ? 1 : 0,
     category: p.category,
     is_active: false,
     image_url: p.image_url,
