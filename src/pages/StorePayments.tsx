@@ -81,14 +81,20 @@ export default function StorePayments() {
         return data as any;
       }
 
-      const { data, error } = await (supabase as any)
-        .from("stores")
-        .select("id, owner_id, name, slug, order_mode, billing_mode, partial_payment_enabled, partial_payment_type, partial_payment_value, checkout_v2_enabled, checkout_otp_enabled")
-        .eq("id", storeId!)
-        .eq("owner_id", user!.id)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
+      const [storeResult, otpResult] = await Promise.all([
+        (supabase as any)
+          .from("stores")
+          .select("id, owner_id, name, slug, order_mode, billing_mode, partial_payment_enabled, partial_payment_type, partial_payment_value, checkout_v2_enabled")
+          .eq("id", storeId!)
+          .eq("owner_id", user!.id)
+          .maybeSingle(),
+        (supabase as any).rpc("get_own_store_checkout_otp", { _store_id: storeId! }),
+      ]);
+      if (storeResult.error) throw storeResult.error;
+      if (otpResult.error) throw otpResult.error;
+      return storeResult.data
+        ? { ...storeResult.data, checkout_otp_enabled: otpResult.data ?? false }
+        : null;
     },
     enabled: !!storeId && (isAdminView || !!user),
   });

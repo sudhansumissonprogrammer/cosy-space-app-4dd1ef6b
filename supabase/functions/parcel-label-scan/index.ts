@@ -221,8 +221,8 @@ Deno.serve(async (req) => {
         return json({ error: "Take a new label photo before entering the tracking number" }, 409);
       }
       const [{ data: priorScan }, { data: priorShipment }] = await Promise.all([
-        admin.from("parcel_label_scans").select("order_id").eq("store_id", order.store_id).ilike("tracking_number", manualAwb).eq("decision", "accepted").neq("order_id", orderId).limit(1),
-        admin.from("order_shipments").select("order_id").eq("store_id", order.store_id).ilike("awb", manualAwb).neq("order_id", orderId).limit(1),
+        admin.from("parcel_label_scans").select("order_id").eq("store_id", order.store_id).eq("tracking_number", manualAwb).eq("decision", "accepted").neq("order_id", orderId).limit(1),
+        admin.from("order_shipments").select("order_id").eq("store_id", order.store_id).eq("awb", manualAwb).neq("order_id", orderId).limit(1),
       ]);
       if ((priorScan ?? []).length > 0 || (priorShipment ?? []).length > 0) {
         return json({ error: "This tracking number is already attached to another order" }, 409);
@@ -325,7 +325,7 @@ Deno.serve(async (req) => {
         .from("parcel_label_scans")
         .select("order_id")
         .eq("store_id", order.store_id)
-        .ilike("tracking_number", candidateAwb)
+        .eq("tracking_number", candidateAwb)
         .eq("decision", "accepted")
         .limit(1);
       if ((priorAcceptedAwb ?? []).some((scan) => scan.order_id !== orderId)) {
@@ -335,7 +335,7 @@ Deno.serve(async (req) => {
         .from("order_shipments")
         .select("order_id")
         .eq("store_id", order.store_id)
-        .ilike("awb", candidateAwb)
+        .eq("awb", candidateAwb)
         .neq("order_id", orderId)
         .limit(1);
       if ((usedAwb ?? []).length > 0) hardFailures.push("This tracking number is already attached to another order.");
@@ -355,7 +355,7 @@ Deno.serve(async (req) => {
         .select("id")
         .eq("store_id", order.store_id)
         .eq("order_id", orderId)
-        .ilike("tracking_number", candidateAwb)
+        .eq("tracking_number", candidateAwb)
         .eq("decision", "accepted")
         .limit(1)
       : { data: [] as Array<{ id: string }> };

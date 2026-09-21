@@ -117,11 +117,12 @@ Deno.serve(async (req) => {
       };
 
       const [{ data: phoneCustomers }, { data: lastOrder }] = await Promise.all([
-        supabase.from("storefront_customers").select("id").eq("phone", normalizedPhone).limit(50),
+        supabase.from("storefront_customers").select("id").eq("phone", normalizedPhone).eq("store_id", store_id).limit(1),
         supabase
           .from("orders")
           .select("street_address, city, state, pincode, customer_name, customer_phone, created_at")
           .eq("customer_phone", normalizedPhone)
+          .eq("store_id", store_id)
           .not("street_address", "is", null)
           .not("pincode", "is", null)
           .order("created_at", { ascending: false })
@@ -155,9 +156,21 @@ Deno.serve(async (req) => {
     // 1) O(1) lookup
     let userId: string | null = null;
     let isNewUser = false;
-    const { data: existingId } = await supabase
-      .rpc("get_auth_user_id_by_email", { _email: phoneEmail });
-    if (existingId && typeof existingId === "string") userId = existingId;
+    const lookupUserId = async (attempts = 1): Promise<string | null> => {
+      for (let attempt = 0; attempt < attempts; attempt += 1) {
+        const { data } = await supabase
+          .rpc("get_auth_user_id_by_email", { _email: phoneEmail });
+        if (data && typeof data === "string") return data;
+        // A concurrent request may have committed the same phone account just
+        // after our first lookup. Give that transaction a brief chance to land.
+        if (attempt + 1 < attempts) {
+          await new Promise((resolve) => setTimeout(resolve, 75 * (attempt + 1)));
+        }
+      }
+      return null;
+    };
+
+    userId = await lookupUserId();
 
     // 2) Create if missing
     if (!userId) {
@@ -177,19 +190,10 @@ Deno.serve(async (req) => {
         userId = newUser.user.id;
         isNewUser = true;
       } else {
-        const code = (createErr as any)?.code || "";
-        const msg = (createErr?.message || "").toLowerCase();
-        const isDuplicate =
-          code === "email_exists" ||
-          msg.includes("already been registered") ||
-          msg.includes("already registered") ||
-          msg.includes("already") ||
-          msg.includes("exists");
-        if (isDuplicate) {
-          const { data: id2 } = await supabase
-            .rpc("get_auth_user_id_by_email", { _email: phoneEmail });
-          if (id2 && typeof id2 === "string") userId = id2;
-        }
+        // Auth can surface a duplicate-email race as the generic
+        // "Database error creating new user". Always retry the authoritative
+        // lookup before failing; genuine creation errors still return below.
+        userId = await lookupUserId(4);
         if (!userId) {
           console.error("Create user error:", createErr);
           return new Response(
@@ -249,16 +253,17 @@ Deno.serve(async (req) => {
       await supabase
         .from("orders")
         .update({ storefront_customer_id: customerId })
-        .eq("id", order_id);
+        .eq("id", order_id)
+        .eq("store_id", store_id)
+        .eq("customer_phone", normalizedPhone);
     }
 
     // 4b) Hydrate + seed customer_addresses so returning shoppers
-    //     (even on a NEW browser / new store) skip the address form entirely.
+    //     (even on a new browser) skip the address form entirely.
     //     Priority:
     //       1) current-store saved address,
-    //       2) ANY saved address attached to this phone across all stores,
-    //       3) latest paid/confirmed order address across all stores,
-    //       4) latest order address as a last resort.
+    //       2) latest paid/confirmed order address in this store,
+    //       3) latest order address in this store as a last resort.
     let hydratedAddress: {
       id?: string | null;
       label?: string | null;
@@ -301,33 +306,6 @@ Deno.serve(async (req) => {
       hydratedAddress = toAddressPayload(existingAddr);
 
       if (!hydratedAddress) {
-        // Saved address in another store for the same canonical phone.
-        const { data: phoneCustomers } = await supabase
-          .from("storefront_customers")
-          .select("id")
-          .eq("phone", normalizedPhone)
-          .limit(50);
-
-        const customerIds = (phoneCustomers || [])
-          .map((c: any) => c.id)
-          .filter((id: string | null | undefined): id is string => !!id);
-
-        if (customerIds.length > 0) {
-          const { data: anySavedAddr } = await supabase
-            .from("customer_addresses")
-            .select("id, label, full_name, phone, street_address, city, state, pincode, is_default, created_at")
-            .in("storefront_customer_id", customerIds)
-            .not("street_address", "is", null)
-            .not("pincode", "is", null)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          hydratedAddress = toAddressPayload(anySavedAddr);
-        }
-      }
-
-      if (!hydratedAddress) {
         let seedFrom: any | null = null;
 
         if (order_id) {
@@ -347,6 +325,7 @@ Deno.serve(async (req) => {
             .from("orders")
             .select("street_address, city, state, pincode, customer_name, customer_phone, created_at, status")
             .eq("customer_phone", normalizedPhone)
+            .eq("store_id", store_id)
             .in("status", paidStatuses)
             .not("street_address", "is", null)
             .not("pincode", "is", null)
@@ -361,6 +340,7 @@ Deno.serve(async (req) => {
             .from("orders")
             .select("street_address, city, state, pincode, customer_name, customer_phone, created_at, status")
             .eq("customer_phone", normalizedPhone)
+            .eq("store_id", store_id)
             .not("street_address", "is", null)
             .not("pincode", "is", null)
             .order("created_at", { ascending: false })

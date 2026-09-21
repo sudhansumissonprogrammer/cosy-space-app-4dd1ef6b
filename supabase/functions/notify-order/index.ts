@@ -8,6 +8,37 @@ const corsHeaders = {
 
 const EMAIL_SENDER_DOMAIN = "notify.shopbanao.in";
 
+function generateUnsubscribeToken(): string {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function getOrCreateUnsubscribeToken(supabase: any, recipientEmail: string): Promise<string> {
+  const email = recipientEmail.trim().toLowerCase();
+  const { data: existing, error: lookupError } = await supabase
+    .from("email_unsubscribe_tokens")
+    .select("token")
+    .eq("email", email)
+    .maybeSingle();
+  if (lookupError) throw lookupError;
+  if (existing?.token) return existing.token;
+
+  const candidate = generateUnsubscribeToken();
+  const { error: insertError } = await supabase
+    .from("email_unsubscribe_tokens")
+    .upsert({ email, token: candidate }, { onConflict: "email", ignoreDuplicates: true });
+  if (insertError) throw insertError;
+
+  const { data: stored, error: readError } = await supabase
+    .from("email_unsubscribe_tokens")
+    .select("token")
+    .eq("email", email)
+    .single();
+  if (readError || !stored?.token) throw readError || new Error("Could not prepare email token");
+  return stored.token;
+}
+
 // L4: PII redaction for logs. Keep enough signal to debug (first char + domain)
 // without persisting full addresses in log storage.
 function maskEmail(e?: string | null): string {
@@ -209,6 +240,7 @@ function buildInvoiceHtml(order: any, items: any[], store: any, isOwner: boolean
 }
 
 async function enqueueEmail(supabase: any, queueName: string, messageId: string, templateName: string, recipientEmail: string, subject: string, htmlBody: string, ttlMinutes: number, storeName: string) {
+  const unsubscribeToken = await getOrCreateUnsubscribeToken(supabase, recipientEmail);
   const payload = {
     message_id: messageId,
     idempotency_key: messageId,
@@ -220,6 +252,7 @@ async function enqueueEmail(supabase: any, queueName: string, messageId: string,
     html: htmlBody,
     text: subject,
     purpose: "transactional",
+    unsubscribe_token: unsubscribeToken,
     queued_at: new Date().toISOString(),
   };
   const { data, error } = await supabase.rpc("enqueue_email", {
