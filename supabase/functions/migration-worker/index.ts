@@ -80,8 +80,12 @@ Deno.serve(async (req) => {
           const content = await scrapePublicPage(page.url).catch(() => null);
           if (!content) continue;
           const slug = page.type === "about" ? "about-us" : `${page.type}-policy`;
-          const { error } = await admin.from("store_pages").upsert({ store_id: job.store_id, page_type: page.type, title: page.title, slug, content, is_active: false }, { onConflict: "store_id,page_type" });
-          if (!error) pagesDone++;
+          const { data: existingPage } = await admin.from("store_pages").select("id").eq("store_id", job.store_id).eq("page_type", page.type).maybeSingle();
+          const pagePayload = { store_id: job.store_id, page_type: page.type, title: page.title, slug, content, is_active: false };
+          const pageResult = existingPage?.id
+            ? await admin.from("store_pages").update(pagePayload).eq("id", existingPage.id)
+            : await admin.from("store_pages").insert(pagePayload);
+          if (!pageResult.error) pagesDone++;
         }
         job.progress = { ...(job.progress || {}), pages: { done: pagesDone, failed: Math.max(0, profile.pages.length - pagesDone) } };
       } catch (profileError) {
@@ -174,7 +178,10 @@ Deno.serve(async (req) => {
         .single();
       const totalDone = Number((current?.progress as any)?.products?.done ?? 0);
       if (totalDone === 0 && (current?.error_log as any[])?.length >= 3) {
-        await admin.from("migration_jobs").update({ status: "failed", completed_at: new Date().toISOString(), credentials: {} }).eq("id", job.id);
+        await admin.from("migration_jobs").update({ status: "failed", completed_at: new Date().toISOString(), credentials: {}, lease_until: null }).eq("id", job.id);
+      } else {
+        await admin.from("migration_jobs").update({ lease_until: null }).eq("id", job.id);
+        scheduleWorker(job.id, 2_000);
       }
       return json({ ok: false, error: "list failed" });
     }
@@ -328,14 +335,7 @@ Deno.serve(async (req) => {
       .eq("cancel_requested", false);
 
     if (hasMore) {
-      fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/migration-worker`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-        },
-        body: JSON.stringify({ job_id: job.id }),
-      }).catch(() => {});
+      scheduleWorker(job.id, 250);
     }
 
     return json({ ok: true, done, failed, hasMore });
@@ -344,6 +344,19 @@ Deno.serve(async (req) => {
     return json({ ok: false, error: err instanceof Error ? err.message : "Unknown" }, 500);
   }
 });
+
+function scheduleWorker(jobId: string, delayMs: number) {
+  setTimeout(() => {
+    fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/migration-worker`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({ job_id: jobId }),
+      }).catch(() => {});
+  }, delayMs);
+}
 
 async function recordMap(
   admin: ReturnType<typeof createClient>,
