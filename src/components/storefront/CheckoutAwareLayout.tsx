@@ -232,7 +232,7 @@ export default function CheckoutAwareLayout({
       )}
 
       {/* Mobile header + legacy checkout header. Checkout V2 renders its own header. */}
-      {!checkoutOwnsHeader && <nav className={`${isCheckout ? 'sticky top-0' : 'md:hidden'} ${mobileNavEnabled && headerStyle === 'normal' ? 'sm:sticky sm:top-0' : isCheckout ? '' : 'sticky top-0'} z-30 smart-header ${!isCheckout && !fixedHeader && !headerVisible ? 'smart-header-hidden' : ''} ${
+      {!checkoutOwnsHeader && <nav className={`${isCheckout ? 'sticky top-0' : 'md:hidden'} ${fixedHeader ? 'sticky top-0' : mobileNavEnabled && headerStyle === 'normal' ? 'sm:sticky sm:top-0' : isCheckout ? '' : 'sticky top-0'} z-30 smart-header ${!isCheckout && !fixedHeader && !headerVisible ? 'smart-header-hidden' : ''} ${
         headerClassName ? headerClassName :
         headerBg ? '' :
         isCheckout ? '' :
