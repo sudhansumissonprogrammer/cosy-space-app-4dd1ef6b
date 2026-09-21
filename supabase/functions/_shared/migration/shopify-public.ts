@@ -36,22 +36,32 @@ async function fetchPublicJson<T>(siteUrl: string, path: string): Promise<T> {
 export async function shopifyPublicProducts(
   siteUrl: string,
 ): Promise<ShopifyProduct[]> {
-  const result = await fetchPublicJson<{ products?: ShopifyProduct[] }>(
-    siteUrl,
-    "/products.json?limit=250",
-  );
-  return Array.isArray(result.products) ? result.products.slice(0, 250) : [];
+  const products: ShopifyProduct[] = [];
+  for (let page = 1; page <= 20; page++) {
+    const result = await fetchPublicJson<{ products?: ShopifyProduct[] }>(
+      siteUrl,
+      `/products.json?limit=250&page=${page}`,
+    );
+    const batch = Array.isArray(result.products) ? result.products : [];
+    products.push(...batch);
+    if (batch.length < 250) break;
+  }
+  return products;
 }
 
 export async function shopifyPublicCollections(
   siteUrl: string,
 ): Promise<ShopifyPublicCollection[]> {
-  const result = await fetchPublicJson<{
-    collections?: ShopifyPublicCollection[];
-  }>(siteUrl, "/collections.json?limit=250");
-  return Array.isArray(result.collections)
-    ? result.collections.slice(0, 250)
-    : [];
+  const collections: ShopifyPublicCollection[] = [];
+  for (let page = 1; page <= 20; page++) {
+    const result = await fetchPublicJson<{
+      collections?: ShopifyPublicCollection[];
+    }>(siteUrl, `/collections.json?limit=250&page=${page}`);
+    const batch = Array.isArray(result.collections) ? result.collections : [];
+    collections.push(...batch);
+    if (batch.length < 250) break;
+  }
+  return collections;
 }
 
 export async function shopifyPublicCollectionProductIds(
@@ -59,13 +69,17 @@ export async function shopifyPublicCollectionProductIds(
   handle: string,
 ): Promise<string[]> {
   const safeHandle = encodeURIComponent(handle);
-  const result = await fetchPublicJson<{ products?: ShopifyProduct[] }>(
-    siteUrl,
-    `/collections/${safeHandle}/products.json?limit=250`,
-  );
-  return Array.isArray(result.products)
-    ? result.products.map((product) => String(product.id))
-    : [];
+  const productIds: string[] = [];
+  for (let page = 1; page <= 20; page++) {
+    const result = await fetchPublicJson<{ products?: ShopifyProduct[] }>(
+      siteUrl,
+      `/collections/${safeHandle}/products.json?limit=250&page=${page}`,
+    );
+    const batch = Array.isArray(result.products) ? result.products : [];
+    productIds.push(...batch.map((product) => String(product.id)));
+    if (batch.length < 250) break;
+  }
+  return productIds;
 }
 
 export async function inspectShopifyPublicCatalogue(siteUrl: string) {

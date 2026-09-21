@@ -248,7 +248,7 @@ Deno.serve(async (req) => {
           if (collection.handle)
             categorySlugByName.set(collection.title, collection.handle);
         }
-        const slice = products.slice(offset, offset + 5);
+        const slice = products.slice(offset, offset + 2);
         normalizedRows = slice.map((product) => {
           const row = shopifyToStorivoProduct(product, job.store_id);
           const categoryNames =
@@ -476,50 +476,45 @@ Deno.serve(async (req) => {
             .is("image_url", null);
         }
 
-        const upsert = await admin
-          .from("products")
-          .upsert(row, { onConflict: "store_id,source_platform,source_id" })
-          .select("id")
-          .single();
-
         let productId: string | null = null;
-        if (upsert.error) {
-          if (upsert.error.code === "23505") {
+        const { data: existingProduct } = await admin
+          .from("products")
+          .select("id")
+          .eq("store_id", job.store_id)
+          .eq("source_platform", row.source_platform)
+          .eq("source_id", row.source_id)
+          .maybeSingle();
+        if (existingProduct?.id) {
+          const { error: updateError } = await admin
+            .from("products")
+            .update(row)
+            .eq("id", existingProduct.id);
+          if (updateError) throw updateError;
+          productId = existingProduct.id;
+        } else {
+          const inserted = await admin
+            .from("products")
+            .insert(row)
+            .select("id")
+            .single();
+          if (inserted.error) {
+            if (inserted.error.code === "23505") {
             const safeId = sourceId.replace(/[^a-zA-Z0-9]/g, "-").slice(0, 30);
             const retry = await admin
               .from("products")
-              .upsert(
-                { ...row, slug: `${row.slug || "product"}-${safeId}` },
-                {
-                  onConflict: "store_id,source_platform,source_id",
-                },
-              )
+                .insert({ ...row, slug: `${row.slug || "product"}-${safeId}` })
               .select("id")
               .single();
             if (retry.error) throw retry.error;
-            await recordMap(
-              admin,
-              job.id,
-              "product",
-              sourceId,
-              retry.data.id,
-              "ok",
-            );
             productId = retry.data.id;
+            } else {
+              throw inserted.error;
+            }
           } else {
-            throw upsert.error;
+            productId = inserted.data.id;
           }
-        } else {
-          await recordMap(
-            admin,
-            job.id,
-            "product",
-            sourceId,
-            upsert.data.id,
-            "ok",
-          );
-          productId = upsert.data.id;
         }
+        await recordMap(admin, job.id, "product", sourceId, productId, "ok");
 
         if (productId && categoryIds.length) {
           await admin.from("product_categories").upsert(

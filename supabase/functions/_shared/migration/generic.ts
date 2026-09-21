@@ -325,6 +325,21 @@ export async function inspectPublicSite(
       /* ignore malformed links */
     }
   }
+  if (platform === "shopify") {
+    const policies: Array<
+      [PublicSiteProfile["pages"][number]["type"], string, string]
+    > = [
+      ["privacy", "Privacy Policy", "/policies/privacy-policy"],
+      ["terms", "Terms", "/policies/terms-of-service"],
+      ["shipping", "Shipping Policy", "/policies/shipping-policy"],
+      ["returns", "Returns Policy", "/policies/refund-policy"],
+    ];
+    for (const [type, pageTitle, path] of policies) {
+      if (!pages.some((page) => page.type === type)) {
+        pages.push({ type, title: pageTitle, url: absolutize(path, base) });
+      }
+    }
+  }
   const logoUrl = logoMatch?.[1] ? absolutize(logoMatch[1], base) : null;
   const hero =
     metaContent(html, "og:image:secure_url") || metaContent(html, "og:image");
