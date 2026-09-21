@@ -105,7 +105,7 @@ async function inspectLabel(bytes: Uint8Array, mime: string, barcodeHint: string
     body: JSON.stringify({
       model: "openai/gpt-6-astra",
       stream: true,
-      reasoning: { effort: "none" },
+      reasoning: { effort: "low" },
       input: [{
         role: "user",
         content: [
