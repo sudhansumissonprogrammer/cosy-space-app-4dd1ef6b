@@ -101,9 +101,9 @@ export const APP_REGISTRY: StoreAppMeta[] = [
   {
     id: "migrate-store",
     name: "Migrate My Store",
-    tagline: "Import products, images & categories from Shopify, WooCommerce & more",
+    tagline: "Import products, images, categories and pages from any public store URL",
     description:
-      "One-tap importer. Paste your existing store URL and credentials, pick what to migrate, and we pull products, images, and categories straight into your store. Products land as drafts so you can review before publishing.",
+      "Paste your existing store URL to copy its public catalog and pages. Products land as drafts for review; private orders and customers can be connected securely later.",
     icon: DownloadCloud,
     category: "conversion",
     status: "beta",

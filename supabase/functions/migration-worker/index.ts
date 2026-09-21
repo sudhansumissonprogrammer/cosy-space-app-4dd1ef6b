@@ -21,6 +21,7 @@ import {
   scrapedToStorivoProduct,
 } from "../_shared/migration/generic.ts";
 import { mirrorImageToR2, extFromUrl } from "../_shared/migration/r2.ts";
+import { assertSafePublicUrl } from "../_shared/migration/safe-fetch.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -57,7 +58,8 @@ Deno.serve(async (req) => {
 
     const platform = String(job.source_platform);
     const creds = (job.credentials ?? {}) as Record<string, string>;
-    const host = String(job.source_url).replace(/^https?:\/\//, "").replace(/\/.*/, "");
+    const sourceUrl = assertSafePublicUrl(String(job.source_url));
+    const host = sourceUrl.hostname;
     const entities: string[] = Array.isArray(job.entities) ? job.entities : ["products"];
     const wantCategories = entities.includes("categories");
 
@@ -177,7 +179,7 @@ Deno.serve(async (req) => {
         .eq("id", job.id)
         .single();
       const totalDone = Number((current?.progress as any)?.products?.done ?? 0);
-      if (totalDone === 0 && (current?.error_log as any[])?.length >= 3) {
+      if ((totalDone === 0 && (current?.error_log as any[])?.length >= 3) || Number(job.attempt_count || 0) >= 20) {
         await admin.from("migration_jobs").update({ status: "failed", completed_at: new Date().toISOString(), credentials: {}, lease_until: null }).eq("id", job.id);
       } else {
         await admin.from("migration_jobs").update({ lease_until: null }).eq("id", job.id);
@@ -212,7 +214,7 @@ Deno.serve(async (req) => {
       }
       const { data: inserted, error: insErr } = await admin
         .from("categories")
-        .insert({ store_id: job.store_id, name: clean, slug })
+        .insert({ store_id: job.store_id, name: clean, slug, show_on_home: false, is_hidden: true })
         .select("id")
         .single();
       if (insErr) {
@@ -234,8 +236,14 @@ Deno.serve(async (req) => {
       return inserted.id;
     }
 
-    for (const { row, sourceId, images, categoryName } of normalizedRows) {
+    for (let rowIndex = 0; rowIndex < normalizedRows.length; rowIndex++) {
+      const { row, sourceId, images, categoryName } = normalizedRows[rowIndex];
       try {
+        if (rowIndex % 5 === 0) {
+          const { data: state } = await admin.from("migration_jobs").select("cancel_requested").eq("id", job.id).single();
+          if (state?.cancel_requested) return json({ ok: true, cancelled: true });
+          await admin.from("migration_jobs").update({ lease_until: new Date(Date.now() + 90_000).toISOString() }).eq("id", job.id).eq("cancel_requested", false);
+        }
         const categoryId = await ensureCategory(categoryName);
         row.currency = storeCurrency;
         row.is_active = false;
@@ -246,6 +254,10 @@ Deno.serve(async (req) => {
           const key = `product-images/migrated/${job.store_id}/${safeId}-800w.${ext}`;
           const mirrored = await mirrorImageToR2(row.image_url, key);
           if (mirrored) row.image_url = mirrored;
+        }
+
+        if (categoryId && row.image_url) {
+          await admin.from("categories").update({ image_url: row.image_url }).eq("id", categoryId).is("image_url", null);
         }
 
         const upsert = await admin

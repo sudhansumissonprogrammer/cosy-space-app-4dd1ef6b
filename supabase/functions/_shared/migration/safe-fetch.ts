@@ -12,6 +12,26 @@ function isPrivateIpv4(host: string): boolean {
     parts[0] >= 224;
 }
 
+function isUnsafeIpv6(host: string): boolean {
+  const normalized = host.replace(/^\[|\]$/g, "").toLowerCase();
+  return normalized === "::" || normalized === "::1" || normalized.startsWith("fc") || normalized.startsWith("fd") ||
+    normalized.startsWith("fe8") || normalized.startsWith("fe9") || normalized.startsWith("fea") || normalized.startsWith("feb") ||
+    normalized.startsWith("::ffff:127.") || normalized.startsWith("::ffff:10.") || normalized.startsWith("::ffff:192.168.");
+}
+
+async function assertPublicDns(host: string): Promise<void> {
+  if (isPrivateIpv4(host) || isUnsafeIpv6(host)) throw new Error("Private or local network addresses are not allowed");
+  if (/^[\d.]+$/.test(host) || host.includes(":")) return;
+  const records = await Promise.all([
+    Deno.resolveDns(host, "A").catch(() => [] as string[]),
+    Deno.resolveDns(host, "AAAA").catch(() => [] as string[]),
+  ]);
+  const addresses = records.flat();
+  if (!addresses.length || addresses.some((address) => isPrivateIpv4(address) || isUnsafeIpv6(address))) {
+    throw new Error("Website address did not resolve to a public server");
+  }
+}
+
 export function assertSafePublicUrl(value: string): URL {
   let url: URL;
   try {
@@ -22,7 +42,7 @@ export function assertSafePublicUrl(value: string): URL {
   if (url.protocol !== "https:" && url.protocol !== "http:") throw new Error("Only public website URLs are supported");
   const host = url.hostname.toLowerCase().replace(/\.$/, "");
   if (!host.includes(".") || host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") ||
-      host.endsWith(".internal") || host === "metadata.google.internal" || isPrivateIpv4(host) || host === "::1") {
+      host.endsWith(".internal") || host === "metadata.google.internal" || isPrivateIpv4(host) || isUnsafeIpv6(host)) {
     throw new Error("Private or local network addresses are not allowed");
   }
   url.username = "";
@@ -42,6 +62,7 @@ export async function safeFetch(
 
   for (let redirect = 0; redirect <= MAX_REDIRECTS; redirect++) {
     if (url.hostname.toLowerCase() !== allowedHost) throw new Error("Cross-domain redirects are not allowed");
+    await assertPublicDns(url.hostname.toLowerCase());
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     let response: Response;
