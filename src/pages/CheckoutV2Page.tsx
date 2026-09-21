@@ -882,6 +882,8 @@ export default function CheckoutV2Page() {
   // re-running the effect (and without clobbering what the shopper typed).
   const streetAddressRef = useRef("");
   useEffect(() => { streetAddressRef.current = streetAddress; }, [streetAddress]);
+  const phoneRef = useRef("");
+  useEffect(() => { phoneRef.current = phone; }, [phone]);
   // Tracks whether the async `create-guest-account` lookup for the current
   // phone has settled. While `pending`, we suppress auto-opening the address
   // sheet so returning shoppers (address on file) don't see a flash-of-form
@@ -918,7 +920,13 @@ export default function CheckoutV2Page() {
         });
         if (cancelled || error) return;
         const addr = (data as any)?.address;
-        if (addr) applyPhoneLookupAddress(addr);
+        if (
+          addr &&
+          !cancelled &&
+          toCanonicalIndianPhone(phoneRef.current) === canon
+        ) {
+          applyPhoneLookupAddress(addr);
+        }
       } catch {
         // Ignore — the shopper can still type a fresh address.
       } finally {
@@ -945,7 +953,12 @@ export default function CheckoutV2Page() {
         }
         // Only autofill from the slow track if the shopper hasn't already
         // started typing their own address — never clobber live input.
-        if (!cancelled && result?.address && !streetAddressRef.current) {
+        if (
+          !cancelled &&
+          result?.address &&
+          !streetAddressRef.current &&
+          toCanonicalIndianPhone(phoneRef.current) === canon
+        ) {
           applyPhoneLookupAddress(result.address);
         }
       } catch {

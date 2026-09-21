@@ -361,7 +361,11 @@ Deno.serve(async (req) => {
         hydratedAddress = toAddressPayload(seedFrom);
       }
 
-      if (hydratedAddress?.street_address && hydratedAddress?.pincode && (!existingAddr || !!orderAddress)) {
+      // Historical orders may hydrate checkout, but must never write the
+      // address book. Only the explicit order-linked request may replace the
+      // current address, preventing a slower phone lookup from restoring an
+      // older address after checkout has saved the new one.
+      if (hydratedAddress?.street_address && hydratedAddress?.pincode && orderAddress) {
         if (existingAddr) {
           await supabase
             .from("customer_addresses")
