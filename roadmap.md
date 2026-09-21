@@ -27,6 +27,7 @@
 - [x] Validate category collage security, cache refresh, performance, and mobile/desktop rendering.
 - [x] Connect Telegram fresh in the current workspace and verify order-notification delivery setup.
 - [ ] Create and fully verify a disposable Pashupati URL-import demo store, then remove any test-only data.
+- [ ] Connect Telegram fresh after the latest workspace move and redeploy order notifications.
 
 - [ ] Copy missing Serdiya Jewellers reviews into serdiya.com in matching display order.
 - [ ] Make every product-page review trigger open the shared review popup.
