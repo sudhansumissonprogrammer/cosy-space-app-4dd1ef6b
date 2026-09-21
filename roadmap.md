@@ -3,6 +3,8 @@
 - [x] Move parcel-label phone and tracking extraction to the lowest-priced current Gemini vision model.
 
 ## Active work
+- [ ] Permanently lock canceled orders against every later status or shipment change.
+- [ ] Connect Telegram fresh in this workspace and verify order notifications.
 - [x] Permanently recover existing verified parcel photos and show them immediately inside each shipped/RTO order.
 - [x] Fix shipped-order parcel photos being deleted before WhatsApp finishes downloading them.
 - [x] Deploy and verify the shipped-photo WhatsApp fix for Serdiyajewellers.shop.
