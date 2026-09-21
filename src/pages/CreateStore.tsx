@@ -74,6 +74,9 @@ export default function CreateStore() {
   const [creatingAnimation, setCreatingAnimation] = useState(false);
   const [storeCreated, setStoreCreated] = useState(false);
   const [createdSlug, setCreatedSlug] = useState<string>("");
+  const [hasExistingWebsite, setHasExistingWebsite] = useState(false);
+  const [existingWebsiteUrl, setExistingWebsiteUrl] = useState("");
+  const [migrationStarted, setMigrationStarted] = useState(false);
 
 
 
@@ -197,6 +200,15 @@ export default function CreateStore() {
 
   const handleSubmit = async () => {
     if (!user) return;
+    if (hasExistingWebsite) {
+      try {
+        const parsed = new URL(/^https?:\/\//i.test(existingWebsiteUrl.trim()) ? existingWebsiteUrl.trim() : `https://${existingWebsiteUrl.trim()}`);
+        if (!parsed.hostname.includes(".")) throw new Error("invalid");
+      } catch {
+        toast.error("Enter your existing store website URL");
+        return;
+      }
+    }
     setCreatingAnimation(true);
     setLoading(true);
 
@@ -372,6 +384,26 @@ export default function CreateStore() {
         // Runs server-side with the service role so it can never fail silently
         // behind RLS the way the old client-side inserts did.
         try {
+          if (hasExistingWebsite) {
+            const { data: detected, error: detectError } = await supabase.functions.invoke("migration-detect", {
+              body: { platform: "auto", source_url: existingWebsiteUrl.trim() },
+            });
+            if (detectError || (detected as any)?.error) throw new Error(detectError?.message || (detected as any)?.error);
+            const result = detected as any;
+            const { data: started, error: startError } = await supabase.functions.invoke("migration-start", {
+              body: {
+                store_id: newStore.id,
+                platform: result.import_platform || "generic",
+                detected_platform: result.platform || "generic",
+                source_url: existingWebsiteUrl.trim(),
+                discovered_counts: result.counts || {},
+                credentials: {},
+                entities: ["products", "categories", "pages"],
+              },
+            });
+            if (startError || (started as any)?.error) throw new Error(startError?.message || (started as any)?.error);
+            setMigrationStarted(true);
+          } else {
           const { data: seed, error: seedErr } = await supabase.functions.invoke(
             "seed-demo-store",
             { body: { store_id: newStore.id } },
@@ -379,8 +411,10 @@ export default function CreateStore() {
           if (seedErr || (seed as any)?.error) {
             console.warn("Demo seed failed:", seedErr?.message || (seed as any)?.error);
           }
+          }
         } catch (demoErr) {
-          console.warn("Demo seed failed (non-blocking):", demoErr);
+          console.warn("Initial catalog setup failed (non-blocking):", demoErr);
+          if (hasExistingWebsite) toast.warning("Your store is ready. The website import can be retried from Apps.");
         }
 
       }
@@ -488,7 +522,7 @@ export default function CreateStore() {
           Your Store is Live! 🎉
         </h1>
         <p className="mt-2 text-sm text-muted-foreground text-center max-w-md">
-          <span className="font-semibold text-primary">{name || createdSlug}</span> is now live and ready for customers.
+          <span className="font-semibold text-primary">{name || createdSlug}</span> is now live{migrationStarted ? ", and your products are importing as drafts." : " and ready for customers."}
         </p>
 
         {/* Store URL Card */}
@@ -735,6 +769,25 @@ export default function CreateStore() {
             </p>
           </div>
 
+          <div className="space-y-3 rounded-xl border bg-accent/20 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <Label>Do you already have a website?</Label>
+                <p className="mt-0.5 text-xs text-muted-foreground">Copy its public products, categories, images and pages.</p>
+              </div>
+              <Button type="button" variant={hasExistingWebsite ? "default" : "outline"} size="sm" onClick={() => setHasExistingWebsite((value) => !value)}>
+                {hasExistingWebsite ? "Yes" : "No"}
+              </Button>
+            </div>
+            {hasExistingWebsite && (
+              <div className="space-y-1.5">
+                <Label htmlFor="existing-website">Existing store URL</Label>
+                <Input id="existing-website" type="url" inputMode="url" placeholder="https://yourstore.com" value={existingWebsiteUrl} onChange={(event) => setExistingWebsiteUrl(event.target.value)} className="h-11" />
+                <p className="text-xs text-muted-foreground">Private orders and customers require a secure connection later.</p>
+              </div>
+            )}
+          </div>
+
 
 
           {/* Logo — optional, inline */}
@@ -771,7 +824,7 @@ export default function CreateStore() {
           <Button
             type="button"
             onClick={handleSubmit}
-            disabled={loading || !name.trim()}
+            disabled={loading || !name.trim() || (hasExistingWebsite && !existingWebsiteUrl.trim())}
             size="lg"
             className="h-14 w-full gap-2 text-base"
           >

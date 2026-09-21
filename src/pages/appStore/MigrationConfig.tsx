@@ -26,6 +26,7 @@ interface JobRow {
   error_log: any[];
   created_at: string;
   completed_at: string | null;
+  discovered_counts?: Record<string, number>;
 }
 
 const PLATFORMS: { id: Platform; name: string; supported: boolean; description: string }[] = [
@@ -129,6 +130,14 @@ export default function MigrationConfig() {
     }
   }
 
+  async function handleCancel() {
+    if (!activeJobId) return;
+    const { data, error } = await (supabase as any).rpc("cancel_own_migration", { _job_id: activeJobId });
+    if (error || !data) return toast.error(error?.message || "Could not cancel migration");
+    toast.success("Migration cancelled");
+    await qc.invalidateQueries({ queryKey: ["migration-jobs", storeId] });
+  }
+
   async function handleStart() {
     if (!storeId) return;
     setStarting(true);
@@ -156,7 +165,7 @@ export default function MigrationConfig() {
     }
   }
 
-  const productCount = counts?.products ?? 0;
+  const productCount = counts?.products ?? activeJob?.discovered_counts?.products ?? 0;
   const productsDone = Number(activeJob?.progress?.products?.done ?? 0);
   const productsFailed = Number(activeJob?.progress?.products?.failed ?? 0);
   const productsTotal = Math.max(productCount, productsDone + productsFailed);
@@ -377,6 +386,12 @@ export default function MigrationConfig() {
               <Progress value={pct} />
             </div>
 
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <Stat label="Products" value={productsDone} />
+              <Stat label="Categories" value={Number(activeJob.progress?.categories?.done ?? 0)} />
+              <Stat label="Pages" value={Number(activeJob.progress?.pages?.done ?? 0)} />
+            </div>
+
             {activeJob.error_log?.length > 0 && (
               <details className="text-xs">
                 <summary className="cursor-pointer text-muted-foreground">Recent warnings ({activeJob.error_log.length})</summary>
@@ -390,6 +405,7 @@ export default function MigrationConfig() {
 
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => { setStep(1); setActiveJobId(null); setCounts(null); }}>New migration</Button>
+              {(activeJob.status === "pending" || activeJob.status === "running") && <Button variant="destructive" onClick={handleCancel}>Cancel</Button>}
             </div>
           </CardContent>
         </Card>
