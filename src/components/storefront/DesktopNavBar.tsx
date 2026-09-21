@@ -27,6 +27,8 @@ interface DesktopNavBarProps {
   style?: React.CSSProperties;
   /** Extra node rendered at the start of the right-hand icon group */
   extra?: ReactNode;
+  /** Keep the header visible while scrolling instead of using smart hide. */
+  alwaysVisible?: boolean;
 }
 
 /**
@@ -38,7 +40,7 @@ interface DesktopNavBarProps {
  * Includes its own search overlay so all themes get search on desktop automatically.
  * Hidden on mobile (< md).
  */
-export default function DesktopNavBar({ store, onSearchOpen, className = "", style, extra }: DesktopNavBarProps) {
+export default function DesktopNavBar({ store, onSearchOpen, className = "", style, extra, alwaysVisible = false }: DesktopNavBarProps) {
   const queryClient = useQueryClient();
   const categories = useStorefrontCategories(store.id) ?? [];
   const customPages = queryClient.getQueryData<any[]>(["storefront-custom-pages", store.id]) ?? [];
@@ -93,7 +95,7 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
   return (
     <>
       <nav
-        className={`hidden md:block sticky top-0 z-30 smart-header ${headerVisible ? "" : "smart-header-hidden"} ${className}`}
+        className={`hidden md:block sticky top-0 z-30 smart-header ${!alwaysVisible && !headerVisible ? "smart-header-hidden" : ""} ${className}`}
         style={{
           backgroundColor: "var(--storefront-bg, hsl(var(--background)))",
           color: "var(--storefront-text, hsl(var(--foreground)))",

@@ -29,6 +29,7 @@
 - [ ] Create and fully verify a disposable Pashupati URL-import demo store, then remove any test-only data.
 - [x] Connect Telegram fresh after the latest workspace move and redeploy order notifications.
 - [x] Make each shopper's newly entered checkout address replace the old saved address and reach the dashboard order.
+- [x] Keep the Theme 16 header fixed while scrolling so current and newly created stores retain navigation.
 
 - [ ] Copy missing Serdiya Jewellers reviews into serdiya.com in matching display order.
 - [ ] Make every product-page review trigger open the shared review popup.
