@@ -1,3 +1,7 @@
+# Current work
+
+- [x] Move parcel-label phone and tracking extraction to the lowest-priced current Gemini vision model.
+
 ## Active work
 - [x] Fix shipped-order parcel photos being deleted before WhatsApp finishes downloading them.
 - [x] Deploy and verify the shipped-photo WhatsApp fix for Serdiyajewellers.shop.

@@ -2,7 +2,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
-const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/responses";
+const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const AWB_RE = /^[A-Z0-9._-]{4,40}$/i;
 const TEMP_PHOTO_BUCKET = "parcel-label-temp";
 const SAVED_PHOTO_BUCKET = "parcel-label-photos";
@@ -54,35 +54,6 @@ async function sha256(bytes: Uint8Array): Promise<string> {
   return Array.from(digest).map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-async function readResponseStream(response: Response): Promise<string> {
-  if (!response.body) return "";
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let pending = "";
-  let output = "";
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    pending += decoder.decode(value, { stream: true });
-    const lines = pending.split("\n");
-    pending = lines.pop() ?? "";
-    for (const line of lines) {
-      if (!line.startsWith("data: ")) continue;
-      const payload = line.slice(6).trim();
-      if (!payload || payload === "[DONE]") continue;
-      try {
-        const event = JSON.parse(payload);
-        if (event.type === "response.output_text.delta" && typeof event.delta === "string") output += event.delta;
-        if (event.type === "response.failed") throw new Error(event.response?.error?.message || "Label reading failed");
-      } catch (error) {
-        if (error instanceof SyntaxError) continue;
-        throw error;
-      }
-    }
-  }
-  return output;
-}
-
 async function inspectLabel(bytes: Uint8Array, mime: string, barcodeHint: string): Promise<Extraction> {
   const key = Deno.env.get("LOVABLE_API_KEY");
   if (!key) throw new Error("AI scanning is not configured");
@@ -103,17 +74,18 @@ async function inspectLabel(bytes: Uint8Array, mime: string, barcodeHint: string
       "X-Lovable-AIG-SDK": "fetch",
     },
     body: JSON.stringify({
-      model: "openai/gpt-6-astra",
-      stream: true,
-      reasoning: { effort: "low" },
-      input: [{
+      model: "google/gemini-3.1-flash-lite",
+      messages: [{
         role: "user",
         content: [
-          { type: "input_text", text: `Read exactly two fields from this Indian parcel label: tracking_number (shipment/AWB number) and recipient_phone (complete mobile number). Ignore every other field. Preserve a visible +91, 91, or leading 0 phone prefix. Return an empty string for any masked, partial, ambiguous, or unreadable value; never guess. A browser-read 1D barcode hint, when available, is: ${barcodeHint || "none"}.` },
-          { type: "input_image", image_url: `data:${mime};base64,${bytesToBase64(bytes)}` },
+          { type: "text", text: `Read exactly two fields from this Indian parcel label: tracking_number (shipment/AWB number) and recipient_phone (complete mobile number). Ignore every other field. Preserve a visible +91, 91, or leading 0 phone prefix. Return an empty string for any masked, partial, ambiguous, or unreadable value; never guess. A browser-read 1D barcode hint, when available, is: ${barcodeHint || "none"}.` },
+          { type: "image_url", image_url: { url: `data:${mime};base64,${bytesToBase64(bytes)}` } },
         ],
       }],
-      text: { format: { type: "json_schema", name: "parcel_label", strict: true, schema } },
+      response_format: {
+        type: "json_schema",
+        json_schema: { name: "parcel_label", strict: true, schema },
+      },
     }),
   });
   if (!response.ok) {
@@ -126,7 +98,8 @@ async function inspectLabel(bytes: Uint8Array, mime: string, barcodeHint: string
     (error as Error & { status?: number }).status = response.status;
     throw error;
   }
-  const text = await readResponseStream(response);
+  const payload = await response.json();
+  const text = payload?.choices?.[0]?.message?.content;
   if (!text) throw new Error("No readable label details were returned");
   return JSON.parse(text) as Extraction;
 }
