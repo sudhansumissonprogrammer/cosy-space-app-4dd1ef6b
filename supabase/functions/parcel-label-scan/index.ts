@@ -147,6 +147,7 @@ Deno.serve(async (req) => {
         .eq("order_id", orderId)
         .eq("store_id", order.store_id)
         .eq("decision", "accepted")
+        .or("photo_object_path.not.is.null,temp_object_path.not.is.null")
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
