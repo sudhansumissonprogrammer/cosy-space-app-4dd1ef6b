@@ -21,6 +21,7 @@
 - [ ] Make every product-page review trigger open the shared review popup.
 - [ ] Verify review data, storefront behavior, and build health.
 - [x] Connect Telegram fresh in the newly moved workspace and verify the bot connection.
+- [x] Connect Telegram fresh after the latest workspace move and verify order notifications.
 - [x] Audit Sethia Jewellers WhatsApp marketing messages, chats, spend, and 10-hour order attribution.
 - [x] Double-check campaign totals and attributed revenue against independent database queries.
 - [x] Produce a detailed WhatsApp marketing performance PDF report.
