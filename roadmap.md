@@ -24,3 +24,12 @@
 - [x] Audit Sethia Jewellers WhatsApp marketing messages, chats, spend, and 10-hour order attribution.
 - [x] Double-check campaign totals and attributed revenue against independent database queries.
 - [x] Produce a detailed WhatsApp marketing performance PDF report.
+
+## Project monitoring fixes
+- [ ] Verify and fix public product reads
+- [ ] Verify and fix QR parcel scans
+- [ ] Verify and fix payment settings access
+- [ ] Verify and fix repeated category collage images
+- [ ] Verify and fix legacy shipment RTO flow
+- [ ] Verify and fix review text overlap
+- [ ] Verify and fix saved-address fallback
