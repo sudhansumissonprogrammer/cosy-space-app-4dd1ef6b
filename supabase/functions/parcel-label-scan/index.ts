@@ -25,10 +25,6 @@ function clean(value: unknown, max = 180): string {
   return String(value ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 }
 
-function digits(value: unknown): string {
-  return String(value ?? "").replace(/\D/g, "");
-}
-
 function normalizeAwb(value: unknown): string {
   return clean(value, 40).replace(/\s+/g, "").toUpperCase();
 }
@@ -157,24 +153,9 @@ Deno.serve(async (req) => {
     if (!orderId) return json({ error: "Order is required" }, 400);
 
     const admin = createClient(url, serviceKey);
-    const { data: expiredPhotos } = await admin
-      .from("parcel_label_scans")
-      .select("id,temp_object_path")
-      .not("temp_object_path", "is", null)
-      .is("photo_deleted_at", null)
-      .lte("temp_expires_at", new Date().toISOString())
-      .limit(50);
-    for (const expired of expiredPhotos ?? []) {
-      const path = String((expired as any).temp_object_path || "");
-      if (path) await admin.storage.from(TEMP_PHOTO_BUCKET).remove([path]);
-      await admin.from("parcel_label_scans").update({
-        temp_object_path: null,
-        photo_deleted_at: new Date().toISOString(),
-      }).eq("id", (expired as any).id);
-    }
     const { data: order } = await admin
       .from("orders")
-      .select("id,store_id,customer_phone,stores!inner(owner_id)")
+      .select("id,store_id,stores!inner(owner_id)")
       .eq("id", orderId)
       .maybeSingle();
     const ownerId = (order as any)?.stores?.owner_id;
@@ -239,7 +220,7 @@ Deno.serve(async (req) => {
         confidence: 1,
         courier_slug: reviewScan.courier_slug || "other",
         tracking_number: manualAwb,
-        matched: { phone: true },
+        matched: {},
       });
     }
 
@@ -284,9 +265,15 @@ Deno.serve(async (req) => {
         if (uploadError) throw new Error("The label matched, but its temporary photo could not be prepared. Please retry.");
         await admin.from("parcel_label_scans").update({
           temp_object_path: objectPath,
+          photo_object_path: objectPath,
           temp_expires_at: expiresAt,
           photo_deleted_at: null,
         }).eq("id", reusedImage.id);
+        await admin.storage.from(SAVED_PHOTO_BUCKET).upload(objectPath, bytes, {
+          contentType: image.type,
+          upsert: true,
+          cacheControl: "3600",
+        });
       }
       return json({
         decision: "accepted",
@@ -294,7 +281,7 @@ Deno.serve(async (req) => {
         confidence: Number(reusedImage.confidence ?? 1),
         courier_slug: reusedImage.courier_slug || "other",
         tracking_number: reusedImage.tracking_number,
-        matched: { phone: true },
+        matched: {},
       });
     }
 
@@ -311,9 +298,8 @@ Deno.serve(async (req) => {
     if (!extracted.readable) reasons.push("The label is not clear enough to verify.");
     if (!candidateAwb || !AWB_RE.test(candidateAwb)) reasons.push("No valid tracking number was found.");
     if (imageBarcode && printedAwb && imageBarcode !== printedAwb) hardFailures.push("The barcode and printed tracking number do not agree.");
-    // Browser BarcodeDetector may select a QR payload or a secondary barcode.
-    // It is only a speed hint; never reject a phone-matched label because this
-    // client-side hint differs from the tracking barcode read from the image.
+    // Browser BarcodeDetector is only trusted for the strict India Post AWB
+    // shape. Every other label is independently read from the image.
 
     if (candidateAwb) {
       const { data: priorAcceptedAwb } = await admin
@@ -372,7 +358,7 @@ Deno.serve(async (req) => {
       scanId = insertedScan?.id || null;
     }
 
-    if (decision === "rejected") return json({ decision, confidence, error: "Wrong parcel — this label does not match this customer.", reasons: allReasons }, 422);
+    if (decision === "rejected") return json({ decision, confidence, error: allReasons[0] || "This tracking number could not be verified.", reasons: allReasons }, 422);
 
     if (decision === "review") {
       if (!candidateAwb || !scanId) {
@@ -404,7 +390,7 @@ Deno.serve(async (req) => {
         tracking_number: candidateAwb || "",
         matched: {},
         needs_tracking_confirmation: true,
-        message: "Phone number matched. Enter the tracking number printed on this label.",
+        message: "Enter the complete tracking number printed on this label.",
       });
     }
 

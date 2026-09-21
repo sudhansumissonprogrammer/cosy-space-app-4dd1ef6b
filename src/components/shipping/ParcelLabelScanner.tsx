@@ -103,11 +103,11 @@ export default function ParcelLabelScanner({ orderId, disabled, onScanStart, onA
       setMessage(detail);
       return;
     }
-    if (data?.decision === "review" && data?.scan_id && data?.matched?.phone && data?.needs_tracking_confirmation) {
+    if (data?.decision === "review" && data?.scan_id && data?.needs_tracking_confirmation) {
       setReviewResult(data as ScanResult);
       setManualAwb(String(data.tracking_number || ""));
       setStage("ready");
-      setMessage(data.message || "Phone number matched. Enter the tracking number printed on this label.");
+      setMessage(data.message || "Enter the complete tracking number printed on this label.");
       return;
     }
     if (!data?.tracking_number || !data?.courier_slug) {
@@ -201,7 +201,7 @@ export default function ParcelLabelScanner({ orderId, disabled, onScanStart, onA
       </div>
       {reviewResult && (
         <div className="space-y-2 rounded-md border bg-muted/40 p-3">
-          <p className="text-xs font-medium text-foreground">Phone number matched</p>
+          <p className="text-xs font-medium text-foreground">Confirm tracking number</p>
           <Input
             value={manualAwb}
             onChange={(event) => setManualAwb(event.target.value.toUpperCase().replace(/\s+/g, "").slice(0, 40))}
