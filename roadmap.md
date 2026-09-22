@@ -3,6 +3,8 @@
 - [x] Move parcel-label phone and tracking extraction to the lowest-priced current Gemini vision model.
 
 ## Active work
+- [ ] Connect Telegram fresh after the latest workspace move and redeploy order notifications.
+- [x] Change every public landing-page commission reference and calculator from 3% to 2% without changing store billing.
 - [x] Safely remove only truly uncategorized products from serdiya.com and serdiyajewellers.shop, preserving historical orders.
 - [x] Connect Telegram fresh after the latest workspace move and redeploy order notifications.
 - [x] Normalize checkout font sizing across Ma Viratra and every other store.
