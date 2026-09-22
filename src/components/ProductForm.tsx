@@ -33,6 +33,14 @@ import { cn } from "@/lib/utils";
 const MAX_FILE_SIZE = 6 * 1024 * 1024; // 6MB
 const MAX_PRODUCT_IMAGES = 5;
 
+/** Supplier controls are intentionally limited to stores with automated feeds. */
+const SUPPLIER_STORE_IDS = new Set([
+  "ab19143d-87a9-490e-90b7-837313522782", // utkalwatch
+  "d07b0784-4103-494e-b243-8fcbdf5fd473", // hopknock
+  "2a9f377a-d8c4-4c7b-8abf-418e9b75cc56", // carrybazaar1
+]);
+const SUPPLIER_STORE_SLUGS = new Set(["utkalwatch", "hopknock", "carrybazaar1"]);
+
 interface ProductFormProps {
   productId?: string;
   /** When provided, form is in "sheet mode" — no header/back, calls onClose instead of navigate */
@@ -130,6 +138,10 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
   // when useStoreData hasn't hydrated yet, e.g. admin-view or direct deep-link)
   const { data: storeFull } = useStoreData(storeId);
   const store = storeFull || paramStore;
+  const canManageSupplier = Boolean(
+    (storeId && SUPPLIER_STORE_IDS.has(storeId))
+      || (storeSlug && SUPPLIER_STORE_SLUGS.has(storeSlug.toLowerCase())),
+  );
   const purgeStore = useStorePurge(storeId);
 
   // Categories
@@ -224,7 +236,10 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
   });
 
   // Supplier (source store) PDP link for synced products
-  const { url: sourceUrl, platform: sourcePlatform } = useProductSourceLink(storeId, existingProduct as any);
+  const { url: sourceUrl, platform: sourcePlatform } = useProductSourceLink(
+    canManageSupplier ? storeId : undefined,
+    canManageSupplier ? existingProduct as any : undefined,
+  );
 
 
   // ── Multi-category: extra categories this product also appears in ──
@@ -754,7 +769,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
         </div>
       )}
 
-      {isEditing && sourceUrl && (
+      {isEditing && canManageSupplier && sourceUrl && (
         <div className="space-y-2">
           <a
             href={sourceUrl}
@@ -776,7 +791,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
         </div>
       )}
 
-      {isEditing && (
+      {isEditing && canManageSupplier && (
         <Card className={cn("mb-4", onClose && "border-0 shadow-none")}>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Supplier</CardTitle>
