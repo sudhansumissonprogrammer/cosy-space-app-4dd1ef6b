@@ -206,9 +206,25 @@ Deno.serve(async (req) => {
   // For `p-` marketing links, cart-recovery-cron appends `~<phone10>` so we
   // can autologin the recipient (products carry no phone in the DB).
   const rawId = token.slice(2);
-  const tildeIdx = rawId.indexOf("~");
-  const id = tildeIdx >= 0 ? rawId.slice(0, tildeIdx) : rawId;
-  const suffixPhone = tildeIdx >= 0 ? rawId.slice(tildeIdx + 1) : "";
+  const tokenParts = rawId.split("~");
+  const id = tokenParts[0] || "";
+  const suffixPhone = tokenParts[1] || "";
+  // New recovery links retain the store id as a final segment. This lets a
+  // deleted/expired product fall back to the correct storefront rather than
+  // the ShopBanao landing page. Older two-segment links remain compatible.
+  const fallbackStoreId = tokenParts[2] || "";
+
+  const resolveFallbackStore = async (): Promise<{ base: string; host: string } | null> => {
+    if (!fallbackStoreId) return null;
+    const { data: store } = await admin
+      .from("stores")
+      .select("slug, custom_domain")
+      .eq("id", fallbackStoreId)
+      .maybeSingle();
+    if (!store) return null;
+    const base = storeBase(store);
+    return { base, host: base.replace(/^https?:\/\//, "") };
+  };
 
   // Fire-and-forget click log. Never blocks the redirect.
   // NOTE: column names must match public.wa_link_clicks exactly — a previous
@@ -326,7 +342,15 @@ Deno.serve(async (req) => {
         .from("products")
         .select("id, slug, is_active, stores:store_id(name, slug, custom_domain)")
         .eq("id", id).maybeSingle();
-      if (!p) return redirect("https://shopbanao.in");
+      if (!p) {
+        const fallbackStore = await resolveFallbackStore();
+        if (!fallbackStore) return redirect("https://shopbanao.in");
+        return redirect(await withAutoLogin(fallbackStore.base, suffixPhone, mintP), {
+          status: 302,
+          maxAge: 0,
+          preconnectHosts: [fallbackStore.host],
+        });
+      }
       const storeRow = (p as any).stores;
       const base = storeBase(storeRow);
       const host = base.replace(/^https?:\/\//, "");
@@ -375,8 +399,16 @@ Deno.serve(async (req) => {
       });
     }
   } catch {
-
-    /* fallthrough — never leave a WhatsApp click without a destination */
+    // A valid store hint survives product deletion and temporary lookup
+    // failures, so recovery shoppers still remain inside the merchant store.
+    const fallbackStore = await resolveFallbackStore().catch(() => null);
+    if (fallbackStore) {
+      return redirect(await withAutoLogin(fallbackStore.base, suffixPhone).catch(() => withWaMarker(fallbackStore.base)), {
+        status: 302,
+        maxAge: 0,
+        preconnectHosts: [fallbackStore.host],
+      });
+    }
   }
   return redirect("https://shopbanao.in");
 });

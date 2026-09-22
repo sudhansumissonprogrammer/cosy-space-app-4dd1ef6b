@@ -238,10 +238,11 @@ Deno.serve(async (req) => {
       ? `https://wsrv.nl/?url=${encodeURIComponent(product.image_url)}&w=1080&h=1080&fit=cover&output=jpg&q=85`
       : null;
 
-    // `p-<product>~<phone10>` → wa-r opens the PDP with autologin + wa=1
+    // Keep the store id in the token so deleted products safely fall back to
+    // the merchant homepage while retaining autologin + wa=1.
     // (unlocks the WhatsApp-exclusive coupon) and falls back to the store
     // home if the product goes inactive before the click.
-    const ctaToken = `p-${product.id}~${c.phone}`;
+    const ctaToken = `p-${product.id}~${c.phone}~${c.storeId}`;
 
     // Spread across days so we never exceed the Meta unique-recipient tier.
     const dayOffset = Math.floor(slot / dailyCap);

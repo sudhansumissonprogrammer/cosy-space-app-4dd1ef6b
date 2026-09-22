@@ -300,12 +300,13 @@ Deno.serve(async (req) => {
     const unitPrice = Number(firstItem?.price ?? 0);
     const productPrice = unitPrice > 0 ? `₹${unitPrice.toFixed(0)}` : `₹${total.toFixed(0)}`;
 
-    // CTA opens the product page directly (p-<product_id>). Fallback to
-    // cart-recovery link when no productId is present. `~<phone10>` suffix
-    // lets wa-r mint an autologin token for the marketing recipient.
+    // CTA opens the product page directly. The final store-id segment lets
+    // wa-r return an expired/deleted product to this store's homepage.
     const firstProductId = firstItem?.productId || firstItem?.product_id;
     const alSuffix = phone ? `~${phone}` : "";
-    const ctaToken = firstProductId ? `p-${firstProductId}${alSuffix}` : `c-${(c as any).id}`;
+    const ctaToken = firstProductId
+      ? `p-${firstProductId}${alSuffix}~${(c as any).store_id}`
+      : `c-${(c as any).id}`;
 
 
     // 🖼️ Header image for IMAGE-type templates (v7_img+). Route the product
