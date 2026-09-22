@@ -3,8 +3,8 @@
 - [x] Move parcel-label phone and tracking extraction to the lowest-priced current Gemini vision model.
 
 ## Active work
-- [ ] Safely remove only truly uncategorized products from serdiya.com and serdiyajewellers.shop, preserving historical orders.
-- [ ] Connect Telegram fresh after the latest workspace move and redeploy order notifications.
+- [x] Safely remove only truly uncategorized products from serdiya.com and serdiyajewellers.shop, preserving historical orders.
+- [x] Connect Telegram fresh after the latest workspace move and redeploy order notifications.
 - [x] Add URL-first existing-store migration to onboarding, importing public catalog/content first and offering secure private-data connection later.
 - [x] Connect Telegram fresh in the current workspace and verify order notifications.
 - [x] Add four uploaded Big Hollow Chain products to a new `new-chaina` category for Serdiya Jewellers, followed by all existing chain products.
