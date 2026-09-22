@@ -4,6 +4,7 @@
 
 ## Active work
 - [ ] Audit and fix Shrishti Jewellers abandoned-cart links so valid products open directly and unavailable products safely fall back home.
+- [ ] Connect Telegram fresh after the latest workspace move, verify the bot, and redeploy order notifications.
 - [ ] Connect Telegram fresh after the latest workspace move and redeploy order notifications.
 - [x] Change every public landing-page commission reference and calculator from 3% to 2% without changing store billing.
 - [x] Safely remove only truly uncategorized products from serdiya.com and serdiyajewellers.shop, preserving historical orders.
