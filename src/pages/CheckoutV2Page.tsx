@@ -1154,6 +1154,12 @@ export default function CheckoutV2Page() {
       body[data-checkout-v2="1"],
       body[data-checkout-v2="1"] *:not(i):not(svg):not([class*="lucide"]):not([data-checkout-marquee]):not([data-checkout-marquee] *) {
         font-family: 'Montserrat Alternates', system-ui, -apple-system, 'Segoe UI', sans-serif !important;
+        /* Checkout typography must be store-independent. The storefront font
+           normalization variables remain on nested routes; Ma Viratra's
+           Montserrat Alternates profile applied font-size-adjust: 0.500 a
+           second time after checkout had already selected that face, making
+           only that store's entire checkout optically smaller. */
+        font-size-adjust: none !important;
       }
       body[data-checkout-v2="1"] [data-checkout-marquee],
       body[data-checkout-v2="1"] [data-checkout-marquee] * {
