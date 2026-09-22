@@ -44,7 +44,7 @@ const ExitIntentPopup = () => {
           Wait! Don't Leave Yet
         </h3>
         <p className="text-muted-foreground font-medium text-sm mb-6">
-          Start your free 7-day trial today — zero commission, no credit card needed. Your store can be live in 10 minutes.
+          Start free today — ₹0 subscription and a flat 2% per order. Your store can be live in 10 minutes.
         </p>
 
         <button
@@ -59,7 +59,7 @@ const ExitIntentPopup = () => {
         </button>
 
         <p className="text-xs text-muted-foreground mt-3 font-medium">
-          No credit card • Cancel anytime • 0% commission
+          No credit card • Cancel anytime • Flat 2% per order
         </p>
       </div>
     </div>

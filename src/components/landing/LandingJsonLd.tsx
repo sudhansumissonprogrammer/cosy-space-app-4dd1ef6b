@@ -21,7 +21,7 @@ const LandingJsonLd = () => {
           availableLanguage: ["English", "Hindi"],
         },
         description:
-          "ShopBanao is India's complete commerce OS — store, WhatsApp, logistics, AI calling and checkout in one platform. ₹0 subscription, a flat 3% on every sale.",
+          "ShopBanao is India's complete commerce OS — store, WhatsApp, logistics, AI calling and checkout in one platform. ₹0 subscription, a flat 2% on every sale.",
       },
       {
         "@context": "https://schema.org",
@@ -45,7 +45,7 @@ const LandingJsonLd = () => {
           "@type": "Offer",
           price: "0",
           priceCurrency: "INR",
-          description: "₹0 subscription. Flat 3% platform fee on every sale.",
+          description: "₹0 subscription. Flat 2% platform fee on every sale.",
         },
         aggregateRating: {
           "@type": "AggregateRating",
@@ -55,7 +55,7 @@ const LandingJsonLd = () => {
           worstRating: "1",
         },
         description:
-          "Complete commerce OS for Indian D2C brands. Storefront, WhatsApp, logistics, AI calling and checkout — one platform, a flat 3% on every sale.",
+          "Complete commerce OS for Indian D2C brands. Storefront, WhatsApp, logistics, AI calling and checkout — one platform, a flat 2% on every sale.",
       },
     ];
 
