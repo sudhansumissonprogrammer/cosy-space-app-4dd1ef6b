@@ -5,6 +5,7 @@
 ## Active work
 - [x] Safely remove only truly uncategorized products from serdiya.com and serdiyajewellers.shop, preserving historical orders.
 - [x] Connect Telegram fresh after the latest workspace move and redeploy order notifications.
+- [x] Normalize checkout font sizing across Ma Viratra and every other store.
 - [x] Add URL-first existing-store migration to onboarding, importing public catalog/content first and offering secure private-data connection later.
 - [x] Connect Telegram fresh in the current workspace and verify order notifications.
 - [x] Add four uploaded Big Hollow Chain products to a new `new-chaina` category for Serdiya Jewellers, followed by all existing chain products.
