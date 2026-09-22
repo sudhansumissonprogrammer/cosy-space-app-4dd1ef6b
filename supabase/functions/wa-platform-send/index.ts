@@ -277,7 +277,9 @@ Deno.serve(async (req) => {
         return;
       }
       if (b?.type === "URL" && typeof b.url === "string" && b.url.includes("{{")) {
-        const tok = sanitizeWaParam(extras.cta_token || extras.cta || "x", 64);
+        // Product recovery tokens can include product, phone, and store UUID
+        // so deleted products still fall back to the merchant homepage.
+        const tok = sanitizeWaParam(extras.cta_token || extras.cta || "x", 160);
         buttonComponents.push({
           type: "button",
           sub_type: "url",
