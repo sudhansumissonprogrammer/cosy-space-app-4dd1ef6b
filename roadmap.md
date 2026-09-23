@@ -3,6 +3,7 @@
 - [x] Move parcel-label phone and tracking extraction to the lowest-priced current Gemini vision model.
 
 ## Active work
+- [ ] Import the supplied Blacky and Jewelnex chain products into Imitationworld under a new `new-chains` category, preserving available photos, videos, and product details.
 - [x] Connect Telegram fresh after the 13:48 workspace move, verify the bot, and redeploy order notifications.
 - [x] Connect Telegram fresh after the 13:43 workspace move, verify the bot, and redeploy order notifications.
 - [ ] Audit Imitation World Meta Pixel/CAPI and checkout errors, fix confirmed issues, and verify live behavior.
