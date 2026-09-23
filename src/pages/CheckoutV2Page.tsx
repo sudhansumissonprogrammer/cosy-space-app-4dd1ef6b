@@ -56,6 +56,7 @@ import { estimateDelivery } from "@/lib/deliveryEstimate";
 import CheckoutExitOffer from "@/components/storefront/CheckoutExitOffer";
 import { useAutoFreeGiftLine } from "@/hooks/useAutoFreeGiftLine";
 import CheckoutItemImage from "@/components/storefront/CheckoutItemImage";
+import { getFunctionErrorMessage } from "@/lib/functionError";
 
 type UpiApp = "gpay" | "phonepe" | "paytm" | "bhim" | "any";
 type PayMethod = "upi" | "gateway" | "cod";
@@ -1961,7 +1962,9 @@ export default function CheckoutV2Page() {
         20000,
       )),
     ]);
-    if (error) throw new Error(error.message);
+    if (error) {
+      throw new Error(await getFunctionErrorMessage(error, "Unable to prepare payment. Please check your cart and try again."));
+    }
     const result = data as { order_id?: string; order_number?: string; error?: string; token_consumed?: boolean; token_stale?: boolean; already_paid?: boolean } | null;
     // The token in localStorage points at an abandoned attempt from an earlier
     // visit (>2h old, e.g. shopper came back the next day). Always rotate and
@@ -4257,7 +4260,9 @@ export default function CheckoutV2Page() {
         }),
         new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error("Order placement took too long. Please retry.")), 15000)),
       ]);
-      if (error) throw new Error(error.message);
+      if (error) {
+        throw new Error(await getFunctionErrorMessage(error, "Unable to place this order. Please check your details and try again."));
+      }
       const res = data as { ok?: boolean; error?: string } | null;
       if (!res?.ok) throw new Error(res?.error || "Failed to place COD order");
       fireInitiateCheckoutOnce();
