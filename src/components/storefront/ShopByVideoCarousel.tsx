@@ -394,6 +394,7 @@ function VideoTile({ product, slug, active, muted, onToggleMute, aspectClass, sh
               setPlaying(false);
             }}
           />
+          )}
 
           <div className="absolute inset-x-0 bottom-0 z-10 pointer-events-none bg-gradient-to-t from-black/85 via-black/40 to-transparent pt-10 pb-3 px-3">
             <div className="flex items-end gap-2.5 pointer-events-auto">
