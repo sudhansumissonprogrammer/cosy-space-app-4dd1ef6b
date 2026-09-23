@@ -354,10 +354,13 @@ function VideoTile({ product, slug, active, muted, onToggleMute, aspectClass, sh
               draggable={false}
             />
           )}
+          {/* No `poster` attr: it downloads eagerly for every tile and fought the
+              product photos for bandwidth on cold loads. The lazy <img> above
+              already shows the cover; the <video> only mounts once tapped. */}
+          {playing && (
           <video
             ref={videoRef}
             src={product.video_url}
-            poster={optimizeImageUrl(product.video_poster_url, 400, 80) || undefined}
             className="relative z-[1] h-full w-full object-cover"
             muted
             playsInline
