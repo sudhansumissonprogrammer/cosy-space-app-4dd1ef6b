@@ -3,6 +3,7 @@
 - [x] Move parcel-label phone and tracking extraction to the lowest-priced current Gemini vision model.
 
 ## Active work
+- [ ] Replace Shakshi Imitation with Shakshi Enterprises throughout that store's footer and About content.
 - [x] Restrict product-editing supplier details to Utkal Watch, HopKnock, and CarryBazaar1 only.
 - [x] Connect Telegram fresh after the 17:20 workspace move, verify the bot, and redeploy order notifications.
 - [x] Audit and fix Serdiya Jewellers abandoned-cart links so valid products open directly and unavailable products safely fall back home.
