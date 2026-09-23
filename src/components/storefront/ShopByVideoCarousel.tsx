@@ -354,10 +354,13 @@ function VideoTile({ product, slug, active, muted, onToggleMute, aspectClass, sh
               draggable={false}
             />
           )}
+          {/* No `poster` attr: it downloads eagerly for every tile and fought the
+              product photos for bandwidth on cold loads. The lazy <img> above
+              already shows the cover; the <video> only mounts once tapped. */}
+          {playing && (
           <video
             ref={videoRef}
             src={product.video_url}
-            poster={optimizeImageUrl(product.video_poster_url, 400, 80) || undefined}
             className="relative z-[1] h-full w-full object-cover"
             muted
             playsInline
@@ -391,6 +394,7 @@ function VideoTile({ product, slug, active, muted, onToggleMute, aspectClass, sh
               setPlaying(false);
             }}
           />
+          )}
 
           <div className="absolute inset-x-0 bottom-0 z-10 pointer-events-none bg-gradient-to-t from-black/85 via-black/40 to-transparent pt-10 pb-3 px-3">
             <div className="flex items-end gap-2.5 pointer-events-auto">
