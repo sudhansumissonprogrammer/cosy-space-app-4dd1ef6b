@@ -31,6 +31,7 @@ import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 import { pixelPayloadFromItems } from "@/lib/expandBundleForPixel";
 import { getOrCreateCheckoutToken, mintCheckoutToken, writeCheckoutTokenCookie, clearCheckoutTokenCookie } from "@/lib/checkoutTokenStore";
 import { purchaseEventIdFor } from "@/lib/pixelOutbox";
+import { getFunctionErrorMessage } from "@/lib/functionError";
 
 const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
 const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPhoneStep"));
@@ -1023,7 +1024,7 @@ function V22CheckoutPageInner() {
 
 
     if (error) {
-      throw new Error(error.message || "Failed to place order");
+      throw new Error(await getFunctionErrorMessage(error, "Unable to place this order. Please check your details and try again."));
     }
 
     const result = data as { order_id?: string; order_number?: string; profit?: number | null; error?: string; token_stale?: boolean } | null;

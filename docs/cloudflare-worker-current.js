@@ -1,5 +1,9 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.78.0 — checkout microphone permission fix
+ * SHOPBANAO PRODUCTION ROUTER v8.79.0 — Meta CAPI Gateway CSP fix
+ *
+ * v8.79.0 — Allow the Meta-managed CAPI Gateway endpoint requested by the
+ *           merchant's Pixel. The prior connect-src policy blocked these
+ *           browser signal requests and filled the console with CSP errors.
  *
  * v8.78.0 — Allow microphone access from the storefront's own origin.
  *           The previous `microphone=()` Permissions-Policy forced browsers to
@@ -751,7 +755,7 @@ const SECURITY_HEADERS = {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://client.crisp.chat; " +
     "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:; " +
     "img-src 'self' data: blob: https://*.supabase.co https://*.r2.dev https://*.cloudinary.com https://*.unsplash.com https://*.shopify.com https://*.myshopify.com https://www.google-analytics.com https://www.googletagmanager.com https://www.facebook.com https://*.facebook.com https://cx.atdmt.com https:; " +
-    "connect-src 'self' https://static.cloudflareinsights.com https://cloudflareinsights.com https://*.supabase.co https://www.facebook.com https://*.facebook.com https://connect.facebook.net https://*.facebook.net https://graph.facebook.com https://*.razorpay.com https://api.razorpay.com https://lumberjack.razorpay.com https://*.cashfree.com https://api.cashfree.com https://sandbox.cashfree.com https://sdk.cashfree.com https://payments.cashfree.com https://payments-test.cashfree.com https://*.on.aws https://*.run.app https://secure.payu.in https://test.payu.in https://info.payu.in https://api.payu.in https://jssdk.payu.in https://jssdk-uat.payu.in https://lrcpkt0a.api.lc https://www.google-analytics.com https://www.googletagmanager.com https://www.google.com https://www.google.co.in https://stats.g.doubleclick.net https://googleads.g.doubleclick.net https://embed.tawk.to https://client.crisp.chat; " +
+    "connect-src 'self' https://static.cloudflareinsights.com https://cloudflareinsights.com https://*.supabase.co https://www.facebook.com https://*.facebook.com https://connect.facebook.net https://*.facebook.net https://graph.facebook.com https://capig.datah04.com https://*.razorpay.com https://api.razorpay.com https://lumberjack.razorpay.com https://*.cashfree.com https://api.cashfree.com https://sandbox.cashfree.com https://sdk.cashfree.com https://payments.cashfree.com https://payments-test.cashfree.com https://*.on.aws https://*.run.app https://secure.payu.in https://test.payu.in https://info.payu.in https://api.payu.in https://jssdk.payu.in https://jssdk-uat.payu.in https://lrcpkt0a.api.lc https://www.google-analytics.com https://www.googletagmanager.com https://www.google.com https://www.google.co.in https://stats.g.doubleclick.net https://googleads.g.doubleclick.net https://embed.tawk.to https://client.crisp.chat; " +
     "frame-src 'self' https://www.facebook.com https://*.facebook.com https://td.doubleclick.net https://*.razorpay.com https://api.razorpay.com https://checkout.razorpay.com https://*.cashfree.com https://api.cashfree.com https://sandbox.cashfree.com https://sdk.cashfree.com https://payments.cashfree.com https://payments-test.cashfree.com https://*.on.aws https://*.run.app https://secure.payu.in https://test.payu.in https://api.payu.in https://jssdk.payu.in https://jssdk-uat.payu.in https://embed.tawk.to; " +
     "media-src 'self' data: blob: https://cdn.shopbanao.in https://*.supabase.co https://*.r2.dev https://*.r2.cloudflarestorage.com https:; " +
     "worker-src 'self' blob:; " +
