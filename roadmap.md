@@ -3,6 +3,8 @@
 - [x] Move parcel-label phone and tracking extraction to the lowest-priced current Gemini vision model.
 
 ## Active work
+- [ ] Connect Telegram fresh after the 13:43 workspace move, verify the bot, and redeploy order notifications.
+- [ ] Audit Imitation World Meta Pixel/CAPI and checkout errors, fix confirmed issues, and verify live behavior.
 - [x] Connect Telegram fresh after the latest workspace move, verify the bot, and redeploy order notifications.
 - [x] Replace Shakshi Imitation with Shakshi Enterprises throughout that store's footer and About content.
 - [x] Restrict product-editing supplier details to Utkal Watch, HopKnock, and CarryBazaar1 only.
