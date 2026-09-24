@@ -52,8 +52,8 @@ const PhoneMockup = ({ img, label, url, className = "", priority = false }: { im
 // Removed `Math.random()` at render time which was wasteful and would block any
 // future SSR/edge-prerender step with a hydration mismatch.
 const HERO = {
-  headline: <>Run your D2C brand.<br />Pay only <span className="text-bauhaus-red italic" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700, fontSize: '1.15em' }}>2%</span> on every sale.</>,
-  sub: "The complete commerce OS for India — store, WhatsApp, logistics, AI calling and checkout in one platform. ₹0 subscription. A flat 2% on every order you sell.",
+  headline: <>Run your D2C brand.<br />Pay only <span className="text-bauhaus-red italic" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700, fontSize: '1.15em' }}>3%</span> on every sale.</>,
+  sub: "The complete commerce OS for India — store, WhatsApp, logistics, AI calling and checkout in one platform. ₹0 subscription. A flat 3% on every order you sell.",
 };
 
 const Hero = () => {
@@ -74,7 +74,7 @@ const Hero = () => {
         <div className="grid lg:grid-cols-2 gap-0 max-w-7xl mx-auto w-full">
           <div className="flex flex-col justify-center lg:py-20 xl:py-24">
             <div className="inline-flex items-center gap-2 border-2 border-foreground px-3 py-1.5 mb-6 sm:mb-7 shadow-bauhaus-sm bg-bauhaus-yellow w-fit">
-              <span className="font-bold uppercase tracking-widest text-[10px] sm:text-xs text-foreground">₹0 Subscription · Flat 2% on every sale</span>
+              <span className="font-bold uppercase tracking-widest text-[10px] sm:text-xs text-foreground">₹0 Subscription · Flat 3% on every sale</span>
             </div>
 
             <h1 className="font-black text-[28px] sm:text-4xl lg:text-5xl xl:text-6xl tracking-tight leading-[1.1] text-foreground mb-4 sm:mb-5">
@@ -97,7 +97,7 @@ const Hero = () => {
             <div className="flex items-center gap-3 sm:gap-5">
               <div className="flex items-center gap-1.5">
                 <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-bauhaus-blue flex-shrink-0" />
-                <span className="font-medium text-[11px] sm:text-xs text-muted-foreground whitespace-nowrap">2% on every sale</span>
+                <span className="font-medium text-[11px] sm:text-xs text-muted-foreground whitespace-nowrap">3% on every sale</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <CreditCard className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-bauhaus-blue flex-shrink-0" />
