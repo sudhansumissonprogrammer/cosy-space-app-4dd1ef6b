@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 
 const faqs = [
-  { q: "What does ShopBanao actually cost?", a: "₹0 subscription, ₹0 setup, ₹0 theme or app fee. You pay a flat 2% on every order placed through ShopBanao — prepaid, COD or RTO. One rate, nothing hidden." },
-  { q: "Why 2% on sales — and not a subscription?", a: "A subscription bills you the same in slow months. A flat 2% scales with your business: small when you are starting, predictable when you scale. One rate covers the storefront, WhatsApp, logistics, AI calling and support." },
+  { q: "What does ShopBanao actually cost?", a: "₹0 subscription, ₹0 setup, ₹0 theme or app fee. You pay a flat 3% on every order placed through ShopBanao — prepaid, COD or RTO. One rate, nothing hidden." },
+  { q: "Why 3% on sales — and not a subscription?", a: "A subscription bills you the same in slow months. A flat 3% scales with your business: small when you are starting, predictable when you scale. One rate covers the storefront, WhatsApp, logistics, AI calling and support." },
   { q: "How is ShopBanao different from Shopify or WooCommerce?", a: "Shopify gives you a storefront. ShopBanao is the full commerce OS — storefront + WhatsApp + logistics + AI calling + checkout — built for the Indian buyer. One platform, one bill, one team to call." },
   { q: "What does the 'agentic' part mean in practice?", a: "Independent AI agents run inside your store: a calling agent confirms COD and recovers abandons in Hindi/English, and a recovery agent re-engages on the right channel — all without you babysitting a dashboard." },
   { q: "How quickly can I be live?", a: "Most brands go live in under a day. Pick a theme, import your catalogue, plug UPI / Shiprocket / WhatsApp, and you're shipping. Our team helps free of charge." },
