@@ -69,4 +69,4 @@
 
 - [x] Check and explain apparent missing Files panel content; confirm project and store data remain intact.
 
-- [ ] Restore missing saved files to the Files panel after refresh did not re-index them.
+- [x] Restore missing saved files to the Files panel after refresh did not re-index them.
