@@ -67,4 +67,4 @@
 - [x] Speed parcel gallery scan to tracking-number and exact 10-digit phone matching in a 3–5 second target, and show the saved photo in order details
 - [x] Connect Telegram fresh in this workspace and redeploy the affected notification function
 
-- [ ] Check and explain apparent missing Files panel content; confirm project and store data remain intact.
+- [x] Check and explain apparent missing Files panel content; confirm project and store data remain intact.
