@@ -89,8 +89,9 @@ export function optimizeImageUrl(
 ): string {
   if (!url) return "";
 
-  // Handle comma-separated URLs — take only the first one
-  const firstUrl = url.includes(",") ? url.split(",")[0].trim() : url.trim();
+  // Handle comma-separated URL lists — split only where a new URL begins,
+  // so CDNs with commas inside the path (e.g. ImageKit "tr:w-800,f-webp") survive.
+  const firstUrl = url.split(/,\s*(?=https?:\/\/)/)[0].trim();
   if (!firstUrl) return "";
   url = firstUrl;
 
