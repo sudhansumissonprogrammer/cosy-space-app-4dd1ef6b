@@ -76,12 +76,12 @@ export default function CategoryFeaturedProductsDialog({ open, categoryId, categ
 
   return (
     <Dialog open={open} onOpenChange={(value) => !value && onClose()}>
-      <DialogContent className="max-h-[88vh] max-w-2xl overflow-hidden p-0">
-        <DialogHeader className="border-b px-5 pb-4 pt-5">
+      <DialogContent className="flex max-h-[85dvh] max-w-2xl flex-col gap-0 overflow-hidden p-0">
+        <DialogHeader className="shrink-0 border-b px-5 pb-4 pt-5">
           <DialogTitle>Category display photos</DialogTitle>
           <DialogDescription>Choose and order up to four products for {categoryName}. Leave empty for automatic selection.</DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 overflow-y-auto px-5 py-4">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
           <div className="grid grid-cols-4 gap-2" aria-label="Selected category products">
             {Array.from({ length: 4 }).map((_, index) => {
               const product = byId.get(selected[index]);
@@ -119,7 +119,7 @@ export default function CategoryFeaturedProductsDialog({ open, categoryId, categ
           )}
           {!isLoading && products.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">Add product photos to this category first.</p>}
         </div>
-        <DialogFooter className="border-t px-5 py-4 sm:justify-between">
+        <DialogFooter className="shrink-0 gap-2 border-t bg-background px-5 py-4 sm:justify-between">
           <Button type="button" variant="outline" onClick={() => setSelected([])}><Sparkles className="mr-2 h-4 w-4" />Use automatic</Button>
           <div className="flex gap-2"><Button type="button" variant="ghost" onClick={onClose}>Cancel</Button><Button type="button" onClick={save} disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save photos</Button></div>
         </DialogFooter>
