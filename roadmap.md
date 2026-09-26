@@ -3,7 +3,7 @@
 - [x] Move parcel-label phone and tracking extraction to the lowest-priced current Gemini vision model.
 
 ## Active work
-- [ ] Refine the ShopBanao brand film with larger typography, richer motion design, and a premium Indian female voice; export and verify a new version.
+- [x] Refine the ShopBanao brand film with larger typography, richer motion design, and a premium Indian female voice; export and verify a new version.
 - [x] Rebuild the 30-second ShopBanao film with logo-led motion graphics, minimal store screenshots, and a voiced soundtrack; verify the new export.
 - [ ] Connect Telegram fresh after the 18:39 workspace move, verify the bot, and redeploy order notifications.
 - [x] Import the supplied Blacky and Jewelnex chain products into Imitationworld under a new `new-chains` category, preserving available photos, videos, and product details.
