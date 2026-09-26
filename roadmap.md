@@ -3,6 +3,7 @@
 - [x] Move parcel-label phone and tracking extraction to the lowest-priced current Gemini vision model.
 
 ## Active work
+- [x] Produce and verify a 30-second premium ShopBanao motion-design film using real landing-page storefront screenshots and a voiced soundtrack.
 - [ ] Connect Telegram fresh after the 18:39 workspace move, verify the bot, and redeploy order notifications.
 - [x] Import the supplied Blacky and Jewelnex chain products into Imitationworld under a new `new-chains` category, preserving available photos, videos, and product details.
 - [x] Connect Telegram fresh after the 13:48 workspace move, verify the bot, and redeploy order notifications.
