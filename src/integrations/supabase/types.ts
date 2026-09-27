@@ -6570,6 +6570,10 @@ export type Database = {
         Returns: Json
       }
       wa_pause_campaign: { Args: { _campaign_id: string }; Returns: Json }
+      wa_platform_recipient_tier_check: {
+        Args: { _phone: string }
+        Returns: Json
+      }
       wa_reclaim_stale_sending: {
         Args: { p_grace_minutes?: number; p_limit?: number }
         Returns: {
