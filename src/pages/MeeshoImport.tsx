@@ -97,11 +97,18 @@ export default function MeeshoImport() {
     const next = { created: 0, skipped: 0, failed: [] as string[] };
     for (let index = 0; index < queue.length; index++) {
       const product = queue[index];
-      const { data, error } = await supabase.functions.invoke("meesho-product-import", {
+      const call = () => supabase.functions.invoke("meesho-product-import", {
         body: { store_id: storeId, category_name: "New2", category_slug: "new2", product },
       });
+      let { data, error } = await call();
+      let retried = false;
+      if (error && !data) {
+        // Connection dropped — the product may still have been saved. Retry: a duplicate means it was.
+        retried = true;
+        ({ data, error } = await call());
+      }
       if (error || data?.error) next.failed.push(`${product.name}: ${data?.error || error?.message || "Import failed"}`);
-      else if (data?.status === "skipped") next.skipped++;
+      else if (data?.status === "skipped" && !retried) next.skipped++;
       else next.created++;
       setProgress(index + 1);
     }
