@@ -34,14 +34,16 @@ type ImportFile = {
 const IMITATIONWORLD_ID = "c3c5dff2-173a-4f4d-90e4-8b1c88c305d9";
 const MAX_FILE_BYTES = 2 * 1024 * 1024;
 
-function cleanSourceUrl(value: string) {
+function cleanSourceUrl(value: string, sourceId?: string) {
   try {
     const url = new URL(value);
-    if (!/(^|\.)meesho\.com$/i.test(url.hostname) || !/\/s\/p\/[a-z0-9]+/i.test(url.pathname)) return "";
-    url.search = "";
-    url.hash = "";
-    return url.toString();
-  } catch { return ""; }
+    if (/(^|\.)meesho\.com$/i.test(url.hostname)) {
+      const id = url.pathname.match(/\/p\/([a-z0-9]+)/i)?.[1];
+      if (id) return `https://www.meesho.com/s/p/${id}`;
+    }
+  } catch { /* fall through */ }
+  if (sourceId && /^[a-z0-9]+$/i.test(sourceId)) return `https://www.meesho.com/s/p/${sourceId}`;
+  return "";
 }
 
 export default function MeeshoImport() {
@@ -72,7 +74,7 @@ export default function MeeshoImport() {
       if (parsed.products.length > 100) throw new Error("A file can contain at most 100 products.");
       const unique = new Map<string, MeeshoProduct>();
       parsed.products.forEach((product) => {
-        if (product?.source_id) unique.set(product.source_id, { ...product, source_url: cleanSourceUrl(product.source_url) });
+        if (product?.source_id) unique.set(product.source_id, { ...product, source_url: cleanSourceUrl(product.source_url, product.source_id) });
       });
       const next = [...unique.values()];
       setProducts(next);
@@ -168,8 +170,8 @@ export default function MeeshoImport() {
                 </div>;
               })}
             </div>
-            <Button className="w-full" disabled={running || selected.size === 0} onClick={importProducts}>
-              {running ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Importing {progress} of {selected.size}</> : <><PackagePlus className="mr-2 h-4 w-4" />Import {selected.size} products into New2</>}
+            <Button className="w-full" disabled={running || !validProducts.some((p) => selected.has(p.source_id))} onClick={importProducts}>
+              {running ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Importing {progress} of {selected.size}</> : <><PackagePlus className="mr-2 h-4 w-4" />Import {validProducts.filter((p) => selected.has(p.source_id)).length} products into New2</>}
             </Button>
           </CardContent>
         </Card>
