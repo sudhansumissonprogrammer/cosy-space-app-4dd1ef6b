@@ -171,7 +171,11 @@ Deno.serve(async (req) => {
   const tierLimit = Number((cfg as any)?.wa_tier_limit ?? 250);
   if (tierLimit > 0 && !isAuthOtp) {
     // DB-side distinct count — avoids loading up to 20k rows per send.
-    const { data: tier } = await admin.rpc("wa_platform_recipient_tier_check", { _phone: phone });
+    const { data: tier, error: tierError } = await admin.rpc("wa_platform_recipient_tier_check", { _phone: phone });
+    if (tierError) {
+      console.error("WhatsApp tier check failed", tierError);
+      return json({ skipped: true, reason: "tier_check_unavailable", error_class: "transient" }, 503);
+    }
     const uniqCount = Number((tier as any)?.uniq ?? 0);
     const hasPhone = (tier as any)?.has_phone === true;
     if (!hasPhone && uniqCount >= tierLimit) {
