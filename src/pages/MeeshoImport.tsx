@@ -57,6 +57,9 @@ export default function MeeshoImport() {
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [results, setResults] = useState<{ created: number; skipped: number; failed: string[] } | null>(null);
+  const CATEGORY_OPTIONS = [{ name: "New2", slug: "new2" }, { name: "New3", slug: "new3" }];
+  const [categorySlug, setCategorySlug] = useState("new2");
+  const targetCategory = CATEGORY_OPTIONS.find((c) => c.slug === categorySlug) ?? CATEGORY_OPTIONS[0];
 
   const validProducts = useMemo(() => products.filter((product) => (
     product.source_id && cleanSourceUrl(product.source_url) && product.name?.trim().length >= 2 &&
@@ -98,7 +101,7 @@ export default function MeeshoImport() {
     for (let index = 0; index < queue.length; index++) {
       const product = queue[index];
       const call = () => supabase.functions.invoke("meesho-product-import", {
-        body: { store_id: storeId, category_name: "New2", category_slug: "new2", product },
+        body: { store_id: storeId, category_name: targetCategory.name, category_slug: targetCategory.slug, product },
       });
       let { data, error } = await call();
       let retried = false;
@@ -142,7 +145,7 @@ export default function MeeshoImport() {
     <div className="mx-auto max-w-5xl space-y-5 p-4 sm:p-6">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" asChild><Link to={`/dashboard/stores/${storeSlug}/products`}><ArrowLeft className="h-5 w-5" /></Link></Button>
-        <div><h1 className="text-2xl font-bold text-foreground">Meesho Import</h1><p className="text-sm text-muted-foreground">Collect products in Chrome, then review and add them to New2.</p></div>
+        <div><h1 className="text-2xl font-bold text-foreground">Meesho Import</h1><p className="text-sm text-muted-foreground">Collect products in Chrome, then review and add them to New2 or New3.</p></div>
       </div>
       {unavailable && <Alert variant="destructive"><AlertDescription>This importer is available only for Imitation World.</AlertDescription></Alert>}
       <div className="grid gap-4 md:grid-cols-2">
@@ -177,8 +180,16 @@ export default function MeeshoImport() {
                 </div>;
               })}
             </div>
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-foreground">Add these products to category</p>
+              <div className="flex gap-2">
+                {CATEGORY_OPTIONS.map((c) => (
+                  <Button key={c.slug} type="button" variant={categorySlug === c.slug ? "default" : "outline"} disabled={running} onClick={() => setCategorySlug(c.slug)}>{c.name}</Button>
+                ))}
+              </div>
+            </div>
             <Button className="w-full" disabled={running || !validProducts.some((p) => selected.has(p.source_id))} onClick={importProducts}>
-              {running ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Importing {progress} of {selected.size}</> : <><PackagePlus className="mr-2 h-4 w-4" />Import {validProducts.filter((p) => selected.has(p.source_id)).length} products into New2</>}
+              {running ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Importing {progress} of {selected.size}</> : <><PackagePlus className="mr-2 h-4 w-4" />Import {validProducts.filter((p) => selected.has(p.source_id)).length} products into {targetCategory.name}</>}
             </Button>
           </CardContent>
         </Card>
