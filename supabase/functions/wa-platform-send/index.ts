@@ -170,16 +170,11 @@ Deno.serve(async (req) => {
   // code, and skipping the send here blocks the order outright (502 upstream).
   const tierLimit = Number((cfg as any)?.wa_tier_limit ?? 250);
   if (tierLimit > 0 && !isAuthOtp) {
-    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { data: recents } = await admin
-      .from("whatsapp_messages")
-      .select("recipient_phone")
-      .eq("sent_via", "platform").eq("direction", "outgoing").eq("status", "sent")
-      .gte("created_at", since)
-      .limit(20000);
-    const uniq = new Set<string>();
-    for (const r of (recents as any[]) ?? []) if (r?.recipient_phone) uniq.add(String(r.recipient_phone));
-    if (!uniq.has(phone) && uniq.size >= tierLimit) {
+    // DB-side distinct count — avoids loading up to 20k rows per send.
+    const { data: tier } = await admin.rpc("wa_platform_recipient_tier_check", { _phone: phone });
+    const uniqCount = Number((tier as any)?.uniq ?? 0);
+    const hasPhone = (tier as any)?.has_phone === true;
+    if (!hasPhone && uniqCount >= tierLimit) {
       return json({ skipped: true, reason: "tier_limit", error_class: "transient" });
     }
   }

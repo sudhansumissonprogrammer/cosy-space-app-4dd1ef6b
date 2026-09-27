@@ -192,14 +192,14 @@ function pickBestVariant(requestedWidth: number): 800 {
 /** Extract the first URL from a potentially comma-separated image_url field */
 export function cleanImageUrl(url: string | null | undefined): string {
   if (!url) return "";
-  return url.includes(",") ? url.split(",")[0].trim() : url.trim();
+  return url.split(/,\s*(?=https?:\/\/)/)[0].trim();
 }
 
 /** Split a comma-separated image_url field into an array of individual URLs */
 export function splitImageUrls(url: string | null | undefined): string[] {
   if (!url) return [];
   return url
-    .split(",")
+    .split(/,\s*(?=https?:\/\/)/)
     .map((u) => u.trim())
     .filter((u) => u.length > 0);
 }
@@ -237,7 +237,7 @@ export function getImageSrcSet(
 ): string {
   if (!url) return "";
 
-  const firstUrl = url.includes(",") ? url.split(",")[0].trim() : url.trim();
+  const firstUrl = url.split(/,\s*(?=https?:\/\/)/)[0].trim();
   if (!firstUrl) return "";
 
   // R2/CDN pipeline images store ONE variant (800w). Emitting a srcset of
