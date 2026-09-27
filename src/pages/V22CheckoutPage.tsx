@@ -1098,14 +1098,6 @@ function V22CheckoutPageInner() {
       // Use the storefront-isolated client so the customer JWT (auth.uid())
       // satisfies the customer_addresses RLS policy. The dashboard `supabase`
       // client uses a different storageKey and would send the wrong token.
-      const { data: existing } = await supabaseStorefront
-        .from("customer_addresses")
-        .select("id")
-        .eq("storefront_customer_id", customer.id)
-        .eq("street_address", streetAddress.trim())
-        .eq("pincode", pincode.trim())
-        .maybeSingle();
-      if (existing) return;
       const { error } = await (supabaseStorefront as any).rpc("replace_customer_address", {
         _storefront_customer_id: customer.id,
         _label: "Home",
