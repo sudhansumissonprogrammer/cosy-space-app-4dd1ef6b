@@ -1106,21 +1106,17 @@ function V22CheckoutPageInner() {
         .eq("pincode", pincode.trim())
         .maybeSingle();
       if (existing) return;
-      const { count } = await supabaseStorefront
-        .from("customer_addresses")
-        .select("id", { count: "exact", head: true })
-        .eq("storefront_customer_id", customer.id);
-      await supabaseStorefront.from("customer_addresses").insert({
-        storefront_customer_id: customer.id,
-        label: "Home",
-        full_name: fullName.trim(),
-        phone: normalizePhone(phone),
-        street_address: streetAddress.trim(),
-        city: city.trim(),
-        state: state.trim(),
-        pincode: pincode.trim(),
-        is_default: (count ?? 0) === 0,
+      const { error } = await (supabaseStorefront as any).rpc("replace_customer_address", {
+        _storefront_customer_id: customer.id,
+        _label: "Home",
+        _full_name: fullName.trim(),
+        _phone: normalizePhone(phone),
+        _street_address: streetAddress.trim(),
+        _city: city.trim(),
+        _state: state.trim(),
+        _pincode: pincode.trim(),
       });
+      if (error) throw error;
     } catch (err) {
       console.error("Failed to save address to account:", err);
     }

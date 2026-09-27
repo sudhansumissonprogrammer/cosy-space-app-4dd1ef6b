@@ -131,11 +131,15 @@ function AddressesTab({ customerId }: { customerId: string }) {
 
   const addMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("customer_addresses").insert({
-        storefront_customer_id: customerId,
-        ...form,
-        phone: normalizePhone(form.phone),
-        is_default: !addresses?.length,
+      const { error } = await (supabase as any).rpc("replace_customer_address", {
+        _storefront_customer_id: customerId,
+        _label: form.label || "Home",
+        _full_name: form.full_name,
+        _phone: normalizePhone(form.phone),
+        _street_address: form.street_address,
+        _city: form.city,
+        _state: form.state,
+        _pincode: form.pincode,
       });
       if (error) throw error;
     },

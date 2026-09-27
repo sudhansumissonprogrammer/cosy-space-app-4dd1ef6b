@@ -20,7 +20,7 @@ const TermsAndConditions = () => (
     <h2>4. Pricing & Platform Commission</h2>
     <ul>
       <li>Creating a ShopBanao store is free. There are no monthly or yearly subscription fees.</li>
-      <li>ShopBanao charges a <strong>2% platform commission</strong> on every order placed through the platform — including orders that are returned to origin (RTO) or cancelled after dispatch (rate configurable per store by our team). The commission is calculated on the order subtotal.</li>
+      <li>ShopBanao charges a <strong>3% platform commission</strong> on every order placed through the platform — including orders that are returned to origin (RTO) or cancelled after dispatch (rate configurable per store by our team). The commission is calculated on the order subtotal.</li>
       <li>Commission is debited from your <strong>store wallet</strong>. You must keep a minimum balance in your wallet for your storefront to continue accepting orders.</li>
       <li>Wallet top-ups are processed securely through Cashfree.</li>
       <li>We may change commission rates or the minimum wallet balance with 30 days' notice via email or in-app notice.</li>

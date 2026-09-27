@@ -316,6 +316,7 @@ function VideoTile({ product, slug, active, muted, onToggleMute, aspectClass, sh
   // toggle, restarting the clip from 0.
   useEffect(() => {
     if (!playing) return;
+    if (videoRef.current) videoRef.current.muted = muted;
     const v = videoRef.current;
     if (!v) return;
     retries.current = 0;
@@ -362,7 +363,7 @@ function VideoTile({ product, slug, active, muted, onToggleMute, aspectClass, sh
             ref={videoRef}
             src={product.video_url}
             className="relative z-[1] h-full w-full object-cover"
-            muted
+            muted={muted}
             playsInline
             loop
             preload="none"
