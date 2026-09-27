@@ -33,13 +33,27 @@ import { cn } from "@/lib/utils";
 const MAX_FILE_SIZE = 6 * 1024 * 1024; // 6MB
 const MAX_PRODUCT_IMAGES = 5;
 
-/** Supplier controls are intentionally limited to stores with automated feeds. */
+/** Supplier controls are available only to stores that use source links. */
 const SUPPLIER_STORE_IDS = new Set([
   "ab19143d-87a9-490e-90b7-837313522782", // utkalwatch
   "d07b0784-4103-494e-b243-8fcbdf5fd473", // hopknock
   "2a9f377a-d8c4-4c7b-8abf-418e9b75cc56", // carrybazaar1
+  "c3c5dff2-173a-4f4d-90e4-8b1c88c305d9", // imitationworld
 ]);
-const SUPPLIER_STORE_SLUGS = new Set(["utkalwatch", "hopknock", "carrybazaar1"]);
+const SUPPLIER_STORE_SLUGS = new Set(["utkalwatch", "hopknock", "carrybazaar1", "imitationworld"]);
+
+const cleanSupplierLink = (value: string) => {
+  const trimmed = value.trim();
+  try {
+    const url = new URL(trimmed);
+    if (url.hostname === "meesho.com" || url.hostname === "www.meesho.com") {
+      url.search = "";
+      url.hash = "";
+      return url.toString();
+    }
+  } catch { /* Relative source paths are valid for existing suppliers. */ }
+  return trimmed;
+};
 
 interface ProductFormProps {
   productId?: string;
@@ -489,7 +503,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
         video_poster_url: videoPosterUrl,
         source_platform: sourcePlatformInput.trim() || null,
         source_id: sourceIdInput.trim() || null,
-        source_path: sourcePathInput.trim() || null,
+        source_path: canManageSupplier ? cleanSupplierLink(sourcePathInput) || null : (existingProduct as any)?.source_path ?? null,
       } as any;
 
       let savedProductId = productId;

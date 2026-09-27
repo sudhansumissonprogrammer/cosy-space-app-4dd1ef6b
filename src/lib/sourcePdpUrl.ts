@@ -49,6 +49,7 @@ export function buildSourcePdpUrl(store: SourceStore, product: SourceProduct): s
 }
 
 export function sourceLabel(platform?: string | null): string {
+  if (platform === "meesho") return "Meesho";
   if (platform === "jdwebship") return "JD supplier";
   if (platform === "cartpe") return "Cartpe supplier";
   return "Supplier";

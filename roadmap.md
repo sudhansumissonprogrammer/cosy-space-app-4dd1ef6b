@@ -3,7 +3,7 @@
 - [x] Move parcel-label phone and tracking extraction to the lowest-priced current Gemini vision model.
 
 ## Active work
-- [ ] Import the 14 unique Meesho products into Imitationworld's new `new` category with verified product details and clean supplier links; blocked until authentic listing data can be accessed or supplied.
+- [ ] Import the 14 unique Meesho products into Imitationworld's new `new` category with verified product details and clean supplier links; Meesho denied direct browser, page-reader, and search access to listing details. Supplier editor and link cleaning are implemented; awaiting a reliable product-data source before publishing listings.
 - [x] Diagnose the Serdiya Jewellers 48-hour conversion drop across storefront, checkout, payments, and tracking.
 - [x] Refine the ShopBanao brand film with larger typography, richer motion design, and a premium Indian female voice; export and verify a new version.
 - [x] Rebuild the 30-second ShopBanao film with logo-led motion graphics, minimal store screenshots, and a voiced soundtrack; verify the new export.
