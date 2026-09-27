@@ -44,6 +44,7 @@ const StoresList = lazy(() => import("@/pages/StoresList"));
 const CreateStore = lazy(() => import("@/pages/CreateStore"));
 const ProductsList = lazy(() => import("@/pages/ProductsList"));
 const BulkUpload = lazy(() => import("@/pages/BulkUpload"));
+const MeeshoImport = lazy(() => import("@/pages/MeeshoImport"));
 const StoreDomain = lazy(() => import("@/pages/StoreDomain"));
 const CreateProduct = lazy(() => import("@/pages/CreateProduct"));
 const EditProduct = lazy(() => import("@/pages/EditProduct"));
@@ -148,6 +149,7 @@ export default function AuthRoutes() {
           <Route path="stores/:storeSlug/products/create" element={<CreateProduct />} />
           <Route path="stores/:storeSlug/products/:productId/edit" element={<EditProduct />} />
           <Route path="stores/:storeSlug/products/bulk-upload" element={<BulkUpload />} />
+          <Route path="stores/:storeSlug/products/meesho-import" element={<MeeshoImport />} />
           <Route path="stores/:storeSlug/categories" element={<CategoryManagement />} />
           <Route path="stores/:storeSlug/media" element={<MediaLibrary />} />
           <Route path="stores/:storeSlug/orders" element={<StoreOrders />} />

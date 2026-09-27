@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ShopBanao Meesho Collector</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <img src="icon.png" alt="" />
+      <div><strong>ShopBanao</strong><span>Meesho Collector</span></div>
+    </header>
+    <main>
+      <div id="status" role="status">Open a Meesho product page, then collect it.</div>
+      <button id="collect" class="primary">Collect this product</button>
+      <section>
+        <div class="section-title"><strong>Saved products</strong><span id="count">0</span></div>
+        <div id="products" class="products"></div>
+      </section>
+      <div class="actions">
+        <button id="export" disabled>Export for ShopBanao</button>
+        <button id="clear" class="quiet" disabled>Clear</button>
+      </div>
+      <p class="hint">Import the downloaded JSON from Products → Meesho Import in ShopBanao.</p>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

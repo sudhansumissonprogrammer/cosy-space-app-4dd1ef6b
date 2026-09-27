@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "ShopBanao Meesho Collector",
+  "version": "1.0.0",
+  "description": "Collect Meesho product details from pages you open and export them for ShopBanao.",
+  "permissions": ["activeTab", "storage", "downloads"],
+  "host_permissions": ["https://www.meesho.com/*", "https://meesho.com/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "icon.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.meesho.com/*", "https://meesho.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "48": "icon.png",
+    "128": "icon.png"
+  }
+}
