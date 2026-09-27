@@ -28,10 +28,8 @@ function cleanMeeshoUrl(raw: string): string | null {
   try {
     const url = new URL(raw);
     if (url.protocol !== "https:" || !/(^|\.)meesho\.com$/i.test(url.hostname)) return null;
-    if (!/\/s\/p\/[a-z0-9]+/i.test(url.pathname)) return null;
-    url.search = "";
-    url.hash = "";
-    return url.toString();
+    const id = url.pathname.match(/\/p\/([a-z0-9]+)/i)?.[1];
+    return id ? `https://www.meesho.com/s/p/${id}` : null;
   } catch { return null; }
 }
 

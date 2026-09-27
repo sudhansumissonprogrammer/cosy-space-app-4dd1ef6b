@@ -73,7 +73,7 @@ function videoValues(value) {
 }
 
 function extract() {
-  if (!/(^|\.)meesho\.com$/i.test(location.hostname) || !/\/s\/p\//i.test(location.pathname)) {
+  if (!/(^|\.)meesho\.com$/i.test(location.hostname) || !/\/p\/[a-z0-9]+/i.test(location.pathname)) {
     throw new Error("Open a Meesho product page first.");
   }
   const scripts = parseJsonScripts();
@@ -81,8 +81,8 @@ function extract() {
   const product = candidates.sort((a, b) => imageValues(b.images || b.image).length - imageValues(a.images || a.image).length)[0] || {};
   const jsonLd = scripts.flatMap((value) => Array.isArray(value) ? value : [value]).find((value) => value?.["@type"] === "Product") || {};
   const canonical = document.querySelector('link[rel="canonical"]')?.href || location.href;
-  const sourceId = location.pathname.match(/\/s\/p\/([^/?#]+)/i)?.[1] || String(first(product.product_id, product.productId, product.id, ""));
-  const name = String(first(product.name, product.title, jsonLd.name, document.querySelector('meta[property="og:title"]')?.content, document.title) || "").replace(/\s*\|\s*Meesho\s*$/i, "").trim();
+  const sourceId = location.pathname.match(/\/p\/([a-z0-9]+)/i)?.[1] || String(first(product.product_id, product.productId, product.id, ""));
+  const name = String(first(jsonLd.name, document.querySelector('meta[property="og:title"]')?.content, product.name, product.title, document.title) || "").replace(/\s*\|\s*Meesho\s*$/i, "").trim();
   const offer = Array.isArray(jsonLd.offers) ? jsonLd.offers[0] : jsonLd.offers || {};
   const selling = numberFrom(first(product.discounted_price, product.discountedPrice, product.selling_price, product.sellingPrice, product.price, offer.price));
   const mrp = numberFrom(first(product.original_price, product.originalPrice, product.mrp, product.max_retail_price, selling));
