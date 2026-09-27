@@ -1,0 +1,26 @@
+:root { color-scheme: light; font-family: Arial, sans-serif; color: #151515; background: #f5f4f0; }
+* { box-sizing: border-box; }
+body { margin: 0; width: 360px; min-height: 420px; }
+header { display: flex; align-items: center; gap: 10px; padding: 16px; color: #fff; background: #111419; border-bottom: 4px solid #cf1e1e; }
+header img { width: 42px; height: 42px; border-radius: 6px; background: #fff; }
+header div { display: grid; gap: 2px; }
+header strong { font-size: 18px; }
+header span { font-size: 12px; color: #d7d7d7; }
+main { padding: 14px; }
+#status { min-height: 42px; padding: 10px; margin-bottom: 12px; border: 2px solid #111419; background: #fff; font-size: 13px; line-height: 1.35; }
+button { min-height: 42px; border: 2px solid #111419; border-radius: 4px; background: #fff; color: #111419; font-weight: 700; cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: .45; }
+.primary { width: 100%; background: #1647ba; color: #fff; box-shadow: 3px 3px 0 #111419; }
+section { margin-top: 18px; }
+.section-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.section-title span { min-width: 28px; padding: 3px 7px; text-align: center; color: #fff; background: #cf1e1e; border-radius: 999px; }
+.products { display: grid; gap: 6px; max-height: 190px; overflow: auto; }
+.item { display: grid; grid-template-columns: 44px 1fr auto; gap: 8px; align-items: center; padding: 7px; border: 1px solid #c9c9c9; background: #fff; }
+.item img { width: 44px; height: 52px; object-fit: cover; background: #e5e5e5; }
+.item strong, .item span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item strong { font-size: 12px; }
+.item span { margin-top: 3px; font-size: 11px; color: #5f6368; }
+.remove { min-height: 30px; border: 0; color: #a00; background: transparent; font-size: 18px; }
+.actions { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 12px; }
+.quiet { padding-inline: 14px; }
+.hint { margin: 12px 2px 0; color: #5f6368; font-size: 11px; line-height: 1.4; }

@@ -144,3 +144,6 @@ verify_jwt = false
 
 [functions.telegram-order-notify]
 verify_jwt = false
+
+[functions.meesho-product-import]
+verify_jwt = false

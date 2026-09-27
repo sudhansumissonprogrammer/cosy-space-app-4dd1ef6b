@@ -28,7 +28,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import {
-  Plus, Pencil, Trash2, Package, AlertCircle, Upload, Download,
+  Plus, Pencil, Trash2, Package, AlertCircle, Upload, Download, ShoppingBag,
   Search, SlidersHorizontal, ArrowUpDown, X, Check, Star, Pin,
 } from "lucide-react";
 import { usePagination } from "@/hooks/usePagination";
@@ -473,6 +473,11 @@ export default function ProductsList() { // v2
               <Button variant="outline" size="sm" asChild>
                 <Link to={`/dashboard/stores/${storeSlug}/products/bulk-upload`}><Upload className="mr-1.5 h-3.5 w-3.5" />Import</Link>
               </Button>
+              {(storeId === "c3c5dff2-173a-4f4d-90e4-8b1c88c305d9" || storeSlug?.toLowerCase() === "imitationworld") && (
+                <Button variant="outline" size="sm" asChild>
+                  <Link to={`/dashboard/stores/${storeSlug}/products/meesho-import`}><ShoppingBag className="mr-1.5 h-3.5 w-3.5" />Meesho</Link>
+                </Button>
+              )}
             </>
           )}
           {isMobile ? null : (
