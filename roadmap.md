@@ -59,6 +59,12 @@
 - [x] Double-check campaign totals and attributed revenue against independent database queries.
 - [x] Produce a detailed WhatsApp marketing performance PDF report.
 
+## Current monitoring review
+- [x] Fix saved addresses, image URLs containing commas, legal price copy, and carousel audio.
+- [x] Move WhatsApp unique-recipient counting into the database and deploy the sending service; monitor whether intermittent server failures recur.
+- [ ] Restore customer email delivery — blocked until notify.shopbanao.in is configured and verified for email in this workspace.
+- [ ] Make paid-order Telegram alerts retry safely — requires a durable, idempotent delivery design and a verified Telegram connection.
+
 ## Project monitoring fixes
 - [x] Verify and fix public product reads
 - [x] Verify and fix QR parcel scans
