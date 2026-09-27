@@ -86,7 +86,13 @@ Deno.serve(async (req) => {
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const TELEGRAM_API_KEY = Deno.env.get("TELEGRAM_API_KEY");
-    if (!LOVABLE_API_KEY || !TELEGRAM_API_KEY) return json({ error: "telegram_not_connected" }, 500);
+    // On failure, clear the "notified" stamp so the next order update retries the alert.
+    const releaseStamp = () =>
+      admin.from("orders").update({ telegram_notified_at: null }).eq("id", order.id).then(() => {}, () => {});
+    if (!LOVABLE_API_KEY || !TELEGRAM_API_KEY) {
+      await releaseStamp();
+      return json({ error: "telegram_not_connected" }, 500);
+    }
 
     const [{ data: items }, { data: store }] = await Promise.all([
       admin
@@ -215,6 +221,7 @@ Deno.serve(async (req) => {
     }
 
     if (!results.some((r) => r.ok)) {
+      await releaseStamp();
       return json({ error: "telegram_failed", results }, 502);
     }
 
