@@ -350,7 +350,9 @@ Deno.serve(async (req) => {
           refDataUrls.length
             ? `You are given ${refDataUrls.length + 1} photos of the SAME single item from different angles. Use them together to understand its true geometry, texture and finish. Produce ONE image of that one item.`
             : "",
-          `Style: ${preset.prompt}`,
+          sourceOnly
+            ? `STRICT SOURCE-PRESERVING RETOUCH ONLY: keep the reference photograph's exact frame, background, props, product placement, chain endpoints, and all visible jewellery. Do not replace the background, recompose, zoom, crop, straighten or regenerate the product. Improve only exposure, fine detail and photographic clarity.`
+            : `Style: ${preset.prompt}`,
           brief ? `Merchant's request (highest priority): ${brief}` : "",
           `Framing: ${ASPECTS[aspect]}.`,
           `PRODUCT-IDENTITY RULES (most important, never break):`,
@@ -359,7 +361,9 @@ Deno.serve(async (req) => {
           `• Keep the exact metal tone and finish (gold polish vs rose gold vs silver/steel, matte vs mirror polish, antique/oxidised patina) and the exact clasp/hook/lock type shown.`,
           `• Keep real material behaviour: genuine metal specular highlights, micro-scratches and casting texture from the reference. Do not smooth it into plastic or CGI, do not "beautify", do not add glitter/sparkle overlays.`,
           `• Do not redesign, simplify, straighten, re-space or stylise any part. If a detail is unclear in the reference, copy it as-is instead of inventing something.`,
-          `Only the background, lighting, camera angle and composition may change.`,
+          sourceOnly
+            ? `The background, framing, camera angle, object position and composition must NOT change.`
+            : `Only the background, lighting, camera angle and composition may change.`,
           `Do not add any text, watermark, price, brand name or logo unless the merchant explicitly asked for it.`,
           `Output ONE photorealistic, ultra-sharp, high-resolution image with true-to-life colour — macro-level detail on the product, no noise, no blur on the product.`,
         ]
