@@ -4,11 +4,14 @@
  * - Skips compression for images already under 80KB
  * - Resizes to max dimension (maintains aspect ratio)
  * - Converts to WebP (falls back to JPEG)
- * - Targets 80–120KB output with a strict iteration loop:
+ * - Generic uploads target 80–120KB with a strict iteration loop:
  *     1. Walk quality from 0.90 → 0.72 in 0.03 steps
  *     2. If still over target, progressively shrink dimensions
  *        (1200 → 1000 → 900 → 800) re-running the quality walk
  *     3. Always returns the smallest acceptable result
+ * - Product photos use processProductPhoto(): 1200px ceiling, WebP
+ *   quality 0.94 → 0.86, ~150KB target, never below 900px.
+
  */
 
 const MAX_RAW_SIZE = 6 * 1024 * 1024; // 6MB — reject before processing
@@ -323,12 +326,19 @@ export async function processProductPhoto(file: File): Promise<CompressionResult
   if (file.size > MAX_RAW_SIZE) {
     throw new Error(`Image too large (${formatSize(file.size)}). Maximum allowed is 6MB.`);
   }
-  if (file.size <= PRODUCT_TARGET_KB * 1024) {
-    return { file, originalSize: file.size, compressedSize: file.size, skipped: true };
-  }
 
   const img = await loadImage(file);
   try {
+    // Already small AND not oversized: keep the original bytes untouched —
+    // re-encoding an in-band photo only loses detail.
+    if (
+      file.size <= PRODUCT_TARGET_KB * 1024 &&
+      Math.max(img.width, img.height) <= DEFAULT_MAX_DIMENSION &&
+      (file.type === "image/webp" || file.type === "image/jpeg")
+    ) {
+      return { file, originalSize: file.size, compressedSize: file.size, skipped: true };
+    }
+
     let smallest: { blob: Blob; ext: string; mimeType: string } | null = null;
     for (const dim of PRODUCT_DIMENSIONS) {
       const { width, height } = scaleDimensions(img.width, img.height, dim);
@@ -339,9 +349,10 @@ export async function processProductPhoto(file: File): Promise<CompressionResult
         smallest = result;
         break;
       }
-      // Do not re-encode an image already smaller than the next step.
+      // Original is already smaller than the next downscale step — stop.
       if (Math.max(img.width, img.height) <= dim) break;
     }
+
     if (!smallest) throw new Error("Image compression failed");
     const baseName = file.name.replace(/\.[^/.]+$/, "");
     return {
