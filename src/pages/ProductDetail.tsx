@@ -2148,12 +2148,18 @@ function LightboxImage({
   const [loaded, setLoaded] = useState(false);
   const [errored, setErrored] = useState(false);
   const [useRaw, setUseRaw] = useState(false);
+  const [previewLoaded, setPreviewLoaded] = useState(false);
 
   useEffect(() => {
     setLoaded(false);
     setErrored(false);
     setUseRaw(false);
+    setPreviewLoaded(false);
   }, [src]);
+
+  // Same size the PDP gallery already showed → served from browser cache
+  // instantly, so the viewer never sits on a blank "Loading…" screen.
+  const previewSrc = optimizeImageUrl(src, 800);
 
   // First try the optimized URL (matches the gallery thumbs that we know load).
   // If the optimizer URL fails (CDN hiccup / unsupported source), fall back to the raw URL.
@@ -2161,10 +2167,24 @@ function LightboxImage({
 
   return (
     <>
-      {!loaded && !errored && (
+      {!loaded && !errored && !previewLoaded && (
         <div className="absolute inset-0 flex items-center justify-center text-white/60 text-sm">
           Loading…
         </div>
+      )}
+      {!loaded && !errored && previewSrc !== displaySrc && (
+        <img
+          src={previewSrc}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 m-auto max-h-full max-w-full w-full h-full object-contain"
+          style={{
+            transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`,
+            opacity: previewLoaded ? 1 : 0,
+          }}
+          draggable={false}
+          onLoad={() => setPreviewLoaded(true)}
+        />
       )}
       {errored && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-neutral-600 text-sm px-6 text-center">
@@ -2181,6 +2201,8 @@ function LightboxImage({
           opacity: loaded ? 1 : 0,
         }}
         draggable={false}
+        decoding="async"
+        fetchPriority="high"
         onLoad={() => setLoaded(true)}
         onError={() => {
           if (!useRaw) {
