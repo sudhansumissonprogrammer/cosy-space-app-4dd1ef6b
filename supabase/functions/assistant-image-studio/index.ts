@@ -273,6 +273,9 @@ Deno.serve(async (req) => {
         const presetId = String(body?.preset ?? "clean_white");
         const aspect = ASPECTS[String(body?.aspect ?? "square")] ? String(body.aspect) : "square";
         const quality = body?.quality === "fast" ? "fast" : "high";
+        // Strict preservation jobs may intentionally use only the selected first
+        // slide. This avoids a different gallery angle influencing the output.
+        const sourceOnly = body?.source_only === true;
         if (!productId) return json({ error: "Pick a product first" }, 400);
 
         // Daily fair-use cap per store.
@@ -322,7 +325,7 @@ Deno.serve(async (req) => {
         // Extra reference angles: the more real views the model sees, the less
         // it "invents" texture (chain link weave, clasp, plating tone, dial).
         const refUrls: string[] = [];
-        {
+        if (!sourceOnly) {
           const { data: extra } = await admin
             .from("product_images")
             .select("image_url, display_order")
