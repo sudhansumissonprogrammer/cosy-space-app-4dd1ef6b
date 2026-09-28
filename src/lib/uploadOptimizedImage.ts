@@ -37,7 +37,8 @@ export async function uploadOptimizedImage(
   bucket: string,
   basePath: string,
 ): Promise<UploadResult> {
-  const result: MultiSizeResult = await processImageMultiSize(file, undefined, bucket === "product-images");
+  const isProductPhoto = bucket === "product-images";
+  const result: MultiSizeResult = await processImageMultiSize(file, undefined, isProductPhoto);
   const variantFile = result.variants.get(800);
   if (!variantFile) throw new Error("Image compression failed — no output file");
 
@@ -48,6 +49,10 @@ export async function uploadOptimizedImage(
   form.append("file", variantFile);
   form.append("bucket", bucket);
   form.append("path", path);
+  // Browsers without canvas WebP fall back to JPEG/PNG and the edge function
+  // re-encodes. Keep product detail intact on that path too.
+  if (isProductPhoto) form.append("webp_quality", "92");
+
 
   const { data, error } = await supabase.functions.invoke("r2-upload", {
     body: form,
