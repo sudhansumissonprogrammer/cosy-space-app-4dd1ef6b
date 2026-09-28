@@ -584,23 +584,26 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
       if (savedProductId) {
         const existingCount = additionalPreviews.filter((p) => p.isExisting).length;
         // Handle file uploads
+        // Upload extra photos 3 at a time; display order is fixed by the
+        // original index so parallel finishing order never reshuffles photos.
+        const uploadedUrls: string[] = new Array(additionalFiles.length);
+        let next = 0;
+        const worker = async () => {
+          while (next < additionalFiles.length) {
+            const i = next++;
+            uploadedUrls[i] = await uploadImage(additionalFiles[i]);
+          }
+        };
+        await Promise.all(Array.from({ length: Math.min(3, additionalFiles.length) }, worker));
         let orderIdx = existingCount;
-        for (let i = 0; i < additionalFiles.length; i++) {
-          const url = await uploadImage(additionalFiles[i]);
-          await (supabase as any).from("product_images").insert({
-            product_id: savedProductId,
-            image_url: url,
-            display_order: orderIdx++,
-          });
-        }
-        // Handle URL-only additional images (no file, not existing in DB)
         const urlOnlyPreviews = additionalPreviews.filter((p) => !p.isExisting && !p.url.startsWith("blob:"));
-        for (const preview of urlOnlyPreviews) {
-          await (supabase as any).from("product_images").insert({
-            product_id: savedProductId,
-            image_url: preview.url,
-            display_order: orderIdx++,
-          });
+        const rows = [
+          ...uploadedUrls.map((url) => ({ product_id: savedProductId, image_url: url, display_order: orderIdx++ })),
+          ...urlOnlyPreviews.map((p) => ({ product_id: savedProductId, image_url: p.url, display_order: orderIdx++ })),
+        ];
+        if (rows.length > 0) {
+          const { error: imgErr } = await (supabase as any).from("product_images").insert(rows);
+          if (imgErr) throw imgErr;
         }
       }
 
