@@ -1,6 +1,7 @@
 # Current work
 
 - [x] Move parcel-label phone and tracking extraction to the lowest-priced current Gemini vision model.
+- [x] Classify all Imitation World New2 products into Chain with Pendant or Pendant from their imported product details.
 
 ## Active work
 - [ ] Import the supplied Meesho catalogue into Imitation World under `New2` using the new Chrome collector (built, packaged and tested); waiting on the collected export file from your own browser.
