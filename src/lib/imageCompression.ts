@@ -326,12 +326,19 @@ export async function processProductPhoto(file: File): Promise<CompressionResult
   if (file.size > MAX_RAW_SIZE) {
     throw new Error(`Image too large (${formatSize(file.size)}). Maximum allowed is 6MB.`);
   }
-  if (file.size <= PRODUCT_TARGET_KB * 1024) {
-    return { file, originalSize: file.size, compressedSize: file.size, skipped: true };
-  }
 
   const img = await loadImage(file);
   try {
+    // Already small AND not oversized: keep the original bytes untouched —
+    // re-encoding an in-band photo only loses detail.
+    if (
+      file.size <= PRODUCT_TARGET_KB * 1024 &&
+      Math.max(img.width, img.height) <= DEFAULT_MAX_DIMENSION &&
+      (file.type === "image/webp" || file.type === "image/jpeg")
+    ) {
+      return { file, originalSize: file.size, compressedSize: file.size, skipped: true };
+    }
+
     let smallest: { blob: Blob; ext: string; mimeType: string } | null = null;
     for (const dim of PRODUCT_DIMENSIONS) {
       const { width, height } = scaleDimensions(img.width, img.height, dim);
@@ -342,9 +349,10 @@ export async function processProductPhoto(file: File): Promise<CompressionResult
         smallest = result;
         break;
       }
-      // Do not re-encode an image already smaller than the next step.
+      // Original is already smaller than the next downscale step — stop.
       if (Math.max(img.width, img.height) <= dim) break;
     }
+
     if (!smallest) throw new Error("Image compression failed");
     const baseName = file.name.replace(/\.[^/.]+$/, "");
     return {
