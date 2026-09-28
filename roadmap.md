@@ -4,7 +4,7 @@
 - [x] Classify all Imitation World New2 products into Chain with Pendant or Pendant from their imported product details.
 
 ## Active work
-- [ ] Generate and append one strict-preservation Gemini/WebP PDP image for the first eight Imitation World Chain with Pendant products.
+- [ ] Generate and append one strict-preservation Gemini/WebP PDP image for the first eight Imitation World Chain with Pendant products — blocked: inspected Gemini drafts altered/cropped details despite preservation instructions; no new images attached. Awaiting permission to use faithful pixel-preserving enhancement instead, or approval of approximate AI results.
 - [x] Improve product-photo upload quality while aiming for 150 KB, without sacrificing fine detail to force a strict size limit.
 - [ ] Import the supplied Meesho catalogue into Imitation World under `New2` using the new Chrome collector (built, packaged and tested); waiting on the collected export file from your own browser.
 - [ ] Import the 14 unique Meesho products into Imitationworld's new `new` category with verified product details and clean supplier links; Meesho denied direct browser, page-reader, and search access to listing details. Supplier editor and link cleaning are implemented; awaiting a reliable product-data source before publishing listings.
