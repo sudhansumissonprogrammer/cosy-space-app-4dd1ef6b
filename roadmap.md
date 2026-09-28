@@ -6,6 +6,7 @@
 ## Active work
 - [x] Generate and append one Gemini/WebP PDP image for the first eight Imitation World Chain with Pendant products after approval of approximate AI results; original images remain unchanged, all eight new images verified as last gallery items and served as WebP.
 - [x] Improve product-photo upload quality while aiming for 150 KB, without sacrificing fine detail to force a strict size limit.
+- [x] Split new product-photo uploads into lightweight card, sharp PDP, and on-demand high-resolution zoom variants without changing legacy images.
 - [ ] Import the supplied Meesho catalogue into Imitation World under `New2` using the new Chrome collector (built, packaged and tested); waiting on the collected export file from your own browser.
 - [ ] Import the 14 unique Meesho products into Imitationworld's new `new` category with verified product details and clean supplier links; Meesho denied direct browser, page-reader, and search access to listing details. Supplier editor and link cleaning are implemented; awaiting a reliable product-data source before publishing listings.
 - [x] Diagnose the Serdiya Jewellers 48-hour conversion drop across storefront, checkout, payments, and tracking.

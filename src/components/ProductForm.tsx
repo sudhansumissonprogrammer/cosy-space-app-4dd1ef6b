@@ -413,7 +413,9 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
 
   const uploadImage = async (file: File) => {
     const basePath = generateUploadPath(user!.id, storeId!);
-    const result = await uploadOptimizedImage(file, "product-images", basePath);
+    const result = await uploadOptimizedImage(file, "product-images", basePath, {
+      productPhotoVariants: true,
+    });
     if (result.compressionMessage) toast.success(result.compressionMessage);
     return result.mainUrl;
   };
