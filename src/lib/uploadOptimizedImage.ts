@@ -41,7 +41,9 @@ export async function uploadOptimizedImage(
   const isProductPhoto = options?.productPhotoVariants === true;
   const result: MultiSizeResult = await processImageMultiSize(file, undefined, isProductPhoto);
   const variantUrls = new Map<VariantWidth, string>();
-  for (const [width, variantFile] of result.variants) {
+  // Upload all sizes in parallel — each goes to its own unique path, so
+  // there is no ordering dependency. Any failure still fails the whole photo.
+  await Promise.all(Array.from(result.variants).map(async ([width, variantFile]) => {
     const ext = variantFile.name.split(".").pop() || "webp";
     const form = new FormData();
     form.append("file", variantFile);
@@ -70,7 +72,7 @@ export async function uploadOptimizedImage(
     }
     if (!data?.publicUrl) throw new Error("Upload failed: no URL returned");
     variantUrls.set(width, data.publicUrl as string);
-  }
+  }));
 
   const mainWidth: VariantWidth = isProductPhoto ? 1200 : 800;
   const mainUrl = variantUrls.get(mainWidth);
