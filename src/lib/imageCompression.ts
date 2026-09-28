@@ -4,11 +4,14 @@
  * - Skips compression for images already under 80KB
  * - Resizes to max dimension (maintains aspect ratio)
  * - Converts to WebP (falls back to JPEG)
- * - Targets 80–120KB output with a strict iteration loop:
+ * - Generic uploads target 80–120KB with a strict iteration loop:
  *     1. Walk quality from 0.90 → 0.72 in 0.03 steps
  *     2. If still over target, progressively shrink dimensions
  *        (1200 → 1000 → 900 → 800) re-running the quality walk
  *     3. Always returns the smallest acceptable result
+ * - Product photos use processProductPhoto(): 1200px ceiling, WebP
+ *   quality 0.94 → 0.86, ~150KB target, never below 900px.
+
  */
 
 const MAX_RAW_SIZE = 6 * 1024 * 1024; // 6MB — reject before processing
