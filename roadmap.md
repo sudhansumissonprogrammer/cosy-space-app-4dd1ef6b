@@ -4,6 +4,7 @@
 - [x] Classify all Imitation World New2 products into Chain with Pendant or Pendant from their imported product details.
 
 ## Active work
+- [ ] Improve product-photo upload quality while aiming for 150 KB, without sacrificing fine detail to force a strict size limit.
 - [ ] Import the supplied Meesho catalogue into Imitation World under `New2` using the new Chrome collector (built, packaged and tested); waiting on the collected export file from your own browser.
 - [ ] Import the 14 unique Meesho products into Imitationworld's new `new` category with verified product details and clean supplier links; Meesho denied direct browser, page-reader, and search access to listing details. Supplier editor and link cleaning are implemented; awaiting a reliable product-data source before publishing listings.
 - [x] Diagnose the Serdiya Jewellers 48-hour conversion drop across storefront, checkout, payments, and tracking.

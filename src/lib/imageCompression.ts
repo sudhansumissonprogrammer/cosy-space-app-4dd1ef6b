@@ -21,6 +21,12 @@ const DEFAULT_START_QUALITY = 0.9; // Starting quality — high but not max
 const HEAVY_START_QUALITY = 0.86; // Slightly lower start for big photos
 const MIN_QUALITY = 0.78; // Floor — below this WebP starts looking soft
 const QUALITY_STEP = 0.03; // Finer steps → more chances to land in band
+// Product photography needs more pixels and fewer compression artifacts than
+// banners or thumbnails. 150 KB is a target, not a reason to blur fine detail.
+const PRODUCT_TARGET_KB = 150;
+const PRODUCT_DIMENSIONS = [1200, 1100, 1000, 900] as const;
+const PRODUCT_START_QUALITY = 0.94;
+const PRODUCT_MIN_QUALITY = 0.86;
 
 /** @deprecated Multi-size variants removed — single 800w upload only */
 export const IMAGE_VARIANT_WIDTHS = [800] as const;
@@ -160,6 +166,8 @@ async function walkQuality(
   canvas: HTMLCanvasElement,
   startQuality: number,
   targetKB: number,
+  minQuality = MIN_QUALITY,
+  step = QUALITY_STEP,
 ): Promise<{ blob: Blob; ext: string; mimeType: string; quality: number }> {
   // Try WebP first; fall back to JPEG if the browser refuses WebP
   let mimeType = "image/webp";
@@ -180,11 +188,11 @@ async function walkQuality(
 
   // Iterate downward — keep the smallest blob seen along the way
   for (
-    let q = startQuality - QUALITY_STEP;
-    q >= MIN_QUALITY - 1e-6;
-    q -= QUALITY_STEP
+    let q = startQuality - step;
+    q >= minQuality - 1e-6;
+    q -= step
   ) {
-    const next = await encodeCanvas(canvas, mimeType, Math.max(q, MIN_QUALITY));
+    const next = await encodeCanvas(canvas, mimeType, Math.max(q, minQuality));
     if (!next || next.size === 0) continue;
     if (next.size < bestBlob.size) {
       bestBlob = next;
@@ -298,12 +306,53 @@ export async function processImage(
 export async function processImageMultiSize(
   file: File,
   quality?: number,
+  productPhoto = false,
 ): Promise<MultiSizeResult> {
-  // Use 1200px max — keeps images sharp on retina/zoom while staying ~100KB
-  const main = await processImage(file, DEFAULT_MAX_DIMENSION, quality);
+  const main = productPhoto
+    ? await processProductPhoto(file)
+    : await processImage(file, DEFAULT_MAX_DIMENSION, quality);
   const variants = new Map<VariantWidth, File>();
   variants.set(800, main.file);
   return { main, variants };
+}
+
+/** Keep jewellery textures and edges sharp; never force a detailed photo to
+ * 150 KB by dropping below 900px or WebP quality 86. Some photos will exceed
+ * the target because identical visual quality at a fixed size is impossible. */
+export async function processProductPhoto(file: File): Promise<CompressionResult> {
+  if (file.size > MAX_RAW_SIZE) {
+    throw new Error(`Image too large (${formatSize(file.size)}). Maximum allowed is 6MB.`);
+  }
+  if (file.size <= PRODUCT_TARGET_KB * 1024) {
+    return { file, originalSize: file.size, compressedSize: file.size, skipped: true };
+  }
+
+  const img = await loadImage(file);
+  try {
+    let smallest: { blob: Blob; ext: string; mimeType: string } | null = null;
+    for (const dim of PRODUCT_DIMENSIONS) {
+      const { width, height } = scaleDimensions(img.width, img.height, dim);
+      const canvas = renderToCanvas(img.source, width, height);
+      const result = await walkQuality(canvas, PRODUCT_START_QUALITY, PRODUCT_TARGET_KB, PRODUCT_MIN_QUALITY, 0.02);
+      if (!smallest || result.blob.size < smallest.blob.size) smallest = result;
+      if (result.blob.size <= PRODUCT_TARGET_KB * 1024) {
+        smallest = result;
+        break;
+      }
+      // Do not re-encode an image already smaller than the next step.
+      if (Math.max(img.width, img.height) <= dim) break;
+    }
+    if (!smallest) throw new Error("Image compression failed");
+    const baseName = file.name.replace(/\.[^/.]+$/, "");
+    return {
+      file: new File([smallest.blob], `${baseName}.${smallest.ext}`, { type: smallest.mimeType }),
+      originalSize: file.size,
+      compressedSize: smallest.blob.size,
+      skipped: false,
+    };
+  } finally {
+    img.cleanup();
+  }
 }
 
 /**

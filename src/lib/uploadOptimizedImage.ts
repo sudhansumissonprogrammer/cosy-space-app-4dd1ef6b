@@ -37,7 +37,7 @@ export async function uploadOptimizedImage(
   bucket: string,
   basePath: string,
 ): Promise<UploadResult> {
-  const result: MultiSizeResult = await processImageMultiSize(file);
+  const result: MultiSizeResult = await processImageMultiSize(file, undefined, bucket === "product-images");
   const variantFile = result.variants.get(800);
   if (!variantFile) throw new Error("Image compression failed — no output file");
 
