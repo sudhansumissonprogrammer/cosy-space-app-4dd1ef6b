@@ -2,7 +2,7 @@
  * Centralized upload handler — now uploads to Cloudflare R2 via edge function.
  *
  * Pipeline:
- *   1. Compress to 800w WebP client-side
+ *   1. Create responsive WebP variants client-side where requested
  *   2. POST to `r2-upload` edge function (S3 PUT to R2)
  *   3. Returns the public cdn.shopbanao.in URL
  */
@@ -16,9 +16,9 @@ import {
 } from "./imageCompression";
 
 export interface UploadResult {
-  /** The main (800w) public URL — use this as image_url */
+  /** The main public URL — use this as image_url */
   mainUrl: string;
-  /** Map of width → public URL (now contains only 800w) */
+  /** Map of width → public URL */
   variantUrls: Map<VariantWidth, string>;
   /** Human-readable compression message */
   compressionMessage: string | null;
@@ -36,51 +36,45 @@ export async function uploadOptimizedImage(
   file: File,
   bucket: string,
   basePath: string,
+  options?: { productPhotoVariants?: boolean },
 ): Promise<UploadResult> {
-  const isProductPhoto = bucket === "product-images";
+  const isProductPhoto = options?.productPhotoVariants === true;
   const result: MultiSizeResult = await processImageMultiSize(file, undefined, isProductPhoto);
-  const variantFile = result.variants.get(800);
-  if (!variantFile) throw new Error("Image compression failed — no output file");
+  const variantUrls = new Map<VariantWidth, string>();
+  for (const [width, variantFile] of result.variants) {
+    const ext = variantFile.name.split(".").pop() || "webp";
+    const form = new FormData();
+    form.append("file", variantFile);
+    form.append("bucket", bucket);
+    form.append("path", `${basePath}-${width}w.${ext}`);
+    if (isProductPhoto) form.append("webp_quality", "95");
 
-  const ext = variantFile.name.split(".").pop() || "webp";
-  const path = `${basePath}-800w.${ext}`;
-
-  const form = new FormData();
-  form.append("file", variantFile);
-  form.append("bucket", bucket);
-  form.append("path", path);
-  // Browsers without canvas WebP fall back to JPEG/PNG and the edge function
-  // re-encodes. Keep product detail intact on that path too.
-  if (isProductPhoto) form.append("webp_quality", "92");
-
-
-  const { data, error } = await supabase.functions.invoke("r2-upload", {
-    body: form,
-  });
-
-  if (error) {
-    let message = error.message || "Upload failed";
-    const response = (error as any)?.context;
-    if (response && typeof response.clone === "function") {
-      try {
-        const payload = await response.clone().json();
-        if (payload?.error) message = payload.error;
-      } catch {
+    const { data, error } = await supabase.functions.invoke("r2-upload", { body: form });
+    if (error) {
+      let message = error.message || "Upload failed";
+      const response = (error as any)?.context;
+      if (response && typeof response.clone === "function") {
         try {
-          const text = await response.clone().text();
-          if (text) message = text;
+          const payload = await response.clone().json();
+          if (payload?.error) message = payload.error;
         } catch {
-          // Keep the original SDK message.
+          try {
+            const text = await response.clone().text();
+            if (text) message = text;
+          } catch {
+            // Keep the original SDK message.
+          }
         }
       }
+      throw new Error(`Failed to upload image: ${message}`);
     }
-    throw new Error(`Failed to upload image: ${message}`);
+    if (!data?.publicUrl) throw new Error("Upload failed: no URL returned");
+    variantUrls.set(width, data.publicUrl as string);
   }
-  if (!data?.publicUrl) throw new Error("Upload failed: no URL returned");
 
-  const mainUrl = data.publicUrl as string;
-  const variantUrls = new Map<VariantWidth, string>();
-  variantUrls.set(800, mainUrl);
+  const mainWidth: VariantWidth = isProductPhoto ? 1200 : 800;
+  const mainUrl = variantUrls.get(mainWidth);
+  if (!mainUrl) throw new Error("Image upload failed: main photo is missing");
 
   return {
     mainUrl,
@@ -99,17 +93,18 @@ export function generateUploadPath(userId: string, storeId: string): string {
 }
 
 /**
- * Given a main image URL (800w), derive the variant URL for a given width.
+ * Given a main image URL, derive the nearest stored variant URL.
  * Works for images uploaded through our pipeline.
  *
- * Note: We only store 800w now. This function returns the same URL since
- * R2 serves a single file size — the browser downscales as needed.
+ * Legacy 800w uploads remain unchanged because sibling variants do not exist.
  */
 export function resolveVariantUrl(
   mainUrl: string,
-  _width: VariantWidth,
+  width: number,
 ): string {
-  return mainUrl;
+  if (!/-1200w\.(webp|jpg|jpeg)$/i.test(mainUrl)) return mainUrl;
+  const target = width <= 400 ? 400 : width <= 1200 ? 1200 : 2000;
+  return mainUrl.replace(/-1200w\.(webp|jpg|jpeg)$/i, `-${target}w.$1`);
 }
 
 /**

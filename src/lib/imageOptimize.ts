@@ -12,7 +12,6 @@
 
 import { isOptimizedUrl, resolveVariantUrl } from "./uploadOptimizedImage";
 import { getAdaptiveQuality, shouldPreloadLcp } from "./networkHints";
-// VariantWidth no longer needed — we always serve the 800w stored variant directly
 
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "";
 const ENABLE_EDGE_IMAGE_PROXY = import.meta.env.VITE_ENABLE_EDGE_IMAGE_PROXY === "true";
@@ -23,9 +22,6 @@ const ENABLE_EDGE_IMAGE_PROXY = import.meta.env.VITE_ENABLE_EDGE_IMAGE_PROXY ===
  * Render API (`/storage/v1/render/image/`), which is free and CDN-cached
  * by Supabase. Net cost saving: ~5-30 Worker events per pageview.
  */
-
-/** We now store only 800w — render API handles responsive sizes */
-const PIPELINE_WIDTHS: number[] = [400, 800];
 
 /**
  * v8.93 — `/cf-img` restored for supplier catalog CDNs.
@@ -95,11 +91,9 @@ export function optimizeImageUrl(
   if (!firstUrl) return "";
   url = firstUrl;
 
-  // ── 1. Our pipeline images on R2/CDN: serve directly ──
-  // R2 serves a single 800w WebP variant — browser downscales as needed.
-  // No runtime resize call = zero Worker cost.
+  // ── 1. Our pipeline images on R2/CDN: use stored variants ──
   if (isOptimizedUrl(url)) {
-    const variant = resolveVariantUrl(url, 800);
+    const variant = resolveVariantUrl(url, width);
     // Legacy Supabase Storage pipeline images (pre-R2 migration) still use render API
     if (variant.includes("supabase.co/storage")) {
       try {
@@ -116,7 +110,7 @@ export function optimizeImageUrl(
         return variant;
       }
     }
-    // R2/CDN URLs — serve directly
+    // R2/CDN URLs — direct variant, with no runtime resize cost.
     return variant;
   }
 
@@ -184,11 +178,6 @@ export function optimizeImageUrl(
   return url;
 }
 
-/** @deprecated No longer needed — render API handles all sizes */
-function pickBestVariant(requestedWidth: number): 800 {
-  return 800;
-}
-
 /** Extract the first URL from a potentially comma-separated image_url field */
 export function cleanImageUrl(url: string | null | undefined): string {
   if (!url) return "";
@@ -240,16 +229,17 @@ export function getImageSrcSet(
   const firstUrl = url.split(/,\s*(?=https?:\/\/)/)[0].trim();
   if (!firstUrl) return "";
 
-  // R2/CDN pipeline images store ONE variant (800w). Emitting a srcset of
-  // identical URLs with fake width descriptors is wasted HTML bytes and
-  // confuses devtools. Return "" → React skips the srcset attribute → cleaner
-  // markup; browser uses plain `src` and downscales the 800w WebP as needed.
-  // Legacy Supabase-render URLs and external CDNs (Shopify/Unsplash) still
-  // benefit from real responsive variants below.
+  // New product uploads store 400w/1200w/2000w siblings. Legacy 800w uploads
+  // deliberately stay on their known-good URL because those siblings do not exist.
   if (isOptimizedUrl(firstUrl)) {
+    const isResponsiveR2 = /-1200w\.(webp|jpg|jpeg)$/i.test(firstUrl);
+    if (isResponsiveR2 && !firstUrl.includes("supabase.co/storage")) {
+      const candidates = Math.max(...sizes) >= 1000 ? [400, 1200] : [400];
+      return candidates.map((width) => `${resolveVariantUrl(firstUrl, width)} ${width}w`).join(", ");
+    }
     const variant = resolveVariantUrl(firstUrl, 800);
     if (!variant.includes("supabase.co/storage")) {
-      return ""; // R2 → single source, no srcset
+      return "";
     }
   }
 

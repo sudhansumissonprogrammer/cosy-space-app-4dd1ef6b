@@ -9,8 +9,8 @@
  *     2. If still over target, progressively shrink dimensions
  *        (1200 → 1000 → 900 → 800) re-running the quality walk
  *     3. Always returns the smallest acceptable result
- * - Product photos use processProductPhoto(): 1200px ceiling, WebP
- *   quality 0.94 → 0.86, ~150KB target, never below 900px.
+ * - Product photos use three purpose-built WebP variants: 400px cards,
+ *   1200px PDP galleries, and 2000px near-lossless zoom.
 
  */
 
@@ -31,8 +31,7 @@ const PRODUCT_DIMENSIONS = [1200, 1100, 1000, 900] as const;
 const PRODUCT_START_QUALITY = 0.94;
 const PRODUCT_MIN_QUALITY = 0.86;
 
-/** @deprecated Multi-size variants removed — single 800w upload only */
-export const IMAGE_VARIANT_WIDTHS = [800] as const;
+export const IMAGE_VARIANT_WIDTHS = [400, 800, 1200, 2000] as const;
 export type VariantWidth = (typeof IMAGE_VARIANT_WIDTHS)[number];
 
 export interface CompressionResult {
@@ -43,7 +42,7 @@ export interface CompressionResult {
 }
 
 export interface MultiSizeResult {
-  /** The main (largest / 800px) variant */
+  /** The main storefront/PDP variant */
   main: CompressionResult;
   /** Map of width → compressed file */
   variants: Map<VariantWidth, File>;
@@ -147,6 +146,8 @@ function renderToCanvas(
   canvas.height = targetHeight;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Could not create canvas context");
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
   ctx.drawImage(source, 0, 0, targetWidth, targetHeight);
   return canvas;
 }
@@ -311,12 +312,75 @@ export async function processImageMultiSize(
   quality?: number,
   productPhoto = false,
 ): Promise<MultiSizeResult> {
-  const main = productPhoto
-    ? await processProductPhoto(file)
-    : await processImage(file, DEFAULT_MAX_DIMENSION, quality);
+  if (productPhoto) return processProductPhotoVariants(file);
+
+  const main = await processImage(file, DEFAULT_MAX_DIMENSION, quality);
   const variants = new Map<VariantWidth, File>();
   variants.set(800, main.file);
   return { main, variants };
+}
+
+async function encodeProductVariant(
+  source: CanvasImageSource,
+  sourceWidth: number,
+  sourceHeight: number,
+  targetWidth: 400 | 1200 | 2000,
+  quality: number,
+  baseName: string,
+): Promise<File> {
+  const scale = Math.min(1, targetWidth / sourceWidth);
+  const width = Math.max(1, Math.round(sourceWidth * scale));
+  const height = Math.max(1, Math.round(sourceHeight * scale));
+  const canvas = renderToCanvas(source, width, height);
+  let mimeType = "image/webp";
+  let ext = "webp";
+  let blob = await encodeCanvas(canvas, mimeType, quality);
+  if (!blob || blob.size === 0) {
+    mimeType = "image/jpeg";
+    ext = "jpg";
+    blob = await encodeCanvas(canvas, mimeType, quality);
+  }
+  if (!blob) throw new Error("Browser could not encode product image");
+  return new File([blob], `${baseName}-${targetWidth}w.${ext}`, { type: mimeType });
+}
+
+/**
+ * Create independent storefront variants from the original decode so no
+ * variant is compressed from another compressed file.
+ * - 400w/q0.88: cards and thumbnails
+ * - 1200w/q0.95: normal PDP gallery
+ * - 2000w/q0.97: full-screen zoom, fetched only when opened
+ */
+async function processProductPhotoVariants(file: File): Promise<MultiSizeResult> {
+  if (file.size > MAX_RAW_SIZE) {
+    throw new Error(`Image too large (${formatSize(file.size)}). Maximum allowed is 6MB.`);
+  }
+
+  const img = await loadImage(file);
+  try {
+    const baseName = file.name.replace(/\.[^/.]+$/, "");
+    const [card, pdp, zoom] = await Promise.all([
+      encodeProductVariant(img.source, img.width, img.height, 400, 0.88, baseName),
+      encodeProductVariant(img.source, img.width, img.height, 1200, 0.95, baseName),
+      encodeProductVariant(img.source, img.width, img.height, 2000, 0.97, baseName),
+    ]);
+    const main: CompressionResult = {
+      file: pdp,
+      originalSize: file.size,
+      compressedSize: pdp.size,
+      skipped: false,
+    };
+    return {
+      main,
+      variants: new Map<VariantWidth, File>([
+        [400, card],
+        [1200, pdp],
+        [2000, zoom],
+      ]),
+    };
+  } finally {
+    img.cleanup();
+  }
 }
 
 /** Keep jewellery textures and edges sharp; never force a detailed photo to
