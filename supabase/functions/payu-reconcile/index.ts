@@ -85,6 +85,7 @@ Deno.serve(async (req) => {
     .from("orders")
     .select("id, store_id, status, payment_type, customer_phone, storefront_customer_id, created_at, payu_txnids")
     .eq("payment_method", "payu")
+    .order("created_at", { ascending: false })
     .limit(fast ? 40 : 200);
 
   if (onlyOrderId) {
