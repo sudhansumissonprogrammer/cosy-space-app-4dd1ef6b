@@ -12,7 +12,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
 import { fireWaOrderEvent } from "../_shared/wa-fire-order-event.ts";
 import { timingSafeEqual } from "../_shared/security.ts";
-import { mapPayuStatus, verifyPayuTxn, type PayuEnv } from "../_shared/payuHelpers.ts";
+import { verifyPayuAttempts, type PayuEnv } from "../_shared/payuHelpers.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -154,22 +154,16 @@ Deno.serve(async (req) => {
           new Set([...(Array.isArray(o.payu_txnids) ? o.payu_txnids : []), txnidForOrder(o.id)]),
         );
 
-        let det: any = null;
-        let txnid = txnidForOrder(o.id);
-        for (const candidate of attemptIds) {
-          const res = await verifyPayuTxn({ env, key: cfg.payu_merchant_key, salt: cfg.payu_merchant_salt, txnid: candidate });
-          if (!res) continue;
-          const v = mapPayuStatus(res.status);
-          det = res;
-          txnid = candidate;
-          if (v === "PAID") break;
-        }
-        if (!det) {
+        const best = await verifyPayuAttempts({
+          env, key: cfg.payu_merchant_key, salt: cfg.payu_merchant_salt, txnids: attemptIds,
+        });
+        if (!best) {
           notFound++;
           continue;
         }
-
-        const verdict = mapPayuStatus(det.status);
+        const det = best.det;
+        const txnid = best.txnid;
+        const verdict = best.verdict;
         if (verdict === "PAID") {
           const newStatus = o.payment_type === "partial" ? "partially_paid" : "confirmed";
           const customerId = !o.storefront_customer_id
