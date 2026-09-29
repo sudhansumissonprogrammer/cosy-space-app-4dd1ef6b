@@ -207,6 +207,7 @@ export async function verifyPayuAttempts(opts: {
 }): Promise<{ verdict: PayuVerdict; txnid: string; det: any } | null> {
   const ids = Array.from(new Set(opts.txnids.filter(Boolean)));
   let best: { verdict: PayuVerdict; txnid: string; det: any } | null = null;
+  let unknownAttempt = false;
   const rank = { PAID: 3, PENDING: 2, FAILED: 1 } as const;
   for (const txnid of ids) {
     let det: any = null;
@@ -215,11 +216,14 @@ export async function verifyPayuAttempts(opts: {
     } catch (e) {
       console.error("verifyPayuAttempts error", txnid, e);
     }
-    if (!det) continue;
+    if (!det) { unknownAttempt = true; continue; }
     const verdict = mapPayuStatus(det.status);
     if (!best || rank[verdict] > rank[best.verdict]) best = { verdict, txnid, det };
     if (verdict === "PAID") break;
   }
+  // An unreported attempt could still settle. Never cancel merely because
+  // another attempt failed while one of this order's attempts is unknown.
+  if (unknownAttempt && best?.verdict === "FAILED") return { ...best, verdict: "PENDING" };
   return best;
 }
 
