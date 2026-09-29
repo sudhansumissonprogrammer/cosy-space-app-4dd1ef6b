@@ -173,17 +173,10 @@ Deno.serve(async (req) => {
         .eq("store_id", storeId);
       await firePurchaseCapi(supabase, localOrderId, { source: "payu-webhook" });
       await fireWaOrderEvent(supabase, localOrderId, "order_confirmation");
-    } else if (verdict === "FAILED") {
-      // Only mark fresh pending orders as cancelled — never overwrite a confirmed order.
-      if (orderRow.status === "pending") {
-        await supabase
-          .from("orders")
-          .update({ status: "cancelled" })
-          .eq("id", localOrderId)
-            .eq("store_id", storeId)
-          .eq("status", "pending");
-      }
     }
+    // FAILED: do NOT cancel here. This callback describes ONE attempt; an
+    // earlier/later attempt on the same order may be captured. payu-reconcile
+    // checks every attempt and only cancels when none is paid or pending.
 
     return new Response("OK", { status: 200 });
   } catch (err) {

@@ -195,6 +195,34 @@ export function withUpiNote(intentUrl: string, note: string): string {
   }
 }
 
+// Verifies EVERY PayU attempt of an order and returns the best verdict:
+// PAID beats PENDING beats FAILED. A later dropped/bounced retry must never
+// hide an earlier attempt that was captured or is still settling — that
+// exact bug cancelled paid ₹100-advance orders (e.g. Serdiya #10712).
+export async function verifyPayuAttempts(opts: {
+  env: PayuEnv;
+  key: string;
+  salt: string;
+  txnids: string[];
+}): Promise<{ verdict: PayuVerdict; txnid: string; det: any } | null> {
+  const ids = Array.from(new Set(opts.txnids.filter(Boolean)));
+  let best: { verdict: PayuVerdict; txnid: string; det: any } | null = null;
+  const rank = { PAID: 3, PENDING: 2, FAILED: 1 } as const;
+  for (const txnid of ids) {
+    let det: any = null;
+    try {
+      det = await verifyPayuTxn({ env: opts.env, key: opts.key, salt: opts.salt, txnid });
+    } catch (e) {
+      console.error("verifyPayuAttempts error", txnid, e);
+    }
+    if (!det) continue;
+    const verdict = mapPayuStatus(det.status);
+    if (!best || rank[verdict] > rank[best.verdict]) best = { verdict, txnid, det };
+    if (verdict === "PAID") break;
+  }
+  return best;
+}
+
 export function mapPayuStatus(status: unknown): PayuVerdict {
   const s = String(status || "").toLowerCase();
   if (s === "success" || s === "captured") return "PAID";
