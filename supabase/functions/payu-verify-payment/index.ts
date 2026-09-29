@@ -3,7 +3,7 @@
 // reports success. Fires Meta CAPI Purchase (idempotent).
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
-import { verifyPayuTxn, mapPayuStatus, type PayuEnv } from "../_shared/payuHelpers.ts";
+import { verifyPayuAttempts, type PayuEnv } from "../_shared/payuHelpers.ts";
 import { fireWaOrderEvent } from "../_shared/wa-fire-order-event.ts";
 
 const corsHeaders = {
@@ -83,27 +83,13 @@ Deno.serve(async (req) => {
     const candidates: string[] = Array.from(
       new Set([txnid, ...((Array.isArray(orderInfo.payu_txnids) ? orderInfo.payu_txnids : []) as string[])]),
     );
-    let det: any = null;
-    let matchedTxnid = txnid;
-    for (const candidate of candidates) {
-      const res = await verifyPayuTxn({
-        env,
-        key: config.payu_merchant_key,
-        salt: config.payu_merchant_salt,
-        txnid: candidate,
-      });
-      if (!res) continue;
-      det = res;
-      matchedTxnid = candidate;
-      if (mapPayuStatus(res.status) === "PAID") break;
-    }
-
-    if (!det) {
+    const best = await verifyPayuAttempts({ env, key: config.payu_merchant_key, salt: config.payu_merchant_salt, txnids: candidates });
+    if (!best) {
       // PayU has no record yet — treat as pending so the client keeps polling.
       return jsonRes({ success: false, status: "PENDING" });
     }
 
-    const verdict = mapPayuStatus(det.status);
+    const { det, txnid: matchedTxnid, verdict } = best;
     if (verdict === "PAID") {
       const isPartial = orderInfo?.payment_type === "partial";
       const customerId = !orderInfo?.storefront_customer_id

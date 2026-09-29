@@ -6,7 +6,7 @@
 // Returns the normalized verdict AND confirms the order if PayU reports success.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
-import { verifyPayuTxn, mapPayuStatus, type PayuEnv } from "../_shared/payuHelpers.ts";
+import { verifyPayuAttempts, type PayuEnv } from "../_shared/payuHelpers.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -89,23 +89,9 @@ Deno.serve(async (req) => {
     const candidates: string[] = Array.from(
       new Set([txnid, ...((Array.isArray(orderInfo.payu_txnids) ? orderInfo.payu_txnids : []) as string[])]),
     );
-    let det: any = null;
-    let matchedTxnid = txnid;
-    for (const candidate of candidates) {
-      const res = await verifyPayuTxn({
-        env,
-        key: config.payu_merchant_key,
-        salt: config.payu_merchant_salt,
-        txnid: candidate,
-      });
-      if (!res) continue;
-      det = res;
-      matchedTxnid = candidate;
-      if (mapPayuStatus(res.status) === "PAID") break;
-    }
-
-    if (!det) return jsonRes({ status: "PENDING" });
-    const verdict = mapPayuStatus(det.status);
+    const best = await verifyPayuAttempts({ env, key: config.payu_merchant_key, salt: config.payu_merchant_salt, txnids: candidates });
+    if (!best) return jsonRes({ status: "PENDING" });
+    const { det, txnid: matchedTxnid, verdict } = best;
 
     if (verdict === "PAID") {
       const isPartial = orderInfo?.payment_type === "partial";

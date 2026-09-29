@@ -6385,6 +6385,10 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      reserve_payu_attempt: {
+        Args: { _order_id: string; _store_id: string }
+        Returns: string
+      }
       rollup_customer_cohorts_monthly: {
         Args: { _months_back?: number }
         Returns: number

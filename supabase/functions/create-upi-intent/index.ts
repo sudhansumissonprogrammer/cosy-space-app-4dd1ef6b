@@ -64,12 +64,12 @@ Deno.serve(async (req) => {
     // Load canonical order + amount
     const { data: dbOrder, error: orderErr } = await supabase
       .from("orders")
-      .select("id, store_id, total, status, payment_type, advance_paid, order_number, currency, notes, payu_txnids")
+      .select("id, store_id, total, status, payment_type, advance_paid, order_number, currency, notes, payu_txnids, payment_verified")
       .eq("id", order_id)
       .maybeSingle();
     if (orderErr || !dbOrder) return jsonRes({ error: "Order not found" }, 404);
     if (dbOrder.store_id !== store_id) return jsonRes({ error: "Order/store mismatch" }, 403);
-    if (dbOrder.status === "confirmed" || dbOrder.status === "partially_paid" || dbOrder.status === "paid") {
+    if (dbOrder.status !== "pending" || dbOrder.payment_verified === true) {
       return jsonRes({ error: "Order already paid" }, 409);
     }
 
@@ -336,29 +336,17 @@ Deno.serve(async (req) => {
       if (pg === "payu") {
         try {
           const env = (config.payu_env === "sandbox" ? "sandbox" : "production") as PayuEnv;
-          // txnid MUST be unique per *attempt*. place-order reuses one pending
-          // order row across retries, so a deterministic `sb_<order16>` made
-          // attempt #2 collide with a txnid PayU had already seen (EX108) —
-          // the intent never minted, the UI never entered its polling state,
-          // and a shopper who DID pay on attempt #1 came back to a stuck
-          // "processing" screen. Mirror payu-create-txn: first attempt keeps
-          // the legacy id, later attempts get a short unique suffix, and every
-          // txnid is persisted so status/reconcile can verify all of them.
+           // Reserve atomically, including concurrent Pay taps across hosted
+           // checkout and the UPI-app shortcut. Never discard an older attempt.
           const baseTxnid = `sb_${order_id.replace(/-/g, "").slice(0, 16)}`;
-          const priorTxnids: string[] = Array.isArray((dbOrder as any).payu_txnids)
-            ? ((dbOrder as any).payu_txnids as string[])
-            : [];
-          const txnid = priorTxnids.length === 0
-            ? baseTxnid
-            : `${baseTxnid}x${Date.now().toString(36).slice(-4)}`;
-          if (!priorTxnids.includes(txnid)) {
-            await supabase
-              .from("orders")
-              .update({ payu_txnids: [...priorTxnids, txnid].slice(-8) })
-              .eq("id", order_id)
-              .eq("store_id", store_id);
-            (dbOrder as any).payu_txnids = [...priorTxnids, txnid].slice(-8);
-          }
+           const { data: txnid, error: reserveError } = await supabase.rpc("reserve_payu_attempt", {
+             _order_id: order_id,
+             _store_id: store_id,
+           });
+           if (reserveError || !txnid) {
+             console.error("PayU UPI attempt reservation failed", reserveError);
+             return jsonRes({ available: false, message: "Please check your payment status before retrying" }, 409);
+           }
           const amountStr = chargeAmount.toFixed(2);
           // Shown inside GPay/PhonePe/Paytm as the transaction note:
           //   "Serdiya Jewellers - Advance Rs 100 - Order 6348"
@@ -467,9 +455,8 @@ Deno.serve(async (req) => {
             // about every txnid this order ever used — if one is PAID we must
             // confirm the order right here instead of dropping the shopper on
             // a dead "processing" screen.
-            const allTxnids = Array.from(
-              new Set([...(Array.isArray((dbOrder as any).payu_txnids) ? (dbOrder as any).payu_txnids as string[] : []), baseTxnid]),
-            );
+             const { data: freshAttempts } = await supabase.from("orders").select("payu_txnids").eq("id", order_id).eq("store_id", store_id).single();
+             const allTxnids = Array.from(new Set([...(Array.isArray(freshAttempts?.payu_txnids) ? freshAttempts.payu_txnids : []), baseTxnid]));
             for (const t of allTxnids) {
               try {
                 const det = await verifyPayuTxn({
