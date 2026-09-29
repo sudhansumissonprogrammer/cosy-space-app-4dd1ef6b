@@ -59,6 +59,9 @@ Deno.serve(async (req) => {
       .eq("store_id", store_id)
       .eq("checkout_token", checkout_token)
       .eq("status", "pending")
+      // A PayU attempt can still settle after the shopper changes the cart.
+      // Let the gateway-verified reconciler determine its final status.
+      .neq("payment_method", "payu")
       .select("id")
       .maybeSingle();
 

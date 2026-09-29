@@ -57,6 +57,9 @@ Deno.serve(async (req) => {
     })
     .eq("status", "pending")
     .eq("payment_verified", false)
+    // PayU orders have their own gateway-verified reconciler. If PayU is slow,
+    // this generic expiry must not mark a still-settling advance as cancelled.
+    .neq("payment_method", "payu")
     .lt("created_at", cutoff)
     .select("id");
 
