@@ -9,7 +9,7 @@
  *     2. If still over target, progressively shrink dimensions
  *        (1200 → 1000 → 900 → 800) re-running the quality walk
  *     3. Always returns the smallest acceptable result
- * - Product photos use three purpose-built WebP variants: 400px cards,
+ * - Product photos use three purpose-built WebP variants: 800px cards,
  *   1200px PDP galleries, and 2000px near-lossless zoom.
 
  */
@@ -324,7 +324,7 @@ async function encodeProductVariant(
   source: CanvasImageSource,
   sourceWidth: number,
   sourceHeight: number,
-  targetWidth: 400 | 1200 | 2000,
+  targetWidth: 800 | 1200 | 2000,
   quality: number,
   baseName: string,
 ): Promise<File> {
@@ -347,7 +347,7 @@ async function encodeProductVariant(
 /**
  * Create independent storefront variants from the original decode so no
  * variant is compressed from another compressed file.
- * - 400w/q0.88: cards and thumbnails
+ * - 800w/q0.88: cards and thumbnails
  * - 1200w/q0.95: normal PDP gallery
  * - 2000w/q0.97: full-screen zoom, fetched only when opened
  */
@@ -360,7 +360,7 @@ async function processProductPhotoVariants(file: File): Promise<MultiSizeResult>
   try {
     const baseName = file.name.replace(/\.[^/.]+$/, "");
     const [card, pdp, zoom] = await Promise.all([
-      encodeProductVariant(img.source, img.width, img.height, 400, 0.88, baseName),
+      encodeProductVariant(img.source, img.width, img.height, 800, 0.88, baseName),
       encodeProductVariant(img.source, img.width, img.height, 1200, 0.95, baseName),
       encodeProductVariant(img.source, img.width, img.height, 2000, 0.97, baseName),
     ]);
@@ -373,7 +373,7 @@ async function processProductPhotoVariants(file: File): Promise<MultiSizeResult>
     return {
       main,
       variants: new Map<VariantWidth, File>([
-        [400, card],
+        [800, card],
         [1200, pdp],
         [2000, zoom],
       ]),

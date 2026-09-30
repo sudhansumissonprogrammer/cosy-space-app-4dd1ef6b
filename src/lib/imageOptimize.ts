@@ -229,7 +229,8 @@ export function getImageSrcSet(
   const firstUrl = url.split(/,\s*(?=https?:\/\/)/)[0].trim();
   if (!firstUrl) return "";
 
-  // New product uploads store 400w/1200w/2000w siblings. Legacy 800w uploads
+  // New product uploads store 800w/1200w/2000w siblings. Legacy 800w uploads
+
   // deliberately stay on their known-good URL because those siblings do not exist.
   if (isOptimizedUrl(firstUrl)) {
     const isResponsiveR2 = /-1200w\.(webp|jpg|jpeg)$/i.test(firstUrl);
