@@ -229,12 +229,13 @@ export function getImageSrcSet(
   const firstUrl = url.split(/,\s*(?=https?:\/\/)/)[0].trim();
   if (!firstUrl) return "";
 
-  // New product uploads store 400w/1200w/2000w siblings. Legacy 800w uploads
+  // New product uploads store 800w/1200w/2000w siblings. Legacy 800w uploads
+
   // deliberately stay on their known-good URL because those siblings do not exist.
   if (isOptimizedUrl(firstUrl)) {
     const isResponsiveR2 = /-1200w\.(webp|jpg|jpeg)$/i.test(firstUrl);
     if (isResponsiveR2 && !firstUrl.includes("supabase.co/storage")) {
-      const candidates = Math.max(...sizes) >= 1000 ? [400, 1200] : [400];
+      const candidates = Math.max(...sizes) >= 1000 ? [800, 1200] : [800];
       return candidates.map((width) => `${resolveVariantUrl(firstUrl, width)} ${width}w`).join(", ");
     }
     const variant = resolveVariantUrl(firstUrl, 800);
@@ -257,7 +258,7 @@ export function getImageSrcSet(
  * Standard `sizes` attribute for product cards in a responsive grid.
  * Mobile cards are ~half-viewport (~180-200px CSS = 360-400px DPR-2) so we
  * advertise the actual rendered width — the browser then picks the closest
- * srcSet entry (200w/400w) instead of the 800w desktop variant.
+ * srcSet entry (800w card variant) instead of the 1200w PDP variant.
  */
 export const PRODUCT_CARD_SIZES =
   "(max-width: 640px) 45vw, (max-width: 1024px) 28vw, (max-width: 1440px) 20vw, 16vw";

@@ -105,7 +105,7 @@ export function resolveVariantUrl(
   width: number,
 ): string {
   if (!/-1200w\.(webp|jpg|jpeg)$/i.test(mainUrl)) return mainUrl;
-  const target = width <= 400 ? 400 : width <= 1200 ? 1200 : 2000;
+  const target = width <= 800 ? 800 : width <= 1200 ? 1200 : 2000;
   return mainUrl.replace(/-1200w\.(webp|jpg|jpeg)$/i, `-${target}w.$1`);
 }
 
