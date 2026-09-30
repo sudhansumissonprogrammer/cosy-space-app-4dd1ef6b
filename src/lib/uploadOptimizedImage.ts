@@ -98,14 +98,28 @@ export function generateUploadPath(userId: string, storeId: string): string {
  * Given a main image URL, derive the nearest stored variant URL.
  * Works for images uploaded through our pipeline.
  *
- * Legacy 800w uploads remain unchanged because sibling variants do not exist.
+ * Older product galleries have 400w cards; uploads made after the 800w
+ * switch have 800w cards. Legacy single-file 800w uploads stay unchanged.
  */
+const EIGHT_HUNDRED_CARD_START_MS = 1790747949000; // 2026-09-30 05:59:09 UTC
+
+export function getProductCardVariantWidth(mainUrl: string): 400 | 800 | 1200 {
+  if (!/-1200w\.(webp|jpg|jpeg)$/i.test(mainUrl)) return 800;
+  // ProductForm paths use generateUploadPath's 13-digit upload timestamp.
+  // Unknown naming schemes must use the existing canonical photo, not guess
+  // at a sibling that may not exist.
+  const match = mainUrl.match(/\/(\d{13})-[^/]+-1200w\.(?:webp|jpg|jpeg)$/i);
+  if (!match) return 1200;
+  const uploadedAt = Number(match[1]);
+  return uploadedAt < EIGHT_HUNDRED_CARD_START_MS ? 400 : 800;
+}
+
 export function resolveVariantUrl(
   mainUrl: string,
   width: number,
 ): string {
   if (!/-1200w\.(webp|jpg|jpeg)$/i.test(mainUrl)) return mainUrl;
-  const target = width <= 800 ? 800 : width <= 1200 ? 1200 : 2000;
+  const target = width <= 800 ? getProductCardVariantWidth(mainUrl) : width <= 1200 ? 1200 : 2000;
   return mainUrl.replace(/-1200w\.(webp|jpg|jpeg)$/i, `-${target}w.$1`);
 }
 
