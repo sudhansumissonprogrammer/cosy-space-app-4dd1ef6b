@@ -147,3 +147,6 @@ verify_jwt = false
 
 [functions.meesho-product-import]
 verify_jwt = false
+
+[functions.cashfree-reconcile]
+verify_jwt = false
