@@ -10,7 +10,7 @@
  * All public images served through Cloudflare get automatic WebP/AVIF via Polish.
  */
 
-import { isOptimizedUrl, resolveVariantUrl } from "./uploadOptimizedImage";
+import { getProductCardVariantWidth, isOptimizedUrl, resolveVariantUrl } from "./uploadOptimizedImage";
 import { getAdaptiveQuality, shouldPreloadLcp } from "./networkHints";
 
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "";
@@ -216,7 +216,7 @@ export function resolveProductImages(product: any): string[] {
 /**
  * Get a srcSet string for responsive images.
  *
- * For pipeline-optimized images: uses actual stored variant files (200w, 400w, 800w).
+ * For pipeline-optimized images: uses only variants known to exist.
  * For external images: generates srcSet via CDN params / proxy.
  */
 export function getImageSrcSet(
@@ -229,13 +229,13 @@ export function getImageSrcSet(
   const firstUrl = url.split(/,\s*(?=https?:\/\/)/)[0].trim();
   if (!firstUrl) return "";
 
-  // New product uploads store 800w/1200w/2000w siblings. Legacy 800w uploads
-
-  // deliberately stay on their known-good URL because those siblings do not exist.
+  // Product uploads store 400w OR 800w cards, plus 1200w/2000w siblings.
+  // Legacy single-file 800w uploads stay on their known-good URL.
   if (isOptimizedUrl(firstUrl)) {
     const isResponsiveR2 = /-1200w\.(webp|jpg|jpeg)$/i.test(firstUrl);
     if (isResponsiveR2 && !firstUrl.includes("supabase.co/storage")) {
-      const candidates = Math.max(...sizes) >= 1000 ? [800, 1200] : [800];
+      const cardWidth = getProductCardVariantWidth(firstUrl);
+      const candidates = Math.max(...sizes) >= 1000 && cardWidth !== 1200 ? [cardWidth, 1200] : [cardWidth];
       return candidates.map((width) => `${resolveVariantUrl(firstUrl, width)} ${width}w`).join(", ");
     }
     const variant = resolveVariantUrl(firstUrl, 800);
