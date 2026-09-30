@@ -3942,7 +3942,11 @@ export default function CheckoutV2Page() {
       fireInitiateCheckoutOnce();
       fireAddPaymentInfoOnce(isPartialOrder ? "partial_cod_cashfree" : "cashfree", chargeAmount);
       const result = await cashfree.checkout({
-        paymentSessionId: cfData.payment_session_id, redirectTarget: "_modal",
+        paymentSessionId: cfData.payment_session_id,
+        // Serdiya.com is commonly opened inside WhatsApp/Instagram browsers.
+        // A modal started after order/session creation can be popup-blocked;
+        // same-page checkout is reliable and returns through cashfreeReturnUrl.
+        redirectTarget: store.id === "04010cad-1cbe-40ac-b818-07d9a79c1bf7" ? "_self" : "_modal",
       });
 
 
