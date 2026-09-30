@@ -136,6 +136,13 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Remember every Cashfree attempt so the reconciler can ask Cashfree
+    // before any pending order is auto-cancelled.
+    const { error: refErr } = await supabase.rpc("append_cashfree_order_id", {
+      _order_id: order_id, _cf_order_id: cfOrderId,
+    });
+    if (refErr) console.error("append_cashfree_order_id failed", refErr);
+
     return jsonRes({
       cf_order_id: cfOrderId,
       payment_session_id: cfData.payment_session_id,
