@@ -108,6 +108,10 @@ Deno.serve(async (req) => {
         return_url: (typeof return_url === "string" && /^https?:\/\//i.test(return_url))
           ? return_url
           : `${req.headers.get("origin") || ""}/checkout?cf_order={order_id}&order=${order_id}`,
+        // Server-to-server safety net: Cashfree calls this even when the
+        // shopper never returns to checkout (in-app browser closed, UPI app
+        // switch). Without it a paid order stayed "pending" forever.
+        notify_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/cashfree-webhook`,
       },
       order_tags: { store_order_id: order_id, store_id },
     };
@@ -131,6 +135,13 @@ Deno.serve(async (req) => {
         502
       );
     }
+
+    // Remember every Cashfree attempt so the reconciler can ask Cashfree
+    // before any pending order is auto-cancelled.
+    const { error: refErr } = await supabase.rpc("append_cashfree_order_id", {
+      _order_id: order_id, _cf_order_id: cfOrderId,
+    });
+    if (refErr) console.error("append_cashfree_order_id failed", refErr);
 
     return jsonRes({
       cf_order_id: cfOrderId,

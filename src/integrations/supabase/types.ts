@@ -1479,6 +1479,7 @@ export type Database = {
           buyer_fbp: string | null
           buyer_ip: string | null
           buyer_user_agent: string | null
+          cashfree_order_ids: string[]
           checkout_token: string | null
           city: string | null
           cod_confirm_followup_at: string | null
@@ -1534,6 +1535,7 @@ export type Database = {
           buyer_fbp?: string | null
           buyer_ip?: string | null
           buyer_user_agent?: string | null
+          cashfree_order_ids?: string[]
           checkout_token?: string | null
           city?: string | null
           cod_confirm_followup_at?: string | null
@@ -1589,6 +1591,7 @@ export type Database = {
           buyer_fbp?: string | null
           buyer_ip?: string | null
           buyer_user_agent?: string | null
+          cashfree_order_ids?: string[]
           checkout_token?: string | null
           city?: string | null
           cod_confirm_followup_at?: string | null
@@ -5893,6 +5896,10 @@ export type Database = {
       admin_wa_requeue_failed: {
         Args: { _since?: string; _template?: string }
         Returns: number
+      }
+      append_cashfree_order_id: {
+        Args: { _cf_order_id: string; _order_id: string }
+        Returns: undefined
       }
       attribute_wa_recovery: { Args: never; Returns: number }
       calc_hidden_by_category: {

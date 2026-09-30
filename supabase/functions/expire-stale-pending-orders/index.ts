@@ -44,6 +44,18 @@ Deno.serve(async (req) => {
   } catch (e) {
     console.error("expire-stale-pending-orders: reconcile pre-pass failed", e);
   }
+  try {
+    await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/cashfree-reconcile`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        "content-type": "application/json",
+      },
+      body: "{}",
+    });
+  } catch (e) {
+    console.error("expire-stale-pending-orders: cashfree reconcile failed", e);
+  }
 
   // NOTE: `orders_status_check` does not permit 'expired'. We mark the row
   // 'cancelled' and record the reason in notes so dashboards + the recovery
@@ -59,7 +71,7 @@ Deno.serve(async (req) => {
     .eq("payment_verified", false)
     // PayU orders have their own gateway-verified reconciler. If PayU is slow,
     // this generic expiry must not mark a still-settling advance as cancelled.
-    .or("payment_method.is.null,payment_method.neq.payu")
+    .or("payment_method.is.null,and(payment_method.neq.payu,payment_method.neq.cashfree)")
     .lt("created_at", cutoff)
     .select("id");
 
