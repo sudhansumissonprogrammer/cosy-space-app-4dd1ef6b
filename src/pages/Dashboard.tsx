@@ -235,7 +235,23 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {activeMigration && ["pending", "running", "completed", "failed"].includes(activeMigration.status) && (
+      {activeMigration?.status === "completed" && activeMigration.preview_paused === true && (
+        <div className="rounded-lg border border-primary/40 bg-primary/5 px-4 py-4">
+          <p className="text-sm font-semibold">We copied {Number(activeMigration.progress?.products?.done || 0)} products from your old website</p>
+          <p className="mt-1 text-xs text-muted-foreground">Do you want to import the rest of your products and categories too?</p>
+          <div className="mt-3 flex gap-2">
+            <Button size="sm" disabled={resumingImport} onClick={async () => {
+              setResumingImport(true);
+              const { error } = await supabase.functions.invoke("migration-start", { body: { resume_job_id: activeMigration.id } });
+              setResumingImport(false);
+              if (error) { alert("Couldn't start the import. Please try again."); return; }
+              refetchMigration();
+            }}>{resumingImport ? "Starting…" : "Yes, import all"}</Button>
+          </div>
+        </div>
+      )}
+
+      {activeMigration && !activeMigration.preview_paused && ["pending", "running", "completed", "failed"].includes(activeMigration.status) && (
         <div className="flex items-center gap-3 rounded-lg border bg-accent/20 px-3 py-3">
           {activeMigration.status === "failed" ? <AlertCircle className="h-5 w-5 shrink-0 text-destructive" /> : <DownloadCloud className="h-5 w-5 shrink-0 text-primary" />}
           <div className="min-w-0 flex-1">
