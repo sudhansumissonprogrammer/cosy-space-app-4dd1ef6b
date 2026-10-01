@@ -16,8 +16,38 @@ const MERCHANT_EMAIL_DOMAIN = "merchant.shopbanao.in";
 const MAX_MESSAGES = 60;
 
 const TRIGGER_RE =
-  /(create|make|build|get|start|open)\s*(my|a|free|own)?\s*(online\s*)?(store|shop|website|dukaan|dukan)|store\s*banao|shop\s*banao|dukaan\s*banao|apna\s*(store|dukaan|shop)|^create_store$/i;
+  /(create|make|build|get|start|open|want|need)\s*(my|a|an|free|own|new)?\s*(online\s*|ecommerce\s*|e-commerce\s*)?(store|shop|website|dukaan|dukan)|(store|shop|website|dukaan|dukan|website)\s*(banao|banana|banwana|chahiye|kholna|bana\s*do)|apna\s*(store|dukaan|dukan|shop|website)|online\s*(store|shop|dukaan|business)|ecommerce|e-commerce|shopbanao|स्टोर|दुकान|वेबसाइट|^(store|shop|dukaan|dukan|website)$|^create_store$/i;
 const RESTART_RE = /^(restart|start over|reset|फिर से)$/i;
+
+/**
+ * Shopper guard: a number that is talking to us because of a STORE
+ * (order confirmation, cart reminder, marketing, COD confirm) must never be
+ * pulled into store creation by a typed keyword — e.g. "store se order kiya
+ * tha" or "open store link". Only the explicit campaign button bypasses it.
+ */
+export async function isStoreShopperContext(
+  admin: any, phone: string, contextId: string | null,
+): Promise<boolean> {
+  // Replying to one of our messages that belonged to a store.
+  if (contextId) {
+    const { data } = await admin.from("whatsapp_messages")
+      .select("store_id").eq("meta_message_id", contextId).maybeSingle();
+    if (data?.store_id) return true;
+  }
+  const digits = String(phone || "").replace(/\D/g, "");
+  const last10 = digits.slice(-10);
+  if (last10.length !== 10) return false;
+  const variants = Array.from(new Set([digits, last10, `91${last10}`, `+91${last10}`]));
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const [{ data: msgs }, { data: orders }] = await Promise.all([
+    admin.from("whatsapp_messages").select("id")
+      .in("recipient_phone", variants).not("store_id", "is", null)
+      .eq("direction", "outgoing").gte("created_at", since).limit(1),
+    admin.from("orders").select("id")
+      .in("customer_phone", variants).gte("created_at", since).limit(1),
+  ]);
+  return (msgs?.length ?? 0) > 0 || (orders?.length ?? 0) > 0;
+}
 
 export const CATEGORIES = [
   "Jewellery", "Clothing", "Sarees & Ethnic", "Watches", "Beauty & Cosmetics",
@@ -35,6 +65,7 @@ type Inbound = {
   buttonId: string | null;
   msgType: string;
   mediaId: string | null;
+  contextId?: string | null;
 };
 
 type Ctx = { admin: any; phoneNumberId: string; token: string };
@@ -143,7 +174,12 @@ export async function handleStoreOnboarding(ctx: Ctx, msg: Inbound): Promise<boo
   const { data: existing } = await admin
     .from("wa_onboarding_sessions").select("*").eq("phone", phone).maybeSingle();
 
-  const isTrigger = id === "CREATE_STORE" || TRIGGER_RE.test(input);
+  let isTrigger = id === "CREATE_STORE" || TRIGGER_RE.test(input);
+
+  // Typed keyword from someone who is a store's customer → not for us.
+  if (isTrigger && id !== "CREATE_STORE" && existing?.status !== "active") {
+    if (await isStoreShopperContext(admin, phone, msg.contextId ?? null)) isTrigger = false;
+  }
 
   // Not in a chat and not asking for a store → let the normal inbox handle it.
   if (!existing && !isTrigger) return false;
@@ -154,6 +190,8 @@ export async function handleStoreOnboarding(ctx: Ctx, msg: Inbound): Promise<boo
     }
     return false;
   }
+  // Old/failed chat and no new request → leave it to the normal inbox.
+  if (existing && existing.status !== "active" && !isTrigger) return false;
 
   // Already has a ShopBanao store → don't create a second one.
   if (isTrigger && (!existing || existing.status !== "active")) {

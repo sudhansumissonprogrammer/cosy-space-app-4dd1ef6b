@@ -338,13 +338,13 @@ Deno.serve(async (req) => {
             const { data: obSession } = await adminClient
               .from("wa_onboarding_sessions").select("status").eq("phone", from).maybeSingle();
             const looksLikeTrigger = buttonId === "CREATE_STORE" ||
-              /(store|shop|dukaan|dukan|website)/i.test(finalBody);
+              /(store|shop|dukaan|dukan|website|ecommerce|e-commerce|shopbanao|स्टोर|दुकान|वेबसाइट)/i.test(finalBody);
             if ((obSession && ["active", "creating"].includes((obSession as any).status)) || looksLikeTrigger) {
               const work = handleStoreOnboarding(
                 { admin: adminClient, phoneNumberId: platformPhoneId, token: platformToken },
-                { phone: from, text: msgBody || caption, buttonId, msgType, mediaId: mediaIdStored },
+                { phone: from, text: msgBody || caption, buttonId, msgType, mediaId: mediaIdStored, contextId: msg?.context?.id || null },
               ).catch((e) => { console.error("onboarding failed:", (e as Error).message); return false; });
-              if (obSession && (obSession as any).status !== "done") onboardingHandled = true;
+              if (obSession && ["active", "creating"].includes((obSession as any).status)) onboardingHandled = true;
               // @ts-ignore EdgeRuntime is provided by the Supabase runtime
               if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(work); else await work;
             }
