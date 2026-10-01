@@ -614,12 +614,18 @@ Deno.serve(async (req) => {
       categories: { done: categoriesDone + categoriesCreated },
     };
 
+    // A sitemap can contain plausible product links while every product page is
+    // blocked or unparseable. Never report such a job as a successful import.
+    const emptyImport = !hasMore && productsDone + done === 0 && entities.includes("products");
+    if (emptyImport) {
+      await appendError(admin, job.id, "No products could be extracted from this website. The site may block automated access or omit product data.");
+    }
     await admin
       .from("migration_jobs")
       .update({
         progress: newProgress,
         cursor: nextCursor,
-        status: hasMore ? "running" : "completed",
+        status: hasMore ? "running" : emptyImport ? "failed" : "completed",
         completed_at: hasMore ? null : new Date().toISOString(),
         lease_until: null,
         ...(hasMore ? {} : { credentials: {} }),

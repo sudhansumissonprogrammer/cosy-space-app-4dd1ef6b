@@ -230,7 +230,7 @@ export async function handleStoreOnboarding(ctx: Ctx, msg: Inbound): Promise<boo
       if (!m) answers.description = input.slice(0, 200);
       await saveSession(admin, phone, { answers, step: "website" });
       await buttons(ctx, phone,
-        "3️⃣ Do you already have a website or online store? Send its link and we'll copy your products.\n\nNo website? Tap *Skip*.",
+        "3️⃣ Do you already have a website or online store? Send its link and we'll try to copy its publicly available products. Some sites block imports.\n\nNo website? Tap *Skip*.",
         [{ id: "SKIP_WEBSITE", title: "Skip" }]);
       return true;
     }
@@ -476,16 +476,19 @@ async function provisionStore(ctx: Ctx, phone: string, a: Record<string, any>) {
 
   // 6) Catalog: import from old website, else demo products.
   let importing = false;
+  let importNote = "";
   if (a.website) {
     const det = await fn("migration-detect", { platform: "auto", source_url: a.website });
-    if (det.ok && det.body && !det.body.error) {
+    const discovered = Number(det.body?.counts?.products ?? 0);
+    if (det.ok && det.body && !det.body.error && discovered > 0) {
       const st = await fn("migration-start", {
         store_id: store.id, platform: det.body.import_platform || "generic",
         detected_platform: det.body.platform || "generic", source_url: a.website,
         discovered_counts: det.body.counts || {}, credentials: {}, entities: ["products", "categories", "pages"],
       });
-      importing = st.ok && !st.body?.error;
+      importing = st.ok && !!st.body?.job_id;
     }
+    if (!importing) importNote = "We couldn't start copying products from your old website. Some sites block access or don't expose product pages. We added demo products instead; you can add your own in the dashboard.";
   }
   if (!importing) await fn("seed-demo-store", { store_id: store.id }, 30000);
   await fn("prewarm-store", { slug: store.slug }, 8000);
@@ -500,7 +503,7 @@ async function provisionStore(ctx: Ctx, phone: string, a: Record<string, any>) {
     (password ? `🔑 Password: *${password}*\n_(please change it in Settings after logging in)_\n` : `🔑 Use your existing password or log in with your mobile number.\n`) +
     (link ? `\n🔐 One-tap login (valid 1 hour):\n${link}\n` : "") +
     (importing
-      ? `\n📦 We're copying products from ${a.website} — they'll appear in your dashboard as drafts for you to review.`
-      : `\n📦 We added a few demo products — replace them with your own from the dashboard.`) +
+      ? `\n📦 We're trying to copy publicly available products from ${a.website}. Check the dashboard's import status before reviewing drafts; some sites block copying.`
+      : `\n📦 ${importNote || "We added a few demo products — replace them with your own from the dashboard."}`) +
     `\n\nNeed help? Just reply here.`);
 }
