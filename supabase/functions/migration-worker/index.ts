@@ -614,12 +614,18 @@ Deno.serve(async (req) => {
       categories: { done: categoriesDone + categoriesCreated },
     };
 
+    // A sitemap can contain plausible product links while every product page is
+    // blocked or unparseable. Never report such a job as a successful import.
+    const emptyImport = !hasMore && productsDone + done === 0 && entities.includes("products");
+    if (emptyImport) {
+      await appendError(admin, job.id, "No products could be extracted from this website. The site may block automated access or omit product data.");
+    }
     await admin
       .from("migration_jobs")
       .update({
         progress: newProgress,
         cursor: nextCursor,
-        status: hasMore ? "running" : "completed",
+        status: hasMore ? "running" : emptyImport ? "failed" : "completed",
         completed_at: hasMore ? null : new Date().toISOString(),
         lease_until: null,
         ...(hasMore ? {} : { credentials: {} }),
@@ -642,16 +648,18 @@ Deno.serve(async (req) => {
 });
 
 function scheduleWorker(jobId: string, delayMs: number) {
-  setTimeout(() => {
-    fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/migration-worker`, {
+  const work = new Promise<void>((resolve) => setTimeout(resolve, delayMs)).then(async () => {
+    await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/migration-worker`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
       },
       body: JSON.stringify({ job_id: jobId }),
-    }).catch(() => {});
-  }, delayMs);
+    });
+  }).catch((error) => console.error("[migration-worker] continuation failed", error));
+  // @ts-ignore EdgeRuntime is supplied by the hosted function runtime
+  if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(work);
 }
 
 async function recordMap(

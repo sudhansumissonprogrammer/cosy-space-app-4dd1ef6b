@@ -91,14 +91,19 @@ Deno.serve(async (req) => {
       .single();
     if (insErr) return json({ error: insErr.message }, 500);
 
-    fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/migration-worker`, {
+    const worker = fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/migration-worker`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
       },
       body: JSON.stringify({ job_id: job.id }),
-    }).catch(() => { /* worker will pick it up on next cron tick */ });
+    }).catch((error) => console.error("[migration-start] worker launch failed", error));
+    // Keep the invocation alive after returning the job ID to the owner.
+    // A detached fetch can be cancelled when this isolate shuts down.
+    // @ts-ignore EdgeRuntime is supplied by the hosted function runtime
+    if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(worker);
+    else await worker;
 
     return json({ job_id: job.id });
   } catch (err) {
