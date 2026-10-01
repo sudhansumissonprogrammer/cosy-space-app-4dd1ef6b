@@ -53,6 +53,20 @@ Run at 2026-10-01 15:33 UTC using `baseline`:
 
 This shows the site is healthy at negligible traffic. It does not establish campaign capacity. The zero edge-cache rate confirms that Render remains involved in these page views.
 
+## Maximum production-safe canary
+
+Run at 2026-10-01 15:41 UTC using `canary`:
+
+- 30 public catalog requests over 30 seconds
+- Two concurrent workers
+- Target and actual rate: 1.00 request/second
+- p95 total response time: 806 ms
+- p95 time to first byte: 800 ms
+- HTTP error rate: 0.00%
+- Cloudflare edge-cache hit rate: 0.0%
+
+The site remained available, but p95 latency was approximately 2.05 times the 393 ms baseline while all HTML still reached the origin. This is an early warning of variable origin response time, not a measured breaking point; the traffic rate was intentionally too low to endanger production.
+
 ## Capacity test method
 
 Use `loadtest/python-serdiya-capacity.py`. Production is permanently limited to `baseline` and `canary`. `ramp`, `spike`, and `soak` refuse the production domain and its subdomains, with no override.
