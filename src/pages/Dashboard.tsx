@@ -134,7 +134,7 @@ export default function Dashboard() {
 
   const { data: walletSummary } = useStoreWallet(storeId);
   const isCommissionMode = isCommissionBilling(store, walletSummary);
-  const { data: activeMigration } = useQuery({
+  const { data: activeMigration, refetch: refetchMigration } = useQuery({
     queryKey: ["dashboard-active-migration", storeId],
     enabled: !!storeId,
     refetchInterval: (query) => {
@@ -143,7 +143,7 @@ export default function Dashboard() {
     },
     queryFn: async () => {
       const { data, error } = await (supabase as any).from("migration_jobs")
-        .select("id,status,progress,discovered_counts,error_log")
+        .select("id,status,progress,discovered_counts,error_log,preview_paused:cursor->preview_paused")
         .eq("store_id", storeId).order("created_at", { ascending: false }).limit(1).maybeSingle();
       if (error) throw error;
       return data;
