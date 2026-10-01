@@ -4990,6 +4990,45 @@ export type Database = {
         }
         Relationships: []
       }
+      wa_onboarding_sessions: {
+        Row: {
+          answers: Json
+          created_at: string
+          last_error: string | null
+          message_count: number
+          phone: string
+          status: string
+          step: string
+          store_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          answers?: Json
+          created_at?: string
+          last_error?: string | null
+          message_count?: number
+          phone: string
+          status?: string
+          step?: string
+          store_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          last_error?: string | null
+          message_count?: number
+          phone?: string
+          status?: string
+          step?: string
+          store_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       wa_pricing_config: {
         Row: {
           created_at: string
@@ -5971,6 +6010,7 @@ export type Database = {
           claim_id: string
         }[]
       }
+      claim_wa_onboarding_create: { Args: { _phone: string }; Returns: boolean }
       cleanup_app_logs: { Args: never; Returns: Json }
       cleanup_expired_otp_codes: { Args: never; Returns: undefined }
       cleanup_old_analytics: { Args: never; Returns: Json }
