@@ -1,6 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { verifyMetaSignature } from "../_shared/security.ts";
 import { handleCodReply } from "../_shared/wa-cod-confirm.ts";
+import { handleStoreOnboarding } from "../_shared/wa-store-onboarding.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -326,10 +327,33 @@ Deno.serve(async (req) => {
               .limit(1);
           }
 
+          // ── 🏪 WhatsApp store-creation agent (shared number only) ──
+          // Only claims messages that start/continue an onboarding chat.
+          // Runs in the background so Meta gets its 200 within 5 seconds.
+          let onboardingHandled = false;
+          if (!alreadyProcessed && !isOptOut && isPlatformDelivery && platformPhoneId && platformToken) {
+            const buttonId: string | null =
+              msg?.interactive?.button_reply?.id || msg?.interactive?.list_reply?.id ||
+              msg?.button?.payload || null;
+            const { data: obSession } = await adminClient
+              .from("wa_onboarding_sessions").select("status").eq("phone", from).maybeSingle();
+            const looksLikeTrigger = buttonId === "CREATE_STORE" ||
+              /(store|shop|dukaan|dukan|website)/i.test(finalBody);
+            if ((obSession && ["active", "creating"].includes((obSession as any).status)) || looksLikeTrigger) {
+              const work = handleStoreOnboarding(
+                { admin: adminClient, phoneNumberId: platformPhoneId, token: platformToken },
+                { phone: from, text: msgBody || caption, buttonId, msgType, mediaId: mediaIdStored },
+              ).catch((e) => { console.error("onboarding failed:", (e as Error).message); return false; });
+              if (obSession && (obSession as any).status !== "done") onboardingHandled = true;
+              // @ts-ignore EdgeRuntime is provided by the Supabase runtime
+              if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(work); else await work;
+            }
+          }
+
           // ── 🧾 COD order confirmation buttons / replies ──
           // Runs before opt-out handling: "Confirm Order" must never be read
           // as anything else. Best-effort — inbox storage already happened.
-          if (!alreadyProcessed && !isOptOut && finalBody) {
+          if (!alreadyProcessed && !isOptOut && !onboardingHandled && finalBody) {
             try {
               const { data: cronRow } = await adminClient
                 .from("cron_auth").select("secret").eq("id", true).maybeSingle();

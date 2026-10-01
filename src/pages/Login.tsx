@@ -120,7 +120,12 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const normalizedEmail = email.trim().toLowerCase();
+    // Stores created by the WhatsApp agent use the mobile number as login ID.
+    const rawLogin = email.trim().toLowerCase();
+    const loginDigits = rawLogin.replace(/[\s+\-()]/g, "").replace(/^(91|0)(?=[6-9]\d{9}$)/, "");
+    const normalizedEmail = /^[6-9]\d{9}$/.test(loginDigits)
+      ? `${loginDigits}@merchant.shopbanao.in`
+      : rawLogin;
 
     if (!normalizedEmail || !password) {
       toast.error("Please fill in all fields");
