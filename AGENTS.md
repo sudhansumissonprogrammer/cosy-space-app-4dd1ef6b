@@ -7,3 +7,4 @@
 - Reserve every PayU attempt with a service-role-only row-locked database function and treat unknown attempts as unsettled, because concurrent retries must not lose a paid reference or cancel an unresolved payment.
 - Open Cashfree in the current page only for Serdiya.com while retaining the modal elsewhere, because delayed modal launches are blocked by some WhatsApp/Instagram mobile browsers.
 
+- The WhatsApp store-creation agent (`_shared/wa-store-onboarding.ts`, called from whatsapp-webhook) provisions stores by minting the new owner's own session and running the same steps as CreateStore, because store setup must match the web flow and respect RLS.

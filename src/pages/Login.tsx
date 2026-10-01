@@ -339,12 +339,12 @@ export default function Login() {
           <form onSubmit={handleLogin} className="space-y-5">
             <BauhausField
               id="email"
-              label="Email"
-              type="email"
-              placeholder="you@example.com"
+              label="Email or mobile number"
+              type="text"
+              placeholder="you@example.com or 98XXXXXXXX"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
+              autoComplete="username"
             />
             <BauhausField
               id="password"

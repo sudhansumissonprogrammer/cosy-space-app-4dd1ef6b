@@ -88,4 +88,4 @@
 
 - [x] Restore missing saved files to the Files panel after refresh did not re-index them.
 
-- [ ] WhatsApp-only AI store-creation agent (chat on our WhatsApp Business number creates store, sends credentials) — plan pending approval
+- [x] WhatsApp-only store-creation agent built (needs live test from a real phone; admin panel + Telegram alert still open)
