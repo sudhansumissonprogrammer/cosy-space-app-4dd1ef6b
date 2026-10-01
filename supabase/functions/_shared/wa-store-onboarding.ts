@@ -65,6 +65,7 @@ type Inbound = {
   buttonId: string | null;
   msgType: string;
   mediaId: string | null;
+  contextId?: string | null;
 };
 
 type Ctx = { admin: any; phoneNumberId: string; token: string };
@@ -173,7 +174,12 @@ export async function handleStoreOnboarding(ctx: Ctx, msg: Inbound): Promise<boo
   const { data: existing } = await admin
     .from("wa_onboarding_sessions").select("*").eq("phone", phone).maybeSingle();
 
-  const isTrigger = id === "CREATE_STORE" || TRIGGER_RE.test(input);
+  let isTrigger = id === "CREATE_STORE" || TRIGGER_RE.test(input);
+
+  // Typed keyword from someone who is a store's customer → not for us.
+  if (isTrigger && id !== "CREATE_STORE" && existing?.status !== "active") {
+    if (await isStoreShopperContext(admin, phone, msg.contextId ?? null)) isTrigger = false;
+  }
 
   // Not in a chat and not asking for a store → let the normal inbox handle it.
   if (!existing && !isTrigger) return false;
