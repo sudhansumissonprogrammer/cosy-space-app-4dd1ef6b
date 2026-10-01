@@ -27,6 +27,33 @@ Deno.serve(async (req) => {
     if (!userId) return json({ error: "Unauthorized" }, 401);
 
     const body = await req.json().catch(() => ({}));
+
+    // Resume a paused 20-product preview import ("Import the rest").
+    if (body.resume_job_id) {
+      const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      const { data: pj } = await admin.from("migration_jobs")
+        .select("id, store_id, cursor, status, stores!inner(owner_id)")
+        .eq("id", String(body.resume_job_id)).maybeSingle();
+      if (!pj) return json({ error: "Import not found" }, 404);
+      const { data: isAdm } = await admin.rpc("has_role", { _user_id: userId, _role: "admin" });
+      if ((pj as any).stores.owner_id !== userId && !isAdm) return json({ error: "Forbidden" }, 403);
+      if (!(pj.cursor as any)?.preview_paused || pj.status !== "completed") {
+        return json({ error: "Nothing left to import." }, 409);
+      }
+      const { error: upErr } = await admin.from("migration_jobs").update({
+        status: "pending", completed_at: null, attempt_count: 0,
+        cursor: { ...(pj.cursor as any), preview_paused: false, full_import: true },
+      }).eq("id", pj.id).eq("status", "completed");
+      if (upErr) return json({ error: upErr.message }, 500);
+      const kick = fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/migration-worker`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}` },
+        body: JSON.stringify({ job_id: pj.id }),
+      }).catch((e) => console.error("[migration-start] resume kick failed", e));
+      // @ts-ignore EdgeRuntime is supplied by the hosted function runtime
+      if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(kick); else await kick;
+      return json({ job_id: pj.id, resumed: true });
+    }
     const storeId = String(body.store_id || "");
     const platform = String(body.platform || "generic").toLowerCase();
     const sourceUrl = String(body.source_url || "").trim();

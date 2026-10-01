@@ -619,6 +619,14 @@ Deno.serve(async (req) => {
       categories: { done: categoriesDone + categoriesCreated },
     };
 
+    // WhatsApp-created stores get a 20-product preview; the owner can import
+    // the rest from the dashboard (migration-start resume_job_id).
+    if (publishLive && hasMore && !(job.cursor as any)?.full_import &&
+        productsDone + done >= 20) {
+      hasMore = false;
+      nextCursor = { ...nextCursor, preview_paused: true };
+    }
+
     // A sitemap can contain plausible product links while every product page is
     // blocked or unparseable. Never report such a job as a successful import.
     const emptyImport = !hasMore && productsDone + done === 0 && entities.includes("products");
