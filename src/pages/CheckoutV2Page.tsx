@@ -30,7 +30,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import secureBadge from "@/assets/trust/secure-payment-badge.webp.asset.json";
 import { Loader2, MapPin, ShieldCheck, CheckCircle2, ArrowLeft, Lock, Banknote, Tag, X, Plus, Minus, Check, CreditCard, ShoppingCart, ChevronDown, Trash2, Info, Camera, Package, Truck, Wallet, Sparkles, Headset } from "lucide-react";
 import { toast } from "sonner";
-import VoiceAddressButton, { type VoiceAddress } from "@/components/storefront/VoiceAddressButton";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { ga4Track } from "@/hooks/useGA4";
@@ -813,18 +812,6 @@ export default function CheckoutV2Page() {
     setShowAddressFormSheet(false);
     return true;
   };
-
-  // Voice → form. The pincode effect above re-derives city/state from the
-  // official postal database right after this, so a misheard city self-corrects.
-  const applyVoiceAddress = useCallback((a: VoiceAddress) => {
-    if (a.full_name) setFullName(a.full_name);
-    if (a.street) setStreetAddress(a.street);
-    if (a.city) setCity(a.city);
-    if (a.state) setState(a.state);
-    if (/^\d{6}$/.test(a.pincode)) setPincode(a.pincode);
-    // Never overwrite a phone the shopper already verified/entered.
-    if (a.phone) setPhone((prev) => prev.trim() || a.phone);
-  }, []);
 
   // When the shopper changes their phone number after an address was already
   // hydrated (either from a returning-order or a phone-lookup for a different
@@ -5259,8 +5246,6 @@ export default function CheckoutV2Page() {
                 )}
 
 
-
-                <VoiceAddressButton className="mb-3" onFill={applyVoiceAddress} />
 
                 <form
                   onSubmit={(e) => e.preventDefault()}
