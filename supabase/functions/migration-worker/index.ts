@@ -80,6 +80,11 @@ Deno.serve(async (req) => {
       ? job.entities
       : ["products"];
     const wantCategories = entities.includes("categories");
+    // Stores made by the WhatsApp agent go live immediately (no dashboard review step),
+    // and never adopt the source site's logo — it may be a platform/other brand logo.
+    const { data: waSession } = await admin.from("wa_onboarding_sessions")
+      .select("phone").eq("store_id", job.store_id).maybeSingle();
+    const publishLive = !!waSession;
 
     if (
       !(job.cursor as any)?.site_profile_done &&
@@ -91,7 +96,7 @@ Deno.serve(async (req) => {
         const profile = await inspectPublicSite(String(job.source_url));
         const storePatch: Record<string, string> = {};
         if (profile.description) storePatch.description = profile.description;
-        if (profile.logo_url) {
+        if (profile.logo_url && !publishLive) {
           const mirrored = await mirrorImageToR2(
             profile.logo_url,
             `store-logos/migrated/${job.store_id}/logo.${extFromUrl(profile.logo_url)}`,
@@ -125,7 +130,7 @@ Deno.serve(async (req) => {
             title: page.title,
             slug,
             content,
-            is_active: false,
+            is_active: publishLive,
           };
           const pageResult = existingPage?.id
             ? await admin
@@ -395,8 +400,8 @@ Deno.serve(async (req) => {
           name: clean,
           slug,
           image_url: categoryImage,
-          show_on_home: false,
-          is_hidden: true,
+          show_on_home: publishLive,
+          is_hidden: !publishLive,
         })
         .select("id")
         .single();
@@ -447,7 +452,7 @@ Deno.serve(async (req) => {
           await Promise.all(categoryNames.map((name) => ensureCategory(name)))
         ).filter((id): id is string => Boolean(id));
         row.currency = storeCurrency;
-        row.is_active = false;
+        row.is_active = publishLive;
 
         const uniqueImages = Array.from(
           new Set(
