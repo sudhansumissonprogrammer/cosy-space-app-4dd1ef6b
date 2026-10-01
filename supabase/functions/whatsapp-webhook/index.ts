@@ -331,6 +331,7 @@ Deno.serve(async (req) => {
           // Only claims messages that start/continue an onboarding chat.
           // Runs in the background so Meta gets its 200 within 5 seconds.
           let onboardingHandled = false;
+          let onboardingAttempted = false;
           if (!alreadyProcessed && !isOptOut && isPlatformDelivery && platformPhoneId && platformToken) {
             const buttonId: string | null =
               msg?.interactive?.button_reply?.id || msg?.interactive?.list_reply?.id ||
@@ -340,6 +341,7 @@ Deno.serve(async (req) => {
             const looksLikeTrigger = buttonId === "CREATE_STORE" ||
               /(store|shop|dukaan|dukan|website|ecommerce|e-commerce|shopbanao|स्टोर|दुकान|वेबसाइट)/i.test(finalBody);
             if ((obSession && ["active", "creating"].includes((obSession as any).status)) || looksLikeTrigger) {
+              onboardingAttempted = true;
               const work = handleStoreOnboarding(
                 { admin: adminClient, phoneNumberId: platformPhoneId, token: platformToken },
                 { phone: from, text: msgBody || caption, buttonId, msgType, mediaId: mediaIdStored, contextId: msg?.context?.id || null },
@@ -373,7 +375,7 @@ Deno.serve(async (req) => {
 
           // ── ☎️ Point shoppers at the store's own WhatsApp contact ──
           // Shared number only; skipped for store-creation chats, COD actions and opt-outs.
-          if (!alreadyProcessed && !isOptOut && !onboardingHandled && !codHandled &&
+          if (!alreadyProcessed && !isOptOut && !onboardingHandled && !onboardingAttempted && !codHandled &&
               isPlatformDelivery && platformPhoneId && platformToken) {
             const { data: obNow } = await adminClient
               .from("wa_onboarding_sessions").select("status").eq("phone", from).maybeSingle();
