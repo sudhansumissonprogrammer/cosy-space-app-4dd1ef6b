@@ -190,6 +190,8 @@ export async function handleStoreOnboarding(ctx: Ctx, msg: Inbound): Promise<boo
     }
     return false;
   }
+  // Old/failed chat and no new request → leave it to the normal inbox.
+  if (existing && existing.status !== "active" && !isTrigger) return false;
 
   // Already has a ShopBanao store → don't create a second one.
   if (isTrigger && (!existing || existing.status !== "active")) {
