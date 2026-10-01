@@ -87,3 +87,5 @@
 - [x] Check and explain apparent missing Files panel content; confirm project and store data remain intact.
 
 - [x] Restore missing saved files to the Files panel after refresh did not re-index them.
+
+- [ ] WhatsApp-only AI store-creation agent (chat on our WhatsApp Business number creates store, sends credentials) — plan pending approval
