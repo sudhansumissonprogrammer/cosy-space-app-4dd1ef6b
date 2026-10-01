@@ -541,7 +541,7 @@ async function provisionStore(ctx: Ctx, phone: string, a: Record<string, any>) {
     (password ? `🔑 Password: *${password}*\n_(please change it in Settings after logging in)_\n` : `🔑 Use your existing password or log in with your mobile number.\n`) +
     (link ? `\n🔐 One-tap login (valid 1 hour):\n${link}\n` : "") +
     (importing
-      ? `\n📦 We're trying to copy publicly available products from ${a.website}. Check the dashboard's import status before reviewing drafts; some sites block copying.`
+      ? `\n📦 We're copying your first 20 products from ${a.website} — they go live in a few minutes. After you log in, tap *Yes, import all* on your dashboard to bring in the rest of your products and categories.`
       : `\n📦 ${importNote || "We added a few demo products — replace them with your own from the dashboard."}`) +
     `\n\nNeed help? Just reply here.`);
 }

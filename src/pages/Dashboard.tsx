@@ -90,6 +90,7 @@ export default function Dashboard() {
   const isStorePublished = !!storeUrl;
 
   const [copied, setCopied] = useState(false);
+  const [resumingImport, setResumingImport] = useState(false);
   const handleCopy = useCallback(() => {
     if (!storeUrl) return;
     navigator.clipboard.writeText(storeUrl);
@@ -134,7 +135,7 @@ export default function Dashboard() {
 
   const { data: walletSummary } = useStoreWallet(storeId);
   const isCommissionMode = isCommissionBilling(store, walletSummary);
-  const { data: activeMigration } = useQuery({
+  const { data: activeMigration, refetch: refetchMigration } = useQuery({
     queryKey: ["dashboard-active-migration", storeId],
     enabled: !!storeId,
     refetchInterval: (query) => {
@@ -143,7 +144,7 @@ export default function Dashboard() {
     },
     queryFn: async () => {
       const { data, error } = await (supabase as any).from("migration_jobs")
-        .select("id,status,progress,discovered_counts,error_log")
+        .select("id,status,progress,discovered_counts,error_log,preview_paused:cursor->preview_paused")
         .eq("store_id", storeId).order("created_at", { ascending: false }).limit(1).maybeSingle();
       if (error) throw error;
       return data;
@@ -235,7 +236,23 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {activeMigration && ["pending", "running", "completed", "failed"].includes(activeMigration.status) && (
+      {activeMigration?.status === "completed" && activeMigration.preview_paused === true && (
+        <div className="rounded-lg border border-primary/40 bg-primary/5 px-4 py-4">
+          <p className="text-sm font-semibold">We copied {Number(activeMigration.progress?.products?.done || 0)} products from your old website</p>
+          <p className="mt-1 text-xs text-muted-foreground">Do you want to import the rest of your products and categories too?</p>
+          <div className="mt-3 flex gap-2">
+            <Button size="sm" disabled={resumingImport} onClick={async () => {
+              setResumingImport(true);
+              const { error } = await supabase.functions.invoke("migration-start", { body: { resume_job_id: activeMigration.id } });
+              setResumingImport(false);
+              if (error) { alert("Couldn't start the import. Please try again."); return; }
+              refetchMigration();
+            }}>{resumingImport ? "Starting…" : "Yes, import all"}</Button>
+          </div>
+        </div>
+      )}
+
+      {activeMigration && !activeMigration.preview_paused && ["pending", "running", "completed", "failed"].includes(activeMigration.status) && (
         <div className="flex items-center gap-3 rounded-lg border bg-accent/20 px-3 py-3">
           {activeMigration.status === "failed" ? <AlertCircle className="h-5 w-5 shrink-0 text-destructive" /> : <DownloadCloud className="h-5 w-5 shrink-0 text-primary" />}
           <div className="min-w-0 flex-1">
