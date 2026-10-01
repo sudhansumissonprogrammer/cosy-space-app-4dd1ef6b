@@ -429,7 +429,7 @@ async function provisionStore(ctx: Ctx, phone: string, a: Record<string, any>) {
       owner_id: userId, name: storeName, slug,
       description: a.description || null, business_type: sells || null,
       whatsapp_number: p10, currency: "INR", order_mode: "website",
-      logo_url: logoUrl, theme: "v1", owner_name: a.owner_name || null,
+      logo_url: logoUrl, theme: "theme-16", owner_name: a.owner_name || null,
       meta_title: `${storeName} — Shop Online`,
       meta_description: `Discover products at ${storeName}. Order online today.`,
     }).select("id, slug").single();
