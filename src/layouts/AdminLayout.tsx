@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import {
   Shield, LayoutDashboard, Users, ShoppingBag,
   BarChart3, MessageSquare, Settings, Menu, X, LogOut, User,
-  Wallet, Handshake, Activity, AlertTriangle, Search,
+  Wallet, Handshake, Activity, AlertTriangle, Search, Gauge,
 } from "lucide-react";
 
 
@@ -57,6 +57,7 @@ function AdminMobileMenu({
         { label: "Analytics", icon: BarChart3, path: "/admin/analytics" },
         { label: "Usage Monitor", icon: Activity, path: "/admin/usage" },
         { label: "Error Logs", icon: AlertTriangle, path: "/admin/error-logs" },
+        { label: "Test Website", icon: Gauge, path: "/test-website" },
       ],
     },
     {

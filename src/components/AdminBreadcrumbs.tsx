@@ -22,6 +22,7 @@ const LABELS: Record<string, string> = {
   "error-logs": "Error Logs",
   "menu-config": "Menu Control",
   settings: "Settings",
+  "test-website": "Test Website",
 };
 
 export function AdminBreadcrumbs() {

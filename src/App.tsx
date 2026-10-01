@@ -1024,6 +1024,10 @@ function AppRouter() {
     );
   }
 
+  if (location.pathname === "/test-website") {
+    return <Navigate to="/admin/test-website" replace />;
+  }
+
   // ── LANDING LEGAL PAGES (Razorpay/SaaS compliance) ──
   const LegalComp = LANDING_LEGAL_PATHS[location.pathname];
   if (LegalComp) {
