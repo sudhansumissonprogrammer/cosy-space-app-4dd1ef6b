@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Settings, LogOut, Users, ShoppingBag,
-  BarChart3, MessageSquare, Shield, Activity, AlertTriangle, Menu, Handshake, Wallet,
+  BarChart3, MessageSquare, Shield, Activity, AlertTriangle, Menu, Handshake, Wallet, Gauge,
   ChevronDown,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
@@ -53,6 +53,7 @@ export function AdminSidebar() {
     { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
     { title: "Usage Monitor", url: "/admin/usage", icon: Activity },
     { title: "Error Logs", url: "/admin/error-logs", icon: AlertTriangle },
+    { title: "Test Website", url: "/test-website", icon: Gauge },
   ];
 
   const settingsItems = [
