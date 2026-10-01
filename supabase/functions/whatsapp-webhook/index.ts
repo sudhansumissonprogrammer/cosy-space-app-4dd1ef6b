@@ -353,13 +353,14 @@ Deno.serve(async (req) => {
           // ── 🧾 COD order confirmation buttons / replies ──
           // Runs before opt-out handling: "Confirm Order" must never be read
           // as anything else. Best-effort — inbox storage already happened.
+          let codHandled = false;
           if (!alreadyProcessed && !isOptOut && !onboardingHandled && finalBody) {
             try {
               const { data: cronRow } = await adminClient
                 .from("cron_auth").select("secret").eq("id", true).maybeSingle();
               const cronSecret = (cronRow as any)?.secret || Deno.env.get("CRON_SECRET") || "";
               if (cronSecret) {
-                await handleCodReply(adminClient, cronSecret, {
+                codHandled = await handleCodReply(adminClient, cronSecret, {
                   phone: from,
                   text: finalBody,
                   contextId: msg?.context?.id || null,
@@ -367,6 +368,23 @@ Deno.serve(async (req) => {
               }
             } catch (e) {
               console.error("cod reply handling failed:", (e as Error).message);
+            }
+          }
+
+          // ── ☎️ Point shoppers at the store's own WhatsApp contact ──
+          // Shared number only; skipped for store-creation chats, COD actions and opt-outs.
+          if (!alreadyProcessed && !isOptOut && !onboardingHandled && !codHandled &&
+              isPlatformDelivery && platformPhoneId && platformToken) {
+            const { data: obNow } = await adminClient
+              .from("wa_onboarding_sessions").select("status").eq("phone", from).maybeSingle();
+            if (!obNow || !["active", "creating"].includes((obNow as any).status)) {
+              const work = sendStoreSupportRedirect(adminClient, {
+                phone: from, contextId: msg?.context?.id || null,
+                platformPhoneId, platformToken,
+                sharedDisplayPhone: value?.metadata?.display_phone_number || null,
+              }).catch((e) => console.error("support redirect failed:", (e as Error).message));
+              // @ts-ignore EdgeRuntime is provided by the Supabase runtime
+              if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(work); else await work;
             }
           }
 
