@@ -1,0 +1,82 @@
+# AI "Ready-made Store in Minutes" Onboarding Agent
+
+## Goal
+A person receives a WhatsApp marketing message (written later) with a link. They open a page, tap **"Get my store"**, and a ShopBanao AI agent chats with them: brand name, what they sell, old store URL (optional), logo (optional). The system then creates a complete store automatically for their WhatsApp number and sends them, on WhatsApp: store link, admin login link, login ID and a temporary password.
+
+The marketing message itself is NOT part of this build.
+
+## Flow
+
+```text
+WhatsApp msg (later) ──> shopbanao.in/start?t=<signed token>
+                            │  token = phone + expiry, signed server-side
+                            ▼
+                   Landing card: "Your store in 2 minutes" [Get my store]
+                            ▼
+                   AI agent chat (4–6 questions, one at a time)
+                     1. Brand name  -> checks subdomain free, suggests alternates
+                     2. What do you sell? (chips + free text)
+                     3. Old store URL? (optional, skip)
+                     4. Upload logo (optional, skip -> auto text logo)
+                     5. Your name (for About Us)
+                     6. Summary card: "Create my store" [confirm]
+                            ▼
+                   Server: create account + store (one safe function)
+                            ▼
+                   Progress screen (theme, AI copy, demo/imported products)
+                            ▼
+                   WhatsApp sent: store link, admin link, login ID, temp password
+                   + "Open my dashboard" button on screen (auto-signed-in)
+```
+
+## How the phone number is trusted
+- Main path: the WhatsApp link carries a signed, expiring token with the phone number, so the person never types their number and nobody can create a store for someone else's number.
+- Fallback (link shared/opened without token): ask the phone number and verify with the existing WhatsApp OTP before creating anything.
+- One store per phone via this flow; if the number already owns a store, the agent says so and sends a fresh login link instead of creating a duplicate.
+
+## What gets created automatically (reuses today's store creation)
+- Merchant account tied to the phone (login ID = phone number), merchant role, profile.
+- Store with slug from brand name -> `brand.shopbanao.in`, default theme and fonts (Alegreya SC), store theme config.
+- AI-written description, About Us, SEO title/description (existing store-content writer; static fallback if AI is slow — creation never stalls).
+- Business type saved; category-based demo products when no old URL.
+- Old store URL given -> existing URL-first migration runs in background (products kept as drafts, no demo products mixed in).
+- Logo uploaded to the image CDN; if none, a clean text logo from the brand name.
+- Telegram alert to you: "New AI store created: brand, phone, category".
+
+## What the person receives on WhatsApp
+- Store link: `https://brand.shopbanao.in`
+- Admin link: one-tap auto-login link (expires in 24h), plus `shopbanao.in/login`
+- Login ID: their phone number
+- Temporary password (random, 10+ chars, never a shared "demo" password); they are asked to change it on first login.
+Sent with a Meta-approved utility template (needs approval once before launch).
+
+## Safety under heavy ad traffic
+- Rate limits per phone, per IP, per token; tokens single-use for store creation.
+- Creation is idempotent: double taps / refresh never create two stores.
+- Brand name and uploads validated (bad words, reserved slugs like admin/www/api, logo size/type).
+- Agent cannot do anything except collect these answers — no free-form actions, no access to other stores.
+- Abandoned chats saved as leads (phone + answers) so you can follow up.
+
+## Admin view
+New "AI Onboarding" panel in the admin area: started / finished / dropped chats, stores created, where people stop, resend credentials button.
+
+## Build phases
+1. Signed link + landing page + AI chat (questions, slug check, logo upload).
+2. Server store-creation function reusing current steps, idempotent, with progress.
+3. WhatsApp credentials template + auto-login link + forced password change.
+4. Lead capture, admin panel, Telegram alert, rate limits.
+5. End-to-end test with a test number, then you write the marketing message.
+
+## Technical details
+- New page on main app: `/start` (not the ultra-minimal landing entry). Chat uses AI SDK streaming through an edge function with `openai/gpt-6-astra`, with structured tools: `check_slug`, `save_answer`, `confirm_and_create`. Agent state persisted in a new `onboarding_sessions` table (service-role only; GRANTs + RLS).
+- Token: HMAC-signed `{phone, exp, nonce}` reusing the `wa-autologin-token` pattern; minting endpoint for the future campaign sender.
+- New edge function `ai-onboard-create-store`: creates auth user `phone@...` via admin API (email_confirm true, no anonymous signup), inserts user_roles, then moves the current `CreateStore.tsx` client-side steps (stores insert, theme config, generate-store-content, store_pages, seed-demo-store / migration-start) into a shared server module so both paths stay identical. Idempotency key = session id; unique on phone.
+- Password: crypto-random, stored only as auth hash; `must_change_password` flag in user metadata checked by dashboard.
+- Auto-login: existing `wa-autologin` / `mintSessionForPhone` approach, merchant variant.
+- WhatsApp send via existing platform sender + new utility template `store_ready_credentials`.
+- Record architecture rule in AGENTS.md (server-side store creation shared module).
+
+## Open decisions (defaults chosen unless you say otherwise)
+- Send password on WhatsApp: yes (temporary, forced change) + one-tap login link.
+- Language: English + Hindi (agent replies in the language the person writes in).
+- Store goes live immediately with demo products, or stays "coming soon" until they add products: default live.
