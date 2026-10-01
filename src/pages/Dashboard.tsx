@@ -90,6 +90,7 @@ export default function Dashboard() {
   const isStorePublished = !!storeUrl;
 
   const [copied, setCopied] = useState(false);
+  const [resumingImport, setResumingImport] = useState(false);
   const handleCopy = useCallback(() => {
     if (!storeUrl) return;
     navigator.clipboard.writeText(storeUrl);
