@@ -125,7 +125,8 @@ def fetch(base_url: str, path: str, stage: int) -> Result:
     body = b""
     error = ""
     try:
-        with open_get(base_url.rstrip("/") + path) as response:
+        encoded_path = urllib.parse.quote(path, safe="/%:@-._~!$&'()*+,;=")
+        with open_get(base_url.rstrip("/") + encoded_path) as response:
             headers = dict(response.headers.items())
             ttfb = (time.perf_counter() - begin) * 1000
             body = response.read(2_000_000)
