@@ -129,11 +129,15 @@ export function validateCapacityTarget(value: string, profileId: CapacityProfile
 
   const productionMatch = PRODUCTION_HOSTS.has(hostname)
     || [...PRODUCTION_HOSTS].some((item) => hostname.endsWith(`.${item}`));
+  const stagingMatch = STAGING_MARKERS.some((marker) => hostname.includes(marker));
   const profile = CAPACITY_PROFILES[profileId];
   if (productionMatch && !profile.productionSafe) {
     return { valid: false, normalizedUrl: "", message: "Aggressive tests are permanently blocked on known live websites." };
   }
-  if (!profile.productionSafe && !STAGING_MARKERS.some((marker) => hostname.includes(marker))) {
+  if (profile.productionSafe && !productionMatch && !stagingMatch) {
+    return { valid: false, normalizedUrl: "", message: "This target is not on the approved live list or clearly marked as staging." };
+  }
+  if (!profile.productionSafe && !stagingMatch) {
     return { valid: false, normalizedUrl: "", message: "Aggressive tests require a hostname marked staging, stage, preview, test, qa, or dev." };
   }
 

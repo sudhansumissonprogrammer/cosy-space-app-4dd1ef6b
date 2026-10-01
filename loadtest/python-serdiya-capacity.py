@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read-only capacity tester for serdiyajewellers.com and its staging clone.
+"""Read-only capacity tester for approved live sites and staging clones.
 
 Production is permanently restricted to low-rate baseline/canary profiles.
 Heavy ramp, spike, and soak profiles require an explicit non-production staging
@@ -26,7 +26,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
 
-PRODUCTION_HOSTS = {"serdiyajewellers.com", "www.serdiyajewellers.com"}
+PRODUCTION_HOSTS = {
+    "shopbanao.in", "www.shopbanao.in",
+    "serdiyajewellers.com", "www.serdiyajewellers.com",
+    "serdiyajewellers.shop", "www.serdiyajewellers.shop",
+    "imitationworld.in", "www.imitationworld.in",
+    "cosy-space-app.lovable.app",
+}
+STAGING_MARKERS = ("staging", "stage", "preview", "test", "qa", "dev")
 ALLOWED_PREFIXES = ("/product/", "/category/")
 BLOCKED_PREFIXES = (
     "/admin", "/account", "/cart", "/checkout", "/login", "/api/",
@@ -75,6 +82,11 @@ def host_of(url: str) -> str:
 def is_production(url: str) -> bool:
     host = host_of(url)
     return host in PRODUCTION_HOSTS or any(host.endswith("." + item) for item in PRODUCTION_HOSTS)
+
+
+def is_staging_host(url: str) -> bool:
+    host = host_of(url)
+    return any(marker in host for marker in STAGING_MARKERS)
 
 
 def safe_path(path: str) -> bool:
@@ -258,7 +270,7 @@ def write_outputs(output_dir: Path, metadata: dict, results: list[Result], summa
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Safe, read-only Serdiya capacity tester")
+    parser = argparse.ArgumentParser(description="Safe, read-only website capacity tester")
     parser.add_argument("--base-url", default="https://serdiyajewellers.com")
     parser.add_argument("--profile", choices=tuple(PROFILES), default="baseline")
     parser.add_argument("--target-env", choices=("production", "staging"), default="production")
@@ -278,6 +290,8 @@ def main() -> int:
         raise SystemExit("Refused: production allows only baseline or canary; heavy profiles have no override")
     if not prod and args.target_env != "staging":
         raise SystemExit("Refused: a non-production hostname must be explicitly marked --target-env staging")
+    if not prod and not is_staging_host(args.base_url):
+        raise SystemExit("Refused: staging hostname must contain staging, stage, preview, test, qa, or dev")
 
     paths = discover_paths(args.base_url)
     if not paths or any(not safe_path(path) for path in paths):
