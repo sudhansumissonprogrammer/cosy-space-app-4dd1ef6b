@@ -38,3 +38,26 @@ Profiles: `smoke` `ramp` `step` `spike` `soak` (`K6_SCENARIO=`).
 
 After a run, copy `reports/TEMPLATE.md` to `reports/<date>-<scenario>.md` and
 fill it with measured values. Never estimate a number in a report.
+
+## Custom Serdiya site (Python)
+
+`python-serdiya-capacity.py` tests only public catalog `GET` pages discovered
+from the sitemap. It never calls cart writes, checkout actions, accounts,
+admin, payments, APIs, forms, or webhooks.
+
+```bash
+# Live site: permanently limited, read-only profiles
+python loadtest/python-serdiya-capacity.py --profile baseline
+python loadtest/python-serdiya-capacity.py --profile canary
+
+# Heavy profiles: staging hostname only
+python loadtest/python-serdiya-capacity.py \
+  --base-url https://staging.example.com \
+  --target-env staging --profile ramp
+```
+
+Profiles: `baseline`, `canary`, `ramp`, `spike`, `soak`. The last three refuse
+to run on `serdiyajewellers.com` and `www.serdiyajewellers.com`, with no bypass
+option. Tests stop when errors exceed 1%, p95 exceeds 3× baseline, or three
+consecutive 5xx responses occur. Results are written as CSV, JSON, and Markdown
+under `/tmp/serdiya-capacity` by default.
