@@ -1,37 +1,36 @@
-# AI "Ready-made Store in Minutes" Onboarding Agent
+# AI "Ready-made Store in Minutes" WhatsApp Agent
 
 ## Goal
-A person receives a WhatsApp marketing message (written later) with a link. They open a page, tap **"Get my store"**, and a ShopBanao AI agent chats with them: brand name, what they sell, old store URL (optional), logo (optional). The system then creates a complete store automatically for their WhatsApp number and sends them, on WhatsApp: store link, admin login link, login ID and a temporary password.
+Everything happens inside WhatsApp — the person never visits shopbanao.in. They receive our marketing message (written later) with a "Create my store" button or reply. When they tap/reply, the ShopBanao AI agent on our WhatsApp Business number chats with them right there: brand name, what they sell, old store URL (optional), logo (send image, optional). The system then creates a complete store for their WhatsApp number and sends, in the same chat: store link, admin login link, login ID and a temporary password.
 
 The marketing message itself is NOT part of this build.
 
 ## Flow
 
 ```text
-WhatsApp msg (later) ──> shopbanao.in/start?t=<signed token>
-                            │  token = phone + expiry, signed server-side
+WhatsApp marketing msg (later) with quick-reply button [Create my store]
+                            │  tap / reply "store"  (opens 24h free-reply window)
                             ▼
-                   Landing card: "Your store in 2 minutes" [Get my store]
+        Incoming message -> our WhatsApp webhook -> AI agent (per-phone session)
                             ▼
-                   AI agent chat (4–6 questions, one at a time)
-                     1. Brand name  -> checks subdomain free, suggests alternates
-                     2. What do you sell? (chips + free text)
-                     3. Old store URL? (optional, skip)
-                     4. Upload logo (optional, skip -> auto text logo)
-                     5. Your name (for About Us)
-                     6. Summary card: "Create my store" [confirm]
+        AI asks in chat, one question at a time (buttons/lists where possible)
+          1. Brand name  -> checks subdomain free, suggests alternates as buttons
+          2. What do you sell? (list message of categories + free text)
+          3. Old store URL? (reply link or tap [Skip])
+          4. Send your logo image (or tap [Skip] -> auto text logo)
+          5. Your name (for About Us)
+          6. Summary + buttons [Create my store] [Change something]
                             ▼
-                   Server: create account + store (one safe function)
+        Server: create account + store (one safe function)
                             ▼
-                   Progress screen (theme, AI copy, demo/imported products)
+        Chat: "Building your store..." (progress updates)
                             ▼
-                   WhatsApp sent: store link, admin link, login ID, temp password
-                   + "Open my dashboard" button on screen (auto-signed-in)
+        Chat: store link, admin one-tap login link, login ID, temp password
 ```
 
 ## How the phone number is trusted
-- Main path: the WhatsApp link carries a signed, expiring token with the phone number, so the person never types their number and nobody can create a store for someone else's number.
-- Fallback (link shared/opened without token): ask the phone number and verify with the existing WhatsApp OTP before creating anything.
+- The sender's number comes from WhatsApp itself (Meta verifies it), so no OTP and no typing a number — nobody can create a store for someone else's number.
+- Only messages arriving on our number through the verified webhook are accepted.
 - One store per phone via this flow; if the number already owns a store, the agent says so and sends a fresh login link instead of creating a duplicate.
 
 ## What gets created automatically (reuses today's store creation)
