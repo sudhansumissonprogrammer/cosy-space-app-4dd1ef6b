@@ -20,7 +20,7 @@ const TermsAndConditions = () => (
     <h2>4. Pricing & Platform Commission</h2>
     <ul>
       <li>Creating a ShopBanao store is free. There are no monthly or yearly subscription fees.</li>
-      <li>ShopBanao charges a <strong>3% platform commission</strong> on every order placed through the platform — including orders that are returned to origin (RTO) or cancelled after dispatch (rate configurable per store by our team). The commission is calculated on the order subtotal.</li>
+      <li>ShopBanao charges a <strong>2% platform commission</strong> on every order placed through the platform — including orders that are returned to origin (RTO) or cancelled after dispatch (rate configurable per store by our team). The commission is calculated on the order subtotal.</li>
       <li>Commission is debited from your <strong>store wallet</strong>. You must keep a minimum balance in your wallet for your storefront to continue accepting orders.</li>
       <li>Wallet top-ups are processed securely through Cashfree.</li>
       <li>We may change commission rates or the minimum wallet balance with 30 days' notice via email or in-app notice.</li>
@@ -40,20 +40,26 @@ const TermsAndConditions = () => (
       <li>Violate any applicable Indian or international laws.</li>
     </ul>
 
-    <h2>7. Merchant Responsibility</h2>
-    <p>You are solely responsible for the products you sell, customer service, order fulfillment, taxes (including GST), returns, and compliance with consumer protection laws. ShopBanao is a technology provider and is not a party to transactions between you and your customers.</p>
+    <h2>7. Product Listings & Misrepresentation</h2>
+    <ul>
+      <li>You may not list or add product images that do not belong to the actual product being sold. Using images copied from other listings, brands, sellers, or websites to mislead buyers is strictly prohibited.</li>
+      <li>You may not show one product in a listing and ship or deliver a different product (bait-and-switch). Every order must be fulfilled exactly as described and pictured.</li>
+      <li>Each listing must accurately represent the product — the photos, title, description, specifications, and the item shipped must all match.</li>
+      <li>You must own the rights to, or be licensed to use, every product image and content you upload.</li>
+      <li><strong>If any misleading listing is found on your website, your website/store may be suspended permanently without prior notice</strong>, in addition to any other remedies available to us or to affected buyers.</li>
+    </ul>
 
-    <h2>8. Intellectual Property</h2>
-    <p>All ShopBanao branding, code, design, and platform content are owned by ShopBanao. You retain full ownership of your store content, products, and customer data.</p>
+    <h2>8. Merchant Responsibility</h2>
+    <p>You are solely responsible for the products you sell, product listings and imagery, customer service, order fulfillment, taxes (including GST), returns, and compliance with consumer protection laws. ShopBanao is a technology provider and is not a party to transactions between you and your customers.</p>
 
     <h2>9. Suspension & Termination</h2>
-    <p>We may suspend or terminate your account immediately if you breach these Terms, your wallet balance remains negative beyond the grace period, or you engage in activity that harms ShopBanao or other users.</p>
+    <p>We may suspend or terminate your account immediately if you breach these Terms, your wallet balance remains negative beyond the grace period, a misleading listing is found on your website (see Section 7), or you engage in activity that harms ShopBanao or other users.</p>
 
     <h2>10. Limitation of Liability</h2>
     <p>ShopBanao is provided "as is" without warranties of any kind. To the maximum extent permitted by law, our total liability is limited to the platform commission paid by you in the preceding 3 months.</p>
 
     <h2>11. Indemnification</h2>
-    <p>You agree to indemnify ShopBanao against any claims, damages, or expenses arising from your use of the platform or violation of these Terms.</p>
+    <p>You agree to indemnify ShopBanao against any claims, damages, or expenses arising from your use of the platform, your product listings, or violation of these Terms.</p>
 
     <h2>12. Governing Law</h2>
     <p>These Terms are governed by the laws of India. Any disputes shall be subject to the exclusive jurisdiction of the courts in Bhubaneswar, Odisha, India.</p>
