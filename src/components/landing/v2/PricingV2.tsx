@@ -25,7 +25,7 @@ const PricingV2 = () => (
       <div className="text-center mb-10 sm:mb-14">
         <span className="font-bold uppercase tracking-widest text-xs text-muted-foreground mb-2 block">Pricing</span>
         <h2 className="font-black uppercase text-3xl sm:text-4xl lg:text-5xl tracking-tighter leading-[0.95] text-foreground">
-          ₹0 upfront. <span className="text-bauhaus-red">Flat 3% on every sale.</span>
+          ₹0 upfront. <span className="text-bauhaus-red">Flat 2% on every sale.</span>
         </h2>
         <p className="font-medium text-sm sm:text-base text-muted-foreground mt-4 max-w-2xl mx-auto">
           One simple rate on every order you place through ShopBanao — prepaid, COD or RTO. No subscription, no setup fee, no hidden add-on bills.
@@ -45,7 +45,7 @@ const PricingV2 = () => (
         <div className="bg-bauhaus-red text-primary-foreground px-6 py-5 border-b-4 border-foreground flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
           <div>
             <div className="font-bold uppercase tracking-widest text-[10px] opacity-80">Success-based</div>
-            <div className="font-black text-3xl sm:text-4xl tracking-tight">3% per order</div>
+            <div className="font-black text-3xl sm:text-4xl tracking-tight">2% per order</div>
           </div>
           <div className="font-bold text-sm opacity-90">Charged weekly. No lock-in.</div>
         </div>
