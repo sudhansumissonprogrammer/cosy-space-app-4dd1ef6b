@@ -31,7 +31,7 @@ const Pricing = () => {
           <h2 className="font-black uppercase text-3xl sm:text-4xl lg:text-6xl tracking-tighter leading-[0.9] text-foreground">
             Simple, Honest<br /><span className="text-bauhaus-red">Pricing</span>
           </h2>
-          <p className="font-medium text-muted-foreground mt-4 max-w-md mx-auto">₹0 subscription. No hidden fees. Just a flat 3% per order.</p>
+          <p className="font-medium text-muted-foreground mt-4 max-w-md mx-auto">₹0 subscription. No hidden fees. Just a flat 2% per order.</p>
 
           {/* Annual toggle */}
           <div className="flex items-center justify-center gap-3 mt-6">
