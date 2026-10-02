@@ -100,11 +100,11 @@ export default function Dashboard() {
 
   const [showOnboarding, setShowOnboarding] = useState(false);
   useEffect(() => {
-    if (storeId && !localStorage.getItem(`onboarding-done-${storeId}`)) {
+    if (storeId && storeSlug !== "maviratraimitation" && !localStorage.getItem(`onboarding-done-${storeId}`)) {
       const timer = setTimeout(() => setShowOnboarding(true), 800);
       return () => clearTimeout(timer);
     }
-  }, [storeId]);
+  }, [storeId, storeSlug]);
 
   // One shared query — PendingActions and StoreChecklist read the same cache
   // entry instead of firing their own counts/config reads.
