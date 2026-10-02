@@ -225,6 +225,12 @@ export default function DashboardLayout() {
   const storeId = store?.id;
   const storeSlug = store?.slug ?? (isAdminView ? routeStoreSlug : ownStore?.slug);
   const showPolicyWarning = !isAdminView && storeSlug === "maviratraimitation";
+  // Show the policy warning every time the owner opens the dashboard:
+  // on initial load and again whenever a new dashboard page is opened,
+  // even if it was closed earlier in the session.
+  useEffect(() => {
+    if (showPolicyWarning) setPolicyWarningOpen(true);
+  }, [showPolicyWarning, location.pathname]);
   const isWhatsAppOnly = IS_WHATSAPP_ONLY_STORE;
   const adminViewValue = useMemo(() => ({ isAdminView }), [isAdminView]);
   const dashboardStoreValue = useMemo(() => ({
