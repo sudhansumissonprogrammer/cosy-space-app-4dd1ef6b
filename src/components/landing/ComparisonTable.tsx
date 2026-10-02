@@ -2,7 +2,7 @@ import { Check, X } from "lucide-react";
 
 const rows = [
   { feature: "Monthly cost", shopbanao: "Free–₹699", shopify: "₹1,500–₹20,000", dukaan: "₹499–₹2,999", whatsapp: "Free but chaotic", shopbanaoType: "check", shopifyType: "bad", dukaanType: "neutral", whatsappType: "bad" },
-  { feature: "Commission on every sale", shopbanao: "Flat 3%, all-inclusive", shopify: "0.5–2% extra", dukaan: "1–3% per order", whatsapp: "Manual UPI mess", shopbanaoType: "good", shopifyType: "bad", dukaanType: "bad", whatsappType: "bad" },
+  { feature: "Commission on every sale", shopbanao: "Flat 2%, all-inclusive", shopify: "0.5–2% extra", dukaan: "1–2% per order", whatsapp: "Manual UPI mess", shopbanaoType: "good", shopifyType: "bad", dukaanType: "bad", whatsappType: "bad" },
   { feature: "UPI / GPay / PhonePe", shopbanao: "Built in", shopify: "Complex setup", dukaan: "Yes", whatsapp: "Manual transfer", shopbanaoType: "check", shopifyType: "x", dukaanType: "check", whatsappType: "x" },
   { feature: "Custom domain", shopbanao: "All plans", shopify: "All plans", dukaan: "Paid add-on", whatsapp: "Not possible", shopbanaoType: "check", shopifyType: "check", dukaanType: "bad", whatsappType: "x" },
   { feature: "WhatsApp order alerts", shopbanao: "Instant alerts", shopify: "Needs paid plugin", dukaan: "Limited", whatsapp: "You are WhatsApp", shopbanaoType: "check", shopifyType: "bad", dukaanType: "bad", whatsappType: "x" },
@@ -55,7 +55,7 @@ const ComparisonTable = () => {
             </div>
           ))}
         </div>
-        <p className="text-center text-muted-foreground text-xs mt-4">Prices and features as of 2026. ShopBanao has ₹0 subscription and charges a flat 3% on every order.</p>
+        <p className="text-center text-muted-foreground text-xs mt-4">Prices and features as of 2026. ShopBanao has ₹0 subscription and charges a flat 2% on every order.</p>
 
       </div>
     </section>

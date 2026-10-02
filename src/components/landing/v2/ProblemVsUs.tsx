@@ -10,7 +10,7 @@ const oldWay = [
 
 const newWay = [
   "One platform — store, WhatsApp, logistics, AI calling, checkout",
-  "₹0 subscription. Flat 3% on every sale",
+  "₹0 subscription. Flat 2% on every sale",
   "AI calling agent confirms COD orders & cuts RTO automatically",
   "Unified dashboard — every rupee spent and earned, in one view",
   "Automations handle order updates, recovery and support 24/7",
