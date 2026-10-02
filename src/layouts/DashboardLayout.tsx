@@ -6,6 +6,7 @@ import { Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ContentSkeleton } from "@/components/ContentSkeleton";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import DashboardCommandPalette from "@/components/dashboard/DashboardCommandPalette";
+import StorePolicyViolationDialog from "@/components/dashboard/StorePolicyViolationDialog";
 const AssistantPanel = lazy(() => import("@/components/dashboard/assistant/AssistantPanel"));
 import AssistantFab from "@/components/dashboard/assistant/AssistantFab";
 
@@ -203,6 +204,7 @@ export default function DashboardLayout() {
   const [cmdOpen, setCmdOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [isPurging, setIsPurging] = useState(false);
+  const [policyWarningOpen, setPolicyWarningOpen] = useState(true);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -222,6 +224,7 @@ export default function DashboardLayout() {
 
   const storeId = store?.id;
   const storeSlug = store?.slug ?? (isAdminView ? routeStoreSlug : ownStore?.slug);
+  const showPolicyWarning = !isAdminView && storeSlug === "maviratraimitation";
   const isWhatsAppOnly = IS_WHATSAPP_ONLY_STORE;
   const adminViewValue = useMemo(() => ({ isAdminView }), [isAdminView]);
   const dashboardStoreValue = useMemo(() => ({
@@ -399,6 +402,9 @@ export default function DashboardLayout() {
             <AssistantPanel open={assistantOpen} onOpenChange={setAssistantOpen} storeId={storeId} />
           )}
         </Suspense>
+        {showPolicyWarning && (
+          <StorePolicyViolationDialog open={policyWarningOpen} onOpenChange={setPolicyWarningOpen} />
+        )}
         </DashboardStoreProvider>
       </AdminViewProvider>
     );
@@ -570,6 +576,9 @@ export default function DashboardLayout() {
         <AssistantPanel open={assistantOpen} onOpenChange={setAssistantOpen} storeId={storeId} />
       )}
     </Suspense>
+    {showPolicyWarning && (
+      <StorePolicyViolationDialog open={policyWarningOpen} onOpenChange={setPolicyWarningOpen} />
+    )}
     </DashboardStoreProvider>
     </AdminViewProvider>
   );
