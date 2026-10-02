@@ -2,6 +2,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { verifyMetaSignature } from "../_shared/security.ts";
 import { handleCodReply } from "../_shared/wa-cod-confirm.ts";
 import { handleStoreOnboarding } from "../_shared/wa-store-onboarding.ts";
+import { sendStoreSupportRedirect } from "../_shared/wa-support-redirect.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
