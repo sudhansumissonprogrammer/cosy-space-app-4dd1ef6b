@@ -352,7 +352,7 @@ export default function V19ProductDetail() {
       {/* Image gallery — swipeable with snap */}
       <div className="relative bg-white">
         {lightboxImages.length > 0 && <ZoomHint onClick={() => setZoomOpen(true)} />}
-        {showStrike && <FestivalSaleBadge placement="pdp" className="absolute bottom-8 left-3 z-20 drop-shadow-lg" />}
+        {showStrike && <FestivalSaleBadge placement="pdp" className="absolute bottom-4 left-7 z-20 drop-shadow-lg sm:bottom-5 sm:left-3" />}
         <div
           ref={galleryRef}
           onScroll={onGalleryScroll}

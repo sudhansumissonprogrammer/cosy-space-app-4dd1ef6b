@@ -307,7 +307,7 @@ export default function V20ProductDetail() {
 
       <div className="relative bg-white">
         {lightboxImages.length > 0 && <ZoomHint onClick={() => setZoomOpen(true)} />}
-        {showStrike && <FestivalSaleBadge placement="pdp" className="absolute bottom-8 left-3 z-20 drop-shadow-lg" />}
+        {showStrike && <FestivalSaleBadge placement="pdp" className="absolute bottom-4 left-7 z-20 drop-shadow-lg sm:bottom-5 sm:left-3" />}
         <div ref={galleryRef} onScroll={onGalleryScroll} className="v20pdp-snap v20pdp-noscrollbar flex overflow-x-auto">
           {(gallerySlides.length ? gallerySlides : [null]).map((slide, i) => (
             <div key={i} className="flex-shrink-0 w-full h-[min(133vw,78svh)] sm:aspect-[4/5] sm:h-auto bg-white flex items-center justify-center overflow-hidden">
