@@ -1564,7 +1564,7 @@ function ImageGallery({
       <div className="space-y-1 sm:space-y-2 lg:sticky lg:top-4">
         <div className="relative -mx-4 sm:mx-0 px-2 pt-2 pb-1 sm:p-0">
           {hasDiscount && (
-            <FestivalSaleBadge placement="pdp" className="absolute bottom-8 left-5 z-20 drop-shadow-lg sm:bottom-4 sm:left-3" />
+            <FestivalSaleBadge placement="pdp" className="absolute bottom-4 left-7 z-20 drop-shadow-lg sm:bottom-5 sm:left-3" />
           )}
           {/* Discount badge */}
           {hasDiscount && discountPct > 0 && (
