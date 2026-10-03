@@ -74,8 +74,6 @@ import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import WarrantyBadge from "./WarrantyBadge";
 import ProductCardVideo from "./ProductCardVideo";
 import { useAppDisabled } from "@/hooks/useAppDisabled";
-import { useAwardBadgeProducts, hasAwardBadge } from "@/hooks/useAwardBadgeProducts";
-import AwardSealBadge from "./AwardSealBadge";
 
 
 interface Props {
@@ -93,8 +91,6 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
   preloadCardStyle(store?.theme === "theme-19" || store?.theme === "theme-20" ? store.theme : cardStyle);
   const [variantOpen, setVariantOpen] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
-  const awardIds = useAwardBadgeProducts(store?.id);
-  const showAwardSeal = hasAwardBadge(product, awardIds);
   // Tap-to-play video is available on every store/theme by default; the
   // App Store "Card Video (Mobile)" toggle is an explicit opt-out.
   const inlineVideoUrl = ((product as any)?.video_url as string | null) || null;
@@ -209,13 +205,6 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
       {showCardVideo && (
         <ProductCardVideo hostRef={hostRef} enabled videoUrl={cardVideoUrl!} />
       )}
-
-      {/* Merchant-picked "Best Seller" seal — top-left of the image, the only
-          corner left free after the discount pills were removed. */}
-      {showAwardSeal && (
-        <AwardSealBadge className="absolute left-1.5 top-1.5 z-[5]" />
-      )}
-
 
       {hasVariants && variantOpen && (
         <Suspense fallback={null}>

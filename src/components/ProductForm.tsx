@@ -85,7 +85,6 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
 
   const [isBestSelling, setIsBestSelling] = useState(false);
   const [isCategoryPinned, setIsCategoryPinned] = useState(false);
-  const [awardBadge, setAwardBadge] = useState(false);
 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -326,7 +325,6 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
       setIsActive(existingProduct.is_active);
       setIsBestSelling((existingProduct as any).is_best_selling ?? false);
       setIsCategoryPinned((existingProduct as any).is_category_pinned ?? false);
-      setAwardBadge((existingProduct as any).award_badge ?? false);
       if (existingProduct.image_url) setImagePreview(existingProduct.image_url);
       const ep = existingProduct as any;
       if (ep.video_url) setVideoUrl(ep.video_url);
@@ -495,7 +493,6 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
         category: category || null,
         is_active: isActive,
         is_best_selling: isBestSelling,
-        award_badge: awardBadge,
         is_category_pinned: isCategoryPinned,
         category_pinned_at: isCategoryPinned
           ? ((existingProduct as any)?.category_pinned_at ?? new Date().toISOString())
@@ -1298,10 +1295,6 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
                   Pin to top of category
                   {!category && <span className="ml-1 text-xs text-muted-foreground">(set a category first)</span>}
                 </Label>
-              </div>
-              <div className="flex items-center gap-3">
-                <Switch id="award-badge" checked={awardBadge} onCheckedChange={setAwardBadge} />
-                <Label htmlFor="award-badge">Best Seller seal (badge on card &amp; PDP)</Label>
               </div>
             </div>
 

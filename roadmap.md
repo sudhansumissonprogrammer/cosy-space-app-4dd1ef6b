@@ -4,6 +4,7 @@
 - [x] Classify all Imitation World New2 products into Chain with Pendant or Pendant from their imported product details.
 
 ## Active work
+- [x] Remove the merchant-controlled Best Seller badge from every product card and product page, remove all dashboard controls, and clear the feature from every product.
 - [x] Add an admin-only `/test-website` capacity planner with staging-only aggressive profiles, production safety locks, request totals, and downloadable Python configuration.
 - [ ] Complete the serdiyajewellers.com breaking-point test; passive audit, Python tester, safety locks, and live baseline are complete, but ramp/spike/soak await a production-sized staging URL with real payments and messages disabled.
 - [x] Make Serdiya.com open Cashfree in the current page so mobile and in-app browsers cannot block the delayed gateway modal; leave every other store unchanged.
