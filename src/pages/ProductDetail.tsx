@@ -56,6 +56,7 @@ import PdpTrustBadges from "@/components/storefront/PdpTrustBadges";
 import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 import AutoCouponHint from "@/components/storefront/AutoCouponHint";
 import { useWaCouponPreview } from "@/hooks/useWaCouponPreview";
+import FestivalSaleBadge from "@/components/storefront/FestivalSaleBadge";
 
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
 const CheckoutReviewsTeaser = lazy(() => import("@/components/storefront/checkout/CheckoutReviewsTeaser"));
@@ -914,8 +915,9 @@ export default function ProductDetail() {
           </div>
 
           {/* Price — simple, no border/background */}
-          <div className="mt-4">
-            <div className="flex items-baseline gap-2.5 flex-wrap">
+          <div className="mt-4 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-baseline gap-2.5 flex-wrap">
               {/* WhatsApp arrivals: show the post-coupon price they'll actually
                   pay at checkout. Display-only — cart/order pricing unchanged. */}
               {waPreview.active ? (
@@ -944,19 +946,21 @@ export default function ProductDetail() {
                   Extra {formatPrice(waPreview.discount, currency)} OFF
                 </Badge>
               )}
+              </div>
+              {isV18 && (
+                <p className="mt-2 text-sm italic" style={{ color: "#999999", ...v18Font }}>Inclusive of all taxes</p>
+              )}
+              {waPreview.active ? (
+                <p className="mt-1 text-xs font-semibold text-red-600">
+                  {formatPrice(waPreview.discount, currency)} WhatsApp coupon auto-applies at checkout
+                </p>
+              ) : (!isV18 && hasDiscount && (
+                <p className="mt-1 text-xs font-semibold text-emerald-600">
+                  You save {formatPrice((product.price - product.sale_price!), currency)} on this order
+                </p>
+              ))}
             </div>
-            {isV18 && (
-              <p className="mt-2 text-sm italic" style={{ color: "#999999", ...v18Font }}>Inclusive of all taxes</p>
-            )}
-            {waPreview.active ? (
-              <p className="mt-1 text-xs font-semibold text-red-600">
-                {formatPrice(waPreview.discount, currency)} WhatsApp coupon auto-applies at checkout
-              </p>
-            ) : (!isV18 && hasDiscount && (
-              <p className="mt-1 text-xs font-semibold text-emerald-600">
-                You save {formatPrice((product.price - product.sale_price!), currency)} on this order
-              </p>
-            ))}
+            {hasDiscount && <FestivalSaleBadge />}
           </div>
 
           {/* Store-scoped quality assurance grid (wristlife/hopknock) — under price */}

@@ -48,6 +48,7 @@ const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/
 const CheckoutReviewsTeaser = lazy(() => import("@/components/storefront/checkout/CheckoutReviewsTeaser"));
 const PdpCarousels = lazy(() => import("@/components/storefront/pdp/PdpCarousels"));
 import PdpUpsellSection from "@/components/storefront/apps/Upsell/PdpUpsellSection";
+import FestivalSaleBadge from "@/components/storefront/FestivalSaleBadge";
 
 
 import DeliveryTimeline from "@/components/storefront/DeliveryTimeline";
@@ -745,8 +746,9 @@ export default function V22ProductDetail() {
           </div>
 
           {/* Price — simple, no border/background */}
-          <div className="mt-4">
-            <div className="flex items-baseline gap-2.5 flex-wrap">
+          <div className="mt-4 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-baseline gap-2.5 flex-wrap">
               <span className={`text-2xl font-extrabold sm:text-3xl ${isV18 ? '' : 'text-foreground'}`} style={isV18 ? { color: "#ffffff", ...v18Font, fontWeight: 400 } : {}}>
                 {isV18 ? `₹${Number(variantPrice).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${formatPrice(Number(variantPrice), currency)}`}
               </span>
@@ -762,15 +764,17 @@ export default function V22ProductDetail() {
                   )}
                 </>
               )}
+              </div>
+              {isV18 && (
+                <p className="mt-2 text-sm italic" style={{ color: "#999999", ...v18Font }}>Inclusive of all taxes</p>
+              )}
+              {!isV18 && hasDiscount && (
+                <p className="mt-1 text-xs font-semibold text-emerald-600">
+                  You save {formatPrice((product.price - product.sale_price!), currency)} on this order
+                </p>
+              )}
             </div>
-            {isV18 && (
-              <p className="mt-2 text-sm italic" style={{ color: "#999999", ...v18Font }}>Inclusive of all taxes</p>
-            )}
-            {!isV18 && hasDiscount && (
-              <p className="mt-1 text-xs font-semibold text-emerald-600">
-                You save {formatPrice((product.price - product.sale_price!), currency)} on this order
-              </p>
-           )}
+            {hasDiscount && <FestivalSaleBadge />}
           </div>
 
 
