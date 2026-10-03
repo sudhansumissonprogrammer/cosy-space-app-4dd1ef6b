@@ -2856,7 +2856,6 @@ export type Database = {
       }
       products: {
         Row: {
-          award_badge: boolean
           category: string | null
           category_pinned_at: string | null
           cost_price: number | null
@@ -2897,7 +2896,6 @@ export type Database = {
           video_url: string | null
         }
         Insert: {
-          award_badge?: boolean
           category?: string | null
           category_pinned_at?: string | null
           cost_price?: number | null
@@ -2938,7 +2936,6 @@ export type Database = {
           video_url?: string | null
         }
         Update: {
-          award_badge?: boolean
           category?: string | null
           category_pinned_at?: string | null
           cost_price?: number | null
@@ -6066,12 +6063,6 @@ export type Database = {
         Returns: Json
       }
       get_auth_user_id_by_email: { Args: { _email: string }; Returns: string }
-      get_award_badge_products: {
-        Args: { _store_id: string }
-        Returns: {
-          id: string
-        }[]
-      }
       get_category_collage_urls: {
         Args: { _category_id: string }
         Returns: Json
