@@ -48,8 +48,6 @@ const PackagingSelector = lazy(() => import("@/components/storefront/pdp/storeSe
 const CodAssuranceStrip = lazy(() => import("@/components/storefront/pdp/storeSections/CodAssuranceStrip"));
 import { DEFAULT_PACKAGING, packagingSurcharge, getPackagingOption, type PackagingKey } from "@/lib/packagingOptions";
 import WarrantyBadge from "@/components/storefront/WarrantyBadge";
-import AwardSealBadge from "@/components/storefront/AwardSealBadge";
-import { useAwardBadgeProducts, hasAwardBadge } from "@/hooks/useAwardBadgeProducts";
 import PdpTrustSeals from "@/components/storefront/PdpTrustSeals";
 import PdpTrustBadges from "@/components/storefront/PdpTrustBadges";
 // BuyNowPhoneModal deprecated — phone capture is now Step 1 of CheckoutPage.
@@ -129,7 +127,6 @@ export default function ProductDetail() {
   const { isWishlisted, toggleWishlist } = useWishlist();
   const queryClient = useQueryClient();
   const mainThemeConfig = useStorefrontThemeConfig(store?.id);
-  const awardBadgeIds = useAwardBadgeProducts(store?.id);
   const bilingualCta = ((store as any)?.theme === "theme-16" || (store as any)?.theme === "theme-21") && !!(mainThemeConfig as any)?.bilingual_cta;
 
   // Fetch store shipping config for free shipping threshold
@@ -836,7 +833,6 @@ export default function ProductDetail() {
           hasDiscount={hasDiscount}
           discountPct={discountPct}
           showWarrantyBadge={!!(mainThemeConfig as any)?.show_warranty_badge}
-          showAwardSeal={hasAwardBadge(product, awardBadgeIds)}
           storeId={store.id}
           onShare={async () => {
             const storeHost = (store as any).custom_domain
@@ -1703,7 +1699,6 @@ function ImageGallery({
   discountPct,
   onShare,
   showWarrantyBadge,
-  showAwardSeal,
   storeId,
 }: {
   images: string[];
@@ -1713,7 +1708,6 @@ function ImageGallery({
   discountPct: number;
   onShare?: () => void;
   showWarrantyBadge?: boolean;
-  showAwardSeal?: boolean;
   storeId?: string;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -1918,14 +1912,6 @@ function ImageGallery({
           {showWarrantyBadge && (
             <div className="absolute right-7 sm:right-3 top-14 z-10">
               <WarrantyBadge size="md" />
-            </div>
-          )}
-
-          {/* Merchant-picked "Best Seller" seal — bottom-left of the hero image,
-              clear of the share button, dots and warranty pill. */}
-          {showAwardSeal && (
-            <div className="absolute left-7 sm:left-3 bottom-4 sm:bottom-5 z-10">
-              <AwardSealBadge size="pdp" />
             </div>
           )}
 
