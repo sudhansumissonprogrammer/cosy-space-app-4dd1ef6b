@@ -95,3 +95,6 @@
 - [x] Restore missing saved files to the Files panel after refresh did not re-index them.
 
 - [x] WhatsApp-only store-creation agent built (needs live test from a real phone; admin panel + Telegram alert still open)
+
+- [ ] Rehost Imitation World external review photos (judge.me) to R2
+- [ ] Connect Telegram fresh after the 18:50 workspace move and redeploy order notifications
