@@ -10,3 +10,4 @@
 - The WhatsApp store-creation agent (`_shared/wa-store-onboarding.ts`, called from whatsapp-webhook) provisions stores by minting the new owner's own session and running the same steps as CreateStore, because store setup must match the web flow and respect RLS.
 - Serdiya custom-site capacity tests allow only low-rate read-only canaries on production; ramp, spike, and soak profiles must refuse all production hostnames without an override, because ad traffic and payment availability must never be endangered.
 - Website capacity-test configuration lives behind the existing admin role and only produces guarded Python runs; aggressive profiles require staging-marked hosts, because browsers must not become arbitrary traffic generators.
+- Keep `is_best_selling` for storefront merchandising but do not restore the separate per-product award seal, because its badge controls and stored flag were deliberately retired across all stores.
