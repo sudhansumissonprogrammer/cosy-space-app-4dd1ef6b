@@ -1,5 +1,5 @@
 const brands = [
-  "Overlays", "Serdiya", "Hridaya", "Vanya", "Auric", "Maatra", "Kavya",
+  "Demo Store", "Serdiya", "Hridaya", "Vanya", "Auric", "Maatra", "Kavya",
   "Ujjwal", "Bandhej", "Nirvi", "Ratan", "Saira", "Pooja", "Mehr", "Tilak",
   "Aarna", "Vihaan", "Ishaan", "Aanya", "Reva",
 ];

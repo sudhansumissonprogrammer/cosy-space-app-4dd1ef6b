@@ -24,7 +24,7 @@ const stores = [
     img: medivaMobile,
   },
   {
-    name: "Overlays",
+    name: "Demo Store",
     category: "Streetwear & Fashion",
     url: "https://overlays.shopbanao.in",
     img: overlaysMobile,

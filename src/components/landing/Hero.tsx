@@ -9,7 +9,7 @@ import { onAuthCtaIntent } from "@/lib/prefetchLandingAuth";
 const PHONE_ASPECT = "9 / 19.5";
 
 const liveStores = [
-  { img: overlaysMobile, label: "Overlays", url: "https://overlays.shopbanao.in" },
+  { img: overlaysMobile, label: "Demo Store", url: "https://overlays.shopbanao.in" },
   { img: serdiyaMobile, label: "Serdiya Jewellers", url: "https://serdiyajewellers.shop" },
 ];
 
