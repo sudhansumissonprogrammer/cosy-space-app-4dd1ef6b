@@ -956,7 +956,6 @@ export default function ProductDetail() {
                 </p>
               ))}
             </div>
-            {hasDiscount && <FestivalSaleBadge />}
           </div>
 
           {/* Store-scoped quality assurance grid (wristlife/hopknock) — under price */}
@@ -1886,6 +1885,9 @@ function ImageGallery({
     <>
       <div className="min-w-0 max-w-full space-y-1 sm:space-y-2 lg:sticky lg:top-4">
         <div className="relative -mx-4 sm:mx-0 p-0">
+          {hasDiscount && (
+            <FestivalSaleBadge placement="pdp" className="absolute bottom-8 left-7 z-20 drop-shadow-lg sm:bottom-4 sm:left-3" />
+          )}
           {/* Discount badge */}
           {hasDiscount && discountPct > 0 && (
             <div className="absolute left-7 sm:left-3 top-3 z-10">

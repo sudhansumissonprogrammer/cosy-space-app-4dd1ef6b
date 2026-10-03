@@ -941,6 +941,23 @@ body:has(.storefront-font) {
 }
 @media (prefers-reduced-motion: no-preference) {
   .sale-badge-pulse { animation: sale-pulse 2.4s ease-in-out infinite; }
+
+  .festival-sale-badge::after {
+    content: "";
+    position: absolute;
+    inset: -45% auto -45% -55%;
+    width: 34%;
+    transform: skewX(-18deg);
+    background: linear-gradient(90deg, transparent, hsl(var(--background) / 0.72), transparent);
+    animation: festival-badge-shimmer 3.8s ease-in-out infinite;
+  }
+}
+
+@keyframes festival-badge-shimmer {
+  0%, 58% { left: -55%; opacity: 0; }
+  64% { opacity: 0.9; }
+  78% { left: 125%; opacity: 0; }
+  100% { left: 125%; opacity: 0; }
 }
 
 /* ============== Polish Pack v2 ============== */
