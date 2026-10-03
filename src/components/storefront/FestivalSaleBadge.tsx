@@ -14,9 +14,10 @@ export default function FestivalSaleBadge({ compact = false, className = "", pla
       : compact
         ? "w-[88px] sm:w-[104px]"
         : "w-[112px] sm:w-[132px]";
+  const positionClass = placement === "price" ? "relative" : "";
 
   return (
-    <span className={`festival-sale-badge pointer-events-none relative isolate block shrink-0 overflow-hidden ${sizeClass} ${className}`}>
+    <span className={`festival-sale-badge pointer-events-none isolate block shrink-0 overflow-hidden ${positionClass} ${sizeClass} ${className}`}>
       <img
         src={badgeAsset.url}
         alt="Festival sale live now"
