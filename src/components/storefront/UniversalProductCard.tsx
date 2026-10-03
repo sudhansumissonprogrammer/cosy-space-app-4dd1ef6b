@@ -73,6 +73,7 @@ import { useVariantCount } from "@/hooks/useVariantCounts";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import WarrantyBadge from "./WarrantyBadge";
 import ProductCardVideo from "./ProductCardVideo";
+import FestivalSaleBadge from "./FestivalSaleBadge";
 import { useAppDisabled } from "@/hooks/useAppDisabled";
 
 
@@ -109,6 +110,7 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
   // App Store add-on OFF to remove the play badge from their cards entirely.
   const cardVideoOff = useAppDisabled(slug, "card-video", !!cardVideoUrl);
   const showCardVideo = !!cardVideoUrl && !cardVideoOff;
+  const hasSale = Number(product?.sale_price) > 0 && Number(product.sale_price) < Number(product?.price);
 
   const variantCount = useVariantCount(product.id);
   const hasVariants = variantCount > 0;
@@ -202,6 +204,9 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
       onPointerDown={prime}
     >
       {wrapped}
+      {hasSale && (
+        <FestivalSaleBadge placement="card" className="absolute left-2 top-2 z-20 drop-shadow-md" />
+      )}
       {showCardVideo && (
         <ProductCardVideo hostRef={hostRef} enabled videoUrl={cardVideoUrl!} />
       )}
