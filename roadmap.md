@@ -4,6 +4,7 @@
 - [x] Classify all Imitation World New2 products into Chain with Pendant or Pendant from their imported product details.
 
 ## Active work
+- [ ] Connect Telegram fresh after the 18:27 workspace move, verify the bot, and redeploy order notifications.
 - [x] Connect Telegram fresh after the Oct 3 workspace move and redeploy order notifications.
 - [x] Add the Festival Sale badge to discounted product-card and PDP-image corners with a lightweight reduced-motion-safe shimmer.
 - [x] Remove the merchant-controlled Best Seller badge from every product card and product page, remove all dashboard controls, and clear the feature from every product.
