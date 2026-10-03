@@ -71,7 +71,7 @@ const stores = [
     ],
   },
   {
-    name: "Overlays",
+    name: "Demo Store",
     type: "Streetwear Store",
     color: "bg-bauhaus-red",
     screens: [
@@ -128,7 +128,7 @@ function StoreRow({ store, storeIdx }: { store: (typeof stores)[0]; storeIdx: nu
 const StoreLookShowcase = ({ showOverlays = true }: { showOverlays?: boolean }) => {
   const displayStores = showOverlays
     ? stores
-    : stores.filter((s) => s.name !== "Overlays");
+    : stores.filter((s) => s.name !== "Demo Store");
 
   return (
     <section id="showcase" className="border-b-4 border-foreground bg-bauhaus-white relative">
