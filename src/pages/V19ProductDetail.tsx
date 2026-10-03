@@ -31,6 +31,7 @@ import {
 import PartialPaymentTrustCard from "@/components/storefront/PartialPaymentTrustCard";
 import AutoCouponHint from "@/components/storefront/AutoCouponHint";
 import PdpUpsellSection from "@/components/storefront/apps/Upsell/PdpUpsellSection";
+import FestivalSaleBadge from "@/components/storefront/FestivalSaleBadge";
 
 const ZoomableGallery = lazy(() => import("@/components/storefront/ZoomableGallery"));
 
@@ -505,6 +506,7 @@ export default function V19ProductDetail() {
               {discountPct}% OFF
             </span>
           )}
+          {showStrike && <FestivalSaleBadge compact className="ml-auto" />}
         </div>
         <div className="text-[11px] text-gray-500 font-medium mt-1">
           (Inclusive of all taxes)
