@@ -125,8 +125,9 @@ Deno.serve(async (req) => {
     if (order.state) lines.push(esc(String(order.state).trim()));
     if (order.pincode) lines.push(esc(String(order.pincode).trim()));
 
-    // Payment label: COD vs PPD (prepaid), driven by the payment method.
-    const label = isCod(order.payment_method) ? "COD" : "PPD";
+    // Payment label: fully paid online = PPD (total); anything left to collect
+    // on delivery (COD or a partial advance on any method) = COD.
+    const label = due > 0 ? "COD" : "PPD";
     if (due > 0) {
       lines.push(`<b>${label} ${paidOnline > 0 ? `${total}-${paidOnline}=${due}` : due}</b>`);
     } else {
