@@ -1,5 +1,7 @@
 # Current work
 
+- [ ] Connect Telegram fresh after the Oct 4 workspace move and redeploy order notifications (COD/PPD label fix already deployed)
+
 - [x] Move parcel-label phone and tracking extraction to the lowest-priced current Gemini vision model.
 - [x] Classify all Imitation World New2 products into Chain with Pendant or Pendant from their imported product details.
 
