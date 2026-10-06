@@ -82,14 +82,29 @@
   // early for a quick overview and let the user press "Load more" for depth.
   async function walkPages(maxPages = 10) {
     state.walking = true; render();
-    for (let page = 1; page <= maxPages; page++) {
-      const r = await call("jd", { path: `products/v2/retailer/recent?sortBy=recently_added&page=${page}` });
-      const list = r.body?.data || [];
-      if (!list.length) break;
-      // dedupe by id
+    const addList = (list) => {
       const have = new Set(state.products.map((x) => x.id));
-      list.forEach((p) => !have.has(p.id) && state.products.push(p));
+      list.forEach((p) => p?.id && !have.has(p.id) && state.products.push(p));
+    };
+    // Retailer and wholesaler stores use different listing routes.
+    const routes = state.route ? [state.route] : ["products/v2/retailer/recent", "products/v2/wholesaler/recent", "products/v2/recent"];
+    const startPage = (state.lastPage || 0) + 1;
+    for (let page = startPage; page < startPage + maxPages; page++) {
+      let list = [];
+      for (const route of routes) {
+        const r = await call("jd", { path: `${route}?sortBy=recently_added&page=${page}` });
+        list = Array.isArray(r.body?.data) ? r.body.data : [];
+        if (list.length) { state.route = route; break; }
+      }
+      if (!list.length) break;
+      state.lastPage = page;
+      addList(list);
       render();
+    }
+    // Fallback: whatever the storefront shows on its homepage.
+    if (!state.products.length) {
+      const [f, n] = await Promise.all([call("jd", { path: "products/v2/featured" }), call("jd", { path: "products/v2/new-arraivals" })]);
+      addList([...(f.body?.data || []), ...(n.body?.data || [])]);
     }
     // Fetch created_at + photo count only for the first ~40 unknowns (quota-friendly).
     const unknown = state.products.filter((p) => !p.__detail).slice(0, 40);
