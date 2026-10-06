@@ -11,7 +11,30 @@
   window.__jdSpyLoaded = true;
 
   const origin = location.origin;
-  const call = (type, payload) => new Promise((r) => chrome.runtime.sendMessage({ type, origin, ...payload }, r));
+  const API_BASE = "https://byeetjlpwzpy.jdwebnship.in/api";
+  const API_KEY = "9e5a4f4b49da226ab3b1bc396020bf831cb3c14584ced963";
+  // The platform picks the tenant from the request Origin, so calls must be
+  // made from the store page itself (same as the storefront does), not from
+  // the extension background (whose origin is chrome-extension://).
+  async function jdFetch(path) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const res = await fetch(`${API_BASE}/${path}`, { headers: { "API-KEY": API_KEY, Accept: "application/json" } });
+        if (res.ok) return { ok: true, status: res.status, body: await res.json().catch(() => null) };
+        if (![403, 429, 500, 502, 503].includes(res.status)) return { ok: false, status: res.status, body: null };
+      } catch {}
+      await new Promise((r) => setTimeout(r, 600 * (attempt + 1)));
+    }
+    return { ok: false, status: 0, body: null };
+  }
+  const call = async (type, payload = {}) => {
+    if (type === "jd") return jdFetch(payload.path);
+    if (type === "detect") {
+      const r = await jdFetch("home/shell");
+      return r.ok && r.body?.data?.storeinfo?.store_name ? r.body.data.storeinfo : null;
+    }
+    return new Promise((r) => chrome.runtime.sendMessage({ type, origin, ...payload }, r));
+  };
 
   function el(tag, attrs = {}, children = []) {
     const n = document.createElement(tag);
