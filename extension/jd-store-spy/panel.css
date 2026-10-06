@@ -1,0 +1,33 @@
+/* JD Store Spy — floating panel on any JD store */
+#jdspy-root, #jdspy-root * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+#jdspy-root { position: fixed; z-index: 2147483647; top: 16px; right: 16px; width: 380px; max-height: 86vh; background: #0b1220; color: #e5e7eb; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.4); display: flex; flex-direction: column; overflow: hidden; font-size: 13px; }
+#jdspy-root.min { height: auto; max-height: 44px; }
+#jdspy-root header { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #111827; cursor: move; user-select: none; }
+#jdspy-root header .t { font-weight: 700; letter-spacing: .3px; flex: 1; color: #fbbf24; }
+#jdspy-root header button { background: transparent; color: #9ca3af; border: 0; cursor: pointer; font-size: 16px; padding: 0 4px; }
+#jdspy-root header button:hover { color: #fff; }
+#jdspy-body { overflow: auto; padding: 10px 12px 14px; }
+#jdspy-root .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; background: #1f2937; color: #d1d5db; font-size: 11px; margin: 0 4px 4px 0; }
+#jdspy-root .pill.good { background: #052e16; color: #86efac; }
+#jdspy-root .pill.warn { background: #3b0a0a; color: #fca5a5; }
+#jdspy-root .pill.hot { background: #3b1e05; color: #fcd34d; }
+#jdspy-root .kv { display: grid; grid-template-columns: 110px 1fr; gap: 4px 10px; margin: 6px 0 10px; }
+#jdspy-root .kv b { color: #9ca3af; font-weight: 500; }
+#jdspy-root h4 { margin: 12px 0 6px; color: #fbbf24; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; }
+#jdspy-root .tabs { display: flex; gap: 2px; margin-top: 8px; border-bottom: 1px solid #1f2937; }
+#jdspy-root .tabs button { flex: 1; background: transparent; color: #9ca3af; border: 0; padding: 6px 4px; cursor: pointer; font-size: 12px; border-bottom: 2px solid transparent; }
+#jdspy-root .tabs button.on { color: #fbbf24; border-color: #fbbf24; }
+#jdspy-root .row { display: flex; gap: 8px; padding: 6px 0; border-bottom: 1px solid #111827; align-items: center; }
+#jdspy-root .row img { width: 42px; height: 42px; object-fit: cover; border-radius: 6px; flex-shrink: 0; background: #1f2937; }
+#jdspy-root .row .meta { flex: 1; min-width: 0; }
+#jdspy-root .row .name { color: #e5e7eb; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#jdspy-root .row .sub { color: #6b7280; font-size: 11px; }
+#jdspy-root .row .score { color: #fbbf24; font-weight: 700; font-size: 13px; white-space: nowrap; }
+#jdspy-root .empty { color: #6b7280; padding: 20px 0; text-align: center; font-size: 12px; }
+#jdspy-root .btn { background: #fbbf24; color: #111827; border: 0; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; }
+#jdspy-root .btn:hover { background: #fde68a; }
+#jdspy-root .ghost { background: #1f2937; color: #d1d5db; }
+#jdspy-root a { color: #93c5fd; text-decoration: none; }
+#jdspy-root input, #jdspy-root select { background: #111827; color: #e5e7eb; border: 1px solid #1f2937; padding: 5px 8px; border-radius: 5px; width: 100%; font-size: 12px; }
+#jdspy-root .toast { background: #0f172a; border: 1px solid #1e293b; border-radius: 6px; padding: 8px 10px; margin: 6px 0; font-size: 11px; color: #94a3b8; }
+#jdspy-root .toast b { color: #fde68a; }
