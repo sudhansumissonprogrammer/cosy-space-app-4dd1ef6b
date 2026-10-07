@@ -1467,6 +1467,7 @@ function ImageGallery({
   compactGallery?: boolean;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [activatedSlides, setActivatedSlides] = useState<Set<number>>(() => new Set([0]));
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>({});
   const [videoPlaying, setVideoPlaying] = useState(false);
@@ -1497,6 +1498,7 @@ function ImageGallery({
     const onSelect = () => {
       const i = embla.selectedScrollSnap();
       setActiveIndex(i);
+      setActivatedSlides(previous => new Set([...previous, i]));
       if (slides[i]?.kind !== "video") setVideoPlaying(false);
     };
     embla.on("select", onSelect);
@@ -1514,32 +1516,27 @@ function ImageGallery({
   useEffect(() => {
     if (embla) embla.reInit();
     setImageLoaded({});
+    setActivatedSlides(new Set([0]));
     setVideoPlaying(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slidesKey, embla]);
 
-  // Smart preload: only active + 2 neighbours (image slides only — videos use preload="none")
+  // Do not fetch neighbour photos until a shopper begins dragging.
   useEffect(() => {
-    if (len === 0) return;
-    const want = new Set<number>([activeIndex]);
-    if (len > 1) {
-      want.add((activeIndex + 1) % len);
-      want.add((activeIndex - 1 + len) % len);
-    }
-    want.forEach((idx) => {
-      const s = slides[idx];
-      if (!s || s.kind !== "image") return;
-      if (imageLoaded[idx]) return;
-      const img = new Image();
-      img.onload = () => setImageLoaded((prev) => (prev[idx] ? prev : { ...prev, [idx]: true }));
-      img.src = optimizeImageUrl(s.url, 800);
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeIndex, slidesKey, len, imageLoaded]);
-
-  const scrollTo = useCallback((i: number) => embla?.scrollTo(i), [embla]);
-  const scrollPrev = useCallback(() => embla?.scrollPrev(), [embla]);
-  const scrollNext = useCallback(() => embla?.scrollNext(), [embla]);
+    if (!embla || !len) return;
+    const onDrag = () => {
+      const index = embla.selectedScrollSnap();
+      setActivatedSlides(previous => new Set([...previous, (index + 1) % len, (index - 1 + len) % len]));
+    };
+    embla.on("pointerDown", onDrag);
+    return () => { embla.off("pointerDown", onDrag); };
+  }, [embla, len]);
+  const scrollTo = useCallback((i: number) => {
+    setActivatedSlides(previous => new Set([...previous, i]));
+    embla?.scrollTo(i);
+  }, [embla]);
+  const scrollPrev = useCallback(() => scrollTo((activeIndex - 1 + len) % len), [scrollTo, activeIndex, len]);
+  const scrollNext = useCallback(() => scrollTo((activeIndex + 1) % len), [scrollTo, activeIndex, len]);
 
   if (len === 0) {
     return (
@@ -1605,7 +1602,7 @@ function ImageGallery({
                     <VideoSlide
                       key={`${i}-vid-${slide.url}`}
                       url={slide.url}
-                      poster={slide.poster ? optimizeImageUrl(slide.poster, 800) : undefined}
+                      poster={activatedSlides.has(realIdx) && slide.poster ? optimizeImageUrl(slide.poster, 1200) : undefined}
                       isActive={isActive}
                       videoPlaying={videoPlaying}
                       setVideoPlaying={setVideoPlaying}
@@ -1621,7 +1618,7 @@ function ImageGallery({
                   >
                     {!loaded && <Skeleton className="absolute inset-0 h-full w-full rounded-none" />}
                     <img
-                      src={optimizeImageUrl(slide.url, 800)}
+                      src={activatedSlides.has(realIdx) ? optimizeImageUrl(slide.url, 1200) : undefined}
                       alt={productName}
                       className={`h-full w-full object-cover bg-muted/30 transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
                       decoding="async"

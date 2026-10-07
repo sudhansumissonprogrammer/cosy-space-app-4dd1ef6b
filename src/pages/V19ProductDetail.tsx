@@ -55,12 +55,20 @@ export default function V19ProductDetail() {
   const { track } = useRecentlyViewed(store?.id);
 
   const [galleryIdx, setGalleryIdx] = useState(0);
+  const [visitedSlides, setVisitedSlides] = useState<Set<number>>(() => new Set([0]));
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [highlightsOpen, setHighlightsOpen] = useState(true);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [termIdx, setTermIdx] = useState(0);
   const [zoomOpen, setZoomOpen] = useState(false);
   const galleryRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    setGalleryIdx(0);
+    setVisitedSlides(new Set([0]));
+    setSelectedVariantId(null);
+    setZoomOpen(false);
+    if (galleryRef.current) galleryRef.current.scrollLeft = 0;
+  }, [productSlug]);
 
   // Rotating search placeholder (matches V19Header)
   useEffect(() => {
@@ -259,8 +267,10 @@ export default function V19ProductDetail() {
     if (!el) return;
     const idx = Math.round(el.scrollLeft / el.clientWidth);
     if (idx !== galleryIdx) setGalleryIdx(idx);
+    setVisitedSlides(previous => previous.has(idx) ? previous : new Set([...previous, idx]));
   };
   const scrollToImage = (i: number) => {
+    setVisitedSlides(previous => new Set([...previous, i]));
     const el = galleryRef.current;
     if (!el) return;
     el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
@@ -362,11 +372,11 @@ export default function V19ProductDetail() {
           {(gallerySlides.length ? gallerySlides : [null]).map((slide, i) => (
             <div key={i} className={`flex-shrink-0 w-full ${store.slug === "imitationworld" ? "h-[min(133vw,calc(100svh-260px))]" : "h-[min(133vw,78svh)]"} sm:aspect-[4/5] sm:h-auto bg-white flex items-center justify-center overflow-hidden`}>
               {slide?.kind === "video" ? (
-                <SnapVideoSlide url={slide.url} poster={slide.poster ? optimizeImageUrl(slide.poster, 800, 90) : undefined} />
+                <SnapVideoSlide url={slide.url} poster={visitedSlides.has(i) && slide.poster ? optimizeImageUrl(slide.poster, 1200, 85) : undefined} />
 
               ) : slide?.kind === "image" ? (
                 <img
-                  src={optimizeImageUrl(slide.url, 800, 90)}
+                  src={visitedSlides.has(i) ? optimizeImageUrl(slide.url, 1200, 85) : undefined}
                   alt={`${product.name} ${i + 1}`}
                   className="h-full w-full object-cover cursor-zoom-in"
                   loading={i === 0 ? "eager" : "lazy"}

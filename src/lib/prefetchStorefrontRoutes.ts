@@ -4,22 +4,6 @@
  * prefetch start delay reduced 800→400ms, exposed prefetchOnInteraction for
  * categories so hovering/touching a category link warms its chunk.
  */
-const eagerImports = [
-  // Top 4 — accounts for ~95% of navigations
-  () => import("@/pages/ProductDetail"),
-  () => import("@/pages/CartPage"),
-  () => import("@/pages/CheckoutV2Page"),
-  () => import("@/pages/CheckoutV2Page"),
-  () => import("@/pages/CategoryDetail"),
-  // Search overlay — used across every theme; prefetch so first click opens instantly
-  () => import("@/components/storefront/StorefrontSearchOverlay"),
-  // Account chunks — first-click feels instant even for logged-out visitors
-  () => import("@/pages/StorefrontAccount"),
-  () => import("@/pages/StorefrontOrderDetail"),
-  () => import("@/pages/WishlistPage"),
-  () => import("@/pages/OrderTrackingPage"),
-];
-
 const lazyImports: Record<string, () => Promise<unknown>> = {
   category: () => import("@/pages/CategoryDetail"),
   shop: () => import("@/pages/StorefrontShop"),
@@ -28,96 +12,17 @@ const lazyImports: Record<string, () => Promise<unknown>> = {
   bestSellers: () => import("@/pages/StorefrontBestSellers"),
 };
 
-let prefetched = false;
-const interactionLoaded = new Set<string>();
-
-// Delay raised 400→1500ms: keeps heavy chunk fetches off the main thread
-// during the LCP window (TBT was 219–405ms on slow connections).
-const PREFETCH_START_DELAY_MS = 1500;
-
-function shouldPrefetch() {
-  const nav = navigator as Navigator & {
-    connection?: {
-      saveData?: boolean;
-      effectiveType?: string;
-      downlink?: number;
-    };
-    deviceMemory?: number;
-  };
-
-  const connection = nav.connection;
-  if (connection?.saveData) return false;
-  if (connection?.effectiveType && /(?:^|-)2g|3g/.test(connection.effectiveType)) return false;
-  if (typeof connection?.downlink === "number" && connection.downlink < 1.5) return false;
-  if (typeof nav.deviceMemory === "number" && nav.deviceMemory <= 2) return false;
-
-  return true;
-}
-
 /**
  * Prefetch a less-used route on user intent (hover/touch on a link).
  * Each route only loads once per session.
  */
+const interactionLoaded = new Set<string>();
+
 export function prefetchOnInteraction(key: keyof typeof lazyImports) {
   if (interactionLoaded.has(key)) return;
   interactionLoaded.add(key);
   lazyImports[key]?.().catch(() => interactionLoaded.delete(key));
 }
 
-export function prefetchStorefrontRoutes() {
-  if (prefetched || !shouldPrefetch()) return;
-  prefetched = true;
-
-  const schedule = typeof requestIdleCallback === "function"
-    ? (cb: (deadline?: IdleDeadline) => void) => requestIdleCallback(cb, { timeout: 2000 })
-    : (cb: (deadline?: IdleDeadline) => void) => setTimeout(() => cb(undefined), 300);
-
-  let idx = 0;
-  function loadNext(deadline?: IdleDeadline) {
-    if (deadline && deadline.timeRemaining() < 8) {
-      schedule(loadNext);
-      return;
-    }
-    if (idx >= eagerImports.length) return;
-    const imp = eagerImports[idx++];
-    imp().catch(() => {});
-    schedule(loadNext);
-  }
-
-  // v8.74: hold chunk prefetch until the LCP element has actually painted
-  // (or a 3s ceiling), so product-image bytes never queue behind route JS.
-  const startAfterLcp = () => {
-    let fired = false;
-    const go = () => {
-      if (fired) return;
-      fired = true;
-      schedule(loadNext);
-    };
-    const cap = setTimeout(go, 3000);
-    try {
-      const po = new PerformanceObserver(() => {
-        // LCP candidates keep coming; give the image a beat to finish, then go.
-        setTimeout(() => {
-          clearTimeout(cap);
-          po.disconnect();
-          go();
-        }, 400);
-      });
-      po.observe({ type: "largest-contentful-paint", buffered: true });
-    } catch {
-      /* no LCP support — the 3s cap covers it */
-    }
-  };
-
-  const start = () => {
-    setTimeout(startAfterLcp, PREFETCH_START_DELAY_MS);
-  };
-
-  if (document.readyState === "complete") {
-    start();
-    return;
-  }
-
-  window.addEventListener("load", start, { once: true });
-}
-
+/** Route loading is now driven by specific link/product intent, not an idle sweep. */
+export function prefetchStorefrontRoutes() {}
