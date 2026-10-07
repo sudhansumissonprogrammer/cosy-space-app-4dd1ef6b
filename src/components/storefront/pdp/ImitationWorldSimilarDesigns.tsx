@@ -80,12 +80,13 @@ export default function ImitationWorldSimilarDesigns({ storeId, storeSlug, curre
     retry: false,
     queryFn: async () => {
       const { supabase } = await import("@/integrations/supabase/client");
-      const { data, error } = await supabase.from("products")
-        .select("id,slug,name,image_url")
-        .eq("store_id", storeId).eq("is_active", true)
-        .eq("hidden_by_category", false).in("slug", [...SIMILAR_DESIGN_SLUGS]);
+      const { data, error } = await supabase.rpc("get_category_products_page", {
+        _store_id: storeId, _category_name: "Chain with Pendant", _offset: 0, _limit: 100,
+      });
       if (error) throw error;
-      return (data || []).filter((row): row is Design => !!row.slug);
+      const rows = Array.isArray(data) ? data as unknown as Design[] : [];
+      const wanted = new Set<string>(SIMILAR_DESIGN_SLUGS);
+      return rows.filter((row) => !!row.slug && wanted.has(row.slug));
     },
   });
   const items = data ? orderSimilarDesigns(data, current) : [];
