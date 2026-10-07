@@ -1,10 +1,8 @@
 # Cold-entry photo loading: category, product page and homepage
 
-## What this fixes
+## Goal and scope
 
-Category cards should download their **800px card photo**, not download a second **1200px product-page photo** before the shopper opens that product. A direct product-page visit should start with **one 1200px main photo**, with other gallery photos waiting for a swipe and **2000px reserved for zoom**.
-
-Keep existing sharp photos, sale badges, store branding, Similar designs, shopping and advertising measurement intact. Apply shared loading corrections across storefronts; keep Imitation World’s compact gallery, hidden gallery thumbnails and curated Similar designs strip exclusive to that store.
+Category cards: **800px only**, no early 1200px duplicate. PDP: **one 1200px main photo**, more on swipe, **2000px only for zoom**. Preserve shopping, advertising, image quality and branding. Shared corrections apply across storefronts; Imitation World’s compact gallery and curated rail remain store-only.
 
 ## Verified findings
 
@@ -44,7 +42,7 @@ The product page also downloaded logos, sale/payment/trust graphics: **19 distin
 ### 1. Remove duplicate photo downloads first
 
 - Update category early preloads, navigation warmers, card rendering and edge-produced HTML to use the **exact same existing card URL**. Preserve the early first-photo advantage instead of simply removing all preloads.
-- Align product-page early preloads, transition placeholders, gallery rendering, warmers, video posters that reuse the first photo, and any sticky product preview to the same main-photo URL.
+- Align PDP preloads, transition placeholders, gallery, warmers, first-photo video posters and sticky preview to one photo URL.
 - Make early loading route-aware: category uses its category products, product page uses its current product, homepage uses homepage content. Do not preload home banners/products on category or product entry, including cache/fallback paths.
 - Only the main LCP candidate gets high priority; other opening cards remain eager.
 - Preserve existing 400px legacy card families, single-file 800px uploads and raw Meesho media. **Never fabricate 800/1200/2000 siblings that do not exist.** Legacy single-file media loads once using its known-good file.
@@ -52,7 +50,7 @@ The product page also downloaded logos, sale/payment/trust graphics: **19 distin
 ### 2. Enforce scroll/swipe-based loading
 
 - Gate actual photo `src`/`srcSet` assignment, rather than relying only on browser lazy loading. Keep card/slide placeholders mounted with stable dimensions.
-- Use viewport-based activation for grid rows and section-based activation for below-page recommendations/review media. Use each horizontal rail as the visibility boundary for its images.
+- Activate grid rows and below-page recommendations/reviews near the viewport; horizontal photos use their own rail visibility.
 - Initially activate only the first gallery photo. Remove automatic next/last gallery warming at mount. Activate the destination slide as a deliberate swipe begins or a control/variant selects it; retain previously loaded slides for instant return swipes.
 - Keep video bytes deferred until playback and avoid loading an off-screen video poster on opening.
 - Preserve carousel geometry, accessibility and observer fallbacks. Native lazy loading is a secondary safeguard.
@@ -70,12 +68,12 @@ The product page also downloaded logos, sale/payment/trust graphics: **19 distin
 
 ### 4. Stabilize spacing and reduce unnecessary opening work
 
-- Match placeholders to each theme’s real photo/card aspect ratio; reserve category rows, gallery, Similar designs, reviews/recommendations and homepage carousel space.
+- Match placeholders to theme/card aspect ratios; reserve gallery, rail and lower-section space.
 - Preserve Imitation World’s existing 92px mobile/108px desktop Similar designs reservation and opening-screen heading visibility.
 - Prevent homepage Best Selling loading states from collapsing to zero height and expanding later. Keep gallery measurements from resizing the page after the photo decodes; use existing dimensions or a stable store-specific frame.
 - Replace broad route preparation with bounded user-intent loading. Prioritize product selection, cart and Buy Now. Remove the duplicate checkout import entry; cached module imports do not necessarily download twice.
-- Keep only the active store/theme fonts on storefront visits, eliminate duplicate Worker/React font injection, and avoid loading unused weights. Preserve the merchant’s chosen typography and existing optional font-display policy.
-- Keep necessary shopping state and advertising initialization. Do **not** disable Pixel/CAPI or delay required events merely to increase a performance score.
+- Load only active store/theme fonts and used weights; remove duplicate injection while preserving chosen typography and optional font-display.
+- Preserve shopping state and ad initialization. Do **not** disable Pixel/CAPI to improve a score.
 
 ### 5. Repeat cold-entry tests and validate shopping
 
