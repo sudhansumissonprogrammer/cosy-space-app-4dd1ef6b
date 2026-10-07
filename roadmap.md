@@ -6,7 +6,7 @@
 - [x] Classify all Imitation World New2 products into Chain with Pendant or Pendant from their imported product details.
 
 ## Active work
-- [ ] Connect Telegram fresh after the 18:13 UTC Oct 7 workspace move, verify the bot, and redeploy order alerts.
+- [x] Connect Telegram fresh after the 18:13 UTC Oct 7 workspace move, verify the bot, and redeploy order alerts.
 - [ ] Implement the planned cold-entry photo-loading improvements and verify category/PDP behavior.
 - [x] Investigate duplicate category/PDP photo downloads and prepare the complete five-stage image-loading and regression-test plan for approval.
 - [x] Enlarge Imitation World similar-design photos, hide gallery thumbnails while keeping swipe, and show the heading on the initial mobile screen.
