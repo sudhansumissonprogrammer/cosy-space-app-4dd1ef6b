@@ -24,6 +24,7 @@ function subscribe(node: Element, activate: () => void, options: ActivationOptio
     if (options.afterScroll) {
       group.onScroll = () => {
         if (window.scrollY <= 0) return;
+        if (group?.onScroll) window.removeEventListener("scroll", group.onScroll);
         for (const [target, subscription] of targets) {
           if (subscription.waitingForScroll) {
             subscription.waitingForScroll = false;
