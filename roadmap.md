@@ -6,6 +6,7 @@
 - [x] Classify all Imitation World New2 products into Chain with Pendant or Pendant from their imported product details.
 
 ## Active work
+- [ ] Verify the Oct 7 20:05 UTC publication on Imitation World with fresh homepage/category/PDP cold-entry timings, photo/chunk/shift evidence, and safe shopping/ad-event checks; report remaining issues without creating orders or payments.
 - [x] Connect Telegram fresh after the 19:20 UTC Oct 7 workspace move, verify @Shopbanaobot with getMe, and redeploy telegram-order-notify; no historical messages resent.
 - [x] Reproduce remaining Lighthouse small-photo overfetch; create 39 verified separate small copies, preserve originals, check all three preview pages, and exclude homepage/V16 routes from the shared opening chunk.
 - [ ] Publish the small-photo/chunk changes and repeat production Lighthouse/CPU traces; extend verified small copies to remaining stores/catalogue (current backfill covers Imitation World category and curated photos). Full performance warning removal is not verified.
