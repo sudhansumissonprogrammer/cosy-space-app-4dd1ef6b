@@ -6,9 +6,9 @@
 - [x] Classify all Imitation World New2 products into Chain with Pendant or Pendant from their imported product details.
 
 ## Active work
-- [ ] Reconnect Telegram fresh after the latest Oct 7 workspace move, verify the bot, and redeploy order alerts.
-- [ ] Reconnect Telegram fresh after the Oct 7 workspace move and verify order-alert access.
-- [ ] Review every Imitation World Chain with Pendant photo and update only its product name in the requested format.
+- [x] Reconnect Telegram fresh after the latest Oct 7 workspace move, verify the bot, and redeploy order alerts.
+- [x] Reconnect Telegram fresh after the Oct 7 workspace move and verify order-alert access.
+- [x] Review every Imitation World Chain with Pendant photo and update only its product name in the requested format.
 - [x] Connect Telegram fresh after the 18:27 workspace move, verify the bot, and redeploy order notifications.
 - [x] Connect Telegram fresh after the Oct 3 workspace move and redeploy order notifications.
 - [x] Add the Festival Sale badge to discounted product-card and PDP-image corners with a lightweight reduced-motion-safe shimmer.
