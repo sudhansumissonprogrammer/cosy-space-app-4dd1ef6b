@@ -19,37 +19,34 @@ The product page also downloaded logos, sale/payment/trust graphics: **19 distin
 
 ### Why this happens
 
-- The early category photo loader uses the stored original URL, which is normally the 1200px URL. The card later resolves its 800px sibling. Those are different files, so the browser cannot reuse the download.
-- The main gallery and its warmers currently request 800px, while other preload/responsive paths can select 1200px. The page needs one consistent product-page photo address throughout.
-- Gallery slides receive image addresses immediately. An additional warmer prepares the active, next and previous/wrapped-last slides on opening. Hiding thumbnails does not stop these requests.
-- Similar designs requests a nominal 160px image, but the existing upload family has no tiny variant: the resolver returns 800px. Visible tiles also trigger product data, page-code and photo preparation after a short delay.
-- Small category icons and collage pieces have the same issue: asking for 96–160px does not create a smaller file. Category-only legacy photos and raw imports can also remain large originals.
-- Browser `loading="lazy"` and `content-visibility` do not enforce a strict request budget. They can still fetch beyond the screen.
-- Broad automatic page preparation includes account, tracking, wishlist, search, cart and checkout code. This is not all needed during the first photo’s download.
+- Early category preloads use stored 1200px URLs; cards resolve 800px siblings, so downloads cannot be reused.
+- PDP warmers request 800px while preload/responsive paths can select 1200px. Gallery slides receive photo addresses immediately, plus automatic next/last-slide preparation.
+- Similar designs asks for 160px, but no tiny variant exists: the resolver returns 800px. Visibility also triggers unrelated PDP data/code/photo preparation.
+- Small category icons/collages similarly resolve large existing photos; requesting 96px does not create a 96px file.
+- Browser lazy loading and skipped off-screen painting do not enforce download limits. Broad automatic route preparation also loads unnecessary code.
 
 ## Target behavior
 
-| Where | Initial photo policy | After interaction |
+| Area | Opening | Later |
 |---|---|---|
-| Mobile category | First four card photos initially; allow up to six when needed to fill a taller visible area. Existing modern card files stay 800px. | Activate later rows just before scrolling reaches them. |
-| Wider category screens | Enough 800px card photos to fill the visible grid. | Activate subsequent rows as approached. |
-| Product page | Exactly one full-size main photo: 1200px where that file exists. No separate 800px main-photo warmer. | Swipe/arrow/variant selection activates only the needed gallery photo. |
-| Similar designs | Only visible genuine small thumbnails; no automatic destination-product preparation. | Hover, keyboard focus, or deliberate tap prepares the selected destination’s 1200px photo and details. |
-| Category icons/collages | Genuine thumbnails sized for their small display; horizontal off-screen icons wait. | Further icons/sections activate when approached. |
-| Zoom | No 2000px download while closed. | Opening zoom loads the active photo’s 2000px file, using the displayed photo until ready. |
-| Homepage | Opening visible photos only; no distant carousel/lower-section image requests. | Scroll or carousel movement activates additional photos. |
+| Mobile category | First four existing 800px card photos; up to six if needed to fill a taller screen | Later rows activate as scrolling approaches |
+| Wider category | Enough 800px cards for the visible grid | Further rows activate as approached |
+| PDP | One 1200px main photo where available | Swipe/control/variant activates needed slide |
+| Similar designs | Visible genuine tiny thumbnails; no unrelated PDP preparation | Intent prepares selected destination |
+| Category icons/collages | Appropriate tiny files, visible items only | Off-screen items activate as approached |
+| Zoom | No 2000px while closed | Active 2000px photo when opened |
+| Homepage | Visible opening photos only | Scroll/carousel interaction activates more |
 
-“One photo initially” means **one full-size product photo**, not removal of the store logo or visible tiny graphics. If the current product also appears in Similar designs, reuse its main-photo URL rather than download an additional thumbnail merely for that selected tile.
+“One photo” means one **full-size** photo, not removal of visible logos or small graphics. Reuse the main photo for its selected Similar designs tile rather than fetch another file.
 
 ## Implementation order
 
 ### 1. Remove duplicate photo downloads first
 
-- Define one consistent card-photo policy and one product-page-photo policy.
 - Update category early preloads, navigation warmers, card rendering and edge-produced HTML to use the **exact same existing card URL**. Preserve the early first-photo advantage instead of simply removing all preloads.
 - Align product-page early preloads, transition placeholders, gallery rendering, warmers, video posters that reuse the first photo, and any sticky product preview to the same main-photo URL.
 - Make early loading route-aware: category uses its category products, product page uses its current product, homepage uses homepage content. Do not preload home banners/products on category or product entry, including cache/fallback paths.
-- Only the main LCP candidate gets high fetch priority; other initial category cards remain eager but do not all compete at high priority.
+- Only the main LCP candidate gets high priority; other opening cards remain eager.
 - Preserve existing 400px legacy card families, single-file 800px uploads and raw Meesho media. **Never fabricate 800/1200/2000 siblings that do not exist.** Legacy single-file media loads once using its known-good file.
 
 ### 2. Enforce scroll/swipe-based loading
@@ -66,8 +63,8 @@ The product page also downloaded logos, sale/payment/trust graphics: **19 distin
 - Remove the visibility-triggered `prefetchProductDetail` call from Similar designs. Visibility may activate the tiny photo only.
 - Prepare destinations on clear intent, not incidental rail scrolling; skip the current product.
 - Add independently stored, sharp small-display derivatives: approximately **160–200px for similar-design tiles**, **96–128px for tiny category icons**, and **appropriate larger thumbnails for homepage collage pieces**, accounting for high-density displays.
-- Keep all existing 800/1200/2000 photos and raw Meesho originals untouched. Separate tiny derivatives are optional display assets, not replacements or recompression of imported originals.
-- Generate future derivatives from the existing original decode and backfill only the photos actually used by icons/curated tiles first. Store explicit thumbnail addresses or verified metadata; never assume a filename exists.
+- Keep 800/1200/2000 photos and raw Meesho originals untouched; tiny derivatives are separate display assets.
+- Generate derivatives from the original decode; first backfill only icon/curated-tile photos. Store verified thumbnail addresses; do not guess filenames.
 - Before a thumbnail is verified, reuse loaded photos or visibility-gate the known-good source; never use nonexistent URLs.
 - Backfill through protected, bounded processing—not shoppers’ browsers. Keep prior thumbnails until replacements upload.
 
