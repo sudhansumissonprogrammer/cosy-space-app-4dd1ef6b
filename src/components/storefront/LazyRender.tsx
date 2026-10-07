@@ -20,11 +20,8 @@ export default function LazyRender({
   className,
 }: LazyRenderProps) {
   const ref = useRef<HTMLDivElement>(null);
-  // Render immediately on mount so images can start downloading in parallel
-  // with the hero / above-the-fold content. The IntersectionObserver-based
-  // deferral was causing first-load product images to appear blank until the
-  // user scrolled or refreshed (browser cache hit). With external CDNs like
-  // overlaysnow.com we want fetches to start ASAP — no benefit to waiting.
+  // Reserve a frame and mount near-visible content; distant sections must
+  // not compete with opening-screen photos merely because they exist.
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {

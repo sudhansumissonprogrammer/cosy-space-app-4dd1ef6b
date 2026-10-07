@@ -22,12 +22,6 @@ describe("image activation", () => {
       observe = observe;
       disconnect = disconnect;
     });
-    const { result, rerender } = renderHook(({ priority }) => useImageActivation(priority), {
-      initialProps: { priority: true },
-    });
-    // A mounted frame exists before the non-priority observer effect runs.
-    act(() => { result.current.ref.current = document.createElement("div"); });
-    // Use a fresh hook to model a non-priority frame with a mounted ref.
     const frame = document.createElement("div");
     const { result: deferred } = renderHook(() => {
       const value = useImageActivation();
@@ -41,7 +35,6 @@ describe("image activation", () => {
     act(() => notify?.([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver));
     expect(deferred.current.active).toBe(true);
     expect(disconnect).toHaveBeenCalled();
-    rerender({ priority: true });
   });
 
   it("falls back safely when IntersectionObserver is unavailable", () => {
