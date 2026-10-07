@@ -4,6 +4,8 @@ import { Link } from "react-router-dom";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
+import { setPdpPreload } from "@/lib/pdpPreload";
+import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
 import { storefrontPath } from "@/lib/subdomain";
 
 export const SIMILAR_DESIGN_SLUGS = [
@@ -22,7 +24,15 @@ export const SIMILAR_DESIGN_SLUGS = [
   "one-gram-gold-plated-forming-ad-pendant-chain-az719j",
 ] as const;
 
-interface Design { id: string; slug: string; name: string; image_url: string | null }
+interface Design {
+  id: string;
+  slug: string;
+  name: string;
+  image_url: string | null;
+  price?: number | null;
+  sale_price?: number | null;
+  currency?: string | null;
+}
 
 export function orderSimilarDesigns(rows: Design[], current: Design) {
   const bySlug = new Map(rows.map((row) => [row.slug, row]));
@@ -44,7 +54,11 @@ function DesignPhoto({ design, rail }: { design: Design; rail: HTMLDivElement | 
     if (!node || !rail) return;
     if (!("IntersectionObserver" in window)) { setVisible(true); return; }
     const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) { setVisible(true); observer.disconnect(); }
+      if (entry.isIntersecting) {
+        setVisible(true);
+        prefetchProductDetail({ slug: design.slug, image: design.image_url });
+        observer.disconnect();
+      }
     }, { root: rail, rootMargin: "0px 60px", threshold: 0.01 });
     observer.observe(node);
     return () => observer.disconnect();
@@ -98,17 +112,35 @@ export default function ImitationWorldSimilarDesigns({ storeId, storeSlug, curre
   }, [rail, data, current.id]);
 
   if (storeSlug !== "imitationworld" || isError || (data && items.length < 2)) return null;
+  const warmDesign = (design: Design) => {
+    prefetchProductDetail({ slug: design.slug, image: design.image_url });
+  };
+  const rememberDesign = (design: Design) => {
+    if (design.image_url) {
+      setPdpPreload({
+        slug: design.slug,
+        image: design.image_url,
+        name: design.name,
+        price: design.price == null ? null : Number(design.price),
+        salePrice: design.sale_price == null ? null : Number(design.sale_price),
+        currency: design.currency || "INR",
+      });
+    }
+    warmDesign(design);
+  };
   return (
-    <section aria-label="Similar designs" className="mb-3 h-[108px] min-w-0">
-      <h2 className="mb-2 text-sm font-semibold text-foreground">Similar designs{data ? ` (${items.length})` : ""}</h2>
-      <div ref={setRail} className="relative flex gap-2 overflow-x-auto overscroll-x-contain py-1 pr-1 [scrollbar-width:thin]">
-        {!data ? Array.from({ length: 6 }, (_, i) => <span key={i} className="h-[72px] w-[72px] shrink-0 rounded-md bg-muted" />) : items.map((design) => {
+    <section aria-label="Similar designs" className="mb-3 h-[92px] min-w-0 sm:h-[108px]">
+      <h2 className="mb-1.5 text-sm font-semibold text-foreground sm:mb-2">Similar designs{data ? ` (${items.length})` : ""}</h2>
+      <div ref={setRail} className="relative flex gap-1.5 overflow-x-auto overscroll-x-contain py-0.5 pr-1 sm:gap-2 sm:py-1 [scrollbar-width:thin]">
+        {!data ? Array.from({ length: 7 }, (_, i) => <span key={i} className="h-[58px] w-[58px] shrink-0 rounded bg-muted sm:h-[72px] sm:w-[72px] sm:rounded-md" />) : items.map((design) => {
           const selected = design.id === current.id;
           return (
             <Button key={design.id} asChild variant="outline"
-              className={`relative h-[72px] w-[72px] shrink-0 rounded-md p-1 border-2 ${selected ? "border-primary bg-background ring-1 ring-primary" : "border-border bg-background"}`}>
+              className={`relative h-[58px] w-[58px] shrink-0 rounded p-0.5 border-2 sm:h-[72px] sm:w-[72px] sm:rounded-md sm:p-1 ${selected ? "border-primary bg-background ring-1 ring-primary" : "border-border bg-background"}`}>
               <Link to={storefrontPath(storeSlug, `product/${design.slug}`)}
-                aria-label={design.name} aria-current={selected ? "page" : undefined} title={design.name}>
+                aria-label={design.name} aria-current={selected ? "page" : undefined} title={design.name}
+                onPointerEnter={() => warmDesign(design)} onFocus={() => warmDesign(design)}
+                onTouchStart={() => warmDesign(design)} onClick={() => rememberDesign(design)}>
                 <DesignPhoto design={design} rail={rail} />
                 {selected && <span className="absolute bottom-0 right-0 rounded-tl-md bg-primary p-0.5 text-primary-foreground"><Check className="h-3 w-3" aria-hidden="true" /></span>}
               </Link>
