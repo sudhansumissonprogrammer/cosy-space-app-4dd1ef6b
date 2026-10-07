@@ -835,6 +835,7 @@ export default function ProductDetail() {
           discountPct={discountPct}
           showWarrantyBadge={!!(mainThemeConfig as any)?.show_warranty_badge}
           storeId={store.id}
+          compactGallery={store.slug === "imitationworld"}
           onShare={async () => {
             const storeHost = (store as any).custom_domain
               ? `https://${(store as any).custom_domain}`
@@ -850,6 +851,11 @@ export default function ProductDetail() {
 
         {/* Product Info */}
         <div className="flex flex-col gap-0 px-4 sm:px-0 min-w-0">
+          {store.slug === "imitationworld" && (
+            <Suspense fallback={<div className="mb-3 h-[92px] sm:h-[108px]" />}>
+              <ImitationWorldSimilarDesigns storeId={store.id} storeSlug={store.slug} current={product} />
+            </Suspense>
+          )}
 
           {/* Store-scoped custom sections (wristlife/hopknock) — directly under product photo */}
           {hasCustomPdpSections(store) && (
@@ -881,11 +887,6 @@ export default function ProductDetail() {
           )}
 
           {/* Product Title — right under image */}
-          {store.slug === "imitationworld" && (
-            <Suspense fallback={<div className="mb-3 h-[92px] sm:h-[108px]" />}>
-              <ImitationWorldSimilarDesigns storeId={store.id} storeSlug={store.slug} current={product} />
-            </Suspense>
-          )}
           <h1 className="text-xl font-semibold leading-snug sm:text-2xl lg:text-[1.7rem]" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif", ...(isV18 ? { color: "#ffffff", fontWeight: 400, letterSpacing: "0.01em" } : { color: undefined }) }}>
             {product.name}
           </h1>
@@ -1705,6 +1706,7 @@ function ImageGallery({
   onShare,
   showWarrantyBadge,
   storeId,
+  compactGallery = false,
 }: {
   images: string[];
   video?: { url: string; poster: string } | null;
@@ -1714,6 +1716,7 @@ function ImageGallery({
   onShare?: () => void;
   showWarrantyBadge?: boolean;
   storeId?: string;
+  compactGallery?: boolean;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -1880,7 +1883,9 @@ function ImageGallery({
   // Products WITH a video keep the original tall reserved box (the video player
   // was sized for it and looked correct). Only image-only PDPs use the adaptive
   // first-photo ratio that removes the empty letterbox bands.
-  const mobileBoxHeight = hasVideoSlide
+  const mobileBoxHeight = compactGallery
+    ? "min(133vw, calc(100svh - 260px))"
+    : hasVideoSlide
     ? "168vw"
     : `min(${((imgRatio ?? 1.32) * 100).toFixed(1)}vw, 82svh)`;
 
@@ -2088,7 +2093,7 @@ function ImageGallery({
         </div>
 
         {/* Thumbnail strip — mobile + desktop */}
-        {showMultiUi && (
+        {showMultiUi && !compactGallery && (
           <div className="flex min-w-0 max-w-full gap-2 overflow-x-auto scrollbar-hide px-3 sm:px-0.5 py-2 sm:py-1">
             {slides.map((slide, i) => {
               const thumbSrc = slide.kind === "video" ? (slide.poster || "") : slide.url;

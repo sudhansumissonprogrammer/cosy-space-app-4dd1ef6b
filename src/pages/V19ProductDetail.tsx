@@ -360,7 +360,7 @@ export default function V19ProductDetail() {
           className="v19pdp-snap v19pdp-noscrollbar flex overflow-x-auto"
         >
           {(gallerySlides.length ? gallerySlides : [null]).map((slide, i) => (
-            <div key={i} className="flex-shrink-0 w-full h-[min(133vw,78svh)] sm:aspect-[4/5] sm:h-auto bg-white flex items-center justify-center overflow-hidden">
+            <div key={i} className={`flex-shrink-0 w-full ${store.slug === "imitationworld" ? "h-[min(133vw,calc(100svh-260px))]" : "h-[min(133vw,78svh)]"} sm:aspect-[4/5] sm:h-auto bg-white flex items-center justify-center overflow-hidden`}>
               {slide?.kind === "video" ? (
                 <SnapVideoSlide url={slide.url} poster={slide.poster ? optimizeImageUrl(slide.poster, 800, 90) : undefined} />
 
@@ -400,7 +400,7 @@ export default function V19ProductDetail() {
       </div>
 
       {/* Thumbnail strip */}
-        {gallerySlides.length > 1 && (
+        {gallerySlides.length > 1 && store.slug !== "imitationworld" && (
         <div className="px-3 py-3 border-t border-gray-100">
           <div className="v19pdp-noscrollbar flex gap-2 overflow-x-auto">
             {gallerySlides.map((slide, i) => {

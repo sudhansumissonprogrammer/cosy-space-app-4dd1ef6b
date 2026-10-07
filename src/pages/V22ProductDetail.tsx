@@ -700,6 +700,7 @@ export default function V22ProductDetail() {
           productName={product.name}
           hasDiscount={hasDiscount}
           discountPct={discountPct}
+          compactGallery={store.slug === "imitationworld"}
           onShare={async () => {
             const storeHost = (store as any).custom_domain
               ? `https://${(store as any).custom_domain}`
@@ -1455,6 +1456,7 @@ function ImageGallery({
   hasDiscount,
   discountPct,
   onShare,
+  compactGallery = false,
 }: {
   images: string[];
   video?: { url: string; poster: string } | null;
@@ -1462,6 +1464,7 @@ function ImageGallery({
   hasDiscount: number | boolean | null;
   discountPct: number;
   onShare?: () => void;
+  compactGallery?: boolean;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -1591,9 +1594,9 @@ function ImageGallery({
           {/* Embla viewport */}
           <div
             ref={emblaRef}
-            className="overflow-hidden rounded-none sm:rounded-2xl bg-background cursor-zoom-in select-none"
+            className={`overflow-hidden rounded-none sm:rounded-2xl bg-background cursor-zoom-in select-none ${compactGallery ? "h-[min(133vw,calc(100svh-260px))] sm:h-auto" : ""}`}
           >
-            <div className="flex touch-pan-y items-start transition-[height] duration-200">
+            <div className={`flex touch-pan-y items-start transition-[height] duration-200 ${compactGallery ? "h-full sm:h-auto" : ""}`}>
               {renderSlides.map((slide, i) => {
                 const realIdx = len === 1 ? 0 : i;
                 if (slide.kind === "video") {
@@ -1613,7 +1616,7 @@ function ImageGallery({
                 return (
                   <div
                     key={`${i}-${slide.url}`}
-                    className="relative flex-[0_0_100%] min-w-0 h-[min(133vw,78svh)] sm:aspect-[4/5] sm:h-auto overflow-hidden"
+                    className={`relative flex-[0_0_100%] min-w-0 ${compactGallery ? "h-full" : "h-[min(133vw,78svh)]"} sm:aspect-[4/5] sm:h-auto overflow-hidden`}
                     onClick={() => setLightboxOpen(true)}
                   >
                     {!loaded && <Skeleton className="absolute inset-0 h-full w-full rounded-none" />}
@@ -1697,7 +1700,7 @@ function ImageGallery({
         </div>
 
         {/* Thumbnail strip — mobile + desktop */}
-        {len > 1 && (
+        {len > 1 && !compactGallery && (
           <div className="flex gap-2 overflow-x-auto scrollbar-hide px-3 sm:px-0.5 py-2 sm:py-1">
             {slides.map((slide, i) => {
               const thumbSrc = slide.kind === "video" ? (slide.poster || "") : slide.url;

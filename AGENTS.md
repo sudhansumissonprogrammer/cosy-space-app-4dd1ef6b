@@ -14,3 +14,4 @@
 
 - JD Store Spy extension calls the JD platform API from the store page (content script), never the extension background, because the platform resolves the tenant from the request Origin.
 - Store-specific PDP similar-design rails use a lazy store-gated component, a bounded cached public product query, and rail-local image visibility, because curated navigation must not block the main photo or fetch off-screen images.
+- Imitation World uses store-gated compact gallery sizing and hides only the underneath thumbnail strip, because existing swipe, video, and zoom behavior must remain intact without changing other stores.
