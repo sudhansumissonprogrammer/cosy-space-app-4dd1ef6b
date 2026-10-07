@@ -50,6 +50,7 @@ const PdpCarousels = lazy(() => import("@/components/storefront/pdp/PdpCarousels
 const ImitationWorldSimilarDesigns = lazy(() => import("@/components/storefront/pdp/ImitationWorldSimilarDesigns"));
 import PdpUpsellSection from "@/components/storefront/apps/Upsell/PdpUpsellSection";
 import FestivalSaleBadge from "@/components/storefront/FestivalSaleBadge";
+import GalleryImage from "@/components/storefront/pdp/GalleryImage";
 
 
 import DeliveryTimeline from "@/components/storefront/DeliveryTimeline";
@@ -1617,22 +1618,15 @@ function ImageGallery({
                     onClick={() => setLightboxOpen(true)}
                   >
                     {!loaded && <Skeleton className="absolute inset-0 h-full w-full rounded-none" />}
-                    <img
+                    <GalleryImage
                       src={activatedSlides.has(realIdx) ? optimizeImageUrl(slide.url, 1200) : undefined}
                       alt={productName}
                       className={`h-full w-full object-cover bg-muted/30 transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
                       decoding="async"
                       fetchPriority={realIdx === 0 ? "high" : "auto"}
                       draggable={false}
-                      ref={(el) => {
-                        if (el && el.complete && el.naturalWidth > 0 && !imageLoaded[realIdx]) {
-                          setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }));
-                          embla?.reInit();
-                        }
-                      }}
-                      onLoad={() => {
+                      onReady={() => {
                         setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }));
-                        embla?.reInit();
                       }}
                       onError={() => setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }))}
                     />

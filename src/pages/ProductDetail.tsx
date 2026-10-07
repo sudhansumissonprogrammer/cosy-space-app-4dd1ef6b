@@ -55,6 +55,7 @@ import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 import AutoCouponHint from "@/components/storefront/AutoCouponHint";
 import { useWaCouponPreview } from "@/hooks/useWaCouponPreview";
 import FestivalSaleBadge from "@/components/storefront/FestivalSaleBadge";
+import GalleryImage from "@/components/storefront/pdp/GalleryImage";
 
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
 const CheckoutReviewsTeaser = lazy(() => import("@/components/storefront/checkout/CheckoutReviewsTeaser"));
@@ -1969,7 +1970,7 @@ function ImageGallery({
                     onClick={() => setLightboxOpen(true)}
                   >
                     {!loaded && <Skeleton className="absolute inset-0 z-[2] h-full w-full rounded-none" />}
-                    <img
+                    <GalleryImage
                       src={optimizedUrl}
                       srcSet={gallerySrcSet || undefined}
                       sizes={gallerySrcSet ? "(max-width: 640px) 100vw, 50vw" : undefined}
@@ -1981,19 +1982,9 @@ function ImageGallery({
                       decoding="async"
                       fetchPriority={realIdx === 0 ? "high" : "auto"}
                       draggable={false}
-                      ref={(el) => {
-                        if (el && el.complete && el.naturalWidth > 0) {
-                          if (realIdx === 0) noteRatio(el.naturalWidth, el.naturalHeight);
-                          if (!imageLoaded[realIdx]) {
-                            setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }));
-                          }
-                        }
-                      }}
-                      onLoad={(e) => {
-                        const el = e.currentTarget;
+                      onReady={(el) => {
                         if (realIdx === 0) noteRatio(el.naturalWidth, el.naturalHeight);
                         setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }));
-
                       }}
                       onError={() => setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }))}
                     />
