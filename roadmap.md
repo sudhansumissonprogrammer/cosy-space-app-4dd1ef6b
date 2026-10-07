@@ -6,6 +6,7 @@
 - [x] Classify all Imitation World New2 products into Chain with Pendant or Pendant from their imported product details.
 
 ## Active work
+- [ ] Connect Telegram fresh after the 19:20 UTC Oct 7 workspace move and verify order-alert setup.
 - [ ] Resolve the Oct 7 remaining Lighthouse warnings: reproduce live small-photo overfetch, add verified existing-photo derivatives without touching originals, and check opening script overhead.
 - [x] Re-test published homepage/category/PDP (three mobile cold runs, one desktop), isolate six duplicate category downloads, fix opening loader and carousel scheduling, and verify gallery/zoom/similar/cart/checkout opening; report in docs/POST-UPDATE-PERFORMANCE-AUDIT-2026-10-07.md.
 - [ ] Verify this turn's frontend changes on live after publication; backfill existing tiny-photo derivatives, attribute/fix remaining homepage/desktop layout shifts, verify preview badge delivery, and finish cross-store/video/touch/payment/ad-event regressions. Live rollout awaits publication; payment verification needs a safe test flow.
