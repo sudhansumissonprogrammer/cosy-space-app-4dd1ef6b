@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import manifest from "@/assets/storefront-thumbnails/manifest.json";
 import { verifiedThumbnail } from "./verifiedThumbnails";
-import { optimizeImageUrl } from "./imageOptimize";
+import { getImageSrcSet, optimizeImageUrl } from "./imageOptimize";
 
 describe("verified small-display copies", () => {
   const source = Object.keys(manifest)[0];
@@ -17,5 +17,6 @@ describe("verified small-display copies", () => {
     const canonical = "https://cdn.shopbanao.in/product-images/e5fe0b51-60f0-4f17-9300-846f8450b0d5/c3c5dff2-173a-4f4d-90e4-8b1c88c305d9/1791305553339-e454um-1200w.webp";
     expect(optimizeImageUrl(canonical, 160)).toContain("/__l5e/assets-v1/");
     expect(optimizeImageUrl(canonical, 1200)).toBe(canonical);
+    expect(getImageSrcSet(canonical, [120, 160])).toBe("");
   });
 });

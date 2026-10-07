@@ -236,6 +236,14 @@ export function getImageSrcSet(
   // Product uploads store 400w OR 800w cards, plus 1200w/2000w siblings.
   // Legacy single-file 800w uploads stay on their known-good URL.
   if (isOptimizedUrl(firstUrl)) {
+    // A tiny src must not be overridden by an 800w srcSet candidate.
+    if (sizes.length > 0 && Math.max(...sizes) <= 320) {
+      const small = optimizeImageUrl(firstUrl, Math.max(...sizes), quality);
+      if (small.includes("/__l5e/assets-v1/")) return "";
+      if (/-thumb160-1200w\.(webp|jpg|jpeg)$/i.test(firstUrl) && Math.max(...sizes) <= 160) {
+        return `${resolveVariantUrl(firstUrl, 160)} 160w`;
+      }
+    }
     const isResponsiveR2 = /-1200w\.(webp|jpg|jpeg)$/i.test(firstUrl);
     if (isResponsiveR2 && !firstUrl.includes("supabase.co/storage")) {
       const cardWidth = getProductCardVariantWidth(firstUrl);
