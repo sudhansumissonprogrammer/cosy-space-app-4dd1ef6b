@@ -47,6 +47,7 @@ import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
 const CheckoutReviewsTeaser = lazy(() => import("@/components/storefront/checkout/CheckoutReviewsTeaser"));
 const PdpCarousels = lazy(() => import("@/components/storefront/pdp/PdpCarousels"));
+const ImitationWorldSimilarDesigns = lazy(() => import("@/components/storefront/pdp/ImitationWorldSimilarDesigns"));
 import PdpUpsellSection from "@/components/storefront/apps/Upsell/PdpUpsellSection";
 import FestivalSaleBadge from "@/components/storefront/FestivalSaleBadge";
 
@@ -716,6 +717,7 @@ export default function V22ProductDetail() {
         <div className="flex flex-col gap-0 px-4 sm:px-0">
 
           {/* Product Title — right under image */}
+          {store.slug === "imitationworld" && <Suspense fallback={<div className="mb-3 h-[108px]" />}><ImitationWorldSimilarDesigns storeId={store.id} storeSlug={store.slug} current={product} /></Suspense>}
           <h1 className="text-xl font-semibold leading-snug sm:text-2xl lg:text-[1.7rem]" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif", ...(isV18 ? { color: "#ffffff", fontWeight: 400, letterSpacing: "0.01em" } : { color: undefined }) }}>
             {product.name}
           </h1>

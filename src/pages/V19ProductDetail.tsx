@@ -34,6 +34,7 @@ import PdpUpsellSection from "@/components/storefront/apps/Upsell/PdpUpsellSecti
 import FestivalSaleBadge from "@/components/storefront/FestivalSaleBadge";
 
 const ZoomableGallery = lazy(() => import("@/components/storefront/ZoomableGallery"));
+const ImitationWorldSimilarDesigns = lazy(() => import("@/components/storefront/pdp/ImitationWorldSimilarDesigns"));
 
 const SEARCH_TERMS = ['"milk"', '"bread"', '"eggs"', '"atta"', '"chips"', '"chocolate"'];
 
@@ -435,6 +436,7 @@ export default function V19ProductDetail() {
 
       {/* Title block */}
       <div className="px-4 pt-2 pb-3">
+        {store.slug === "imitationworld" && <Suspense fallback={<div className="mb-3 h-[108px]" />}><ImitationWorldSimilarDesigns storeId={store.id} storeSlug={store.slug} current={product} /></Suspense>}
         <h1 className="text-[18px] font-extrabold text-gray-900 leading-snug">{product.name}</h1>
         {reviews.length > 0 && (
           <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md" style={{ background: "var(--storefront-primary, #036B52)" }}>
