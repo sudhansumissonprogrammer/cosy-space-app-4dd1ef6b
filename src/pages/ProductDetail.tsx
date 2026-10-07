@@ -1357,7 +1357,7 @@ export default function ProductDetail() {
                   <div className="hidden sm:flex items-center gap-3 flex-1 min-w-0">
                     {product.image_url && (
                       <img
-                        src={optimizeImageUrl(product.image_url, 40)}
+                        src={optimizeImageUrl(product.image_url, 1200)}
                         alt=""
                         className="h-10 w-10 rounded-lg object-cover"
                       />
@@ -1719,6 +1719,7 @@ function ImageGallery({
   compactGallery?: boolean;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [activatedSlides, setActivatedSlides] = useState<Set<number>>(() => new Set([0]));
   const [lightboxOpen, setLightboxOpen] = useState(false);
   // Seed slide 0 as loaded when a matching preload exists — the skeleton
   // already painted the same w=800 URL, so the browser has it cached and
@@ -1795,6 +1796,7 @@ function ImageGallery({
     const onSelect = () => {
       const i = embla.selectedScrollSnap();
       setActiveIndex(i);
+      setActivatedSlides((previous) => new Set([...previous, i]));
       if (slides[i]?.kind !== "video") setVideoPlaying(false);
     };
     embla.on("select", onSelect);
@@ -1814,37 +1816,29 @@ function ImageGallery({
     setImageLoaded({});
     setImgRatio(null);
     setVideoPlaying(false);
+    setActivatedSlides(new Set([0]));
 
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slidesKey, embla]);
 
-  // Smart preload: only active + 2 neighbours (image slides only — videos use preload="none")
+  // Prepare neighbours only after a deliberate drag, never on cold entry.
   useEffect(() => {
-    if (len === 0) return;
-    const want = new Set<number>([activeIndex]);
-    if (len > 1) {
-      want.add((activeIndex + 1) % len);
-      want.add((activeIndex - 1 + len) % len);
-    }
-    want.forEach((idx) => {
-      const s = slides[idx];
-      if (!s || s.kind !== "image") return;
-      if (imageLoaded[idx]) return;
-      const img = new Image();
-      img.onload = () => {
-        if (idx === 0) noteRatio(img.naturalWidth, img.naturalHeight);
-        setImageLoaded((prev) => (prev[idx] ? prev : { ...prev, [idx]: true }));
-      };
-      img.src = optimizeImageUrl(s.url, 800);
+    if (!embla || !len) return;
+    const onDrag = () => {
+      const index = embla.selectedScrollSnap();
+      setActivatedSlides((previous) => new Set([...previous, (index + 1) % len, (index - 1 + len) % len]));
+    };
+    embla.on("pointerDown", onDrag);
+    return () => { embla.off("pointerDown", onDrag); };
+  }, [embla, len]);
 
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeIndex, slidesKey, len, imageLoaded]);
-
-  const scrollTo = useCallback((i: number) => embla?.scrollTo(i), [embla]);
-  const scrollPrev = useCallback(() => embla?.scrollPrev(), [embla]);
-  const scrollNext = useCallback(() => embla?.scrollNext(), [embla]);
+  const scrollTo = useCallback((i: number) => {
+    setActivatedSlides((previous) => new Set([...previous, i]));
+    embla?.scrollTo(i);
+  }, [embla]);
+  const scrollPrev = useCallback(() => scrollTo((activeIndex - 1 + len) % len), [scrollTo, activeIndex, len]);
+  const scrollNext = useCallback(() => scrollTo((activeIndex + 1) % len), [scrollTo, activeIndex, len]);
 
   if (len === 0) {
     return (
@@ -1951,7 +1945,7 @@ function ImageGallery({
                     <VideoSlide
                       key={`${i}-vid-${slide.url}`}
                       url={slide.url}
-                      poster={slide.poster ? optimizeImageUrl(slide.poster, 800) : undefined}
+                      poster={activatedSlides.has(realIdx) && slide.poster ? optimizeImageUrl(slide.poster, 1200) : undefined}
                       isActive={isActive}
                       videoPlaying={videoPlaying}
                       setVideoPlaying={setVideoPlaying}
@@ -1959,10 +1953,10 @@ function ImageGallery({
                   );
                 }
                 const loaded = imageLoaded[realIdx];
-                const optimizedUrl = optimizeImageUrl(slide.url, 800);
+                const optimizedUrl = activatedSlides.has(realIdx) ? optimizeImageUrl(slide.url, 1200) : undefined;
                 // Responsive gallery: on resizable sources this ships a
                 // ~400-600px file to phones instead of the 800/original.
-                const gallerySrcSet = getImageSrcSet(slide.url, [400, 600, 800, 1200], 80);
+                const gallerySrcSet = "";
 
                 return (
                   <div
@@ -2162,7 +2156,7 @@ function LightboxImage({
 
   // Same size the PDP gallery already showed → served from browser cache
   // instantly, so the viewer never sits on a blank "Loading…" screen.
-  const previewSrc = optimizeImageUrl(src, 800);
+  const previewSrc = optimizeImageUrl(src, 1200);
 
   // First try the optimized URL (matches the gallery thumbs that we know load).
   // If the optimizer URL fails (CDN hiccup / unsupported source), fall back to the raw URL.

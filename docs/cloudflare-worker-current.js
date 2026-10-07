@@ -243,7 +243,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.94.0-mic-permission-override";
+const WORKER_VERSION = "8.95.0-cold-entry-photos";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -3234,6 +3234,14 @@ function _toGalleryUrl(rawUrl, width, quality) {
   // ~28KB WebP and is edge-cached immutable. Must mirror imageOptimize.ts
   // exactly so the preload URL is byte-identical to what React requests.
   try {
+    if (/-1200w\.(webp|jpg|jpeg)$/i.test(rawUrl)) {
+      const match = rawUrl.match(/\/(\d{13})-[^/]+-1200w\.(?:webp|jpg|jpeg)$/i);
+      if (match) {
+        const card = Number(match[1]) < 1790747949000 ? 400 : 800;
+        const target = width <= 800 ? card : width <= 1200 ? 1200 : 2000;
+        rawUrl = rawUrl.replace(/-1200w\.(webp|jpg|jpeg)$/i, `-${target}w.$1`);
+      }
+    }
     const u = new URL(rawUrl);
     if (CF_IMG_HOSTS.has(u.hostname)) {
       return `/cf-img?url=${encodeURIComponent(rawUrl)}&w=${width}&q=${quality}`;
@@ -3250,44 +3258,10 @@ function _isRawPassthrough(rawUrl) {
 
 function _buildProductImagePreloads(inlineProductsStr, count = 2, opts) {
   const pdp = !!(opts && opts.pdp);
-  const items = _extractTopProductImages(inlineProductsStr, pdp ? 1 : count);
-  if (!items.length) return "";
-  let out = "";
-  for (let i = 0; i < items.length; i++) {
-    const raw = items[i].url;
-    if (pdp) {
-      // Hero gallery slide: full-bleed on mobile, half on desktop.
-      const main = _toGalleryUrl(raw, 800, 80);
-      if (_isRawPassthrough(raw)) {
-        // Single immutable origin file — no responsive variants exist.
-        out +=
-          `<link rel="preload" as="image" href="${escapeHtml(main)}" fetchpriority="high" />\n`;
-        continue;
-      }
-      const srcset = [400, 600, 800, 1200]
-        .map((w) => `${escapeHtml(_toGalleryUrl(raw, w, 80))} ${w}w`)
-        .join(", ");
-      out +=
-        `<link rel="preload" as="image" href="${escapeHtml(main)}" ` +
-        `imagesrcset="${srcset}" imagesizes="(max-width: 640px) 100vw, 50vw" fetchpriority="high" />\n`;
-      continue;
-    }
-    const main = _toGalleryUrl(raw, 400, 75);
-    const fp = i === 0 ? ` fetchpriority="high"` : "";
-    if (_isRawPassthrough(raw)) {
-      out += `<link rel="preload" as="image" href="${escapeHtml(main)}"${fp} />\n`;
-      continue;
-    }
-    const srcset =
-      `${escapeHtml(_toGalleryUrl(raw, 200, 75))} 200w, ` +
-      `${escapeHtml(_toGalleryUrl(raw, 400, 75))} 400w, ` +
-      `${escapeHtml(_toGalleryUrl(raw, 600, 75))} 600w, ` +
-      `${escapeHtml(_toGalleryUrl(raw, 800, 75))} 800w`;
-    out +=
-      `<link rel="preload" as="image" href="${escapeHtml(main)}" ` +
-      `imagesrcset="${srcset}" imagesizes="(max-width:640px) 45vw, 25vw"${fp} />\n`;
-  }
-  return out;
+  return _extractTopProductImages(inlineProductsStr, pdp ? 1 : count).map((item, i) => {
+    const href = _toGalleryUrl(item.url, pdp ? 1200 : 400, pdp ? 85 : 75);
+    return `<link rel="preload" as="image" href="${escapeHtml(href)}"${i === 0 ? ' fetchpriority="high"' : ''} />\n`;
+  }).join("");
 }
 
 /**
@@ -3300,20 +3274,9 @@ function _buildProductImagePreloads(inlineProductsStr, count = 2, opts) {
  * The grid is visually invisible but technically present so the
  * preload-scanner picks up every <img src>.
  */
-function _buildProductPreloaderGrid(inlineProductsStr, count = 8) {
-  const items = _extractTopProductImages(inlineProductsStr, count);
-  if (!items.length) return "";
-  let imgs = "";
-  for (let i = 0; i < items.length; i++) {
-    // v8.93.0 — warm the SAME url the client will request (resized for
-    // supplier CDNs), otherwise we'd download the 600KB original for nothing.
-    const u = escapeHtml(_toGalleryUrl(items[i].url, 400, 75));
-
-    const eager = i < 4 ? ' loading="eager"' : ' loading="lazy"';
-    const fp = i < 2 ? ' fetchpriority="high"' : "";
-    imgs += `<img src="${u}" alt=""${eager}${fp} decoding="async" width="1" height="1" />`;
-  }
-  return `<div aria-hidden="true" style="position:absolute;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;clip:rect(0 0 0 0)">${imgs}</div>`;
+function _buildProductPreloaderGrid() {
+  // Preload links suffice; hidden images can select a different-size file.
+  return "";
 }
 
 /* ============================================================
@@ -4685,9 +4648,11 @@ async function serveStreamedHtml(
       const _isPdpPreload = pdpCategoryInline?.kind === "product" && !!pdpCategoryInline?.json;
       const productImagePreloads = categoryProductsJsonForPreload
         ? _buildProductImagePreloads(categoryProductsJsonForPreload, 2, { pdp: _isPdpPreload })
-        : inlineProducts
-          ? _buildProductImagePreloads(inlineProducts, 2)
-          : _buildImagePreloadsFromUrls(topImages, 2);
+        : pdpCategoryInline
+          ? ""
+          : inlineProducts
+            ? _buildProductImagePreloads(inlineProducts, 2)
+            : _buildImagePreloadsFromUrls(topImages, 2);
 
       /* v8.89.0 — (a) PRECONNECT to the image host and (b) EDGE-RENDERED HERO.
          (a) The hero preload above is often the first request to a supplier CDN
@@ -4718,7 +4683,7 @@ async function serveStreamedHtml(
       }
       if (_isPdpPreload && _pdpHeroRaw) {
         try {
-          const _main = _toGalleryUrl(_pdpHeroRaw, 800, 80);
+          const _main = _toGalleryUrl(_pdpHeroRaw, 1200, 85);
           // v8.93.0+ — _toGalleryUrl can return a SAME-ORIGIN relative /cf-img
           // path. `new URL()` on that throws, which used to kill the whole
           // edge-hero block (swallowed by the catch below). Same-origin needs
@@ -4729,11 +4694,7 @@ async function serveStreamedHtml(
             ? `<link rel="preconnect" href="${escapeHtml(_origin)}" crossorigin />` +
               `<link rel="dns-prefetch" href="${escapeHtml(_origin)}" />`
             : "";
-          const _srcsetAttr = _isRawPassthrough(_pdpHeroRaw)
-            ? ""
-            : ` srcset="${[400, 600, 800, 1200]
-                .map((w) => `${escapeHtml(_toGalleryUrl(_pdpHeroRaw, w, 80))} ${w}w`)
-                .join(", ")}" sizes="(max-width: 640px) 100vw, 50vw"`;
+          const _srcsetAttr = "";
           // Same viewport box the gallery reserves (see ProductDetail.tsx
           // viewportHeightClass) so the frame the browser paints matches.
           const _h = _pdpHasVideo ? "min(168vw,86svh)" : "min(132vw,70svh)";
@@ -8430,7 +8391,7 @@ async function _handleFetch(request, env, ctx) {
     // v8.74.0: LCP product image preload rides in the response headers too.
     // v8.75.0 — per-category images win over store-wide images when on a
     // /category/* route, so cold category loads preload the RIGHT LCP image.
-    const topImages = (kvBatch.catImgs && kvBatch.catImgs.length ? kvBatch.catImgs : kvBatch.imgs) || null;
+    const topImages = (pdpCategoryRoute ? (pdpCategoryRoute.kind === "category" ? kvBatch.catImgs : null) : kvBatch.imgs) || null;
     const linkHeader = _isPdpPath(new URL(request.url).pathname)
     ? _buildLinkPreloadHeader(shellResult.html)
     : _withImageLinkPreload(_buildLinkPreloadHeader(shellResult.html), topImages);
@@ -8645,7 +8606,7 @@ async function _handleFetch(request, env, ctx) {
     }
     // FIX #3
     // v8.75.0 — per-category images take priority on /category/*.
-    const topImagesCD = (kvBatchCD.catImgs && kvBatchCD.catImgs.length ? kvBatchCD.catImgs : kvBatchCD.imgs) || null;
+    const topImagesCD = (pdpCategoryRouteCD ? (pdpCategoryRouteCD.kind === "category" ? kvBatchCD.catImgs : null) : kvBatchCD.imgs) || null;
     const linkHeaderCD = _isPdpPath(new URL(request.url).pathname)
       ? _buildLinkPreloadHeader(shellResultCD.html)
       : _withImageLinkPreload(_buildLinkPreloadHeader(shellResultCD.html), topImagesCD);

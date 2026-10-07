@@ -46,7 +46,7 @@ export function orderSimilarDesigns(rows: Design[], current: Design) {
 
 // Observe against the scroll rail, not the viewport: off-screen designs never
 // download until approached, even with browsers' generous lazy-image margins.
-function DesignPhoto({ design, rail }: { design: Design; rail: HTMLDivElement | null }) {
+ function DesignPhoto({ design, rail, selected }: { design: Design; rail: HTMLDivElement | null; selected: boolean }) {
   const holder = useRef<HTMLSpanElement>(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
@@ -56,7 +56,6 @@ function DesignPhoto({ design, rail }: { design: Design; rail: HTMLDivElement | 
     const observer = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting) {
         setVisible(true);
-        prefetchProductDetail({ slug: design.slug, image: design.image_url });
         observer.disconnect();
       }
     }, { root: rail, rootMargin: "0px 60px", threshold: 0.01 });
@@ -65,7 +64,7 @@ function DesignPhoto({ design, rail }: { design: Design; rail: HTMLDivElement | 
   }, [rail]);
   return (
     <span ref={holder} className="block h-full w-full overflow-hidden rounded-[4px] bg-muted">
-      {visible && <img src={optimizeImageUrl(design.image_url, 160)} alt={design.name}
+       {visible && <img src={optimizeImageUrl(design.image_url, selected ? 1200 : 160)} alt={design.name}
         width={64} height={64} loading="lazy" decoding="async" fetchPriority="low"
          className="h-full w-full object-cover scale-110"
         onError={(event) => {
@@ -113,6 +112,7 @@ export default function ImitationWorldSimilarDesigns({ storeId, storeSlug, curre
 
   if (storeSlug !== "imitationworld" || isError || (data && items.length < 2)) return null;
   const warmDesign = (design: Design) => {
+    if (design.id === current.id) return;
     prefetchProductDetail({ slug: design.slug, image: design.image_url });
   };
   const rememberDesign = (design: Design) => {
@@ -141,7 +141,7 @@ export default function ImitationWorldSimilarDesigns({ storeId, storeSlug, curre
                 aria-label={design.name} aria-current={selected ? "page" : undefined} title={design.name}
                 onPointerEnter={() => warmDesign(design)} onFocus={() => warmDesign(design)}
                 onTouchStart={() => warmDesign(design)} onClick={() => rememberDesign(design)}>
-                <DesignPhoto design={design} rail={rail} />
+                 <DesignPhoto design={design} rail={rail} selected={selected} />
                 {selected && <span className="absolute bottom-0 right-0 rounded-tl-md bg-primary p-0.5 text-primary-foreground"><Check className="h-3 w-3" aria-hidden="true" /></span>}
               </Link>
             </Button>

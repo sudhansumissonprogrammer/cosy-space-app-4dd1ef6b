@@ -5,6 +5,7 @@ import {
   PRODUCT_CARD_SIZES,
 } from "@/lib/imageOptimize";
 import { getAdaptiveQuality, isSaveDataMode } from "@/lib/networkHints";
+import { useImageActivation } from "@/hooks/useImageActivation";
 
 interface OptimizedImageProps {
   src: string | null | undefined;
@@ -57,6 +58,7 @@ function OptimizedImageInner({
 }: OptimizedImageProps) {
   const [loaded, setLoaded] = useState(priority);
   const [errored, setErrored] = useState(false);
+  const { ref, active } = useImageActivation(priority);
 
   if (!src || errored) {
     return fallback ? <>{fallback}</> : null;
@@ -81,10 +83,10 @@ function OptimizedImageInner({
   const srcSet = getImageSrcSet(src, srcSetSizes, effectiveQuality);
 
   return (
-    <div className="relative overflow-hidden" style={aspectRatio ? { aspectRatio } : undefined}>
+    <div ref={ref} className="relative overflow-hidden" style={aspectRatio ? { aspectRatio } : undefined}>
       <img
-        src={optimizedSrc}
-        srcSet={srcSet || undefined}
+        src={active ? optimizedSrc : undefined}
+        srcSet={active ? srcSet || undefined : undefined}
         sizes={srcSet ? sizes : undefined}
         alt={alt}
         className={className}

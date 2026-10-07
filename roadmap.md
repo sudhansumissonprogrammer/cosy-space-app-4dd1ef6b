@@ -7,7 +7,8 @@
 
 ## Active work
 - [x] Connect Telegram fresh after the 18:13 UTC Oct 7 workspace move, verify the bot, and redeploy order alerts.
-- [ ] Implement the planned cold-entry photo-loading improvements and verify category/PDP behavior.
+- [x] Implement first-pass cold-entry deduplication and viewport/gallery activation; verify mobile category, single-photo PDP, Similar designs taps, cart addition, and on-demand zoom.
+- [ ] Complete genuine thumbnail derivatives, remaining theme/hover-thumbnail and homepage spacing audits, and full checkout/ad-event regressions; then deploy the updated Worker manually and repeat production cold-entry tests.
 - [x] Investigate duplicate category/PDP photo downloads and prepare the complete five-stage image-loading and regression-test plan for approval.
 - [x] Enlarge Imitation World similar-design photos, hide gallery thumbnails while keeping swipe, and show the heading on the initial mobile screen.
 - [x] Connect Telegram fresh after the 12:52 UTC Oct 7 workspace move, verify the bot, and redeploy order alerts.
