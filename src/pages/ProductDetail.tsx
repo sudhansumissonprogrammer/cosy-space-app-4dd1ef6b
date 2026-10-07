@@ -882,7 +882,7 @@ export default function ProductDetail() {
 
           {/* Product Title — right under image */}
           {store.slug === "imitationworld" && (
-            <Suspense fallback={<div className="mb-3 h-[108px]" />}>
+            <Suspense fallback={<div className="mb-3 h-[92px] sm:h-[108px]" />}>
               <ImitationWorldSimilarDesigns storeId={store.id} storeSlug={store.slug} current={product} />
             </Suspense>
           )}
