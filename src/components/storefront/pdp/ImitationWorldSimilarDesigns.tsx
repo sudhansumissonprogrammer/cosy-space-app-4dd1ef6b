@@ -67,7 +67,7 @@ function DesignPhoto({ design, rail }: { design: Design; rail: HTMLDivElement | 
     <span ref={holder} className="block h-full w-full overflow-hidden rounded-[4px] bg-muted">
       {visible && <img src={optimizeImageUrl(design.image_url, 160)} alt={design.name}
         width={64} height={64} loading="lazy" decoding="async" fetchPriority="low"
-        className="h-full w-full object-contain"
+         className="h-full w-full object-cover scale-110"
         onError={(event) => {
           const image = event.currentTarget;
           if (design.image_url && image.getAttribute("src") !== design.image_url) image.src = design.image_url;
@@ -136,7 +136,7 @@ export default function ImitationWorldSimilarDesigns({ storeId, storeSlug, curre
           const selected = design.id === current.id;
           return (
             <Button key={design.id} asChild variant="outline"
-              className={`relative h-[58px] w-[58px] shrink-0 rounded p-0.5 border-2 sm:h-[72px] sm:w-[72px] sm:rounded-md sm:p-1 ${selected ? "border-primary bg-background ring-1 ring-primary" : "border-border bg-background"}`}>
+               className={`relative h-[58px] w-[58px] shrink-0 overflow-hidden rounded p-0 border-2 sm:h-[72px] sm:w-[72px] sm:rounded-md ${selected ? "border-primary bg-background ring-1 ring-primary" : "border-border bg-background"}`}>
               <Link to={storefrontPath(storeSlug, `product/${design.slug}`)}
                 aria-label={design.name} aria-current={selected ? "page" : undefined} title={design.name}
                 onPointerEnter={() => warmDesign(design)} onFocus={() => warmDesign(design)}

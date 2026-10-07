@@ -311,7 +311,7 @@ export default function V20ProductDetail() {
         {showStrike && <FestivalSaleBadge placement="pdp" className="absolute bottom-4 left-7 z-20 drop-shadow-lg sm:bottom-5 sm:left-3" />}
         <div ref={galleryRef} onScroll={onGalleryScroll} className="v20pdp-snap v20pdp-noscrollbar flex overflow-x-auto">
           {(gallerySlides.length ? gallerySlides : [null]).map((slide, i) => (
-            <div key={i} className="flex-shrink-0 w-full h-[min(133vw,78svh)] sm:aspect-[4/5] sm:h-auto bg-white flex items-center justify-center overflow-hidden">
+            <div key={i} className={`flex-shrink-0 w-full ${store.slug === "imitationworld" ? "h-[min(133vw,calc(100svh-260px))]" : "h-[min(133vw,78svh)]"} sm:aspect-[4/5] sm:h-auto bg-white flex items-center justify-center overflow-hidden`}>
               {slide?.kind === "video" ? (
                 <SnapVideoSlide url={slide.url} poster={slide.poster ? optimizeImageUrl(slide.poster, 800, 90) : undefined} />
 
@@ -336,7 +336,7 @@ export default function V20ProductDetail() {
         )}
       </div>
 
-      {gallerySlides.length > 1 && (
+      {gallerySlides.length > 1 && store.slug !== "imitationworld" && (
         <div className="px-3 py-3 border-t border-gray-100">
           <div className="v20pdp-noscrollbar flex gap-2 overflow-x-auto">
             {gallerySlides.map((slide, i) => {
