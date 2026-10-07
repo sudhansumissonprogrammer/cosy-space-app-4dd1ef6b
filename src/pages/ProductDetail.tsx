@@ -60,6 +60,7 @@ const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/
 const CheckoutReviewsTeaser = lazy(() => import("@/components/storefront/checkout/CheckoutReviewsTeaser"));
 import PdpReviewsBadge from "@/components/storefront/pdp/PdpReviewsBadge";
 const PdpCarousels = lazy(() => import("@/components/storefront/pdp/PdpCarousels"));
+const ImitationWorldSimilarDesigns = lazy(() => import("@/components/storefront/pdp/ImitationWorldSimilarDesigns"));
 const WristlifeSections = lazy(() => import("@/components/storefront/pdp/storeSections/WristlifeSections"));
 
 import { VideoSlide } from "@/components/storefront/VideoSlide";
@@ -880,6 +881,11 @@ export default function ProductDetail() {
           )}
 
           {/* Product Title — right under image */}
+          {store.slug === "imitationworld" && (
+            <Suspense fallback={<div className="mb-3 h-[108px]" />}>
+              <ImitationWorldSimilarDesigns storeId={store.id} storeSlug={store.slug} current={product} />
+            </Suspense>
+          )}
           <h1 className="text-xl font-semibold leading-snug sm:text-2xl lg:text-[1.7rem]" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif", ...(isV18 ? { color: "#ffffff", fontWeight: 400, letterSpacing: "0.01em" } : { color: undefined }) }}>
             {product.name}
           </h1>
