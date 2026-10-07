@@ -1,9 +1,9 @@
-import { act, renderHook } from "@testing-library/react";
+import { act, cleanup, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useImageActivation } from "./useImageActivation";
 
 describe("image activation", () => {
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
   it("activates priority photos immediately", () => {
     const { result } = renderHook(() => useImageActivation(true));
@@ -20,6 +20,7 @@ describe("image activation", () => {
         expect(options.rootMargin).toBe("0px");
       }
       observe = observe;
+      unobserve = vi.fn();
       disconnect = disconnect;
     });
     const frame = document.createElement("div");
@@ -30,9 +31,9 @@ describe("image activation", () => {
     });
     expect(deferred.current.active).toBe(false);
     expect(observe).toHaveBeenCalledWith(frame);
-    act(() => notify?.([{ isIntersecting: false } as IntersectionObserverEntry], {} as IntersectionObserver));
+    act(() => notify?.([{ target: frame, isIntersecting: false } as unknown as IntersectionObserverEntry], {} as IntersectionObserver));
     expect(deferred.current.active).toBe(false);
-    act(() => notify?.([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver));
+    act(() => notify?.([{ target: frame, isIntersecting: true } as unknown as IntersectionObserverEntry], {} as IntersectionObserver));
     expect(deferred.current.active).toBe(true);
     expect(disconnect).toHaveBeenCalled();
   });
@@ -71,7 +72,7 @@ describe("image activation", () => {
     vi.stubGlobal("scrollY", 100);
     act(() => window.dispatchEvent(new Event("scroll")));
     expect(ahead?.observe).toHaveBeenCalledWith(frame);
-    act(() => ahead?.notify([{ target: frame, isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver));
+    act(() => ahead?.notify([{ target: frame, isIntersecting: true } as unknown as IntersectionObserverEntry], {} as IntersectionObserver));
     expect(result.current.active).toBe(true);
     act(() => window.dispatchEvent(new Event("scroll")));
     expect(result.current.active).toBe(true);
