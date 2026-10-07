@@ -96,7 +96,7 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
   preloadCardStyle(store?.theme === "theme-19" || store?.theme === "theme-20" ? store.theme : cardStyle);
   const [variantOpen, setVariantOpen] = useState(false);
   const { ref: hostRef, active } = useImageActivation(priority, prepareAhead
-    ? { rootMargin: "600px 0px", afterScroll: true } : {});
+    ? { rootMargin: "600px 0px", afterScroll: true, afterReady: true } : {});
   // Tap-to-play video is available on every store/theme by default; the
   // App Store "Card Video (Mobile)" toggle is an explicit opt-out.
   const inlineVideoUrl = ((product as any)?.video_url as string | null) || null;
@@ -197,6 +197,7 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
   return (
     <div
       ref={hostRef}
+      data-card-priority={priority}
       className={`stagger-card relative${active ? " prepared-product-card" : ""}`}
       style={{
         "--i": index,

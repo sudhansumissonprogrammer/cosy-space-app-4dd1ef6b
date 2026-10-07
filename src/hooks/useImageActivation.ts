@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-type ActivationOptions = { rootMargin?: string; afterScroll?: boolean };
+type ActivationOptions = { rootMargin?: string; afterScroll?: boolean; afterReady?: boolean };
 type Subscription = { activate: () => void; waitingForScroll: boolean };
 const groups = new Map<string, {
   observer: IntersectionObserver;
@@ -64,7 +64,21 @@ export function useImageActivation(priority = false, options: ActivationOptions 
     const stopVisible = subscribe(node, activate, {});
     const stopAhead = options.rootMargin && options.rootMargin !== "0px"
       ? subscribe(node, activate, options) : undefined;
-    return () => { stopVisible(); stopAhead?.(); };
-  }, [active, priority, options.rootMargin, options.afterScroll]);
+    // Prepare the first upcoming rows once opening card photos have decoded.
+    // No competing look-ahead requests during the opening photo download.
+    let stopReady: (() => void) | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const checkReady = () => {
+      const grid = node.parentElement;
+      const opening = grid?.querySelectorAll<HTMLImageElement>("[data-card-priority='true'] a img");
+      if (opening?.length && Array.from(opening).every(img => img.complete && img.naturalWidth > 0)) {
+        stopReady = subscribe(node, activate, { rootMargin: options.rootMargin });
+      } else {
+        timer = setTimeout(checkReady, 250);
+      }
+    };
+    if (options.afterReady) timer = setTimeout(checkReady, 250);
+    return () => { stopVisible(); stopAhead?.(); stopReady?.(); if (timer) clearTimeout(timer); };
+  }, [active, priority, options.rootMargin, options.afterScroll, options.afterReady]);
   return { ref, active };
 }
