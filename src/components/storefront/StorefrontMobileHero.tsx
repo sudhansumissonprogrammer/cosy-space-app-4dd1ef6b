@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef, lazy, Suspense } from "react";
 import { optimizeImageUrl, getImageSrcSet, preloadHeroImage, HERO_IMAGE_SIZES } from "@/lib/imageOptimize";
+import { useImageActivation } from "@/hooks/useImageActivation";
 
 const HeroVideo = lazy(() => import("@/components/storefront/HeroVideo"));
 
@@ -123,19 +124,30 @@ function MobileHeroCarousel({ images, storeName }: { images: string[]; storeName
   const dragStartRef = useRef<number | null>(null);
   const dragCurrentRef = useRef<number | null>(null);
   const len = images.length;
+  const { ref, active } = useImageActivation();
+  const [interacted, setInteracted] = useState(false);
+  const [activated, setActivated] = useState<Set<number>>(() => new Set([0]));
 
   const next = useCallback(() => setCurrent((c) => (c + 1) % len), [len]);
   const prev = useCallback(() => setCurrent((c) => (c - 1 + len) % len), [len]);
 
   useEffect(() => {
+    setActivated((previous) => previous.has(current) ? previous : new Set([...previous, current]));
+  }, [current]);
+
+  useEffect(() => {
+    // A passive ad visit must not accumulate every banner download. Rotation
+    // starts after interaction, and pauses when the hero leaves the viewport.
+    if (!interacted || !active || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     intervalRef.current = setInterval(next, 4000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [next]);
+  }, [next, interacted, active]);
 
   const resetTimer = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(next, 4000);
-  }, [next]);
+    setInteracted(true);
+    if (active && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) intervalRef.current = setInterval(next, 4000);
+  }, [next, active]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length !== 1) return;
@@ -161,7 +173,7 @@ function MobileHeroCarousel({ images, storeName }: { images: string[]; storeName
   };
 
   return (
-    <div className="relative overflow-hidden touch-pan-y w-full">
+    <div ref={ref} className="relative overflow-hidden touch-pan-y w-full">
       <div
         className="flex transition-transform duration-500 ease-out select-none"
         style={{ transform: `translateX(-${current * 100}%)` }}
@@ -174,8 +186,8 @@ function MobileHeroCarousel({ images, storeName }: { images: string[]; storeName
           return (
             <div key={i} className="w-full flex-shrink-0">
               <img
-                src={optimizeImageUrl(url, 800)}
-                srcSet={srcSet || undefined}
+                 src={activated.has(i) || i === current ? optimizeImageUrl(url, 800) : undefined}
+                 srcSet={activated.has(i) || i === current ? srcSet || undefined : undefined}
                 sizes="100vw"
                 alt={`${storeName} hero ${i + 1}`}
                 className="w-full h-auto block"

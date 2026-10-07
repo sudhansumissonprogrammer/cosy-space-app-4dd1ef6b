@@ -561,7 +561,7 @@
           var families=[];
           [hf,bf].forEach(function(f){if(f&&self.indexOf(f)===-1){var seen=families.indexOf(f);if(seen===-1)families.push(f);}});
           if(!families.length)return;
-          var href='https://fonts.googleapis.com/css2?'+families.map(function(f){return'family='+f.replace(/ /g,'+') +':wght@400;600;700'}).join('&')+'&display=block';
+          var href='https://fonts.googleapis.com/css2?'+families.map(function(f){return'family='+f.replace(/ /g,'+') +':wght@400;600;700'}).join('&')+'&display=optional';
           var link=document.createElement('link');link.rel='stylesheet';link.href=href;link.id='storefront-google-fonts';
           link.setAttribute('fetchpriority','high');document.head.appendChild(link);
         }
@@ -572,11 +572,24 @@
            discover the same URLs during its first render. */
         window.__sfInjectImgPreloads__=function(products){
           if(!Array.isArray(products))return;
+          var path=location.pathname.replace(/^\/store\/[^/]+/, '') || '/';
+          var pdp=/^\/products?\//.test(path);
+          var category=/^\/category\//.test(path);
+          // Homepage rows are not necessarily above the hero. React activates
+          // their photos when visible; never preload arbitrary catalog rows.
+          if(!pdp&&!category)return;
+          var limit=pdp?1:2;
           var head=document.head;var injected=0;
-          for(var i=0;i<products.length && injected<6;i++){
+          for(var i=0;i<products.length && injected<limit;i++){
             var pp=products[i];var u=pp&&pp.image_url;
             if(!u||typeof u!=='string')continue;
-            if(u.indexOf(',')>-1)u=u.split(',')[0].trim();
+            u=u.split(/,\s*(?=https?:\/\/)/)[0].trim();
+            // Match resolveVariantUrl: only timestamped canonical uploads
+            // have a known card sibling. Raw and legacy single files stay intact.
+            if(category){
+              var uploaded=u.match(/\/(\d{13})-[^/]+-1200w\.(webp|jpg|jpeg)$/i);
+              if(uploaded)u=u.replace(/-1200w\.(webp|jpg|jpeg)$/i,'-'+(Number(uploaded[1])<1790747949000?400:800)+'w.$1');
+            }
             if(!u||document.querySelector('link[data-sf-img-pre="'+u+'"]'))continue;
             var l=document.createElement('link');
             l.rel='preload';l.as='image';l.href=u;
@@ -640,14 +653,7 @@
                   .then(function(d){
                     if(d&&d.product){
                       try{
-                        var _imgs=[d.product];
-                        if(Array.isArray(d.images)){
-                          for(var _ii=0;_ii<d.images.length&&_ii<3;_ii++){
-                            var _im=d.images[_ii];
-                            if(_im&&_im.image_url)_imgs.push({image_url:_im.image_url});
-                          }
-                        }
-                        window.__sfInjectImgPreloads__(_imgs);
+                         window.__sfInjectImgPreloads__([d.product]);
                       }catch(e){}
                       return d;
                     }
@@ -677,7 +683,7 @@
           // inlined but products aren't. React Query will fetch directly from
           // Supabase REST (which doesn't go through our Worker), saving 1 event
           // per cold visit where the Worker injected shell-only.
-          if(!window.__PRODUCTS_INLINE__){
+          if(!window.__PRODUCTS_INLINE__&&!/^\/(?:store\/[^/]+\/)?(?:category|products?)\//.test(location.pathname)){
             try{
               var sd=window.__STOREFRONT_DATA__;
               if(sd&&sd.store&&sd.store.id){
@@ -716,17 +722,8 @@
         try{var bs=localStorage.getItem('sf_boot_'+slug);if(bs)boot=JSON.parse(bs);}catch(e){}
         if(boot){
           if(boot.hf||boot.bf)injectGFont(boot.hf,boot.bf);
-          if(Array.isArray(boot.imgs)){
-            for(var bi=0;bi<boot.imgs.length && bi<2;bi++){
-              var bu=boot.imgs[bi];if(!bu||typeof bu!=='string')continue;
-              if(document.querySelector('link[data-sf-img-pre="'+bu+'"]'))continue;
-              var bl=document.createElement('link');
-              bl.rel='preload';bl.as='image';bl.href=bu;
-              bl.setAttribute('data-sf-img-pre',bu);
-              if(bi===0)bl.setAttribute('fetchpriority','high');
-              document.head.appendChild(bl);
-            }
-          }
+          // Saved photos are homepage catalog hints, not the current route's
+          // main photo. Do not warm them on category/PDP or behind a hero.
         }
 
         /* v6.5.0 preview parity: inject <link rel="preload" as="image"> tags
@@ -759,7 +756,9 @@
           return supaUrl+'/rest/v1/products?store_id=eq.'+sid+'&is_active=eq.true&order=is_best_selling.desc,created_at.desc,id.asc&limit=20&select=id,category,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,slug,stock_quantity,store_id';
         }
         var productsPromise;
-        if(boot&&boot.sid){
+        if(/^\/(?:store\/[^/]+\/)?(?:category|products?)\//.test(location.pathname)){
+          productsPromise=Promise.resolve(null);
+        }else if(boot&&boot.sid){
           /* Repeat visitor: TRUE PARALLEL — fire products at T+0 alongside shell */
           productsPromise=fetch(buildProductsUrl(boot.sid),{headers:{'apikey':key,'Authorization':'Bearer '+key}})
             .then(function(r){return r.json()})
