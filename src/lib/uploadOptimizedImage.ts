@@ -48,7 +48,9 @@ export async function uploadOptimizedImage(
     const form = new FormData();
     form.append("file", variantFile);
     form.append("bucket", bucket);
-    form.append("path", `${basePath}-${width}w.${ext}`);
+    // The family marker proves a tiny sibling was uploaded. Old families
+    // must never derive nonexistent 160px files from an arbitrary timestamp.
+    form.append("path", `${basePath}${isProductPhoto ? "-thumb160" : ""}-${width}w.${ext}`);
     if (isProductPhoto) form.append("webp_quality", "95");
 
     const { data, error } = await supabase.functions.invoke("r2-upload", { body: form });
@@ -119,6 +121,9 @@ export function resolveVariantUrl(
   width: number,
 ): string {
   if (!/-1200w\.(webp|jpg|jpeg)$/i.test(mainUrl)) return mainUrl;
+  if (width <= 200 && /-thumb160-1200w\.(webp|jpg|jpeg)$/i.test(mainUrl)) {
+    return mainUrl.replace(/-1200w\.(webp|jpg|jpeg)$/i, "-160w.$1");
+  }
   const target = width <= 800 ? getProductCardVariantWidth(mainUrl) : width <= 1200 ? 1200 : 2000;
   return mainUrl.replace(/-1200w\.(webp|jpg|jpeg)$/i, `-${target}w.$1`);
 }

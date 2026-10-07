@@ -123,6 +123,8 @@ function CarouselInner({
   const dragCurrentRef = useRef<number | null>(null);
   const isDraggingRef = useRef(false);
   const len = images.length;
+  const [interacted, setInteracted] = useState(false);
+  const hostRef = useRef<HTMLDivElement>(null);
 
   const goTo = useCallback(
     (idx: number) => setCurrent((idx + len) % len),
@@ -134,16 +136,20 @@ function CarouselInner({
 
   // Auto-play
   useEffect(() => {
-    intervalRef.current = setInterval(next, interval);
+    if (!interacted || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    intervalRef.current = setInterval(() => {
+      const rect = hostRef.current?.getBoundingClientRect();
+      if (!document.hidden && rect && rect.bottom > 0 && rect.top < window.innerHeight) next();
+    }, interval);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [next, interval]);
+  }, [next, interval, interacted]);
 
   const resetTimer = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(next, interval);
-  }, [next, interval]);
+    setInteracted(true);
+  }, []);
 
   const handleDragEnd = useCallback(
     (diff: number) => {
@@ -215,7 +221,7 @@ function CarouselInner({
   };
 
   return (
-    <div className={`relative overflow-hidden touch-pan-y group ${className || ""}`} style={{ aspectRatio: "16/7", contain: "layout" }} role="region" aria-label={`${storeName} banner slideshow`}>
+    <div ref={hostRef} className={`relative overflow-hidden touch-pan-y group ${className || ""}`} style={{ aspectRatio: "16/7", contain: "layout" }} role="region" aria-label={`${storeName} banner slideshow`}>
       <div
         className="flex transition-transform duration-500 ease-out select-none"
         style={{ transform: `translateX(-${current * 100}%)`, cursor: "grab" }}
@@ -233,8 +239,8 @@ function CarouselInner({
           const srcSet = getImageSrcSet(url, [400, 600, 800, 1200]);
           return (
             <div key={i} className="w-full flex-shrink-0">
-              {/* Only render first 2 slides eagerly; defer rest until visible */}
-              {i <= 1 ? (
+              {/* Only the first slide has a source before interaction. */}
+              {i === 0 ? (
                 <img
                   src={optimizeImageUrl(url, optimizeWidth)}
                   srcSet={srcSet || undefined}

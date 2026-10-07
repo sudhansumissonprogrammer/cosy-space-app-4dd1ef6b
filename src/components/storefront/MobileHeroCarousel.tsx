@@ -7,6 +7,14 @@
 import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
+import { useImageActivation } from "@/hooks/useImageActivation";
+
+function BannerPhoto({ url, alt, priority }: { url: string; alt: string; priority: boolean }) {
+  const { ref, active } = useImageActivation(priority);
+  return <div ref={ref} className="w-full rounded-2xl overflow-hidden shadow-sm bg-muted" style={{ aspectRatio: "16 / 9" }}>
+    {active && <img src={optimizeImageUrl(url, 1400, 85)} alt={alt} className="w-full h-full object-cover block pointer-events-none" loading={priority ? "eager" : "lazy"} fetchPriority={priority ? "high" : "low"} draggable={false} />}
+  </div>;
+}
 
 interface Props {
   images: string[];
@@ -20,16 +28,17 @@ export default function MobileHeroCarousel({ images, storeName, linkTo, interval
   const trackRef = useRef<HTMLDivElement | null>(null);
   const userInteractingRef = useRef(false);
   const programmaticScrollRef = useRef(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
 
   // Auto-advance
   useEffect(() => {
-    if (images.length <= 1) return;
+    if (images.length <= 1 || !hasInteracted || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const id = setInterval(() => {
-      if (userInteractingRef.current) return;
+      if (userInteractingRef.current || document.hidden || (trackRef.current?.getBoundingClientRect().bottom ?? 0) <= 0) return;
       setIndex((i) => (i + 1) % images.length);
     }, intervalMs);
     return () => clearInterval(id);
-  }, [images.length, intervalMs]);
+  }, [images.length, intervalMs, hasInteracted]);
 
   // Scroll to current index (programmatic — don't treat as user interaction)
   useEffect(() => {
@@ -48,6 +57,7 @@ export default function MobileHeroCarousel({ images, storeName, linkTo, interval
   }, [index]);
 
   const markInteracting = () => {
+    setHasInteracted(true);
     userInteractingRef.current = true;
     window.clearTimeout((markInteracting as any)._t);
     (markInteracting as any)._t = window.setTimeout(() => {
@@ -88,16 +98,7 @@ export default function MobileHeroCarousel({ images, storeName, linkTo, interval
             draggable={false}
             className="block flex-shrink-0 snap-center select-none w-full md:w-[48%] lg:w-[40%] xl:w-[36%]"
           >
-            <div className="w-full rounded-2xl overflow-hidden shadow-sm bg-muted" style={{ aspectRatio: "16 / 9" }}>
-              <img
-                src={optimizeImageUrl(url, 1400, 85)}
-                alt={`${storeName} hero ${i + 1}`}
-                className="w-full h-full object-cover block pointer-events-none"
-                loading={i === 0 ? "eager" : "lazy"}
-                fetchPriority={i === 0 ? "high" : "low"}
-                draggable={false}
-              />
-            </div>
+            <BannerPhoto url={url} alt={`${storeName} hero ${i + 1}`} priority={i === 0} />
           </Link>
         ))}
       </div>
@@ -107,7 +108,7 @@ export default function MobileHeroCarousel({ images, storeName, linkTo, interval
             <button
               key={i}
               type="button"
-              onClick={() => setIndex(i)}
+              onClick={() => { setHasInteracted(true); setIndex(i); }}
               aria-label={`Go to slide ${i + 1}`}
               className="h-1.5 rounded-full transition-[transform,opacity,colors,box-shadow]"
               style={{

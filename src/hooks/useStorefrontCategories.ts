@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -17,6 +17,11 @@ import { supabase } from "@/integrations/supabase/client";
  * hit and a cold cache falls back to a direct fetch.
  */
 export function useStorefrontCategories(storeId?: string) {
+  const queryClient = useQueryClient();
+  // Children mount before the parent's cache-seeding effect. Reuse the
+  // already loaded public shell synchronously instead of racing a second RPC.
+  const shellCategories = queryClient.getQueriesData<{ store?: { id?: string }; categories?: any[] }>({ queryKey: ["storefront-bulk"] })
+    .find(([, shell]) => shell?.store?.id === storeId && Array.isArray(shell.categories))?.[1]?.categories;
   const { data } = useQuery({
     queryKey: ["storefront-categories", storeId],
     queryFn: async () => {
@@ -27,6 +32,8 @@ export function useStorefrontCategories(storeId?: string) {
     enabled: !!storeId,
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
+    initialData: shellCategories,
+    retry: false,
   });
 
   return (data as any[]) ?? undefined;

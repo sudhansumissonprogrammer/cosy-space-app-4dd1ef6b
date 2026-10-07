@@ -6,6 +6,7 @@
 - [x] Classify all Imitation World New2 products into Chain with Pendant or Pendant from their imported product details.
 
 ## Active work
+- [ ] Re-test published homepage, category and PDP after the user's Worker update; fix confirmed opening-loader/carousel gaps and record measured shopping checks and remaining blockers.
 - [x] Connect Telegram fresh after the 18:13 UTC Oct 7 workspace move, verify the bot, and redeploy order alerts.
 - [x] Implement first-pass cold-entry deduplication and viewport/gallery activation; verify mobile category, single-photo PDP, Similar designs taps, cart addition, and on-demand zoom.
 - [ ] Complete genuine thumbnail derivatives, remaining theme/hover-thumbnail and homepage spacing audits, and full checkout/ad-event regressions; then deploy the updated Worker manually and repeat production cold-entry tests.

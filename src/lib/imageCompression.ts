@@ -31,7 +31,7 @@ const PRODUCT_DIMENSIONS = [1200, 1100, 1000, 900] as const;
 const PRODUCT_START_QUALITY = 0.94;
 const PRODUCT_MIN_QUALITY = 0.86;
 
-export const IMAGE_VARIANT_WIDTHS = [400, 800, 1200, 2000] as const;
+export const IMAGE_VARIANT_WIDTHS = [160, 400, 800, 1200, 2000] as const;
 export type VariantWidth = (typeof IMAGE_VARIANT_WIDTHS)[number];
 
 export interface CompressionResult {
@@ -324,7 +324,7 @@ async function encodeProductVariant(
   source: CanvasImageSource,
   sourceWidth: number,
   sourceHeight: number,
-  targetWidth: 800 | 1200 | 2000,
+  targetWidth: 160 | 800 | 1200 | 2000,
   quality: number,
   baseName: string,
 ): Promise<File> {
@@ -359,7 +359,8 @@ async function processProductPhotoVariants(file: File): Promise<MultiSizeResult>
   const img = await loadImage(file);
   try {
     const baseName = file.name.replace(/\.[^/.]+$/, "");
-    const [card, pdp, zoom] = await Promise.all([
+    const [thumbnail, card, pdp, zoom] = await Promise.all([
+      encodeProductVariant(img.source, img.width, img.height, 160, 0.82, baseName),
       encodeProductVariant(img.source, img.width, img.height, 800, 0.88, baseName),
       encodeProductVariant(img.source, img.width, img.height, 1200, 0.95, baseName),
       encodeProductVariant(img.source, img.width, img.height, 2000, 0.97, baseName),
@@ -373,6 +374,7 @@ async function processProductPhotoVariants(file: File): Promise<MultiSizeResult>
     return {
       main,
       variants: new Map<VariantWidth, File>([
+        [160, thumbnail],
         [800, card],
         [1200, pdp],
         [2000, zoom],

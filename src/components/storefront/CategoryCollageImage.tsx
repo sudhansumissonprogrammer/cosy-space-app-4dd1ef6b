@@ -1,5 +1,6 @@
 import { Tag } from "lucide-react";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
+import { useImageActivation } from "@/hooks/useImageActivation";
 
 export interface StorefrontCategoryImage {
   id: string;
@@ -16,17 +17,18 @@ interface Props {
 }
 
 export default function CategoryCollageImage({ category, size = 300, className = "h-full w-full object-cover" }: Props) {
+  const { ref, active } = useImageActivation();
   const collage = Array.isArray(category.collage_image_urls)
     ? Array.from(new Set(category.collage_image_urls.filter((url): url is string => typeof url === "string" && url.trim().length > 0))).slice(0, 4)
     : [];
 
   if (collage.length === 4) {
     return (
-      <div className="grid h-full w-full grid-cols-2 grid-rows-2 gap-px bg-border" role="img" aria-label={`${category.name} products`}>
+      <div ref={ref} className="grid h-full w-full grid-cols-2 grid-rows-2 gap-px bg-border" role="img" aria-label={`${category.name} products`}>
         {collage.map((url) => (
           <img
             key={url}
-            src={optimizeImageUrl(url, Math.max(96, Math.ceil(size / 2)), 78)}
+            src={active ? optimizeImageUrl(url, Math.max(96, Math.ceil(size / 2)), 78) : undefined}
             alt=""
             className={className}
             loading="lazy"
@@ -41,7 +43,7 @@ export default function CategoryCollageImage({ category, size = 300, className =
 
   const fallbackImage = category.image_url || collage[0];
   if (fallbackImage) {
-    return <img src={optimizeImageUrl(fallbackImage, size, 82)} alt={category.name} className={className} loading="lazy" decoding="async" width={size} height={size} />;
+    return <div ref={ref} className="h-full w-full"><img src={active ? optimizeImageUrl(fallbackImage, size, 82) : undefined} alt={category.name} className={className} loading="lazy" decoding="async" width={size} height={size} /></div>;
   }
 
   return (
