@@ -12,6 +12,7 @@
 
 import { getProductCardVariantWidth, isOptimizedUrl, resolveVariantUrl } from "./uploadOptimizedImage";
 import { getAdaptiveQuality, shouldPreloadLcp } from "./networkHints";
+import { verifiedThumbnail } from "./verifiedThumbnails";
 
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "";
 const ENABLE_EDGE_IMAGE_PROXY = import.meta.env.VITE_ENABLE_EDGE_IMAGE_PROXY === "true";
@@ -90,6 +91,9 @@ export function optimizeImageUrl(
   const firstUrl = url.split(/,\s*(?=https?:\/\/)/)[0].trim();
   if (!firstUrl) return "";
   url = firstUrl;
+
+  const smallCopy = verifiedThumbnail(url, isOptimizedUrl(url) ? resolveVariantUrl(url, width) : url, width);
+  if (smallCopy) return smallCopy;
 
   // ── 1. Our pipeline images on R2/CDN: use stored variants ──
   if (isOptimizedUrl(url)) {
