@@ -6,8 +6,8 @@
 - [x] Classify all Imitation World New2 products into Chain with Pendant or Pendant from their imported product details.
 
 ## Active work
-- [ ] Reconnect Telegram fresh after the 12:23 UTC Oct 7 workspace move and verify order-alert access.
-- [ ] Add and verify Imitation World’s ordered 13-product similar-photo strip above every PDP title, with current-product selection and deferred loading.
+- [x] Reconnect Telegram fresh after the 12:23 UTC Oct 7 workspace move and verify order-alert access.
+- [x] Add and verify Imitation World’s ordered 13-product similar-photo strip above every PDP title, with current-product selection and deferred loading.
 - [x] Reconnect Telegram fresh after the latest Oct 7 workspace move, verify the bot, and redeploy order alerts.
 - [x] Reconnect Telegram fresh after the Oct 7 workspace move and verify order-alert access.
 - [x] Review every Imitation World Chain with Pendant photo and update only its product name in the requested format.
