@@ -8,7 +8,7 @@ Keep existing sharp photos, sale badges, store branding, Similar designs, shoppi
 
 ## Verified findings
 
-These counts are from the saved fresh-browser Imitation World tests, approximately 40 seconds without scrolling—not every product or every device.
+Saved fresh-browser Imitation World tests, approximately 40 seconds without scrolling; not universal counts.
 
 | Tested entry | Product/category photo files downloaded | What happened |
 |---|---:|---|
@@ -58,57 +58,48 @@ The product page also downloaded logos, sale/payment/trust graphics: **19 distin
 - Use viewport-based activation for grid rows and section-based activation for below-page recommendations/review media. Use each horizontal rail as the visibility boundary for its images.
 - Initially activate only the first gallery photo. Remove automatic next/last gallery warming at mount. Activate the destination slide as a deliberate swipe begins or a control/variant selects it; retain previously loaded slides for instant return swipes.
 - Keep video bytes deferred until playback and avoid loading an off-screen video poster on opening.
-- Preserve carousel geometry, accessible controls and a safe fallback for browsers without visibility observers. Native lazy loading remains a secondary safeguard.
+- Preserve carousel geometry, accessibility and observer fallbacks. Native lazy loading is a secondary safeguard.
 - Prevent unattended homepage autoplay from progressively downloading the whole catalogue before the shopper engages; keep motion available after the section is visible and main photo has settled, with bounded photo preparation.
 
 ### 3. Separate thumbnails from full-size photos
 
 - Remove the visibility-triggered `prefetchProductDetail` call from Similar designs. Visibility may activate the tiny photo only.
-- Keep destination preparation on clear user intent. Do not let merely scrolling a finger across the rail prepare multiple unrelated full-size product pages. Skip preparing the current product again.
+- Prepare destinations on clear intent, not incidental rail scrolling; skip the current product.
 - Add independently stored, sharp small-display derivatives: approximately **160–200px for similar-design tiles**, **96–128px for tiny category icons**, and **appropriate larger thumbnails for homepage collage pieces**, accounting for high-density displays.
 - Keep all existing 800/1200/2000 photos and raw Meesho originals untouched. Separate tiny derivatives are optional display assets, not replacements or recompression of imported originals.
 - Generate future derivatives from the existing original decode and backfill only the photos actually used by icons/curated tiles first. Store explicit thumbnail addresses or verified metadata; never assume a filename exists.
-- Until a thumbnail is verified, reuse an already-loaded photo when possible or use the known-good existing source with strict visibility gating. Do not silently substitute broken thumbnail URLs.
-- Use protected, bounded background processing for any backfill, without customer-browser transformation work or exposing storage credentials. Retain previous thumbnails until replacements upload successfully.
+- Before a thumbnail is verified, reuse loaded photos or visibility-gate the known-good source; never use nonexistent URLs.
+- Backfill through protected, bounded processing—not shoppers’ browsers. Keep prior thumbnails until replacements upload.
 
 ### 4. Stabilize spacing and reduce unnecessary opening work
 
 - Match placeholders to each theme’s real photo/card aspect ratio; reserve category rows, gallery, Similar designs, reviews/recommendations and homepage carousel space.
-- Keep Imitation World’s existing 92px mobile/108px desktop Similar designs reservation: it is already present and should not be removed. Preserve the heading’s opening-screen visibility.
+- Preserve Imitation World’s existing 92px mobile/108px desktop Similar designs reservation and opening-screen heading visibility.
 - Prevent homepage Best Selling loading states from collapsing to zero height and expanding later. Keep gallery measurements from resizing the page after the photo decodes; use existing dimensions or a stable store-specific frame.
-- Replace the broad automatic route-preparation wave with bounded, intent-based preparation. Prioritize actual product selection, cart opening and Buy Now over unrelated account/search/tracking routes. Remove the duplicate checkout import entry, without claiming it causes a second network download—module imports are cached.
+- Replace broad route preparation with bounded user-intent loading. Prioritize product selection, cart and Buy Now. Remove the duplicate checkout import entry; cached module imports do not necessarily download twice.
 - Keep only the active store/theme fonts on storefront visits, eliminate duplicate Worker/React font injection, and avoid loading unused weights. Preserve the merchant’s chosen typography and existing optional font-display policy.
 - Keep necessary shopping state and advertising initialization. Do **not** disable Pixel/CAPI or delay required events merely to increase a performance score.
 
 ### 5. Repeat cold-entry tests and validate shopping
 
-Test fresh sessions with cache disabled on both mobile and desktop, including a slow connection/CPU profile. Separate the opening screen from a 30–40 second idle/no-scroll window so delayed overfetch is visible.
+Use fresh cache-disabled sessions on mobile and desktop with a slow network/CPU profile. Report both the opening screen and a 30–40 second idle/no-scroll window, so delayed overfetch cannot hide.
 
-- Direct category: modern card-family requests are 800px only; no 1200/2000 product photos before interaction. Record initial card count, icon count, transferred bytes and later-row activation.
-- Direct PDP: one initial 1200px full-size photo where available; no extra 800px main photo, no 2000px, no unselected gallery photos or unrelated full-size Similar designs photos. Report tiny thumbnails/logos separately.
-- Verify fresh and cached edge HTML, preview fallback, category-to-PDP navigation, PDP-to-PDP taps, refresh and browser back/forward.
-- Test single-photo, multi-photo, video, variant, raw imported, legacy 400px-card and single-file 800px products across shared/default and V19/V20/V22 product-page paths.
-- Swipe both ways rapidly; verify no broken slides, lost controls, unintended video downloads or jump in photo framing. Open zoom and verify only its requested high-resolution photo loads; close/reopen and confirm cache reuse.
-- Verify Similar designs keeps all 13 items in the supplied order, current selection, full-cover tile styling and fast taps; unrelated stores remain unchanged.
-- Test add-to-cart, quantity/variant selection, Buy Now and checkout up to the payment handoff using safe test data. No real payment/order/message solely for this audit without approval.
-- Verify PageView, ViewContent, AddToCart and InitiateCheckout on their correct actions with no duplicate firing from prefetch. Validate Purchase deduplication using tests/sandbox or an authorized real order, not a fabricated production purchase.
-- Run relevant automated tests and inspect current build/runtime errors. Repeat each key cold-entry case at least three times; compare median LCP, CLS, initial bytes and request counts. Aim for CLS ≤0.1 and LCP ≤2.5s, but report measured outcomes rather than guarantee a score.
+- **Category:** only existing card-size files; no 1200/2000 product photos before interaction. Count initial cards/icons, bytes and later-row activation.
+- **PDP:** one initial 1200px full-size photo where available; no duplicate 800px main photo, 2000px, unselected slides or unrelated full-size Similar designs photos. Count tiny graphics separately.
+- Test fresh/cached production HTML, preview fallback, category-to-PDP and similar-design navigation, refresh and back/forward.
+- Cover single/multi-photo, video, variants, raw imports, legacy 400px-card and single-file 800px products across default and V19/V20/V22 paths.
+- Verify rapid swipes, zoom opening/closing and cache reuse; no broken slides or unwanted video downloads. Confirm all 13 ordered Similar designs, current selection, enlarged tiles and opening-screen heading remain correct.
+- Verify cart, quantities/variants, Buy Now and checkout up to payment handoff. No real payment/order/message just for testing without approval.
+- Verify PageView, ViewContent, AddToCart and InitiateCheckout occur on correct actions, never from prefetch. Validate Purchase deduplication through tests/sandbox or an authorized real order, not a fabricated production purchase.
+- Run relevant automated tests and inspect current build/runtime errors. Repeat key cold-entry cases three times and compare median LCP, CLS, initial bytes and requests. Aim for CLS ≤0.1 and LCP ≤2.5s; report results without guaranteeing scores.
 
-## Technical implementation areas
+## Technical areas and rollout
 
-- Shared URL/variant rules: `src/lib/imageOptimize.ts`, `src/lib/uploadOptimizedImage.ts`; add focused tests for modern/legacy/raw media.
-- Early entry loading: inline category/PDP loaders in `index.html`, product transition placeholders, `prefetchCategory.ts`, `prefetchProductDetail.ts`.
-- Production edge parity: `docs/cloudflare-worker-current.js` preload builders, Link headers, skeleton image addresses and route/cache fallbacks. Keep bootstrap and React rules equivalent; document the consistency contract in `AGENTS.md`.
-- Visibility gates: category/shared cards, category quick-jump/collage components, standard and V19/V20/V22 galleries, zoom thumbnails, homepage and below-page rails.
-- Imitation World-specific rail: `ImitationWorldSimilarDesigns.tsx` and its regression tests.
-- Scripts/fonts: `prefetchStorefrontRoutes.ts`, applicable storefront layouts and existing font-owner markers; only change verified redundant work.
-
-## Rollout and safeguards
-
-1. Capture/retain the baseline and add URL/request-budget tests.
-2. Ship duplicate-removal and explicit activation first; verify Imitation World and representative other themes.
-3. Introduce verified small thumbnails and bounded backfill, then spacing/script/font adjustments.
-4. Deploy and purge only changed storefront HTML/data caches when necessary. **Worker changes require your separate manual Cloudflare deployment**; app changes alone cannot remove old edge-injected preloads.
-5. Repeat tests against the actual deployed custom domain before claiming the production fix complete. Keep a rollback path for each stage and avoid mass image replacements or database/API signature changes.
+- Update shared URL/variant helpers; category/PDP bootstrap loaders in `index.html`; category/product prefetch helpers; transition placeholders; shared cards/icons/collages; standard and V19/V20/V22 galleries; zoom; homepage/below-page rails.
+- Keep `ImitationWorldSimilarDesigns.tsx` store-gated and update its tests. Adjust route preparation and font ownership only where redundant work is verified. Document the shared loading contract in `AGENTS.md`.
+- Align `docs/cloudflare-worker-current.js` preload builders, Link headers, skeleton photo URLs and route/cache fallbacks with React/bootstrap rules.
+- Roll out duplicate-removal and activation first, then verified thumbnail backfill, then spacing/script/font improvements. Validate representative other stores at each stage.
+- **Worker changes require your separate manual Cloudflare deployment.** App changes alone cannot remove old edge-injected preloads. Purge affected caches and repeat custom-domain tests before claiming production success.
+- Preserve rollback points; no mass image replacements, changes to payment logic, or database/API signature changes.
 
 **This is the implementation plan; storefront behavior has not been changed yet.**
