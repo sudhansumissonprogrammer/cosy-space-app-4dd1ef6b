@@ -1357,7 +1357,7 @@ export default function ProductDetail() {
                   <div className="hidden sm:flex items-center gap-3 flex-1 min-w-0">
                     {product.image_url && (
                       <img
-                        src={optimizeImageUrl(product.image_url, 40)}
+                        src={optimizeImageUrl(product.image_url, 1200)}
                         alt=""
                         className="h-10 w-10 rounded-lg object-cover"
                       />
@@ -2156,7 +2156,7 @@ function LightboxImage({
 
   // Same size the PDP gallery already showed → served from browser cache
   // instantly, so the viewer never sits on a blank "Loading…" screen.
-  const previewSrc = optimizeImageUrl(src, 800);
+  const previewSrc = optimizeImageUrl(src, 1200);
 
   // First try the optimized URL (matches the gallery thumbs that we know load).
   // If the optimizer URL fails (CDN hiccup / unsupported source), fall back to the raw URL.

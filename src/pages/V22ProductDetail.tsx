@@ -1107,7 +1107,7 @@ export default function V22ProductDetail() {
                   <div className="hidden sm:flex items-center gap-3 flex-1 min-w-0">
                     {product.image_url && (
                       <img
-                        src={optimizeImageUrl(product.image_url, 40)}
+                        src={optimizeImageUrl(product.image_url, 1200)}
                         alt=""
                         className="h-10 w-10 rounded-lg object-cover"
                       />
