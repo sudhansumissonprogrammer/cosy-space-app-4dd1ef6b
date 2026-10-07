@@ -8,10 +8,12 @@ Category cards: **800px only**, no early 1200px duplicate. PDP: **one 1200px mai
 
 Saved Imitation World cold tests: ~40 seconds without scrolling, not universal counts.
 
-| Tested entry | Product/category photo files downloaded | What happened |
-|---|---:|---|
-| Chain with Pendant category | 17 | Six 1200px product photos, eight 800px card photos, and three category-navigation photos. Six products downloaded in both sizes. |
-| Tested pendant product page | 8 | One 1200px main photo, the same product’s 800px photo, and six other products’ 800px photos for Similar designs. |
+
+| Tested entry                | Product/category photo files downloaded | What happened                                                                                                                    |
+| --------------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Chain with Pendant category | 17                                      | Six 1200px product photos, eight 800px card photos, and three category-navigation photos. Six products downloaded in both sizes. |
+| Tested pendant product page | 8                                       | One 1200px main photo, the same product’s 800px photo, and six other products’ 800px photos for Similar designs.                 |
+
 
 The product page also downloaded logos, sale/payment/trust graphics: **19 distinct image URLs overall**, versus eight product-photo URLs. **No 2000px photo was observed before zoom.** Therefore, the evidence does **not** say all three sizes download at opening. It says 800px and 1200px duplicated the main photo, while the supposedly small similar photos were actually 800px files.
 
@@ -25,15 +27,17 @@ The product page also downloaded logos, sale/payment/trust graphics: **19 distin
 
 ## Target behavior
 
-| Area | Opening | Later |
-|---|---|---|
-| Mobile category | First four existing 800px card photos; up to six if needed to fill a taller screen | Later rows activate as scrolling approaches |
-| Wider category | Enough 800px cards for the visible grid | Further rows activate as approached |
-| PDP | One 1200px main photo where available | Swipe/control/variant activates needed slide |
-| Similar designs | Visible genuine tiny thumbnails; no unrelated PDP preparation | Intent prepares selected destination |
-| Category icons/collages | Appropriate tiny files, visible items only | Off-screen items activate as approached |
-| Zoom | No 2000px while closed | Active 2000px photo when opened |
-| Homepage | Visible opening photos only | Scroll/carousel interaction activates more |
+
+| Area                    | Opening                                                                            | Later                                        |
+| ----------------------- | ---------------------------------------------------------------------------------- | -------------------------------------------- |
+| Mobile category         | First four existing 800px card photos; up to six if needed to fill a taller screen | Later rows activate as scrolling approaches  |
+| Wider category          | Enough 800px cards for the visible grid                                            | Further rows activate as approached          |
+| PDP                     | One 1200px main photo where available                                              | Swipe/control/variant activates needed slide |
+| Similar designs         | Visible genuine tiny thumbnails; no unrelated PDP preparation                      | Intent prepares selected destination         |
+| Category icons/collages | Appropriate tiny files, visible items only                                         | Off-screen items activate as approached      |
+| Zoom                    | No 2000px while closed                                                             | Active 2000px photo when opened              |
+| Homepage                | Visible opening photos only                                                        | Scroll/carousel interaction activates more   |
+
 
 “One photo” means one **full-size** photo, not removal of visible logos or small graphics. Reuse the main photo for its selected Similar designs tile rather than fetch another file.
 
@@ -97,4 +101,4 @@ Use fresh cache-disabled sessions on mobile and desktop with a slow network/CPU 
 - **Worker changes require your separate manual Cloudflare deployment.** App changes alone cannot remove old edge-injected preloads. Purge affected caches and repeat custom-domain tests before claiming production success.
 - Preserve rollback points; no mass image replacements, changes to payment logic, or database/API signature changes.
 
-**This is the implementation plan; storefront behavior has not been changed yet.**
+**This is the implementation plan; storefront behavior has not been changed yet. a;lso youmention this so if it need do**  remove duplicate photo downloads on category and product pages and im telling this to do on whole plat fomr no only for imitation whoclall store 
