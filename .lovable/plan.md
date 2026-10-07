@@ -6,7 +6,7 @@ Category cards: **800px only**, no early 1200px duplicate. PDP: **one 1200px mai
 
 ## Verified findings
 
-Saved fresh-browser Imitation World tests, approximately 40 seconds without scrolling; not universal counts.
+Saved Imitation World cold tests: ~40 seconds without scrolling, not universal counts.
 
 | Tested entry | Product/category photo files downloaded | What happened |
 |---|---:|---|
