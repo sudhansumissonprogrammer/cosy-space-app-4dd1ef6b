@@ -6,12 +6,13 @@
 - [x] Classify all Imitation World New2 products into Chain with Pendant or Pendant from their imported product details.
 
 ## Active work
-- [ ] Verify the Oct 7 20:05 UTC publication on Imitation World with fresh homepage/category/PDP cold-entry timings, photo/chunk/shift evidence, and safe shopping/ad-event checks; report remaining issues without creating orders or payments.
+- [x] Verify the Oct 7 20:05 UTC publication on Imitation World: three reported slow-mobile cold runs per page, one desktop run, scroll/touch-swipe/slide/zoom/similar/cart/checkout-opening checks; findings in docs/PUBLISHED-PERFORMANCE-VERIFICATION-2026-10-07.md. Ad delivery and payment completion are unverified; no orders/payments created.
+- [ ] Resolve published product/card/cart/checkout title and amount inconsistencies; stabilize homepage/desktop shifts; reduce homepage original-photo activation and opening script/font costs; verify advertising events and authorized payment completion. This audit identified issues but did not change app behavior.
 - [x] Connect Telegram fresh after the 19:20 UTC Oct 7 workspace move, verify @Shopbanaobot with getMe, and redeploy telegram-order-notify; no historical messages resent.
 - [x] Reproduce remaining Lighthouse small-photo overfetch; create 39 verified separate small copies, preserve originals, check all three preview pages, and exclude homepage/V16 routes from the shared opening chunk.
-- [ ] Publish the small-photo/chunk changes and repeat production Lighthouse/CPU traces; extend verified small copies to remaining stores/catalogue (current backfill covers Imitation World category and curated photos). Full performance warning removal is not verified.
+- [ ] Publication and production browser CPU/cold-entry checks confirmed Oct 7 20:05 audit; fresh Lighthouse unused-JS/CSS attribution and remaining stores/catalogue small-copy coverage still pending. Full performance warning removal is not verified.
 - [x] Re-test published homepage/category/PDP (three mobile cold runs, one desktop), isolate six duplicate category downloads, fix opening loader and carousel scheduling, and verify gallery/zoom/similar/cart/checkout opening; report in docs/POST-UPDATE-PERFORMANCE-AUDIT-2026-10-07.md.
-- [ ] Verify this turn's frontend changes on live after publication; backfill existing tiny-photo derivatives, attribute/fix remaining homepage/desktop layout shifts, verify preview badge delivery, and finish cross-store/video/touch/payment/ad-event regressions. Live rollout awaits publication; payment verification needs a safe test flow.
+- [ ] Live rollout verified after publication; continue existing tiny-photo coverage, homepage/desktop shift fixes, preview badge checks, and cross-store/video/payment/ad-event regressions. Representative touch swipe passes; payment verification needs a safe test flow.
 - [x] Connect Telegram fresh after the 18:13 UTC Oct 7 workspace move, verify the bot, and redeploy order alerts.
 - [x] Implement first-pass cold-entry deduplication and viewport/gallery activation; verify mobile category, single-photo PDP, Similar designs taps, cart addition, and on-demand zoom.
 - [ ] Complete genuine thumbnail derivatives, remaining theme/hover-thumbnail and homepage spacing audits, and full checkout/ad-event regressions; then deploy the updated Worker manually and repeat production cold-entry tests.
