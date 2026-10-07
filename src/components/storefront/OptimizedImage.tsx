@@ -6,6 +6,7 @@ import {
 } from "@/lib/imageOptimize";
 import { getAdaptiveQuality, isSaveDataMode } from "@/lib/networkHints";
 import { useImageActivation } from "@/hooks/useImageActivation";
+import { useCardImageReadiness } from "./CardImageReadiness";
 
 interface OptimizedImageProps {
   src: string | null | undefined;
@@ -58,7 +59,8 @@ function OptimizedImageInner({
 }: OptimizedImageProps) {
   const [loaded, setLoaded] = useState(priority);
   const [errored, setErrored] = useState(false);
-  const { ref, active } = useImageActivation(priority);
+  const imageReady = useCardImageReadiness();
+  const { ref, active } = useImageActivation(priority || imageReady);
 
   if (!src || errored) {
     return fallback ? <>{fallback}</> : null;
@@ -91,7 +93,7 @@ function OptimizedImageInner({
         alt={alt}
         className={className}
         style={style}
-        loading={effectivePriority ? "eager" : "lazy"}
+        loading={effectivePriority || imageReady ? "eager" : "lazy"}
         decoding={effectivePriority ? "sync" : "async"}
         fetchPriority={effectivePriority ? "high" : "auto"}
         onLoad={() => setLoaded(true)}

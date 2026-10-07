@@ -1,3 +1,4 @@
+import { useCardImageReadiness } from "./CardImageReadiness";
 /**
  * Style 8 — Quick Commerce Tile
  * Inspired by Blinkit, Zepto, Instamart. Fast, dense, conversion-focused.
@@ -27,6 +28,7 @@ interface Props {
 }
 
 function ProductCardStyle8Impl({ product, slug, store, priority = false, onVariantRequired }: Props) {
+  const imageReady = useCardImageReadiness();
   const { wishlisted, cartQty, handleAddToCart, handleToggleWishlist, heartBursting, updateQuantity } = useProductCardActions(product);
   const [justAdded, setJustAdded] = useState(false);
   const discountPercent = getDiscountPercent(product.price, product.sale_price);
@@ -81,7 +83,7 @@ function ProductCardStyle8Impl({ product, slug, store, priority = false, onVaria
                 height={320}
                 data-no-crop="true"
                 className="absolute inset-0 h-full w-full object-contain p-2"
-                loading={priority ? "eager" : "lazy"}
+                loading={priority || imageReady ? "eager" : "lazy"}
                 decoding={priority ? "sync" : "async"}
                 fetchPriority={priority ? "high" : "low"}
               />

@@ -1,3 +1,4 @@
+import { useCardImageReadiness } from "./CardImageReadiness";
 /**
  * ProductCardStyle5 — Minimal Dark Streetwear
  * Inspired by premium streetwear brands: no borders, no rounded corners,
@@ -24,6 +25,7 @@ interface Props {
 }
 
 function ProductCardStyle5Impl({ product, slug, store, priority = false }: Props) {
+  const imageReady = useCardImageReadiness();
   const images = resolveProductImages(product);
   const mainImg = images[0] || "/placeholder.svg";
   const optimized = optimizeImageUrl(mainImg, 600);
@@ -49,7 +51,7 @@ function ProductCardStyle5Impl({ product, slug, store, priority = false }: Props
           srcSet={srcSet}
           sizes="(max-width: 640px) 50vw, 25vw"
           alt={product.name}
-          loading={priority ? "eager" : "lazy"}
+          loading={priority || imageReady ? "eager" : "lazy"}
           decoding={priority ? "sync" : "async"}
           className="w-full h-full object-cover transition-transform duration-300 ease-out hh:group-hover:scale-105"
           style={{ imageRendering: "auto" }}

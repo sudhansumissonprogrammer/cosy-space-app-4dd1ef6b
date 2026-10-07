@@ -47,4 +47,54 @@ describe("image activation", () => {
     });
     expect(result.current.active).toBe(true);
   });
+
+  it("arms the next-row buffer only after scrolling and retains activation", () => {
+    const observers: { notify: IntersectionObserverCallback; margin: string; observe: ReturnType<typeof vi.fn> }[] = [];
+    vi.stubGlobal("scrollY", 0);
+    vi.stubGlobal("IntersectionObserver", class {
+      observe = vi.fn();
+      unobserve = vi.fn();
+      disconnect = vi.fn();
+      constructor(notify: IntersectionObserverCallback, options: IntersectionObserverInit) {
+        observers.push({ notify, margin: options.rootMargin || "", observe: this.observe });
+      }
+    });
+    const frame = document.createElement("div");
+    const { result, unmount } = renderHook(() => {
+      const value = useImageActivation(false, { rootMargin: "600px 0px", afterScroll: true });
+      value.ref.current = frame;
+      return value;
+    });
+    const ahead = observers.find(o => o.margin === "600px 0px");
+    expect(ahead?.observe).not.toHaveBeenCalled();
+    expect(result.current.active).toBe(false);
+    vi.stubGlobal("scrollY", 100);
+    act(() => window.dispatchEvent(new Event("scroll")));
+    expect(ahead?.observe).toHaveBeenCalledWith(frame);
+    act(() => ahead?.notify([{ target: frame, isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver));
+    expect(result.current.active).toBe(true);
+    act(() => window.dispatchEvent(new Event("scroll")));
+    expect(result.current.active).toBe(true);
+    unmount();
+  });
+
+  it("shares an observer between offscreen frames", () => {
+    const construct = vi.fn();
+    vi.stubGlobal("IntersectionObserver", class {
+      constructor() { construct(); }
+      observe = vi.fn();
+      unobserve = vi.fn();
+      disconnect = vi.fn();
+    });
+    const mount = () => renderHook(() => {
+      const value = useImageActivation();
+      value.ref.current = document.createElement("div");
+      return value;
+    });
+    const first = mount();
+    const second = mount();
+    expect(construct).toHaveBeenCalledTimes(1);
+    first.unmount();
+    second.unmount();
+  });
 });

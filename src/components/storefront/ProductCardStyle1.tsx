@@ -1,3 +1,4 @@
+import { useCardImageReadiness } from "./CardImageReadiness";
 import { useState, memo } from "react";
 import { createRipple } from "@/lib/ripple";
 import { Link } from "react-router-dom";
@@ -29,6 +30,7 @@ const cardShadow = "0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.06)";
 const cardHoverShadow = "0 2px 8px rgba(0,0,0,0.10), 0 8px 24px rgba(0,0,0,0.10)";
 
 function ProductCardStyle1Impl({ product, slug, store, priority = false, onVariantRequired }: Props) {
+  const imageReady = useCardImageReadiness();
   const { wishlisted, cartQty, effectivePrice, handleAddToCart, handleToggleWishlist, heartBursting, updateQuantity } = useProductCardActions(product);
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
@@ -99,7 +101,7 @@ function ProductCardStyle1Impl({ product, slug, store, priority = false, onVaria
             const hasSecond = images.length > 1;
             return (
               <>
-                <img src={optimizeImageUrl(images[0], 400, 72)} srcSet={getImageSrcSet(images[0], [300, 500, 700, 900], 72)} sizes="(max-width: 640px) 45vw, (max-width: 1024px) 28vw, (max-width: 1440px) 20vw, 16vw" alt={product.name} width={400} height={533} data-no-crop="true" className={`absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-300 ease-out ${hasSecond && hoverLoaded ? "group-hover:opacity-0" : ""}`} loading={priority ? "eager" : "lazy"} decoding={priority ? "sync" : "async"} fetchPriority={priority ? "high" : "low"} />
+                <img src={optimizeImageUrl(images[0], 400, 72)} srcSet={getImageSrcSet(images[0], [300, 500, 700, 900], 72)} sizes="(max-width: 640px) 45vw, (max-width: 1024px) 28vw, (max-width: 1440px) 20vw, 16vw" alt={product.name} width={400} height={533} data-no-crop="true" className={`absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-300 ease-out ${hasSecond && hoverLoaded ? "group-hover:opacity-0" : ""}`} loading={priority || imageReady ? "eager" : "lazy"} decoding={priority ? "sync" : "async"} fetchPriority={priority ? "high" : "low"} />
                 {hasSecond && hoverLoaded && (
                   <img src={optimizeImageUrl(images[1], 400, 72)} srcSet={getImageSrcSet(images[1], [300, 500, 700, 900], 72)} sizes="(max-width: 640px) 45vw, (max-width: 1024px) 28vw, (max-width: 1440px) 20vw, 16vw" alt={product.name} width={400} height={533} data-no-crop="true" className="absolute inset-0 h-full w-full object-cover object-center opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100" loading="lazy" decoding="async" fetchPriority="low" />
 

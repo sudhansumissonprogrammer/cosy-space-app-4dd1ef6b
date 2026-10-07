@@ -1,3 +1,4 @@
+import { useCardImageReadiness } from "./CardImageReadiness";
 /**
  * Style 10 — Catalog Pro
  * Inspired by IKEA, Zara, Decathlon. Professional, info-rich, conversion.
@@ -28,6 +29,7 @@ interface Props {
 }
 
 function ProductCardStyle10Impl({ product, slug, store, priority = false, onVariantRequired }: Props) {
+  const imageReady = useCardImageReadiness();
   const { wishlisted, cartQty, handleAddToCart, handleToggleWishlist, heartBursting, updateQuantity } = useProductCardActions(product);
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
@@ -93,7 +95,7 @@ function ProductCardStyle10Impl({ product, slug, store, priority = false, onVari
                   height={400}
                   data-no-crop="true"
                   className={`absolute inset-0 h-full w-full object-cover transition-[transform,opacity,colors,box-shadow] duration-300 ${hasSecond && hoverLoaded ? "group-hover:opacity-0" : "hh:group-hover:scale-105"}`}
-                  loading={priority ? "eager" : "lazy"}
+                  loading={priority || imageReady ? "eager" : "lazy"}
                   decoding={priority ? "sync" : "async"}
                   fetchPriority={priority ? "high" : "low"}
                 />

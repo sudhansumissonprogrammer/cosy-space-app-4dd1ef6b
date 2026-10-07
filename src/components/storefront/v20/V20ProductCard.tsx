@@ -1,3 +1,4 @@
+import { useCardImageReadiness } from "../CardImageReadiness";
 /**
  * V20 Product Card — Theme 20 (Multi Purpose). Duplicated from V19ProductCard
  * with `v20-` CSS prefix so it can evolve independently.
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export default function V20ProductCard({ product, slug, store, priority = false, lowPriority = false }: Props) {
+  const imageReady = useCardImageReadiness();
   const { items, addToCart, updateQuantity } = useCart();
   const cartItem = items.find((i) => i.productId === product.id && !i.variantId);
   const cartQty = cartItem?.quantity || 0;
@@ -77,7 +79,7 @@ export default function V20ProductCard({ product, slug, store, priority = false,
               src={optimizeImageUrl(img, 280, 80)}
               alt={product.name}
               className={`h-full w-full object-cover ${outOfStock ? "opacity-50" : ""}`}
-              loading={priority ? "eager" : "lazy"}
+              loading={priority || imageReady ? "eager" : "lazy"}
               decoding={priority ? "sync" : "async"}
               fetchPriority={priority ? "high" : lowPriority ? "low" : "low"}
 

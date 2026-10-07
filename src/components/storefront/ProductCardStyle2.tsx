@@ -1,3 +1,4 @@
+import { useCardImageReadiness } from "./CardImageReadiness";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Heart, ShoppingCart, Tag } from "lucide-react";
@@ -24,6 +25,7 @@ interface Props {
 }
 
 function ProductCardStyle2Impl({ product, slug, store, priority = false, onVariantRequired }: Props) {
+  const imageReady = useCardImageReadiness();
   const [hoverLoaded, setHoverLoaded] = useState(false);
   const { wishlisted, effectivePrice, handleAddToCart, handleToggleWishlist } = useProductCardActions(product);
   const discount = getDiscountPercent(product.price, product.sale_price);
@@ -56,7 +58,7 @@ function ProductCardStyle2Impl({ product, slug, store, priority = false, onVaria
                   width={400}
                   height={533}
                   className={`h-full w-full object-cover transition-[transform,opacity,colors,box-shadow] duration-300 hh:group-hover:scale-105 ${hasSecond && hoverLoaded ? "group-hover:opacity-0" : ""}`}
-                  loading={priority ? "eager" : "lazy"}
+                  loading={priority || imageReady ? "eager" : "lazy"}
                   fetchPriority={priority ? "high" : "low"}
                   decoding={priority ? "sync" : "async"}
                 />

@@ -1,3 +1,4 @@
+import { useCardImageReadiness } from "./CardImageReadiness";
 /**
  * Style 6 — Editorial Luxe
  * Inspired by Aesop, Jacquemus, COS. Magazine-style, quiet luxury.
@@ -30,6 +31,7 @@ interface Props {
 }
 
 function ProductCardStyle6Impl({ product, slug, store, priority = false, onVariantRequired }: Props) {
+  const imageReady = useCardImageReadiness();
   const { wishlisted, handleToggleWishlist, handleAddToCart, heartBursting } = useProductCardActions(product);
   const [hoverLoaded, setHoverLoaded] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -106,7 +108,7 @@ function ProductCardStyle6Impl({ product, slug, store, priority = false, onVaria
                   height={533}
                   data-no-crop="true"
                   className={`absolute inset-0 h-full w-full object-cover object-center transition-[transform,opacity,colors,box-shadow] duration-[900ms] ease-out ${hasSecond && hoverLoaded ? "group-hover:opacity-0 group-hover:scale-[1.03]" : "group-hover:scale-[1.02]"}`}
-                  loading={priority ? "eager" : "lazy"}
+                  loading={priority || imageReady ? "eager" : "lazy"}
                   decoding={priority ? "sync" : "async"}
                   fetchPriority={priority ? "high" : "low"}
                 />

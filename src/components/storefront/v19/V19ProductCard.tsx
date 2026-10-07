@@ -1,3 +1,4 @@
+import { useCardImageReadiness } from "../CardImageReadiness";
 /**
  * V19 Product Card — Blinkit-style with delivery time pill, weight line, outlined ADD.
  * Adds: low-stock + out-of-stock badges, disabled ADD on OOS, desktop hover lift,
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export default function V19ProductCard({ product, slug, store, priority = false }: Props) {
+  const imageReady = useCardImageReadiness();
   const { items, addToCart, updateQuantity } = useCart();
   const cartItem = items.find((i) => i.productId === product.id && !i.variantId);
   const cartQty = cartItem?.quantity || 0;
@@ -75,7 +77,7 @@ export default function V19ProductCard({ product, slug, store, priority = false 
               src={optimizeImageUrl(img, 280, 80)}
               alt={product.name}
               className={`h-full w-full object-cover ${outOfStock ? "opacity-50" : ""}`}
-              loading={priority ? "eager" : "lazy"}
+              loading={priority || imageReady ? "eager" : "lazy"}
               decoding={priority ? "sync" : "async"}
               fetchPriority={priority ? "high" : "low"}
 
