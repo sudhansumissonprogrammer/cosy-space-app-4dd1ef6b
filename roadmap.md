@@ -6,6 +6,7 @@
 - [x] Classify all Imitation World New2 products into Chain with Pendant or Pendant from their imported product details.
 
 ## Active work
+- [x] Show full pendant photos in Imitation World Similar designs and widen its mobile PDP title; preview confirms uncropped photos and a 382px title with 4px side spacing at 390px, no page errors, three ordered-navigation tests passed. Publication pending.
 - [x] Reproduce category scroll blanking; add bounded next-row preparation after opening photos/scroll intent, retain activated paint/photos, and verify 33 down/up samples with zero blanks. See docs/CATEGORY-SCROLL-READINESS-2026-10-07.md. Production rollout/LCP/CPU comparison awaits publication; physical-device cross-theme checks remain unverified.
 - [x] Verify the Oct 7 20:05 UTC publication on Imitation World: three reported slow-mobile cold runs per page, one desktop run, scroll/touch-swipe/slide/zoom/similar/cart/checkout-opening checks; findings in docs/PUBLISHED-PERFORMANCE-VERIFICATION-2026-10-07.md. Ad delivery and payment completion are unverified; no orders/payments created.
 - [ ] Resolve published product/card/cart/checkout title and amount inconsistencies; stabilize homepage/desktop shifts; reduce homepage original-photo activation and opening script/font costs; verify advertising events and authorized payment completion. This audit identified issues but did not change app behavior.
