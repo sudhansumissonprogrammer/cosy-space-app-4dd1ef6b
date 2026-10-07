@@ -6,7 +6,7 @@
 - [x] Classify all Imitation World New2 products into Chain with Pendant or Pendant from their imported product details.
 
 ## Active work
-- [ ] Enlarge Imitation World similar-design photos, hide gallery thumbnails while keeping swipe, and show the heading on the initial mobile screen.
+- [x] Enlarge Imitation World similar-design photos, hide gallery thumbnails while keeping swipe, and show the heading on the initial mobile screen.
 - [x] Connect Telegram fresh after the 12:52 UTC Oct 7 workspace move, verify the bot, and redeploy order alerts.
 - [x] Make Imitation World similar-design taps feel instant with visible-tile preloading and fit more photos in the mobile strip.
 - [x] Reconnect Telegram fresh after the 12:23 UTC Oct 7 workspace move and verify order-alert access.
