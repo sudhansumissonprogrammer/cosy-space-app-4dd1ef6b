@@ -6,6 +6,7 @@
 - [x] Classify all Imitation World New2 products into Chain with Pendant or Pendant from their imported product details.
 
 ## Active work
+- [ ] Connect Telegram fresh after the 12:52 UTC Oct 7 workspace move, verify the bot, and redeploy order alerts.
 - [x] Make Imitation World similar-design taps feel instant with visible-tile preloading and fit more photos in the mobile strip.
 - [x] Reconnect Telegram fresh after the 12:23 UTC Oct 7 workspace move and verify order-alert access.
 - [x] Add and verify Imitation World’s ordered 13-product similar-photo strip above every PDP title, with current-product selection and deferred loading.
