@@ -363,20 +363,11 @@ export default defineConfig(({ mode }) => ({
             id.includes("/src/hooks/useVariantCounts") ||
             id.includes("/src/hooks/useStorefrontProducts") ||
             id.includes("/src/hooks/useFacebookPixel") ||
-            // v8.5 — absorb V16 theme entry layout + its bottom nav + hero
-            // carousel so cold load fires ONE chunk instead of 4 separate
-            // round trips (~600ms saved per cold visit on 4G).
-            id.includes("/src/layouts/StorefrontLayoutV16") ||
-            id.includes("/src/pages/StorefrontHomeV16") ||
-            // v8.10 — absorb V1 (default) theme layout + home page + its
-            // logic helper into storefront-shell. V1 is the dominant theme
-            // (~70% of stores incl. imitationworld) and was previously
-            // lazy() → 2 serial round trips after storefront-shell parsed
-            // before first paint. Bundling collapses that into ONE network
-            // request → saves ~300-500ms FCP on every V1 cold load.
+            // Keep the dominant V1 layout critical, but let Rollup split
+            // homepage routes and V16 naturally: category/PDP entry must
+            // not download homepage-only sections or an inactive theme.
             id.includes("/src/layouts/StorefrontLayout.tsx") ||
             id.includes("/src/layouts/StorefrontLayout.logic") ||
-            id.includes("/src/pages/StorefrontHome.tsx") ||
             // NOTE: match the bare classic file only — NOT the variants.
             // Variants (Modern/Glass/Notch/Neon/Tube/Bubble/3D/Indicator/V15/V17)
             // are now lazy() inside MobileBottomNavSwitcher so each store ships
