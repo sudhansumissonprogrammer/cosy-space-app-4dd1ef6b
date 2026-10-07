@@ -66,7 +66,7 @@ export function orderSimilarDesigns(rows: Design[], current: Design) {
     <span ref={holder} className="block h-full w-full overflow-hidden rounded-[4px] bg-muted">
        {visible && <img src={optimizeImageUrl(design.image_url, selected ? 1200 : 160)} alt={design.name}
         width={64} height={64} loading="lazy" decoding="async" fetchPriority="low"
-         className="h-full w-full object-cover scale-110"
+         className="h-full w-full object-contain"
         onError={(event) => {
           const image = event.currentTarget;
           if (design.image_url && image.getAttribute("src") !== design.image_url) image.src = design.image_url;

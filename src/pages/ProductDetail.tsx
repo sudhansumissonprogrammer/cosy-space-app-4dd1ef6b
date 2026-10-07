@@ -887,7 +887,7 @@ export default function ProductDetail() {
           )}
 
           {/* Product Title — right under image */}
-          <h1 className="text-xl font-semibold leading-snug sm:text-2xl lg:text-[1.7rem]" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif", ...(isV18 ? { color: "#ffffff", fontWeight: 400, letterSpacing: "0.01em" } : { color: undefined }) }}>
+          <h1 className={`text-xl font-semibold leading-snug sm:text-2xl lg:text-[1.7rem] ${store.slug === "imitationworld" ? "-mx-3 break-words sm:mx-0" : ""}`} style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif", ...(isV18 ? { color: "#ffffff", fontWeight: 400, letterSpacing: "0.01em" } : { color: undefined }) }}>
             {product.name}
           </h1>
 
