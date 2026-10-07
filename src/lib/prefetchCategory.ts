@@ -9,16 +9,14 @@
  * intersection, so by the time the route mounts the payload is already in
  * memory and CategoryDetail can hydrate synchronously.
  *
- * Three fire-and-forget side effects, idempotent per slug:
+ * Two fire-and-forget side effects, idempotent per slug:
  *   1. JS chunk: import("@/pages/CategoryDetail")
  *   2. Data: fetchCategoryEdge(slug, CATEGORY_PAGE_LIMIT) — the SAME limit the
  *      Worker prewarms (`:l50`), so the key matches and it's a cache HIT.
- *   3. Images: warms the first 4 product thumbnails at the exact URL the grid
- *      will request, so cards paint from cache instead of re-downloading.
+ * Photos are requested only by the destination page after navigation.
  */
 
 import { fetchCategoryEdge, CATEGORY_PAGE_LIMIT } from "@/lib/storefrontEdgeApi";
-import { optimizeImageUrl } from "@/lib/imageOptimize";
 
 let chunkLoaded = false;
 
@@ -27,19 +25,6 @@ export const categoryPrefetchCache = new Map<string, Promise<any | null>>();
 
 /** Synchronously readable copy — lets CategoryDetail hydrate with zero loading state. */
 export const categoryPrefetchResolved = new Map<string, any>();
-
-const warmedImages = new Set<string>();
-
-function warmImages(products: any[]) {
-  products.slice(0, 4).forEach((p: any) => {
-    const raw = p?.image_url;
-    if (!raw || warmedImages.has(raw)) return;
-    warmedImages.add(raw);
-    const img = new Image();
-    img.decoding = "async";
-    img.src = optimizeImageUrl(raw, 400);
-  });
-}
 
 export function prefetchCategory(categorySlug?: string | null) {
   if (!chunkLoaded) {
@@ -53,10 +38,6 @@ export function prefetchCategory(categorySlug?: string | null) {
   if (!slug || categoryPrefetchCache.has(slug)) return;
 
   const p = fetchCategoryEdge(slug, CATEGORY_PAGE_LIMIT)
-    .then((data) => {
-      if (data && Array.isArray(data.products)) warmImages(data.products);
-      return data;
-    })
     .catch(() => null);
 
   categoryPrefetchCache.set(slug, p);

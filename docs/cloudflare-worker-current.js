@@ -3259,7 +3259,7 @@ function _isRawPassthrough(rawUrl) {
 function _buildProductImagePreloads(inlineProductsStr, count = 2, opts) {
   const pdp = !!(opts && opts.pdp);
   return _extractTopProductImages(inlineProductsStr, pdp ? 1 : count).map((item, i) => {
-    const href = _toGalleryUrl(item.url, pdp ? 1200 : 400, pdp ? 85 : 72);
+    const href = _toGalleryUrl(item.url, pdp ? 1200 : 400, pdp ? 85 : 75);
     return `<link rel="preload" as="image" href="${escapeHtml(href)}"${i === 0 ? ' fetchpriority="high"' : ''} />\n`;
   }).join("");
 }
@@ -4648,9 +4648,11 @@ async function serveStreamedHtml(
       const _isPdpPreload = pdpCategoryInline?.kind === "product" && !!pdpCategoryInline?.json;
       const productImagePreloads = categoryProductsJsonForPreload
         ? _buildProductImagePreloads(categoryProductsJsonForPreload, 2, { pdp: _isPdpPreload })
-        : inlineProducts
-          ? _buildProductImagePreloads(inlineProducts, 2)
-          : _buildImagePreloadsFromUrls(topImages, 2);
+        : pdpCategoryInline
+          ? ""
+          : inlineProducts
+            ? _buildProductImagePreloads(inlineProducts, 2)
+            : _buildImagePreloadsFromUrls(topImages, 2);
 
       /* v8.89.0 — (a) PRECONNECT to the image host and (b) EDGE-RENDERED HERO.
          (a) The hero preload above is often the first request to a supplier CDN
@@ -8389,7 +8391,7 @@ async function _handleFetch(request, env, ctx) {
     // v8.74.0: LCP product image preload rides in the response headers too.
     // v8.75.0 — per-category images win over store-wide images when on a
     // /category/* route, so cold category loads preload the RIGHT LCP image.
-    const topImages = (kvBatch.catImgs && kvBatch.catImgs.length ? kvBatch.catImgs : kvBatch.imgs) || null;
+    const topImages = (pdpCategoryRoute ? (pdpCategoryRoute.kind === "category" ? kvBatch.catImgs : null) : kvBatch.imgs) || null;
     const linkHeader = _isPdpPath(new URL(request.url).pathname)
     ? _buildLinkPreloadHeader(shellResult.html)
     : _withImageLinkPreload(_buildLinkPreloadHeader(shellResult.html), topImages);
@@ -8604,7 +8606,7 @@ async function _handleFetch(request, env, ctx) {
     }
     // FIX #3
     // v8.75.0 — per-category images take priority on /category/*.
-    const topImagesCD = (kvBatchCD.catImgs && kvBatchCD.catImgs.length ? kvBatchCD.catImgs : kvBatchCD.imgs) || null;
+    const topImagesCD = (pdpCategoryRouteCD ? (pdpCategoryRouteCD.kind === "category" ? kvBatchCD.catImgs : null) : kvBatchCD.imgs) || null;
     const linkHeaderCD = _isPdpPath(new URL(request.url).pathname)
       ? _buildLinkPreloadHeader(shellResultCD.html)
       : _withImageLinkPreload(_buildLinkPreloadHeader(shellResultCD.html), topImagesCD);
