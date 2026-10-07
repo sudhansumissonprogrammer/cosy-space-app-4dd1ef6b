@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { useImageActivation } from "./useImageActivation";
 
 describe("image activation", () => {
-  afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+  afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllGlobals(); });
 
   it("activates priority photos immediately", () => {
     const { result } = renderHook(() => useImageActivation(true));
@@ -97,5 +97,37 @@ describe("image activation", () => {
     expect(construct).toHaveBeenCalledTimes(1);
     first.unmount();
     second.unmount();
+  });
+
+  it("prepares upcoming rows only after the opening photos finish", () => {
+    vi.useFakeTimers();
+    const margins: string[] = [];
+    vi.stubGlobal("IntersectionObserver", class {
+      constructor(_notify: IntersectionObserverCallback, options: IntersectionObserverInit) {
+        margins.push(options.rootMargin || "");
+      }
+      observe = vi.fn();
+      unobserve = vi.fn();
+      disconnect = vi.fn();
+    });
+    const grid = document.createElement("div");
+    grid.innerHTML = '<div data-card-priority="true"><a><img /></a></div><div></div>';
+    const photo = grid.querySelector("img");
+    const frame = grid.lastElementChild;
+    if (!photo || !(frame instanceof HTMLDivElement)) throw new Error("Missing test frames");
+    Object.defineProperty(photo, "complete", { value: false, configurable: true });
+    Object.defineProperty(photo, "naturalWidth", { value: 800 });
+    const hook = renderHook(() => {
+      const value = useImageActivation(false, { rootMargin: "600px 0px", afterReady: true, afterScroll: true });
+      value.ref.current = frame;
+      return value;
+    });
+    act(() => vi.advanceTimersByTime(500));
+    expect(margins).toHaveLength(2);
+    Object.defineProperty(photo, "complete", { value: true });
+    act(() => vi.advanceTimersByTime(250));
+    expect(margins).toHaveLength(3);
+    expect(margins[2]).toBe("600px 0px");
+    hook.unmount();
   });
 });

@@ -6,7 +6,7 @@
 - [x] Classify all Imitation World New2 products into Chain with Pendant or Pendant from their imported product details.
 
 ## Active work
-- [ ] Investigate mobile category scroll blanking; add bounded next-row preparation without expanding cold-entry downloads, retain visited photos, and verify down/up scrolling.
+- [x] Reproduce category scroll blanking; add bounded next-row preparation after opening photos/scroll intent, retain activated paint/photos, and verify 33 down/up samples with zero blanks. See docs/CATEGORY-SCROLL-READINESS-2026-10-07.md. Production rollout/LCP/CPU comparison awaits publication; physical-device cross-theme checks remain unverified.
 - [x] Verify the Oct 7 20:05 UTC publication on Imitation World: three reported slow-mobile cold runs per page, one desktop run, scroll/touch-swipe/slide/zoom/similar/cart/checkout-opening checks; findings in docs/PUBLISHED-PERFORMANCE-VERIFICATION-2026-10-07.md. Ad delivery and payment completion are unverified; no orders/payments created.
 - [ ] Resolve published product/card/cart/checkout title and amount inconsistencies; stabilize homepage/desktop shifts; reduce homepage original-photo activation and opening script/font costs; verify advertising events and authorized payment completion. This audit identified issues but did not change app behavior.
 - [x] Connect Telegram fresh after the 19:20 UTC Oct 7 workspace move, verify @Shopbanaobot with getMe, and redeploy telegram-order-notify; no historical messages resent.
