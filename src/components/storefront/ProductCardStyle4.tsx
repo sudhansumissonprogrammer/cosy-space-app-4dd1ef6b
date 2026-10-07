@@ -1,3 +1,4 @@
+import { useCardImageReadiness } from "./CardImageReadiness";
 import { useCallback, useState } from "react";
 import { Minus, Plus } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
@@ -40,6 +41,7 @@ interface Props {
 }
 
 function ProductCardStyle4Impl({ product, slug, store, priority = false, onVariantRequired }: Props) {
+  const imageReady = useCardImageReadiness();
   const [hoverLoaded, setHoverLoaded] = useState(false);
   const { items, addToCart, updateQuantity } = useCart();
   const existing = items.find(
@@ -93,7 +95,7 @@ function ProductCardStyle4Impl({ product, slug, store, priority = false, onVaria
               width={200}
               height={200}
               className={`h-full w-full object-cover transition-[transform,opacity,colors,box-shadow] duration-300 ${hasSecond && hoverLoaded ? "group-hover/img:opacity-0" : ""}`}
-              loading={priority ? "eager" : "lazy"}
+              loading={priority || imageReady ? "eager" : "lazy"}
               decoding={priority ? "sync" : "async"}
               fetchPriority={priority ? "high" : "low"}
 

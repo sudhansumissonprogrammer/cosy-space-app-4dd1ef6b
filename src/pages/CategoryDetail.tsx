@@ -471,7 +471,7 @@ export default function CategoryDetail() {
                   />
                 )}
                 {products.map((product, idx) => (
-                  <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 4} cardStyle={cardStyle} index={idx} />
+                  <UniversalProductCard key={product.id} product={product} slug={slug || store.slug} store={store} priority={idx < 4} cardStyle={cardStyle} index={idx} prepareAhead />
                 ))}
               </div>
             )}

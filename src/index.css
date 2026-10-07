@@ -437,6 +437,12 @@
   /* Stagger slide-up removed — product cards now appear instantly like categories */
 }
 
+/* Keep activated cards painted, including on upward scroll. The outer frame
+   still defers distant, unactivated placeholders. */
+.prepared-product-card > * {
+  content-visibility: visible !important;
+}
+
 /* ── Premium UX: Cart bounce ── */
 @keyframes cart-bounce {
   0%,

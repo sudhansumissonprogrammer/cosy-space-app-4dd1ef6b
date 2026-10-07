@@ -3,6 +3,7 @@ import { getCachedCardVideo, requestCardVideo } from "@/lib/cardVideoLookup";
 import ProductCardStyle1 from "./ProductCardStyle1";
 import ProductCardSkeleton from "./ProductCardSkeleton";
 import { useImageActivation } from "@/hooks/useImageActivation";
+import { CardImageReadiness } from "./CardImageReadiness";
 
 
 // ── Variant cards: lazy ─────────────────────────────────────────────
@@ -87,12 +88,15 @@ interface Props {
   index?: number;
   /** Horizontal carousels must not skip paint — set false there. */
   deferOffscreen?: boolean;
+  /** Prepare two mobile grid rows after scrolling starts, not on cold entry. */
+  prepareAhead?: boolean;
 }
 
-function UniversalProductCardImpl({ product, slug, store, priority = false, cardStyle = "style-1", index = 0, deferOffscreen = true }: Props) {
+function UniversalProductCardImpl({ product, slug, store, priority = false, cardStyle = "style-1", index = 0, deferOffscreen = true, prepareAhead = false }: Props) {
   preloadCardStyle(store?.theme === "theme-19" || store?.theme === "theme-20" ? store.theme : cardStyle);
   const [variantOpen, setVariantOpen] = useState(false);
-  const { ref: hostRef, active } = useImageActivation(priority);
+  const { ref: hostRef, active } = useImageActivation(priority, prepareAhead
+    ? { rootMargin: "600px 0px", afterScroll: true, afterReady: true } : {});
   // Tap-to-play video is available on every store/theme by default; the
   // App Store "Card Video (Mobile)" toggle is an explicit opt-out.
   const inlineVideoUrl = ((product as any)?.video_url as string | null) || null;
@@ -188,12 +192,13 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
   // rows opt into content-visibility so the browser skips their layout/paint
   // while far offscreen. contain-intrinsic-size reserves the real height so
   // the scrollbar never jumps. The first rows are excluded to protect LCP.
-  const deferPaint = deferOffscreen && !priority && index >= 8;
+  const deferPaint = deferOffscreen && !active && index >= 8;
 
   return (
     <div
       ref={hostRef}
-      className="stagger-card relative"
+      data-card-priority={priority}
+      className={`stagger-card relative${active ? " prepared-product-card" : ""}`}
       style={{
         "--i": index,
         ...(deferPaint
@@ -204,7 +209,7 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
       onTouchStart={prime}
       onPointerDown={prime}
     >
-      {active ? wrapped : <ProductCardSkeleton />}
+      {active ? <CardImageReadiness.Provider value>{wrapped}</CardImageReadiness.Provider> : <ProductCardSkeleton />}
       {active && hasSale && (
         <FestivalSaleBadge placement="card" className="absolute left-1.5 top-1.5 z-[5] drop-shadow-md" />
       )}
@@ -242,7 +247,9 @@ const UniversalProductCard = memo(UniversalProductCardImpl, (prev, next) => {
     prev.store?.theme === next.store?.theme &&
     prev.priority === next.priority &&
     prev.cardStyle === next.cardStyle &&
-    prev.index === next.index
+    prev.index === next.index &&
+    prev.deferOffscreen === next.deferOffscreen &&
+    prev.prepareAhead === next.prepareAhead
   );
 });
 

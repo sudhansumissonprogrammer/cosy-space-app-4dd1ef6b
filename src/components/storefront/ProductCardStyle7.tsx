@@ -1,3 +1,4 @@
+import { useCardImageReadiness } from "./CardImageReadiness";
 /**
  * Style 7 — Floating Glass
  * Inspired by Apple, Nothing, Linear. Futuristic premium tech.
@@ -28,6 +29,7 @@ interface Props {
 }
 
 function ProductCardStyle7Impl({ product, slug, store, priority = false, onVariantRequired }: Props) {
+  const imageReady = useCardImageReadiness();
   const { wishlisted, cartQty, handleAddToCart, handleToggleWishlist, heartBursting, updateQuantity } = useProductCardActions(product);
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
@@ -88,7 +90,7 @@ function ProductCardStyle7Impl({ product, slug, store, priority = false, onVaria
                 height={400}
                 data-no-crop="true"
                 className="absolute inset-0 h-full w-full object-contain p-4 transition-transform duration-300 ease-out hh:group-hover:scale-110 drop-shadow-xl"
-                loading={priority ? "eager" : "lazy"}
+                loading={priority || imageReady ? "eager" : "lazy"}
                 decoding={priority ? "sync" : "async"}
                 fetchPriority={priority ? "high" : "low"}
               />
