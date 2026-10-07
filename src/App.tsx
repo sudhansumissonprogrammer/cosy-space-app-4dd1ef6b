@@ -105,7 +105,7 @@ const ProductDetailSkeleton = () => {
             // No fade animation — the identical URL means the pixels stay on
             // screen through the DOM swap.
             <img
-              src={optimizeImageUrl(p.image, 800)}
+              src={optimizeImageUrl(p.image, 1200)}
               alt={p.name}
               fetchPriority="high"
               decoding="sync"

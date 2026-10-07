@@ -48,7 +48,7 @@ export function prefetchProductDetail(opts?: { slug?: string; image?: string | n
   if (slug && image && !warmedImages.has(slug)) {
     warmedImages.add(slug);
     try {
-      const url = optimizeImageUrl(image, 800);
+       const url = optimizeImageUrl(image, 1200);
       if (url) {
         const img = new Image();
         // decoding=async lets the browser decode off the main thread.

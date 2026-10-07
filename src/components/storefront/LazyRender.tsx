@@ -16,7 +16,7 @@ interface LazyRenderProps {
 export default function LazyRender({
   children,
   minHeight = 320,
-  rootMargin = "1200px",
+  rootMargin = "100px",
   className,
 }: LazyRenderProps) {
   const ref = useRef<HTMLDivElement>(null);
@@ -25,12 +25,13 @@ export default function LazyRender({
   // deferral was causing first-load product images to appear blank until the
   // user scrolled or refreshed (browser cache hit). With external CDNs like
   // overlaysnow.com we want fetches to start ASAP — no benefit to waiting.
-  const [visible, setVisible] = useState(true);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     if (visible) return;
     const el = ref.current;
     if (!el) return;
+    if (!("IntersectionObserver" in window)) { setVisible(true); return; }
 
     const observer = new IntersectionObserver(
       ([entry]) => {

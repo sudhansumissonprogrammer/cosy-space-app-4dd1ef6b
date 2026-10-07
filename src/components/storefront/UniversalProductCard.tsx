@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef, lazy, Suspense, memo } from "
 import { getCachedCardVideo, requestCardVideo } from "@/lib/cardVideoLookup";
 import ProductCardStyle1 from "./ProductCardStyle1";
 import ProductCardSkeleton from "./ProductCardSkeleton";
+import { useImageActivation } from "@/hooks/useImageActivation";
 
 
 // ── Variant cards: lazy ─────────────────────────────────────────────
@@ -91,7 +92,7 @@ interface Props {
 function UniversalProductCardImpl({ product, slug, store, priority = false, cardStyle = "style-1", index = 0, deferOffscreen = true }: Props) {
   preloadCardStyle(store?.theme === "theme-19" || store?.theme === "theme-20" ? store.theme : cardStyle);
   const [variantOpen, setVariantOpen] = useState(false);
-  const hostRef = useRef<HTMLDivElement>(null);
+  const { ref: hostRef, active } = useImageActivation(priority);
   // Tap-to-play video is available on every store/theme by default; the
   // App Store "Card Video (Mobile)" toggle is an explicit opt-out.
   const inlineVideoUrl = ((product as any)?.video_url as string | null) || null;
@@ -102,9 +103,9 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
     needsLookup ? getCachedCardVideo(product.id) ?? null : null,
   );
   useEffect(() => {
-    if (!needsLookup) return;
+    if (!needsLookup || !active) return;
     return requestCardVideo(product.id, (url) => setLookedUp(url));
-  }, [needsLookup, product?.id]);
+  }, [needsLookup, product?.id, active]);
   const cardVideoUrl = inlineVideoUrl || lookedUp;
   // Default ON for every store; merchants can switch the "Card Video (Mobile)"
   // App Store add-on OFF to remove the play badge from their cards entirely.
@@ -203,12 +204,12 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
       onTouchStart={prime}
       onPointerDown={prime}
     >
-      {wrapped}
-      {hasSale && (
+      {active ? wrapped : <ProductCardSkeleton />}
+      {active && hasSale && (
         <FestivalSaleBadge placement="card" className="absolute left-1.5 top-1.5 z-[5] drop-shadow-md" />
       )}
-      {showCardVideo && (
-        <ProductCardVideo hostRef={hostRef} enabled videoUrl={cardVideoUrl!} />
+      {active && showCardVideo && cardVideoUrl && (
+        <ProductCardVideo hostRef={hostRef} enabled videoUrl={cardVideoUrl} />
       )}
 
       {hasVariants && variantOpen && (
