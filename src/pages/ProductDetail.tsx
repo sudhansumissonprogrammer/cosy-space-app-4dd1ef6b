@@ -1722,17 +1722,11 @@ function ImageGallery({
   const [activeIndex, setActiveIndex] = useState(0);
   const [activatedSlides, setActivatedSlides] = useState<Set<number>>(() => new Set([0]));
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  // Seed slide 0 as loaded when a matching preload exists — the skeleton
-  // already painted the same w=800 URL, so the browser has it cached and
-  // the gallery <img> will paint synchronously. Skipping the opacity-0 →
-  // opacity-100 fade removes the "flash then reload" the user reported.
-  const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>(() => {
-    if (typeof window === "undefined") return {};
-    try {
-      const raw = sessionStorage.getItem("__sf_pdp_preload__");
-      return raw ? { 0: true } : {};
-    } catch { return {}; }
-  });
+  // Never pre-mark a photo as loaded from tap-transition data: that hid the
+  // placeholder while an uncached main photo was still downloading (blank
+  // gallery on slow in-app browsers). Cached photos become ready immediately
+  // through GalleryImage's source-scoped readiness check.
+  const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>({});
   const [videoPlaying, setVideoPlaying] = useState(false);
   // Measured aspect ratio (height / width) of the FIRST gallery image.
   // The mobile gallery box adapts to it (clamped) so square / wide / extra-tall
