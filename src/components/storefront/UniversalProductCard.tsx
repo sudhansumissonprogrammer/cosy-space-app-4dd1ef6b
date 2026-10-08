@@ -236,7 +236,7 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
 // the card's own context hooks still re-subscribe correctly inside.
 const UniversalProductCard = memo(UniversalProductCardImpl, (prev, next) => {
   return (
-    prev.product?.id === next.product?.id &&
+    prev.product === next.product &&
     prev.product?.price === next.product?.price &&
     prev.product?.sale_price === next.product?.sale_price &&
     prev.product?.stock_quantity === next.product?.stock_quantity &&

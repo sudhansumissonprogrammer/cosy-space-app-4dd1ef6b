@@ -71,7 +71,9 @@ export function useImageActivation(priority = false, options: ActivationOptions 
     const checkReady = () => {
       const grid = node.parentElement;
       const opening = grid?.querySelectorAll<HTMLImageElement>("[data-card-priority='true'] a img");
-      if (opening?.length && Array.from(opening).every(img => img.complete && img.naturalWidth > 0)) {
+      // Failed opening photos also settle. A missing/broken photo must not
+      // keep every offscreen card polling forever or block the ready buffer.
+      if (!opening?.length || Array.from(opening).every(img => !!img.currentSrc && img.complete)) {
         stopReady = subscribe(node, activate, { rootMargin: options.rootMargin });
       } else {
         timer = setTimeout(checkReady, 250);

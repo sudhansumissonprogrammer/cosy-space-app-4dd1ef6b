@@ -828,7 +828,7 @@ export default function ProductDetail() {
       <div className="grid gap-2 sm:gap-6 lg:grid-cols-2 lg:gap-10">
         {/* Image Gallery */}
         <ImageGallery
-          key={product.id}
+          key={`${product.id}:${allImages.join("|")}:${resolvedProductVideo?.url || ""}`}
           images={allImages}
           video={resolvedProductVideo}
           productName={product.name}
@@ -1752,7 +1752,7 @@ function ImageGallery({
   type Slide =
     | { kind: "image"; url: string }
     | { kind: "video"; url: string; poster: string };
-  const slides: Slide[] = (() => {
+  const slides = useMemo<Slide[]>(() => {
     const out: Slide[] = [];
     if (images[0]) out.push({ kind: "image", url: images[0] });
     if (video?.url) out.push({ kind: "video", url: video.url, poster: video.poster || images[0] || "" });
@@ -1764,7 +1764,7 @@ function ImageGallery({
       out.push({ kind: "image", url: out[0].url });
     }
     return out;
-  })();
+  }, [images, video?.url, video?.poster]);
 
   const len = slides.length;
   // A "duplicated single" is the special case above: exactly two image slides
@@ -1807,20 +1807,13 @@ function ImageGallery({
       embla.off("select", onSelect);
       embla.off("reInit", onSelect);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [embla, slides.length]);
+  }, [embla, slides]);
 
-  // Re-init on slide-list change — only reset loaded state when URLs actually change
+  // Source changes remount this gallery. Embla readiness must never erase a
+  // cached child's onReady update: that child may not fire another load event.
   const slidesKey = slides.map((s) => (s.kind === "video" ? "v:" + s.url : "i:" + s.url)).join("|");
   useEffect(() => {
     if (embla) embla.reInit();
-    setImageLoaded({});
-    setImgRatio(null);
-    setVideoPlaying(false);
-    setActivatedSlides(new Set([0]));
-
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slidesKey, embla]);
 
   // Prepare neighbours only after a deliberate drag, never on cold entry.

@@ -264,8 +264,8 @@ export default function V19ProductDetail() {
   // Snap gallery scroll → update active index
   const onGalleryScroll = () => {
     const el = galleryRef.current;
-    if (!el) return;
-    const idx = Math.round(el.scrollLeft / el.clientWidth);
+    if (!el || el.clientWidth <= 0 || gallerySlides.length === 0) return;
+    const idx = Math.max(0, Math.min(gallerySlides.length - 1, Math.round(el.scrollLeft / el.clientWidth)));
     if (idx !== galleryIdx) setGalleryIdx(idx);
     setVisitedSlides(previous => previous.has(idx) ? previous : new Set([...previous, idx]));
   };
@@ -761,11 +761,11 @@ export default function V19ProductDetail() {
       </div>
 
       {/* Lazy fullscreen zoom overlay */}
-      {zoomOpen && (
+      {zoomOpen && lightboxImages.length > 0 && (
         <Suspense fallback={null}>
           <ZoomableGallery
             images={lightboxImages}
-            initialIndex={Math.max(0, Math.min(galleryIdx, lightboxImages.length - 1))}
+            initialIndex={Math.max(0, gallerySlides.slice(0, galleryIdx + 1).filter(slide => slide.kind === "image").length - 1)}
             alt={product.name}
             open={zoomOpen}
             onClose={() => setZoomOpen(false)}
