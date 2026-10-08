@@ -207,7 +207,7 @@ export function resolveProductImages(product: any): string[] {
   const extras = Array.isArray(piArr)
     ? [...piArr]
         .sort((a: any, b: any) => (a.display_order ?? 0) - (b.display_order ?? 0))
-        .map((pi: any) => pi.image_url)
+        .map((pi: any) => typeof pi.image_url === "string" ? pi.image_url.trim() : "")
         .filter((u: string) => !!u)
     : [];
 
