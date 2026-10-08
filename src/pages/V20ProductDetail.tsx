@@ -29,6 +29,7 @@ import PartialPaymentTrustCard from "@/components/storefront/PartialPaymentTrust
 import AutoCouponHint from "@/components/storefront/AutoCouponHint";
 import PdpUpsellSection from "@/components/storefront/apps/Upsell/PdpUpsellSection";
 import FestivalSaleBadge from "@/components/storefront/FestivalSaleBadge";
+import { withImitationWorldCareGuide, imitationWorldCareGuideUrl } from "@/lib/imitationWorldCareSlides";
 
 const ZoomableGallery = lazy(() => import("@/components/storefront/ZoomableGallery"));
 const ImitationWorldSimilarDesigns = lazy(() => import("@/components/storefront/pdp/ImitationWorldSimilarDesigns"));
@@ -174,8 +175,8 @@ export default function V20ProductDetail() {
     const videoUrl = normalizeProductVideoUrl((product as any)?.video_url);
     if (videoUrl) slides.push({ kind: "video", url: videoUrl, poster: (product as any).video_poster_url || images[0] || "" });
     for (let i = 1; i < images.length; i++) slides.push({ kind: "image", url: images[i] });
-    return slides;
-  }, [images, product]);
+    return withImitationWorldCareGuide(slides, store.slug === "imitationworld");
+  }, [images, product, store.slug]);
   const lightboxImages = useMemo(() => gallerySlides.filter((s): s is { kind: "image"; url: string } => s.kind === "image").map((s) => s.url), [gallerySlides]);
 
   useEffect(() => {
@@ -326,7 +327,7 @@ export default function V20ProductDetail() {
                 <SnapVideoSlide url={slide.url} poster={visitedSlides.has(i) && slide.poster ? optimizeImageUrl(slide.poster, 1200, 85) : undefined} />
 
               ) : slide?.kind === "image" ? (
-                <img src={visitedSlides.has(i) ? optimizeImageUrl(slide.url, 1200, 85) : undefined} alt={`${product.name} ${i + 1}`} className="h-full w-full object-cover cursor-zoom-in"
+                <img src={visitedSlides.has(i) ? optimizeImageUrl(slide.url, 1200, 85) : undefined} alt={`${product.name} ${i + 1}`} className={`h-full w-full cursor-zoom-in ${slide.url === imitationWorldCareGuideUrl ? "object-contain" : "object-cover"}`}
                   loading={i === 0 ? "eager" : "lazy"} fetchPriority={i === 0 ? "high" : "auto"} onClick={() => setZoomOpen(true)} />
               ) : (
                 <Package className="h-16 w-16 text-gray-300" />

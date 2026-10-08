@@ -56,6 +56,7 @@ import AutoCouponHint from "@/components/storefront/AutoCouponHint";
 import { useWaCouponPreview } from "@/hooks/useWaCouponPreview";
 import FestivalSaleBadge from "@/components/storefront/FestivalSaleBadge";
 import GalleryImage from "@/components/storefront/pdp/GalleryImage";
+import { withImitationWorldCareGuide, imitationWorldCareGuideUrl } from "@/lib/imitationWorldCareSlides";
 
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
 const CheckoutReviewsTeaser = lazy(() => import("@/components/storefront/checkout/CheckoutReviewsTeaser"));
@@ -1757,8 +1758,8 @@ function ImageGallery({
     if (out.length === 1 && out[0].kind === "image") {
       out.push({ kind: "image", url: out[0].url });
     }
-    return out;
-  }, [images, video?.url, video?.poster]);
+    return withImitationWorldCareGuide(out, compactGallery);
+  }, [images, video?.url, video?.poster, compactGallery]);
 
   const len = slides.length;
   // A "duplicated single" is the special case above: exactly two image slides
@@ -1961,7 +1962,7 @@ function ImageGallery({
                       src={optimizedUrl}
                       srcSet={gallerySrcSet || undefined}
                       sizes={gallerySrcSet ? "(max-width: 640px) 100vw, 50vw" : undefined}
-                      alt={productName}
+                      alt={slide.url === imitationWorldCareGuideUrl ? "Imitation World warranty and jewellery care guide" : productName}
 
                       className={`absolute inset-0 z-[1] h-full w-full object-contain transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`}
 
