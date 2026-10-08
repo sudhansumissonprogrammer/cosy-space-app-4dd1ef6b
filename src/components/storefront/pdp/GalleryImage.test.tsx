@@ -43,4 +43,32 @@ describe("gallery photo readiness", () => {
     render(<GalleryImage alt="Inactive" onReady={ready} />);
     expect(ready).not.toHaveBeenCalled();
   });
+
+  it("retries a failed photo once, then offers bounded manual recovery", () => {
+    const ready = vi.fn();
+    const error = vi.fn();
+    render(<GalleryImage alt="Product" src="photo.webp" onReady={ready} onError={error} />);
+    const first = screen.getByAltText("Product");
+    fireEvent.error(first);
+    expect(screen.getByAltText("Product")).not.toBe(first);
+    expect(screen.getByAltText("Product").getAttribute("src")).toBe("photo.webp");
+    expect(error).not.toHaveBeenCalled();
+    fireEvent.error(screen.getByAltText("Product"));
+    expect(error).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "Retry photo" }));
+    expect(screen.queryByRole("button", { name: "Retry photo" })).toBeNull();
+    fireEvent.load(screen.getByAltText("Product"));
+    expect(ready).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not carry a failed source into the next product photo", () => {
+    const ready = vi.fn();
+    const { rerender } = render(<GalleryImage alt="Product" src="bad.webp" onReady={ready} />);
+    fireEvent.error(screen.getByAltText("Product"));
+    fireEvent.error(screen.getByAltText("Product"));
+    rerender(<GalleryImage alt="Product" src="good.webp" onReady={ready} />);
+    expect(screen.queryByText("Photo couldn’t load")).toBeNull();
+    fireEvent.load(screen.getByAltText("Product"));
+    expect(ready).toHaveBeenCalledTimes(1);
+  });
 });
