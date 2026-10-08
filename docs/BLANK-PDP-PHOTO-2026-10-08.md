@@ -18,4 +18,4 @@ Shared GalleryImage retries the same existing source once after an error. A seco
 - Preview browser deliberately aborted the main image: recovery control appeared; after restoring network and tapping Retry photo, the pendant visibly painted. Cached reload also passed without a page error.
 - Preview build OK.
 - Localhost's existing Festival badge asset limitation is unchanged; live badge works.
-- Production publication and actual Instagram-device confirmation remain necessary. No orders or payments submitted.
+- Production publication and actual Instagram-device confirmation remain necessary. No orders or payments submitted.- Likely cause found: the standard gallery marked the main photo loaded whenever tap-transition data existed, hiding the placeholder before the new photo downloaded. Removed; cached readiness check covers instant cached display.
