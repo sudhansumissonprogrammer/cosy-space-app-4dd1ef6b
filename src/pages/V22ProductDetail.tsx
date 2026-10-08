@@ -51,6 +51,7 @@ const ImitationWorldSimilarDesigns = lazy(() => import("@/components/storefront/
 import PdpUpsellSection from "@/components/storefront/apps/Upsell/PdpUpsellSection";
 import FestivalSaleBadge from "@/components/storefront/FestivalSaleBadge";
 import GalleryImage from "@/components/storefront/pdp/GalleryImage";
+import { withImitationWorldCareGuide } from "@/lib/imitationWorldCareSlides";
 
 
 import DeliveryTimeline from "@/components/storefront/DeliveryTimeline";
@@ -1480,8 +1481,8 @@ function ImageGallery({
     if (images[0]) out.push({ kind: "image", url: images[0] });
     if (video?.url) out.push({ kind: "video", url: video.url, poster: video.poster || images[0] || "" });
     for (let i = 1; i < images.length; i++) out.push({ kind: "image", url: images[i] });
-    return out;
-  }, [images, video?.url, video?.poster]);
+    return withImitationWorldCareGuide(out, compactGallery);
+  }, [images, video?.url, video?.poster, compactGallery]);
   const len = slides.length;
   const canLoop = len > 1;
 
