@@ -6,6 +6,8 @@
 - [x] Classify all Imitation World New2 products into Chain with Pendant or Pendant from their imported product details.
 
 ## Active work
+- [ ] Add the uploaded care guide as slide three on every Imitation World PDP, duplicate single photos into the first two slides, preserve quality and opening-photo deferral, and verify navigation.
+- [ ] Connect Telegram fresh after the Oct 8 06:19 UTC workspace move, verify the bot, and redeploy order alerts without historical replay.
 - [x] Connect Telegram fresh after the Oct 8 05:35 UTC workspace move, verify the bot, and redeploy order alerts; no historical messages resent.
 - [x] Investigate Oct 8 blank main-photo screenshot: removed tap-transition pre-marking that hid the placeholder before the main photo downloaded; live initial/reload and three touch swipes pass; screenshot-specific cause not proven. Shared standard/V22 gallery now retries a failed exact URL once and offers Retry photo instead of silent blanking. Simulated failure/manual recovery visibly passes, cached reload passes, 12 tests pass and build OK; publication required. No orders created.
 - [x] Audit Oct 8 PDP/category loading and down/up browsing; fix invisible cached PDP photos, stale card data, failed-photo readiness polling, V19/V20 zoom mapping and gallery URL deduplication. 17 tests pass; both affected stores pass eight completed mobile photo-readiness checks and zoom with no page errors. See docs/PDP-CATEGORY-AUDIT-2026-10-08.md. Frontend publication and production verification pending; no orders/payments created.
