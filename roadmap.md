@@ -6,6 +6,7 @@
 - [x] Classify all Imitation World New2 products into Chain with Pendant or Pendant from their imported product details.
 
 ## Active work
+- [ ] Connect Telegram fresh after the Oct 9 17:59 UTC workspace move, verify @Shopbanaobot with getMe, and redeploy telegram-order-notify; no historical messages resent.
 - [x] Connect Telegram fresh after the Oct 9 17:28 UTC workspace move, verify @Shopbanaobot with getMe, and redeploy telegram-order-notify; no historical messages resent.
 - [x] Connect Telegram fresh after the Oct 8 06:34 UTC workspace move, verify the bot, and redeploy order alerts without historical replay.
 - [ ] Add the uploaded care guide as slide three on every Imitation World PDP, duplicate single photos into the first two slides, preserve quality and opening-photo deferral, and verify navigation.
