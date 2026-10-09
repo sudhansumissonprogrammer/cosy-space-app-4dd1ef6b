@@ -1867,7 +1867,7 @@ function ImageGallery({
   // was sized for it and looked correct). Only image-only PDPs use the adaptive
   // first-photo ratio that removes the empty letterbox bands.
   const mobileBoxHeight = compactGallery
-    ? "min(133vw, calc(100svh - 210px))"
+    ? `min(${((imgRatio ?? 1.333) * 100).toFixed(1)}vw, calc(100svh - 210px))`
     : hasVideoSlide
     ? "168vw"
     : `min(${((imgRatio ?? 1.32) * 100).toFixed(1)}vw, 82svh)`;
@@ -1878,13 +1878,13 @@ function ImageGallery({
   return (
     <>
       <div className="min-w-0 max-w-full space-y-1 sm:space-y-2 lg:sticky lg:top-4">
-        <div className="relative -mx-4 sm:mx-0 p-0">
+        <div className={`relative ${compactGallery ? "mx-0" : "-mx-4"} sm:mx-0 p-0`}>
           {hasDiscount && (
-            <FestivalSaleBadge placement="pdp" className="absolute bottom-4 left-7 z-20 drop-shadow-lg sm:bottom-5 sm:left-3" />
+            <FestivalSaleBadge placement="pdp" className={`absolute bottom-4 ${compactGallery ? "left-3" : "left-7"} z-20 drop-shadow-lg sm:bottom-5 sm:left-3`} />
           )}
           {/* Discount badge */}
           {hasDiscount && discountPct > 0 && (
-            <div className="absolute left-7 sm:left-3 top-3 z-10">
+            <div className={`absolute ${compactGallery ? "left-3" : "left-7"} sm:left-3 top-3 z-10`}>
               <Badge className="bg-emerald-600 text-white text-[11px] font-bold border-0 shadow-lg px-2 py-0.5">
                 -{discountPct}%
               </Badge>
@@ -1895,7 +1895,7 @@ function ImageGallery({
           {onShare && (
             <button
               onClick={(e) => { e.stopPropagation(); onShare(); }}
-              className="absolute right-7 sm:right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/45 backdrop-blur-sm text-white shadow-md transition-[transform,opacity,colors,box-shadow] hover:bg-black/65 active:scale-[0.96]"
+              className={`absolute ${compactGallery ? "right-3" : "right-7"} sm:right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/45 backdrop-blur-sm text-white shadow-md transition-[transform,opacity,colors,box-shadow] hover:bg-black/65 active:scale-[0.96]`}
               aria-label="Share product"
             >
               <Share2 className="h-3.5 w-3.5" />
@@ -1906,7 +1906,7 @@ function ImageGallery({
 
           {/* Warranty badge (theme-toggle) */}
           {showWarrantyBadge && (
-            <div className="absolute right-7 sm:right-3 top-14 z-10">
+            <div className={`absolute ${compactGallery ? "right-3" : "right-7"} sm:right-3 top-14 z-10`}>
               <WarrantyBadge size="md" />
             </div>
           )}
@@ -1964,7 +1964,7 @@ function ImageGallery({
                       sizes={gallerySrcSet ? "(max-width: 640px) 100vw, 50vw" : undefined}
                       alt={slide.url === imitationWorldCareGuideUrl ? "Imitation World warranty and jewellery care guide" : productName}
 
-                      className={`absolute inset-0 z-[1] h-full w-full ${compactGallery && slide.url !== imitationWorldCareGuideUrl ? "object-cover object-center sm:object-contain" : "object-contain"} transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+                      className={`absolute inset-0 z-[1] h-full w-full object-contain object-center transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`}
 
 
                       decoding="async"
