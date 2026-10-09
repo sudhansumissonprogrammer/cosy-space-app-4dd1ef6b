@@ -40,7 +40,6 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const purpose: string = body.purpose === "login" ? "login" : "signup";
     const phone = canonicalPhone(body.phone || "");
-    if (!phone) return json({ error: "Enter a valid 10-digit Indian mobile number" }, 400);
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
@@ -51,7 +50,9 @@ Deno.serve(async (req) => {
     if (body.action === "check") {
       const email = String(body.email || "").trim().toLowerCase();
       const [phoneRes, emailRes] = await Promise.all([
-        admin.rpc("get_user_id_by_phone", { _phone: phone }),
+        phone
+          ? admin.rpc("get_user_id_by_phone", { _phone: phone })
+          : Promise.resolve({ data: null } as any),
         email
           ? admin.rpc("get_auth_user_id_by_email", { _email: email })
           : Promise.resolve({ data: null } as any),
@@ -61,6 +62,8 @@ Deno.serve(async (req) => {
         email_taken: !!(emailRes as any)?.data,
       });
     }
+
+    if (!phone) return json({ error: "Enter a valid 10-digit Indian mobile number" }, 400);
 
     // Signup must not mint a code for a number that already has an account —
     // profiles.phone is unique, so the verify step could never store it.

@@ -20,6 +20,7 @@ interface SignupEmailProps {
   siteUrl: string
   recipient: string
   confirmationUrl: string
+  token?: string
 }
 
 export const SignupEmail = ({
@@ -27,6 +28,7 @@ export const SignupEmail = ({
   siteUrl,
   recipient,
   confirmationUrl,
+  token,
 }: SignupEmailProps) => (
   <Html lang="en" dir="ltr">
     <Head />
@@ -52,6 +54,13 @@ export const SignupEmail = ({
           </Link>
           ) to get started:
         </Text>
+        {token ? (
+          <>
+            <Text style={text}>Enter this 6-digit code on the sign-up page:</Text>
+            <Text style={codeStyle}>{token}</Text>
+            <Text style={text}>The code expires soon. Or confirm with the button below:</Text>
+          </>
+        ) : null}
         <Button style={button} href={confirmationUrl}>
           Verify Email
         </Button>
@@ -75,3 +84,4 @@ const text = { fontSize: '14px', color: '#6b7280', lineHeight: '1.6', margin: '0
 const link = { color: '#1a1a1a', textDecoration: 'underline' }
 const button = { backgroundColor: '#1a1a1a', color: '#ffffff', fontSize: '14px', fontWeight: '600' as const, borderRadius: '8px', padding: '12px 24px', textDecoration: 'none', display: 'inline-block' }
 const footer = { fontSize: '12px', color: '#9ca3af', margin: '28px 0 0', borderTop: '1px solid #e5e7eb', paddingTop: '16px' }
+const codeStyle = { fontSize: '30px', fontWeight: 'bold' as const, letterSpacing: '8px', color: '#191f2e', textAlign: 'center' as const, backgroundColor: '#f3f4f6', borderRadius: '8px', padding: '14px 0', margin: '0 0 20px' }

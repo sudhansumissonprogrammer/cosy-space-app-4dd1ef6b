@@ -51,6 +51,9 @@ export default function Signup() {
   // Email-verification fallback (used only when WhatsApp is unavailable)
   const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
   const [resending, setResending] = useState(false);
+  const [noWhatsApp, setNoWhatsApp] = useState(false);
+  const [emailCode, setEmailCode] = useState("");
+  const [emailVerifying, setEmailVerifying] = useState(false);
 
   const timerRef = useRef<number | null>(null);
 
@@ -142,7 +145,9 @@ export default function Signup() {
 
   const showVerificationStep = (signupEmail: string) => {
     setVerificationEmail(signupEmail);
-    toast.success("Account created! Check your email to verify your account.");
+    setOtpPhone(null);
+    setEmailCode("");
+    toast.success(`We emailed a 6-digit code to ${signupEmail}`);
   };
 
   /** Sends the WhatsApp OTP. Falls back to email verification when WA fails. */
@@ -178,17 +183,52 @@ export default function Signup() {
     return true;
   };
 
+  /** WhatsApp code when a number was given; otherwise the emailed code. */
+  const startVerification = async (mobile: string, signupEmail: string) => {
+    if (!mobile) {
+      showVerificationStep(signupEmail);
+      return;
+    }
+    await sendWhatsAppOtp(mobile, signupEmail);
+  };
+
+  const handleVerifyEmailCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!verificationEmail) return;
+    const token = emailCode.replace(/\D/g, "");
+    if (token.length !== 6) {
+      toast.error("Enter the 6-digit code");
+      return;
+    }
+    setEmailVerifying(true);
+    try {
+      let { data, error } = await supabase.auth.verifyOtp({ email: verificationEmail, token, type: "signup" });
+      if (error) {
+        const retry = await supabase.auth.verifyOtp({ email: verificationEmail, token, type: "email" });
+        if (!retry.error) ({ data, error } = retry);
+      }
+      if (error || !data?.session) {
+        toast.error("Incorrect or expired code. Please try again or resend.");
+        return;
+      }
+      toast.success("Email verified — welcome!");
+      navigate("/dashboard");
+    } finally {
+      setEmailVerifying(false);
+    }
+  };
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     const normalizedEmail = email.trim().toLowerCase();
     const normalizedFullName = fullName.trim();
-    const mobile = stripIndiaPrefix(phone);
+    const mobile = noWhatsApp ? "" : stripIndiaPrefix(phone);
 
     if (!normalizedEmail || !password || !confirmPassword) {
       toast.error("Please fill in all fields");
       return;
     }
-    if (!isValidMobile(phone)) {
+    if (!noWhatsApp && !isValidMobile(phone)) {
       toast.error("Enter a valid 10-digit WhatsApp number");
       return;
     }
@@ -207,7 +247,7 @@ export default function Signup() {
       // Pre-check duplicates so users get a clear message instead of a silent
       // no-op. The lookup RPCs are service-role only, so this runs server-side.
       const { data: dupe } = await supabase.functions.invoke("merchant-otp-send", {
-        body: { action: "check", phone: mobile, email: normalizedEmail },
+        body: { action: "check", phone: mobile || undefined, email: normalizedEmail },
       });
 
       if (dupe?.email_taken) {
@@ -226,7 +266,7 @@ export default function Signup() {
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
-          data: { full_name: normalizedFullName || null, phone: mobile, user_type: "merchant" },
+          data: { full_name: normalizedFullName || null, phone: mobile || null, user_type: "merchant" },
         },
       });
 
@@ -234,7 +274,7 @@ export default function Signup() {
         if (isFetchFailure(error.message)) {
           await signUpWithProxy(normalizedEmail, password, normalizedFullName);
           attachReferralAfterSignup().catch(() => {});
-          await sendWhatsAppOtp(mobile, normalizedEmail);
+          await startVerification(mobile, normalizedEmail);
           return;
         }
 
@@ -263,7 +303,7 @@ export default function Signup() {
         return;
       }
 
-      await sendWhatsAppOtp(mobile, normalizedEmail);
+      await startVerification(mobile, normalizedEmail);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to create account";
 
@@ -271,7 +311,7 @@ export default function Signup() {
         try {
           await signUpWithProxy(normalizedEmail, password, normalizedFullName);
           attachReferralAfterSignup().catch(() => {});
-          await sendWhatsAppOtp(mobile, normalizedEmail);
+          await startVerification(mobile, normalizedEmail);
           return;
         } catch (proxyErr) {
           const proxyMessage =
@@ -351,7 +391,7 @@ export default function Signup() {
       return;
     }
 
-    toast.success("Verification email sent again.");
+    toast.success("A new code has been emailed.");
   };
 
   return (
@@ -420,30 +460,56 @@ export default function Signup() {
             >
               Wrong number? Go back
             </button>
+            <button
+              type="button"
+              className="w-full text-xs font-semibold text-muted-foreground underline underline-offset-4"
+              onClick={() => showVerificationStep(email.trim().toLowerCase())}
+            >
+              No WhatsApp? Verify by email instead
+            </button>
           </form>
         ) : verificationEmail ? (
-          <div className="space-y-5" role="status" aria-live="polite">
+          <form onSubmit={handleVerifyEmailCode} className="space-y-5">
             <div>
-              <p className="text-lg font-black text-foreground">Verify your email</p>
+              <p className="text-lg font-black text-foreground">Enter email code</p>
               <p className="mt-2 text-sm font-medium leading-relaxed text-muted-foreground">
-                We sent a verification link to <strong className="text-foreground">{verificationEmail}</strong>.
-                Open it to activate your account, then you’ll continue to your dashboard.
+                We sent a 6-digit code to <strong className="text-foreground">{verificationEmail}</strong>.
+                Check your inbox (and spam folder). You can also tap the link in that email.
               </p>
             </div>
+            <BauhausField
+              id="email-otp"
+              label="6-digit code"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              placeholder="••••••"
+              maxLength={6}
+              value={emailCode}
+              onChange={(e) => setEmailCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              className="text-center text-2xl tracking-[0.5em]"
+              autoFocus
+            />
+            <BauhausButton
+              type="submit"
+              variant="red"
+              className="w-full"
+              loading={emailVerifying}
+              disabled={emailVerifying || emailCode.length !== 6}
+            >
+              Verify &amp; continue
+            </BauhausButton>
             <BauhausButton
               type="button"
-              variant="red"
+              variant="outline"
               className="w-full"
               loading={resending}
               disabled={resending}
               onClick={handleResendVerification}
             >
-              Resend verification email
+              Resend code by email
             </BauhausButton>
-            <BauhausButton type="button" variant="outline" className="w-full" onClick={() => navigate("/login")}>
-              Go to sign in
-            </BauhausButton>
-          </div>
+          </form>
         ) : (
           <form onSubmit={handleSignup} className="space-y-5">
             <BauhausField
@@ -474,8 +540,18 @@ export default function Signup() {
               value={phone}
               onChange={(e) => setPhone(e.target.value.replace(/[^\d+]/g, "").slice(0, 13))}
               autoComplete="tel"
-              hint="We'll send a verification code here — no email link needed."
+              hint={noWhatsApp ? "Optional — we'll verify you by email instead." : "We'll send a verification code here on WhatsApp."}
+              disabled={noWhatsApp}
             />
+            <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={noWhatsApp}
+                onChange={(e) => setNoWhatsApp(e.target.checked)}
+                className="h-4 w-4 accent-primary"
+              />
+              I don't have WhatsApp — send the code to my email
+            </label>
             <BauhausField
               id="password"
               label="Password"
