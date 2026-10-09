@@ -854,7 +854,7 @@ export default function ProductDetail() {
         {/* Product Info */}
         <div className="flex flex-col gap-0 px-4 sm:px-0 min-w-0">
           {store.slug === "imitationworld" && (
-            <Suspense fallback={<div className="mb-3 h-[92px] sm:h-[108px]" />}>
+            <Suspense fallback={<div className="mb-2 h-[86px] sm:mb-3 sm:h-[108px]" />}>
               <ImitationWorldSimilarDesigns storeId={store.id} storeSlug={store.slug} current={product} />
             </Suspense>
           )}
@@ -1387,7 +1387,7 @@ export default function ProductDetail() {
                   </div>
                   <div className="flex flex-1 sm:flex-none gap-2">
                     <button
-                      className={`btn-press flex h-10 sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-1.5 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-[transform,opacity,colors,box-shadow] ${
+                      className={`btn-press flex ${store.slug === "imitationworld" ? "h-9" : "h-10"} sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-1.5 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-[transform,opacity,colors,box-shadow] ${
                         justAdded ? "bg-emerald-600 text-white" : "btn-gold"
                       }`}
                       style={{ fontFamily: "var(--storefront-body-font, inherit)" }}
@@ -1406,7 +1406,7 @@ export default function ProductDetail() {
                       )}
                     </button>
                     <button
-                      className="btn-press flex h-10 sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-2 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-[transform,opacity,colors,box-shadow]"
+                      className={`btn-press flex ${store.slug === "imitationworld" ? "h-9" : "h-10"} sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-2 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-[transform,opacity,colors,box-shadow]`}
                       style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", fontFamily: "var(--storefront-body-font, inherit)" }}
                       onPointerDown={prefetchCheckout}
                       onClick={handleBuyNow}
