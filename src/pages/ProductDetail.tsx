@@ -826,7 +826,7 @@ export default function ProductDetail() {
 
 
 
-      <div className="grid gap-2 sm:gap-6 lg:grid-cols-2 lg:gap-10">
+      <div className={`grid ${store.slug === "imitationworld" ? "gap-1" : "gap-2"} sm:gap-6 lg:grid-cols-2 lg:gap-10`}>
         {/* Image Gallery */}
         <ImageGallery
           key={`${product.id}:${allImages.join("|")}:${resolvedProductVideo?.url || ""}`}
@@ -1353,7 +1353,7 @@ export default function ProductDetail() {
                 fontFamily: "var(--storefront-body-font, inherit)",
               }}
             >
-              <div className="mx-auto max-w-6xl p-3">
+              <div className={`mx-auto max-w-6xl ${store.slug === "imitationworld" ? "px-3 py-1.5 sm:p-3" : "p-3"}`}>
                 <div className="flex items-center gap-3">
                   {/* Product info — desktop only */}
                   <div className="hidden sm:flex items-center gap-3 flex-1 min-w-0">
@@ -1867,7 +1867,7 @@ function ImageGallery({
   // was sized for it and looked correct). Only image-only PDPs use the adaptive
   // first-photo ratio that removes the empty letterbox bands.
   const mobileBoxHeight = compactGallery
-    ? "min(133vw, calc(100svh - 260px))"
+    ? "min(133vw, calc(100svh - 210px))"
     : hasVideoSlide
     ? "168vw"
     : `min(${((imgRatio ?? 1.32) * 100).toFixed(1)}vw, 82svh)`;
@@ -1964,7 +1964,7 @@ function ImageGallery({
                       sizes={gallerySrcSet ? "(max-width: 640px) 100vw, 50vw" : undefined}
                       alt={slide.url === imitationWorldCareGuideUrl ? "Imitation World warranty and jewellery care guide" : productName}
 
-                      className={`absolute inset-0 z-[1] h-full w-full object-contain transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+                      className={`absolute inset-0 z-[1] h-full w-full ${compactGallery && slide.url !== imitationWorldCareGuideUrl ? "object-cover object-center sm:object-contain" : "object-contain"} transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`}
 
 
                       decoding="async"
