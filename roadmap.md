@@ -6,10 +6,11 @@
 - [x] Classify all Imitation World New2 products into Chain with Pendant or Pendant from their imported product details.
 
 ## Active work
-- [ ] Connect Telegram fresh after the Oct 9 17:59 UTC workspace move, verify @Shopbanaobot with getMe, and redeploy telegram-order-notify; no historical messages resent.
+- [x] Connect Telegram fresh after the Oct 9 17:59 UTC workspace move, verify @Shopbanaobot with getMe, and redeploy telegram-order-notify; no historical messages resent.
+- [x] Make the Imitation World mobile product photo fill the screen edge to edge with nothing cut off: the photo box is exactly screen width, its height follows each photo's own shape (capped so Similar designs stays on the first screen), the photo is always shown whole, and badges sit inside the new edges. Preview passes at 390x844 and 390x640 (photo whole, Similar designs and buttons visible, zero page errors) and another store's page measured unchanged. Publication required.
 - [x] Connect Telegram fresh after the Oct 9 17:28 UTC workspace move, verify @Shopbanaobot with getMe, and redeploy telegram-order-notify; no historical messages resent.
 - [x] Connect Telegram fresh after the Oct 8 06:34 UTC workspace move, verify the bot, and redeploy order alerts without historical replay.
-- [ ] Add the uploaded care guide as slide three on every Imitation World PDP, duplicate single photos into the first two slides, preserve quality and opening-photo deferral, and verify navigation.
+- [ ] Care guide is slide three on every Imitation World PDP with single photos duplicated into the first two slides, applied to all four gallery variants with videos preserved; swipe order verified in preview, but the guide photo cannot decode on the preview server (dev limitation) so its appearance must be confirmed on the published site.
 - [ ] Connect Telegram fresh after the Oct 8 06:19 UTC workspace move, verify the bot, and redeploy order alerts without historical replay.
 - [x] Connect Telegram fresh after the Oct 8 05:35 UTC workspace move, verify the bot, and redeploy order alerts; no historical messages resent.
 - [x] Investigate Oct 8 blank main-photo screenshot: removed tap-transition pre-marking that hid the placeholder before the main photo downloaded; live initial/reload and three touch swipes pass; screenshot-specific cause not proven. Shared standard/V22 gallery now retries a failed exact URL once and offers Retry photo instead of silent blanking. Simulated failure/manual recovery visibly passes, cached reload passes, 12 tests pass and build OK; publication required. No orders created.
