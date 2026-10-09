@@ -129,8 +129,8 @@ export default function ImitationWorldSimilarDesigns({ storeId, storeSlug, curre
     warmDesign(design);
   };
   return (
-    <section aria-label="Similar designs" className="mb-3 h-[92px] min-w-0 sm:h-[108px]">
-      <h2 className="mb-1.5 text-sm font-semibold text-foreground sm:mb-2">Similar designs{data ? ` (${items.length})` : ""}</h2>
+    <section aria-label="Similar designs" className="mb-2 h-[86px] min-w-0 sm:mb-3 sm:h-[108px]">
+      <h2 className="mb-1 text-sm font-semibold text-foreground sm:mb-2">Similar designs{data ? ` (${items.length})` : ""}</h2>
       <div ref={setRail} className="relative flex gap-1.5 overflow-x-auto overscroll-x-contain py-0.5 pr-1 sm:gap-2 sm:py-1 [scrollbar-width:thin]">
         {!data ? Array.from({ length: 7 }, (_, i) => <span key={i} className="h-[58px] w-[58px] shrink-0 rounded bg-muted sm:h-[72px] sm:w-[72px] sm:rounded-md" />) : items.map((design) => {
           const selected = design.id === current.id;
