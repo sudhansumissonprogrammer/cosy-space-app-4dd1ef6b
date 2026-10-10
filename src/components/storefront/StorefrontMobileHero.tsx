@@ -137,11 +137,11 @@ function MobileHeroCarousel({ images, storeName }: { images: string[]; storeName
 
   useEffect(() => {
     // A passive ad visit must not accumulate every banner download. Rotation
-    // starts after interaction, and pauses when the hero leaves the viewport.
-    if (!interacted || !active || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // loads each banner only when it rotates in, and pauses when the hero leaves the viewport.
+    if (len <= 1 || !active || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     intervalRef.current = setInterval(next, 4000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [next, interacted, active]);
+  }, [next, interacted, active, len]);
 
   const resetTimer = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
