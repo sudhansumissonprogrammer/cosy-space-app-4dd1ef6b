@@ -136,7 +136,7 @@ function CarouselInner({
 
   // Auto-play
   useEffect(() => {
-    if (!interacted || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (len <= 1 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     intervalRef.current = setInterval(() => {
       const rect = hostRef.current?.getBoundingClientRect();
       if (!document.hidden && rect && rect.bottom > 0 && rect.top < window.innerHeight) next();
@@ -144,7 +144,7 @@ function CarouselInner({
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [next, interval, interacted]);
+  }, [next, interval, interacted, len]);
 
   const resetTimer = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);

@@ -32,7 +32,7 @@ export default function MobileHeroCarousel({ images, storeName, linkTo, interval
 
   // Auto-advance
   useEffect(() => {
-    if (images.length <= 1 || !hasInteracted || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (images.length <= 1 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const id = setInterval(() => {
       if (userInteractingRef.current || document.hidden || (trackRef.current?.getBoundingClientRect().bottom ?? 0) <= 0) return;
       setIndex((i) => (i + 1) % images.length);
