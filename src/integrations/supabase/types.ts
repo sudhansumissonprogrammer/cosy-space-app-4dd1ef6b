@@ -6148,6 +6148,10 @@ export type Database = {
         }
         Returns: Json
       }
+      get_reel_analytics: {
+        Args: { _range_end: string; _range_start: string; _store_id: string }
+        Returns: Json
+      }
       get_shipment_tracking: { Args: { _order_id: string }; Returns: Json }
       get_store_apps_state: {
         Args: { _store_slug: string }
