@@ -6,6 +6,7 @@
 - [x] Classify all Imitation World New2 products into Chain with Pendant or Pendant from their imported product details.
 
 ## Active work
+- [x] Connect Telegram fresh after the Oct 11 22:36 UTC workspace move, verify @Shopbanaobot with getMe, and redeploy telegram-order-notify; no historical messages resent.
 - [x] Connect Telegram fresh after the Oct 10 16:28 UTC workspace move, verify @Shopbanaobot with getMe, and redeploy telegram-order-notify; no historical messages resent.
 - [x] Connect Telegram fresh after the Oct 9 17:59 UTC workspace move, verify @Shopbanaobot with getMe, and redeploy telegram-order-notify; no historical messages resent.
 - [x] Make the Imitation World mobile product photo fill the screen edge to edge with nothing cut off: the photo box is exactly screen width, its height follows each photo's own shape (capped so Similar designs stays on the first screen), the photo is always shown whole, and badges sit inside the new edges. Preview passes at 390x844 and 390x640 (photo whole, Similar designs and buttons visible, zero page errors) and another store's page measured unchanged. Publication required.
