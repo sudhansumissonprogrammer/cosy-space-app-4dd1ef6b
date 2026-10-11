@@ -286,6 +286,15 @@ const COLOR_COMBINATIONS = [
     marquee: "linear-gradient(90deg, #A71D31, #e8616b, #A71D31)",
   },
   {
+    id: "royal-maroon",
+    name: "Royal Maroon",
+    primary: "#28070E",
+    accent: "#C8A96A",
+    text: "#1a1a1a",
+    background: "#FAF5F1",
+    marquee: "linear-gradient(90deg, #28070E, #C8A96A, #28070E)",
+  },
+  {
     id: "lilac-mist",
     name: "Lilac Mist",
     primary: "#663399",
