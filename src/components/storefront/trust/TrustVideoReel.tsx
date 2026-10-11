@@ -15,16 +15,65 @@ import { ArrowRight, ChevronUp, Volume2, VolumeX, X } from "lucide-react";
 import { waPhoneNumber, type TrustSlide } from "@/lib/trustVideos";
 import { formatPrice } from "@/lib/productUtils";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
+import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 
 interface Props {
   slides: TrustSlide[];
   onClose: () => void;
+  storeId?: string;
   storeName: string;
   whatsappNumber?: string | null;
 }
 
 
-export default function TrustVideoReel({ slides, onClose, storeName, whatsappNumber }: Props) {
+type WatchStat = { seconds: number; duration: number; maxPos: number; completed: boolean; last: number };
+
+export default function TrustVideoReel({ slides, onClose, storeId, storeName, whatsappNumber }: Props) {
+  // Watch-time tracking: real played seconds per reel, sent once per reel
+  // when the viewer closes or leaves the page (keepalive, never blocks UX).
+  const watchRef = useRef<Record<number, WatchStat>>({});
+  const openIdRef = useRef(Math.random().toString(36).slice(2, 10));
+  const flushedRef = useRef(false);
+  useEffect(() => {
+    const flush = () => {
+      if (flushedRef.current || !storeId) return;
+      flushedRef.current = true;
+      Object.entries(watchRef.current).forEach(([idx, w]) => {
+        if (w.seconds < 0.5) return;
+        const s = slides[Number(idx)];
+        fireStorefrontEvent({
+          storeId,
+          eventName: "reel_watch",
+          metadata: {
+            step: `${openIdRef.current}:${idx}`,
+            reel_id: s?.id,
+            reel_title: (s?.title || s?.product?.name || "").slice(0, 80) || null,
+            reel_index: Number(idx) + 1,
+            seconds: Math.round(w.seconds * 10) / 10,
+            duration: Math.round(w.duration * 10) / 10,
+            completed: w.completed,
+          },
+        });
+      });
+    };
+    window.addEventListener("pagehide", flush);
+    return () => { window.removeEventListener("pagehide", flush); flush(); };
+  }, [storeId, slides]);
+
+  const noteTime = (i: number, v: HTMLVideoElement) => {
+    const w = (watchRef.current[i] ||= { seconds: 0, duration: 0, maxPos: 0, completed: false, last: v.currentTime });
+    const t = v.currentTime;
+    const d = Number.isFinite(v.duration) ? v.duration : 0;
+    if (d) w.duration = d;
+    const delta = t - w.last;
+    if (!v.paused && delta > 0 && delta < 1.5) w.seconds += delta;
+    // Looped back to the start after reaching the end → full view.
+    if (d && delta < -d * 0.5 && w.last >= d * 0.85) w.completed = true;
+    w.maxPos = Math.max(w.maxPos, t);
+    if (d && w.maxPos >= d * 0.9) w.completed = true;
+    w.last = t;
+  };
+
   const navigate = useNavigate();
   const scrollerRef = useRef<HTMLDivElement>(null);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
@@ -172,6 +221,7 @@ export default function TrustVideoReel({ slides, onClose, storeName, whatsappNum
               // Only the visible clip buffers (the observer flips this to
               // "auto"). Everything else stays at zero bytes.
               preload={i === 0 ? "auto" : "none"}
+              onTimeUpdate={(e) => noteTime(i, e.currentTarget)}
               onWaiting={() => { if (i === active) setBuffering(true); }}
               onPlaying={() => { if (i === active) setBuffering(false); }}
               onCanPlay={() => { if (i === active) setBuffering(false); }}

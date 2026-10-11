@@ -39,7 +39,11 @@ export type StorefrontEventName =
   | "cart_qty_change"
   | "wishlist_add"
   | "whatsapp_click"
-  | "call_owner_click";
+  | "call_owner_click"
+  // Reel video bubble engagement
+  | "reel_bubble_view"
+  | "reel_open"
+  | "reel_watch";
 
 interface FireEventArgs {
   storeId: string;
@@ -135,7 +139,8 @@ export function fireStorefrontEvent(args: FireEventArgs): void {
     // measure (some themes hard-navigate on checkout entry).
     const NAV_SAFE = args.eventName === "pay_click"
       || args.eventName === "purchase"
-      || args.eventName === "begin_checkout";
+      || args.eventName === "begin_checkout"
+      || args.eventName === "reel_watch";
 
     if (NAV_SAFE && typeof fetch !== "undefined") {
       try {

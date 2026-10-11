@@ -20,6 +20,7 @@ import {
   type TrustSlide,
 } from "@/lib/trustVideos";
 
+import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 const TrustVideoReel = lazy(() => import("./TrustVideoReel"));
 
 interface Props {
@@ -142,7 +143,13 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
 
 
 
+  const bubbleShown = available && !dismissed && !!preview && revealed;
+  useEffect(() => {
+    if (bubbleShown) fireStorefrontEvent({ storeId, eventName: "reel_bubble_view" });
+  }, [bubbleShown, storeId]);
+
   const handleOpen = async () => {
+    fireStorefrontEvent({ storeId, eventName: "reel_open" });
     // Open IMMEDIATELY — the shopper gets a full-screen response on the very
     // first tap. Slides load behind the overlay (previously a slow/failed
     // fetch made the tap look completely dead).
@@ -252,6 +259,7 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
           <TrustVideoReel
             slides={slides}
             onClose={() => setOpen(false)}
+            storeId={storeId}
             storeName={storeName}
             whatsappNumber={whatsappNumber}
           />

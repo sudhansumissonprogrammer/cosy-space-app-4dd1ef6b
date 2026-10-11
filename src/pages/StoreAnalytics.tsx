@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import AnalyticsAdvancedSections from "@/components/dashboard/AnalyticsAdvancedSections";
+import ReelVideoAnalytics from "@/components/dashboard/ReelVideoAnalytics";
 import { useDashboardStore } from "@/contexts/DashboardStoreContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -714,6 +715,8 @@ export default function StoreAnalytics() {
           )}
         </CardContent>
       </Card>
+
+      <ReelVideoAnalytics storeId={storeId} rangeStart={rangeStart} rangeEnd={rangeEnd} visitors={totalVisitors} />
 
       {/* Advanced sections — live, funnel, sources, geo, device, cohort */}
       {store?.id && (
