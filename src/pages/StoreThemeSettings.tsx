@@ -304,6 +304,16 @@ const COLOR_COMBINATIONS = [
     marquee: "linear-gradient(90deg, #28070E, #8A2138, #28070E)",
   },
   {
+    id: "maroon-blush",
+    name: "Maroon Blush",
+    primary: "#5C1024",
+    accent: "#C08A6E",
+    text: "#2A1218",
+    background: "#FBF0EA",
+    marquee: "linear-gradient(90deg, #5C1024, #C08A6E, #5C1024)",
+  },
+
+  {
     id: "lilac-mist",
     name: "Lilac Mist",
     primary: "#663399",
