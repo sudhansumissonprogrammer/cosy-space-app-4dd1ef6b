@@ -44,7 +44,6 @@ export default function TrustVideoReel({ slides, onClose, storeId, storeName, wh
         fireStorefrontEvent({
           storeId,
           eventName: "reel_watch",
-          productId: s?.product?.id || undefined,
           metadata: {
             step: `${openIdRef.current}:${idx}`,
             reel_id: s?.id,
