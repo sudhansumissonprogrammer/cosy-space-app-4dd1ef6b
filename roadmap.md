@@ -6,6 +6,8 @@
 - [x] Classify all Imitation World New2 products into Chain with Pendant or Pendant from their imported product details.
 
 ## Active work
+- [ ] Set only Imitation World's marquee strip to solid #28070E, preserving its visibility setting.
+- [ ] Connect Telegram fresh after the Oct 11 23:19 UTC workspace move, verify the bot, and redeploy order alerts without historical replay.
 - [x] Connect Telegram fresh after the Oct 11 22:36 UTC workspace move, verify @Shopbanaobot with getMe, and redeploy telegram-order-notify; no historical messages resent.
 - [x] Connect Telegram fresh after the Oct 10 16:28 UTC workspace move, verify @Shopbanaobot with getMe, and redeploy telegram-order-notify; no historical messages resent.
 - [x] Connect Telegram fresh after the Oct 9 17:59 UTC workspace move, verify @Shopbanaobot with getMe, and redeploy telegram-order-notify; no historical messages resent.
