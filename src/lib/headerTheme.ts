@@ -28,6 +28,7 @@ export const HEADER_PRESETS: HeaderPreset[] = [
   { id: "forest", label: "Deep Forest", bg: "#123227" },
   { id: "emerald", label: "Emerald", bg: "#04473C" },
   { id: "wine", label: "Wine Maroon", bg: "#4A0E1E" },
+  { id: "royal-maroon", label: "Royal Maroon", bg: "#28070E" },
   { id: "crimson", label: "Crimson", bg: "#7A0F1F" },
   { id: "plum", label: "Plum", bg: "#3A1B3D" },
   { id: "teal", label: "Deep Teal", bg: "#0C3B45" },
