@@ -30,7 +30,7 @@ const Footer = () => {
               <img src={logo} alt="ShopBanao" className="h-14 w-auto" />
               <span className="text-2xl text-primary-foreground" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700 }}>ShopBanao</span>
             </div>
-            <p className="font-medium text-sm text-primary-foreground/60 leading-relaxed max-w-sm">Build your online store with ₹0 subscription and a flat 2% per order. Your store, your domain, your rules.</p>
+            <p className="font-medium text-sm text-primary-foreground/60 leading-relaxed max-w-sm">Build your online store with ₹0 subscription and a flat 3% per order. Your store, your domain, your rules.</p>
           </div>
           <div>
             <h4 className="font-bold uppercase tracking-widest text-xs text-primary-foreground/50 mb-4">Product</h4>

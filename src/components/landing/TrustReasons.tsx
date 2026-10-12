@@ -3,7 +3,7 @@ import { Clock, Brain, IndianRupee, Smartphone, Headphones, ShieldCheck } from "
 const reasons = [
   { icon: Clock, title: "Setup in Under 10 Minutes", desc: "Sign up, add products, go live. That's it.", color: "bg-bauhaus-blue" },
   { icon: Brain, title: "No Technical Skills Needed", desc: "If you use WhatsApp, you can use ShopBanao.", color: "bg-bauhaus-red" },
-  { icon: IndianRupee, title: "Flat 2%", desc: "One clear platform fee on every order.", color: "bg-bauhaus-yellow" },
+  { icon: IndianRupee, title: "Flat 3%", desc: "One clear platform fee on every order.", color: "bg-bauhaus-yellow" },
   { icon: Smartphone, title: "Works on Mobile", desc: "Your customers order from any phone — no app needed.", color: "bg-bauhaus-blue" },
   { icon: Headphones, title: "Dedicated Support Team", desc: "We help you set up, customize, and grow your store.", color: "bg-bauhaus-red" },
   { icon: ShieldCheck, title: "Secure Payments", desc: "UPI, cards, wallets, COD — all PCI-compliant & safe.", color: "bg-bauhaus-yellow" },

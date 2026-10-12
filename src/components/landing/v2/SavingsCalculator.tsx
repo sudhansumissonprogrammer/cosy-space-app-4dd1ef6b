@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { TrendingUp } from "lucide-react";
+import { calculatePublicPlatformCommission } from "@/lib/publicPlatformCommission";
 
 const fmt = (n: number) =>
   "₹" + Math.max(0, Math.round(n)).toLocaleString("en-IN");
@@ -12,7 +13,7 @@ const SavingsCalculator = () => {
 
   const result = useMemo(() => {
     const gmv = orders * aov;
-    const sbFee = gmv * 0.02; // flat 2% on every order, incl. RTO
+    const sbFee = calculatePublicPlatformCommission(gmv); // flat 3% on every order, incl. RTO
     const sbTotal = sbFee; // ₹0 subscription
     const oldTotal = toolSpend + orders * aov * (rto / 100) * 0.15; // RTO logistics burn estimate
     const monthlySavings = oldTotal - sbTotal;

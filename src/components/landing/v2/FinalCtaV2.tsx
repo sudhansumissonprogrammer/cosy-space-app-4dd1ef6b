@@ -10,7 +10,7 @@ const FinalCtaV2 = () => (
         Stop paying for software.<br /><span className="text-bauhaus-red">Pay for results.</span>
       </h2>
       <p className="font-medium text-base sm:text-lg text-foreground/80 mb-3 max-w-xl mx-auto">
-        ₹0 to start. A flat 2% on every sale. Cancel any time.
+        ₹0 to start. A flat 3% on every sale. Cancel any time.
       </p>
       <p className="text-sm font-semibold text-foreground/60 mb-8">No card required · Live in a day · Migrate from Shopify free</p>
       <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-3 sm:gap-4">
