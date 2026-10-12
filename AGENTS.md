@@ -1,7 +1,7 @@
 # Project architecture decisions
 
-- Use a service-role-only database aggregate for the WhatsApp recipient tier check, because transferring up to 20,000 message rows per send burdens the shared sender.
-- Storefront saved-address writes use `replace_customer_address`, because a shopper has at most one current address and plain inserts violate its unique index.
+- WhatsApp recipient tier checks use a service-role aggregate to avoid transferring 20,000 rows per send.
+- Saved addresses use `replace_customer_address` to respect the one-address unique index.
 - Meesho imports use a local Manifest V3 collector plus an authenticated one-product-at-a-time import function, because Meesho blocks cloud scraping and ShopBanao secrets must never enter the extension.
 - New dashboard product-photo uploads create 160w thumbnail, 800w card, 1200w PDP, and 2000w zoom variants from one original decode; the 1200w URL is canonical. Only families explicitly marked thumb160 derive tiny siblings. Resolve card siblings by the upload-path timestamp (before 2026-09-30 05:59:09 UTC: 400w; after: 800w), and fall back to canonical on unrecognized paths; single-file legacy 800w URLs never derive siblings, because every derived URL must point to a real object.
 - Reserve every PayU attempt with a service-role-only row-locked database function and treat unknown attempts as unsettled, because concurrent retries must not lose a paid reference or cancel an unresolved payment.
@@ -23,3 +23,5 @@
 - Bootstrap photo hints are route-scoped: one PDP main photo, two known category card variants, no arbitrary homepage or saved catalog photo hints; category collages activate at visibility, because early hints must match actual displayed sources.
 - Existing small-display photo copies resolve through an explicit uploaded asset manifest at widths up to 320px; unknown photos and all card/PDP/zoom sources retain their existing URLs, because legacy originals must remain untouched and missing siblings must never be invented.
 - Keep homepage route components and inactive theme layouts out of the shared storefront manual chunk; retain the dominant layout's critical path, because category/PDP ad entries should not parse homepage-only code.
+
+- Public savings estimates use a dedicated calculation, separate from stored merchant billing, so marketing changes never alter charges.

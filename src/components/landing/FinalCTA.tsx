@@ -10,9 +10,9 @@ const FinalCTA = () => {
           Create Your Online<br />Store in 10 Minutes
         </h2>
         <p className="font-medium text-lg text-foreground/80 mb-4 max-w-lg mx-auto">
-          Start Free — No Setup Cost. Join sellers across India with ₹0 subscription and a flat 2% per order.
+          Start Free — No Setup Cost. Join sellers across India with ₹0 subscription and a flat 3% per order.
         </p>
-        <p className="text-sm font-semibold text-foreground/60 mb-8">₹0 subscription • Flat 2% per order • No card required</p>
+        <p className="text-sm font-semibold text-foreground/60 mb-8">₹0 subscription • Flat 3% per order • No card required</p>
         <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-3 sm:gap-4">
           <a href="/signup" className="inline-flex items-center justify-center gap-2 bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider text-sm px-6 sm:px-8 py-3 sm:py-4 border-2 border-foreground shadow-bauhaus sm:shadow-bauhaus-md hover:bg-bauhaus-red/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-[transform,opacity,colors,box-shadow] duration-200">
             Start Free Trial <ArrowRight className="h-5 w-5" />
