@@ -6,7 +6,7 @@
 - [x] Classify all Imitation World New2 products into Chain with Pendant or Pendant from their imported product details.
 
 ## Active work
-- [ ] Update public landing commission and calculators to 3%; align terms and refund policy with non-refundable, commission-only wallet top-ups. Leave existing store billing settings unchanged.
+- [x] Update public landing commission and calculators to 3%; align terms and refund policy with non-refundable, commission-only wallet top-ups. Existing store billing unchanged; calculation test passes and build OK. Publication required. shoprunner.in could not be reached; changes apply to this ShopBanao project.
 - [x] Set only Imitation World's marquee strip to solid #28070E, preserving its visibility setting.
 - [x] Connect Telegram fresh after the Oct 11 23:19 UTC workspace move, verify the bot, and redeploy order alerts without historical replay.
 - [x] Connect Telegram fresh after the Oct 11 22:36 UTC workspace move, verify @Shopbanaobot with getMe, and redeploy telegram-order-notify; no historical messages resent.
