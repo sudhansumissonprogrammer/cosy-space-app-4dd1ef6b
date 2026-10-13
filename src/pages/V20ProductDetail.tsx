@@ -49,6 +49,7 @@ export default function V20ProductDetail() {
 
   const [galleryIdx, setGalleryIdx] = useState(0);
   const [visitedSlides, setVisitedSlides] = useState<Set<number>>(() => new Set([0]));
+  const [mainPhotoReady, setMainPhotoReady] = useState(false);
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [highlightsOpen, setHighlightsOpen] = useState(true);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -58,6 +59,7 @@ export default function V20ProductDetail() {
   useEffect(() => {
     setGalleryIdx(0);
     setVisitedSlides(new Set([0]));
+    setMainPhotoReady(false);
     setSelectedVariantId(null);
     setZoomOpen(false);
     if (galleryRef.current) galleryRef.current.scrollLeft = 0;
@@ -178,6 +180,14 @@ export default function V20ProductDetail() {
     return withImitationWorldCareGuide(slides, store.slug === "imitationworld");
   }, [images, product, store.slug]);
   const lightboxImages = useMemo(() => gallerySlides.filter((s): s is { kind: "image"; url: string } => s.kind === "image").map((s) => s.url), [gallerySlides]);
+  useEffect(() => {
+    if (!mainPhotoReady) return;
+    setVisitedSlides(previous => {
+      const next = galleryIdx + 1;
+      if (next >= gallerySlides.length || previous.has(next)) return previous;
+      return new Set([...previous, next]);
+    });
+  }, [mainPhotoReady, galleryIdx, gallerySlides.length]);
 
   useEffect(() => {
     if (!product) return;
@@ -328,7 +338,7 @@ export default function V20ProductDetail() {
 
               ) : slide?.kind === "image" ? (
                 <img src={visitedSlides.has(i) ? optimizeImageUrl(slide.url, 1200, 85) : undefined} alt={`${product.name} ${i + 1}`} className={`h-full w-full cursor-zoom-in ${slide.url === imitationWorldCareGuideUrl ? "object-contain" : "object-cover"}`}
-                  loading={i === 0 ? "eager" : "lazy"} fetchPriority={i === 0 ? "high" : "auto"} onClick={() => setZoomOpen(true)} />
+                  loading="eager" fetchPriority={i === 0 ? "high" : "low"} onLoad={() => { if (i === 0) setMainPhotoReady(true); }} onClick={() => setZoomOpen(true)} />
               ) : (
                 <Package className="h-16 w-16 text-gray-300" />
               )}
