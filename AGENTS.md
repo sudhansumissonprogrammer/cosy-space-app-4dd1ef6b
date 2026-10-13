@@ -7,7 +7,7 @@
 - Reserve every PayU attempt with a service-role-only row-locked database function and treat unknown attempts as unsettled, because concurrent retries must not lose a paid reference or cancel an unresolved payment.
 - Open Cashfree in the current page only for Serdiya.com while retaining the modal elsewhere, because delayed modal launches are blocked by some WhatsApp/Instagram mobile browsers.
 
-- The WhatsApp store-creation agent (`_shared/wa-store-onboarding.ts`, called from whatsapp-webhook) provisions stores by minting the new owner's own session and running the same steps as CreateStore, because store setup must match the web flow and respect RLS.
+- WhatsApp onboarding provisions through the new owner's session using CreateStore steps, because setup must match the web flow and respect RLS.
 - Serdiya custom-site capacity tests allow only low-rate read-only canaries on production; ramp, spike, and soak profiles must refuse all production hostnames without an override, because ad traffic and payment availability must never be endangered.
 - Website capacity-test configuration lives behind the existing admin role and only produces guarded Python runs; aggressive profiles require staging-marked hosts, because browsers must not become arbitrary traffic generators.
 - Keep `is_best_selling` for storefront merchandising but do not restore the separate per-product award seal, because its badge controls and stored flag were deliberately retired across all stores.
@@ -25,3 +25,4 @@
 - Keep homepage route components and inactive theme layouts out of the shared storefront manual chunk; retain the dominant layout's critical path, because category/PDP ad entries should not parse homepage-only code.
 
 - Public savings estimates use a dedicated calculation, separate from stored merchant billing, so marketing changes never alter charges.
+- Checkout confirmation uses the completed payment method, not the prepaid preview, because COD must show no prepaid discount and the full delivery balance.
