@@ -6,9 +6,9 @@
 - [x] Classify all Imitation World New2 products into Chain with Pendant or Pendant from their imported product details.
 
 ## Active work
-- [ ] Connect Telegram fresh after the Oct 13 14:06 UTC workspace move; verify the bot and redeploy order alerts without historical replay.
-- [ ] Diagnose and fix Imitation World COD prepaid-discount issue; test payment-mode switching without creating customer orders.
-- [ ] Update only Imitation World Chain with Pendant descriptions with confirmed 18K plating/brass and product-specific emoji sections; verify saved and displayed results.
+- [x] Connect Telegram fresh after the Oct 13 14:06 UTC workspace move; @Shopbanaobot verified and order alerts redeployed without historical replay. Only Serdiya Jewellers is enabled; actual paid-order delivery remains untested.
+- [x] Fix COD confirmation erroneously using prepaidTotal although stored COD orders are undiscounted; 3 concrete payment-rule tests pass and simulated phone/address/COD completion shows ₹699 due, no ₹70 discount. No real order/payment sent; frontend publication required.
+- [x] Update only Imitation World's 68 Chain with Pendant descriptions with confirmed 18K plating/brass, product identities, preserved sets and emoji sections. All 68 saved values verified; Om PDP renders the new description. Prices/photos/titles unchanged.
 - [x] Update public landing commission and calculators to 3%; align terms and refund policy with non-refundable, commission-only wallet top-ups. Existing store billing unchanged; calculation test passes and build OK. Publication required. shoprunner.in could not be reached; changes apply to this ShopBanao project.
 - [x] Set only Imitation World's marquee strip to solid #28070E, preserving its visibility setting.
 - [x] Connect Telegram fresh after the Oct 11 23:19 UTC workspace move, verify the bot, and redeploy order alerts without historical replay.
