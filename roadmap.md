@@ -6,6 +6,7 @@
 - [x] Classify all Imitation World New2 products into Chain with Pendant or Pendant from their imported product details.
 
 ## Active work
+- [ ] Connect Telegram fresh after the Oct 13 14:17 UTC workspace move, verify the bot and redeploy alerts without replay.
 - [ ] Fix white PDP slides by preparing adjacent photos after the main photo loads; verify cold-entry priority and swipe readiness.
 - [x] Connect Telegram fresh after the Oct 13 14:06 UTC workspace move; @Shopbanaobot verified and order alerts redeployed without historical replay. Only Serdiya Jewellers is enabled; actual paid-order delivery remains untested.
 - [x] Fix COD confirmation erroneously using prepaidTotal although stored COD orders are undiscounted; 3 concrete payment-rule tests pass and simulated phone/address/COD completion shows ₹699 due, no ₹70 discount. No real order/payment sent; frontend publication required.
