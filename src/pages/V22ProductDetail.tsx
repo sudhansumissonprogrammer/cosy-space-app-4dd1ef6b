@@ -51,6 +51,7 @@ const ImitationWorldSimilarDesigns = lazy(() => import("@/components/storefront/
 import PdpUpsellSection from "@/components/storefront/apps/Upsell/PdpUpsellSection";
 import FestivalSaleBadge from "@/components/storefront/FestivalSaleBadge";
 import GalleryImage from "@/components/storefront/pdp/GalleryImage";
+import { useGalleryPreparation } from "@/hooks/useGalleryPreparation";
 import { withImitationWorldCareGuide } from "@/lib/imitationWorldCareSlides";
 
 
@@ -1469,7 +1470,6 @@ function ImageGallery({
   compactGallery?: boolean;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [activatedSlides, setActivatedSlides] = useState<Set<number>>(() => new Set([0]));
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>({});
   const [videoPlaying, setVideoPlaying] = useState(false);
@@ -1484,6 +1484,7 @@ function ImageGallery({
     return withImitationWorldCareGuide(out, compactGallery);
   }, [images, video?.url, video?.poster, compactGallery]);
   const len = slides.length;
+  const [activatedSlides, setActivatedSlides] = useGalleryPreparation(activeIndex, len, !!imageLoaded[0]);
   const canLoop = len > 1;
 
   const [emblaRef, embla] = useEmblaCarousel({
@@ -1519,7 +1520,7 @@ function ImageGallery({
     if (embla) embla.reInit();
   }, [slidesKey, embla]);
 
-  // Do not fetch neighbour photos until a shopper begins dragging.
+  // Drag intent also prepares neighbours if the first photo is still loading.
   useEffect(() => {
     if (!embla || !len) return;
     const onDrag = () => {
@@ -1620,7 +1621,8 @@ function ImageGallery({
                       alt={productName}
                       className={`h-full w-full object-cover bg-muted/30 transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
                       decoding="async"
-                      fetchPriority={realIdx === 0 ? "high" : "auto"}
+                      loading="eager"
+                      fetchPriority={realIdx === 0 ? "high" : "low"}
                       draggable={false}
                       onReady={() => {
                         setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }));

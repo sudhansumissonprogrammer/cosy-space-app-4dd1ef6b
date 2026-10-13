@@ -56,6 +56,7 @@ import AutoCouponHint from "@/components/storefront/AutoCouponHint";
 import { useWaCouponPreview } from "@/hooks/useWaCouponPreview";
 import FestivalSaleBadge from "@/components/storefront/FestivalSaleBadge";
 import GalleryImage from "@/components/storefront/pdp/GalleryImage";
+import { useGalleryPreparation } from "@/hooks/useGalleryPreparation";
 import { withImitationWorldCareGuide, imitationWorldCareGuideUrl } from "@/lib/imitationWorldCareSlides";
 
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
@@ -1721,7 +1722,6 @@ function ImageGallery({
   compactGallery?: boolean;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [activatedSlides, setActivatedSlides] = useState<Set<number>>(() => new Set([0]));
   const [lightboxOpen, setLightboxOpen] = useState(false);
   // Never pre-mark a photo as loaded from tap-transition data: that hid the
   // placeholder while an uncached main photo was still downloading (blank
@@ -1762,6 +1762,7 @@ function ImageGallery({
   }, [images, video?.url, video?.poster, compactGallery]);
 
   const len = slides.length;
+  const [activatedSlides, setActivatedSlides] = useGalleryPreparation(activeIndex, len, !!imageLoaded[0]);
   // A "duplicated single" is the special case above: exactly two image slides
   // pointing at the same URL, no video. In that case we keep the carousel
   // slideable but hide counter/dots/thumbs so it visually looks like one image.
@@ -1811,7 +1812,7 @@ function ImageGallery({
     if (embla) embla.reInit();
   }, [slidesKey, embla]);
 
-  // Prepare neighbours only after a deliberate drag, never on cold entry.
+  // Drag intent also prepares neighbours if the first photo is still loading.
   useEffect(() => {
     if (!embla || !len) return;
     const onDrag = () => {
@@ -1968,7 +1969,8 @@ function ImageGallery({
 
 
                       decoding="async"
-                      fetchPriority={realIdx === 0 ? "high" : "auto"}
+                      loading="eager"
+                      fetchPriority={realIdx === 0 ? "high" : "low"}
                       draggable={false}
                       onReady={(el) => {
                         if (realIdx === 0) noteRatio(el.naturalWidth, el.naturalHeight);
