@@ -6,6 +6,7 @@
 - [x] Classify all Imitation World New2 products into Chain with Pendant or Pendant from their imported product details.
 
 ## Active work
+- [ ] Connect Telegram fresh after the Oct 13 14:06 UTC workspace move; verify the bot and redeploy order alerts without historical replay.
 - [ ] Diagnose and fix Imitation World COD prepaid-discount issue; test payment-mode switching without creating customer orders.
 - [ ] Update only Imitation World Chain with Pendant descriptions with confirmed 18K plating/brass and product-specific emoji sections; verify saved and displayed results.
 - [x] Update public landing commission and calculators to 3%; align terms and refund policy with non-refundable, commission-only wallet top-ups. Existing store billing unchanged; calculation test passes and build OK. Publication required. shoprunner.in could not be reached; changes apply to this ShopBanao project.
