@@ -6,6 +6,8 @@
 - [x] Classify all Imitation World New2 products into Chain with Pendant or Pendant from their imported product details.
 
 ## Active work
+- [ ] Update only Kalinga Jewels’ public email and owner name, replace 18K claims with Gold Plated, normalize product titles, and audit public policies/pages.
+- [ ] Reconnect Telegram fresh after the Oct 14 workspace move, verify the bot, and redeploy order alerts without replaying messages.
 - [x] Connect Telegram fresh after the Oct 13 14:17 UTC workspace move; @Shopbanaobot verified and telegram-order-notify redeployed without replay. Real order delivery untested.
 - [x] Prepare PDP neighbours after main readiness at low priority, retaining loaded photos; standard/V22 loop neighbours and V19/V20 next slide are bounded. Seven tests pass, build OK; eight-photo Imitation World PDP second photo ready before touch swipe, reverse retains first, no page errors. Publication required; care-guide preview asset remains unavailable.
 - [x] Connect Telegram fresh after the Oct 13 14:06 UTC workspace move; @Shopbanaobot verified and order alerts redeployed without historical replay. Only Serdiya Jewellers is enabled; actual paid-order delivery remains untested.
