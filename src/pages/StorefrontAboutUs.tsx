@@ -6,6 +6,7 @@ import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import { waPhoneNumber } from "@/lib/phoneUtils";
+import { kalingaPublicEmail } from "@/lib/kalingaStore";
 
 /* ── Rich Text Renderer ─────────────────────────────────────────── */
 const HEADING_PATTERNS = /^(about us|our mission|our story|why choose|our promise|contact us|our vision|what we do|who we are)/i;
@@ -53,7 +54,7 @@ function DefaultAboutContent({ store }: { store: StoreData }) {
   // owner_email is now bundled in the storefront shell (get_storefront_shell RPC)
   // — no extra request needed. Falls back to RPC only if shell didn't include it
   // (older cached shells from before the migration).
-  const shellEmail = (store as any).owner_email as string | null | undefined;
+  const shellEmail = kalingaPublicEmail(store) ?? (store as any).owner_email as string | null | undefined;
   const { data: ownerEmail } = useQuery({
     queryKey: ["store-public-email", store.id],
     queryFn: async () => {

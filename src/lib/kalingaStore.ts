@@ -10,3 +10,8 @@ export function isKalingaStore(store?: { id?: string | null; slug?: string | nul
 export function isKalingaSlugOrId(id?: string | null, slug?: string | null): boolean {
   return isKalingaStore({ id, slug });
 }
+
+/** Public contact only; never use this address for account authentication. */
+export function kalingaPublicEmail(store?: { id?: string | null; slug?: string | null } | null): string | undefined {
+  return isKalingaStore(store) ? "bavunisaf@gmail.com" : undefined;
+}
