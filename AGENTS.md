@@ -26,3 +26,5 @@
 
 - Public savings estimates use a dedicated calculation, separate from stored merchant billing, so marketing changes never alter charges.
 - Checkout confirmation uses the completed payment method, not the prepaid preview, because COD must show no prepaid discount and the full delivery balance.
+
+- Resolve Kalinga public contact through its permanent-store helper before cached shell fields; this preserves its verified contact without altering account authentication.
