@@ -6,6 +6,7 @@
 - [x] Classify all Imitation World New2 products into Chain with Pendant or Pendant from their imported product details.
 
 ## Active work
+- [ ] Connect Telegram fresh after the Oct 14 12:21 UTC workspace move; previous connections do not apply.
 - [ ] Update only Kalinga Jewels’ public email and owner name, replace 18K claims with Gold Plated, normalize product titles, and audit public policies/pages.
 - [ ] Reconnect Telegram fresh after the Oct 14 workspace move, verify the bot, and redeploy order alerts without replaying messages.
 - [x] Connect Telegram fresh after the Oct 13 14:17 UTC workspace move; @Shopbanaobot verified and telegram-order-notify redeployed without replay. Real order delivery untested.
