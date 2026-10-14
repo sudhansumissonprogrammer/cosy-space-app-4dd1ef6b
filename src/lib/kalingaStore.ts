@@ -24,11 +24,12 @@ export function kalingaPublicAddress(store?: { id?: string | null; slug?: string
 /** Normalize public presentation only, including embedded text from older edge payloads. */
 export function resolveKalingaPublicStore<T extends { id?: string | null; slug?: string | null }>(store: T): T {
   if (!isKalingaStore(store)) return store;
-  const resolved = { ...store } as T & Record<string, unknown>;
+  const resolved = { ...store };
+  const fields = resolved as Record<string, unknown>;
   for (const key of ["name", "description", "meta_title", "meta_description", "about_us_text", "shipping_policy", "return_policy"]) {
-    const value = resolved[key];
+    const value = fields[key];
     if (typeof value !== "string") continue;
-    resolved[key] = value
+    fields[key] = value
       .replace(/imitation\s*world/gi, "Kalinga Jewels")
       .replace(/imitationworld\.in/gi, "kalingajewels.com")
       .replace(/(?:\+91\s*)?9348625925(?:[ ,]+\+91\s*9692282485)?/g, "+91 9692282485")
