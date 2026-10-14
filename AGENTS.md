@@ -2,14 +2,13 @@
 
 - WhatsApp recipient tier checks use a service-role aggregate to avoid transferring 20,000 rows per send.
 - Saved addresses use `replace_customer_address` to respect the one-address unique index.
-- Meesho imports use a local Manifest V3 collector plus an authenticated one-product-at-a-time import function, because Meesho blocks cloud scraping and ShopBanao secrets must never enter the extension.
+- Meesho imports use a local MV3 collector and authenticated single-product import: Meesho blocks cloud scraping; secrets never enter the extension.
 - New dashboard product-photo uploads create 160w thumbnail, 800w card, 1200w PDP, and 2000w zoom variants from one original decode; the 1200w URL is canonical. Only families explicitly marked thumb160 derive tiny siblings. Resolve card siblings by the upload-path timestamp (before 2026-09-30 05:59:09 UTC: 400w; after: 800w), and fall back to canonical on unrecognized paths; single-file legacy 800w URLs never derive siblings, because every derived URL must point to a real object.
 - Reserve every PayU attempt with a service-role-only row-locked database function and treat unknown attempts as unsettled, because concurrent retries must not lose a paid reference or cancel an unresolved payment.
 - Open Cashfree in the current page only for Serdiya.com while retaining the modal elsewhere, because delayed modal launches are blocked by some WhatsApp/Instagram mobile browsers.
 
 - WhatsApp onboarding provisions through the new owner's session using CreateStore steps, because setup must match the web flow and respect RLS.
-- Serdiya custom-site capacity tests allow only low-rate read-only canaries on production; ramp, spike, and soak profiles must refuse all production hostnames without an override, because ad traffic and payment availability must never be endangered.
-- Website capacity-test configuration lives behind the existing admin role and only produces guarded Python runs; aggressive profiles require staging-marked hosts, because browsers must not become arbitrary traffic generators.
+- Capacity testing is admin-only and generates guarded Python runs, never browser traffic. Production permits only low-rate read-only canaries; ramp/spike/soak refuse production without override and require staging-marked hosts, protecting ads and payments.
 - Keep `is_best_selling` for storefront merchandising but do not restore the separate per-product award seal, because its badge controls and stored flag were deliberately retired across all stores.
 
 - JD Store Spy extension calls the JD platform API from the store page (content script), never the extension background, because the platform resolves the tenant from the request Origin.
