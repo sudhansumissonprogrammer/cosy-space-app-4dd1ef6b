@@ -71,6 +71,8 @@ const PRODUCTION_HOSTS = new Set([
   "www.serdiyajewellers.shop",
   "imitationworld.in",
   "www.imitationworld.in",
+  "kalingajewels.com",
+  "www.kalingajewels.com",
   "cosy-space-app.lovable.app",
 ]);
 

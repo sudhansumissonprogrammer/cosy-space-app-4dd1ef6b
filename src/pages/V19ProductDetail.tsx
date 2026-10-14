@@ -4,6 +4,7 @@
  * title/price/MRP/%off, variant chips, "Why shop from us" trust strip,
  * Highlights accordion, similar products carousel, sticky bottom ADD bar.
  */
+import { isKalingaStore } from "@/lib/kalingaStore";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -195,7 +196,7 @@ export default function V19ProductDetail() {
       });
     }
     for (let i = 1; i < images.length; i++) slides.push({ kind: "image", url: images[i] });
-    return withImitationWorldCareGuide(slides, store.slug === "imitationworld");
+    return withImitationWorldCareGuide(slides, isKalingaStore(store));
   }, [images, product, store.slug]);
   const lightboxImages = useMemo(() => gallerySlides.filter((s): s is { kind: "image"; url: string } => s.kind === "image").map((s) => s.url), [gallerySlides]);
   useEffect(() => {
@@ -381,7 +382,7 @@ export default function V19ProductDetail() {
           className="v19pdp-snap v19pdp-noscrollbar flex overflow-x-auto"
         >
           {(gallerySlides.length ? gallerySlides : [null]).map((slide, i) => (
-            <div key={i} className={`flex-shrink-0 w-full ${store.slug === "imitationworld" ? "h-[min(133vw,calc(100svh-260px))]" : "h-[min(133vw,78svh)]"} sm:aspect-[4/5] sm:h-auto bg-white flex items-center justify-center overflow-hidden`}>
+            <div key={i} className={`flex-shrink-0 w-full ${isKalingaStore(store) ? "h-[min(133vw,calc(100svh-260px))]" : "h-[min(133vw,78svh)]"} sm:aspect-[4/5] sm:h-auto bg-white flex items-center justify-center overflow-hidden`}>
               {slide?.kind === "video" ? (
                 <SnapVideoSlide url={slide.url} poster={visitedSlides.has(i) && slide.poster ? optimizeImageUrl(slide.poster, 1200, 85) : undefined} />
 
@@ -422,7 +423,7 @@ export default function V19ProductDetail() {
       </div>
 
       {/* Thumbnail strip */}
-        {gallerySlides.length > 1 && store.slug !== "imitationworld" && (
+        {gallerySlides.length > 1 && !isKalingaStore(store) && (
         <div className="px-3 py-3 border-t border-gray-100">
           <div className="v19pdp-noscrollbar flex gap-2 overflow-x-auto">
             {gallerySlides.map((slide, i) => {
@@ -458,7 +459,7 @@ export default function V19ProductDetail() {
 
       {/* Title block */}
       <div className="px-4 pt-2 pb-3">
-        {store.slug === "imitationworld" && <Suspense fallback={<div className="mb-3 h-[92px] sm:h-[108px]" />}><ImitationWorldSimilarDesigns storeId={store.id} storeSlug={store.slug} current={product} /></Suspense>}
+        {isKalingaStore(store) && <Suspense fallback={<div className="mb-3 h-[92px] sm:h-[108px]" />}><ImitationWorldSimilarDesigns storeId={store.id} storeSlug={store.slug} current={product} /></Suspense>}
         <h1 className="text-[18px] font-extrabold text-gray-900 leading-snug">{product.name}</h1>
         {reviews.length > 0 && (
           <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md" style={{ background: "var(--storefront-primary, #036B52)" }}>

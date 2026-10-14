@@ -1,3 +1,4 @@
+import { isKalingaStore } from "@/lib/kalingaStore";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { waPhoneNumber } from "@/lib/trustVideos";
 import { addDeliveryDays } from "@/lib/deliveryEstimate";
@@ -827,7 +828,7 @@ export default function ProductDetail() {
 
 
 
-      <div className={`grid ${store.slug === "imitationworld" ? "gap-1" : "gap-2"} sm:gap-6 lg:grid-cols-2 lg:gap-10`}>
+      <div className={`grid ${isKalingaStore(store) ? "gap-1" : "gap-2"} sm:gap-6 lg:grid-cols-2 lg:gap-10`}>
         {/* Image Gallery */}
         <ImageGallery
           key={`${product.id}:${allImages.join("|")}:${resolvedProductVideo?.url || ""}`}
@@ -838,7 +839,7 @@ export default function ProductDetail() {
           discountPct={discountPct}
           showWarrantyBadge={!!(mainThemeConfig as any)?.show_warranty_badge}
           storeId={store.id}
-          compactGallery={store.slug === "imitationworld"}
+          compactGallery={isKalingaStore(store)}
           onShare={async () => {
             const storeHost = (store as any).custom_domain
               ? `https://${(store as any).custom_domain}`
@@ -854,7 +855,7 @@ export default function ProductDetail() {
 
         {/* Product Info */}
         <div className="flex flex-col gap-0 px-4 sm:px-0 min-w-0">
-          {store.slug === "imitationworld" && (
+          {isKalingaStore(store) && (
             <Suspense fallback={<div className="mb-2 h-[86px] sm:mb-3 sm:h-[108px]" />}>
               <ImitationWorldSimilarDesigns storeId={store.id} storeSlug={store.slug} current={product} />
             </Suspense>
@@ -890,7 +891,7 @@ export default function ProductDetail() {
           )}
 
           {/* Product Title — right under image */}
-          <h1 className={`text-xl font-semibold leading-snug sm:text-2xl lg:text-[1.7rem] ${store.slug === "imitationworld" ? "-mx-3 break-words sm:mx-0" : ""}`} style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif", ...(isV18 ? { color: "#ffffff", fontWeight: 400, letterSpacing: "0.01em" } : { color: undefined }) }}>
+          <h1 className={`text-xl font-semibold leading-snug sm:text-2xl lg:text-[1.7rem] ${isKalingaStore(store) ? "-mx-3 break-words sm:mx-0" : ""}`} style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif", ...(isV18 ? { color: "#ffffff", fontWeight: 400, letterSpacing: "0.01em" } : { color: undefined }) }}>
             {product.name}
           </h1>
 
@@ -1354,7 +1355,7 @@ export default function ProductDetail() {
                 fontFamily: "var(--storefront-body-font, inherit)",
               }}
             >
-              <div className={`mx-auto max-w-6xl ${store.slug === "imitationworld" ? "px-3 py-1.5 sm:p-3" : "p-3"}`}>
+              <div className={`mx-auto max-w-6xl ${isKalingaStore(store) ? "px-3 py-1.5 sm:p-3" : "p-3"}`}>
                 <div className="flex items-center gap-3">
                   {/* Product info — desktop only */}
                   <div className="hidden sm:flex items-center gap-3 flex-1 min-w-0">
@@ -1388,7 +1389,7 @@ export default function ProductDetail() {
                   </div>
                   <div className="flex flex-1 sm:flex-none gap-2">
                     <button
-                      className={`btn-press flex ${store.slug === "imitationworld" ? "h-9" : "h-10"} sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-1.5 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-[transform,opacity,colors,box-shadow] ${
+                      className={`btn-press flex ${isKalingaStore(store) ? "h-9" : "h-10"} sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-1.5 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-[transform,opacity,colors,box-shadow] ${
                         justAdded ? "bg-emerald-600 text-white" : "btn-gold"
                       }`}
                       style={{ fontFamily: "var(--storefront-body-font, inherit)" }}
@@ -1407,7 +1408,7 @@ export default function ProductDetail() {
                       )}
                     </button>
                     <button
-                      className={`btn-press flex ${store.slug === "imitationworld" ? "h-9" : "h-10"} sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-2 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-[transform,opacity,colors,box-shadow]`}
+                      className={`btn-press flex ${isKalingaStore(store) ? "h-9" : "h-10"} sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-2 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-[transform,opacity,colors,box-shadow]`}
                       style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", fontFamily: "var(--storefront-body-font, inherit)" }}
                       onPointerDown={prefetchCheckout}
                       onClick={handleBuyNow}
@@ -1963,7 +1964,7 @@ function ImageGallery({
                       src={optimizedUrl}
                       srcSet={gallerySrcSet || undefined}
                       sizes={gallerySrcSet ? "(max-width: 640px) 100vw, 50vw" : undefined}
-                      alt={slide.url === imitationWorldCareGuideUrl ? "Imitation World warranty and jewellery care guide" : productName}
+                      alt={slide.url === imitationWorldCareGuideUrl ? "Kalinga Jewels warranty and jewellery care guide" : productName}
 
                       className={`absolute inset-0 z-[1] h-full w-full object-contain object-center transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`}
 

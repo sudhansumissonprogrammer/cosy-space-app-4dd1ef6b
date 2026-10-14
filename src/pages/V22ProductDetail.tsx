@@ -1,3 +1,4 @@
+import { isKalingaStore } from "@/lib/kalingaStore";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { addDeliveryDays } from "@/lib/deliveryEstimate";
 import useEmblaCarousel from "embla-carousel-react";
@@ -703,7 +704,7 @@ export default function V22ProductDetail() {
           productName={product.name}
           hasDiscount={hasDiscount}
           discountPct={discountPct}
-          compactGallery={store.slug === "imitationworld"}
+          compactGallery={isKalingaStore(store)}
           onShare={async () => {
             const storeHost = (store as any).custom_domain
               ? `https://${(store as any).custom_domain}`
@@ -721,7 +722,7 @@ export default function V22ProductDetail() {
         <div className="flex flex-col gap-0 px-4 sm:px-0">
 
           {/* Product Title — right under image */}
-          {store.slug === "imitationworld" && <Suspense fallback={<div className="mb-3 h-[92px] sm:h-[108px]" />}><ImitationWorldSimilarDesigns storeId={store.id} storeSlug={store.slug} current={product} /></Suspense>}
+          {isKalingaStore(store) && <Suspense fallback={<div className="mb-3 h-[92px] sm:h-[108px]" />}><ImitationWorldSimilarDesigns storeId={store.id} storeSlug={store.slug} current={product} /></Suspense>}
           <h1 className="text-xl font-semibold leading-snug sm:text-2xl lg:text-[1.7rem]" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif", ...(isV18 ? { color: "#ffffff", fontWeight: 400, letterSpacing: "0.01em" } : { color: undefined }) }}>
             {product.name}
           </h1>
