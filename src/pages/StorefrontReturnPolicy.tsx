@@ -3,13 +3,14 @@ import type { StoreData } from "@/layouts/StorefrontLayout";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { storefrontPath } from "@/lib/subdomain";
+import { kalingaPublicAddress } from "@/lib/kalingaStore";
 
 function DefaultPolicy({ store }: { store: StoreData }) {
   const name = store.name;
   const contact = store.whatsapp_number
     ? `WhatsApp us at ${store.whatsapp_number}`
     : "contact us through our Contact page";
-  const address = [store.location, store.city, store.state].filter(Boolean).join(", ");
+  const address = kalingaPublicAddress(store) ?? [store.location, store.city, store.state].filter(Boolean).join(", ");
 
   return (
     <div className="prose prose-sm max-w-none text-muted-foreground">

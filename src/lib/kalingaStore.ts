@@ -15,3 +15,8 @@ export function isKalingaSlugOrId(id?: string | null, slug?: string | null): boo
 export function kalingaPublicEmail(store?: { id?: string | null; slug?: string | null } | null): string | undefined {
   return isKalingaStore(store) ? "bavunisaf@gmail.com" : undefined;
 }
+
+/** Confirmed public address; prevents stale shells and duplicated city/state suffixes. */
+export function kalingaPublicAddress(store?: { id?: string | null; slug?: string | null } | null): string | undefined {
+  return isKalingaStore(store) ? "Patasanipur, Ghiakhala, Khorda, Odisha, 752030, India" : undefined;
+}

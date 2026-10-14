@@ -6,7 +6,7 @@ import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import { waPhoneNumber } from "@/lib/phoneUtils";
-import { kalingaPublicEmail } from "@/lib/kalingaStore";
+import { kalingaPublicEmail, kalingaPublicAddress } from "@/lib/kalingaStore";
 
 /* ── Rich Text Renderer ─────────────────────────────────────────── */
 const HEADING_PATTERNS = /^(about us|our mission|our story|why choose|our promise|contact us|our vision|what we do|who we are)/i;
@@ -46,7 +46,7 @@ function RichTextRenderer({ text }: { text: string }) {
 /* ── Default About Content (fixed template + store variables) ──── */
 function DefaultAboutContent({ store }: { store: StoreData }) {
   const storeName = store.name;
-  const address = [store.location, (store as any).city, (store as any).state].filter(Boolean).join(", ");
+  const address = kalingaPublicAddress(store) ?? [store.location, (store as any).city, (store as any).state].filter(Boolean).join(", ");
   const whatsapp = (store as any).whatsapp_number as string | null;
   const instagram = (store as any).instagram_url as string | null;
   const facebook = (store as any).facebook_url as string | null;

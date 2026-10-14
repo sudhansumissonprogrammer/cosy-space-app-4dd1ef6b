@@ -6,6 +6,7 @@
 - [x] Classify all Imitation World New2 products into Chain with Pendant or Pendant from their imported product details.
 
 ## Active work
+- [ ] Update Kalinga Jewels' confirmed Patasanipur/Ghiakhala/Khorda address everywhere and verify all former Imitation World features remain active.
 - [x] Connect Telegram fresh after the Oct 14 12:21 UTC workspace move; @Shopbanaobot and app credentials verified, alerts redeployed, no messages sent.
 - [x] Update only Kalinga Jewels’ public email/owner and 359 Gold Plated product names; zero remaining 18K title/description claims. Seven public pages and Om PDP checked without page errors; policy address aligned to existing Odisha contact address. Frontend publication/live cache refresh required; legal address and gateway approval not independently verified.
 - [x] Reconnect Telegram fresh after the Oct 14 workspace move, verify the bot, and redeploy order alerts without replaying messages.
