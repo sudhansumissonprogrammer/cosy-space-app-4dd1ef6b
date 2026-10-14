@@ -3,6 +3,7 @@ import type { StoreData } from "@/layouts/StorefrontLayout";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { storefrontPath } from "@/lib/subdomain";
+import { isKalingaStore } from "@/lib/kalingaStore";
 
 export default function StorefrontPrivacyPolicy() {
   const store = useOutletContext<StoreData>();
@@ -100,6 +101,7 @@ export default function StorefrontPrivacyPolicy() {
         </p>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Store:</strong> {name}</li>
+          {isKalingaStore(store) && <li><strong>Owner:</strong> Sudhansu Sahoo</li>}
           {ownerEmail && (
             <li>
               <strong>Email:</strong>{" "}

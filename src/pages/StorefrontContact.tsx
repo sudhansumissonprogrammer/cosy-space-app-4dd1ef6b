@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { waPhoneNumber } from "@/lib/phoneUtils";
+import { isKalingaStore } from "@/lib/kalingaStore";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Award, Leaf, Shield, Star, Sparkles, Heart, Truck, ThumbsUp,
@@ -205,6 +206,7 @@ export default function StorefrontContact() {
 
           {/* Info Sidebar */}
           <div className="space-y-5 lg:col-span-2">
+            {isKalingaStore(store) && <p className="text-sm text-foreground"><strong>Owner:</strong> Sudhansu Sahoo</p>}
             {/* Address Card */}
             {address && (
               <div className="rounded-2xl border border-border bg-card p-5">
