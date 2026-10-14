@@ -9,6 +9,7 @@ import { storefrontPath, isCustomDomainHost } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import { supabase } from "@/integrations/supabase/client";
 import { waPhoneNumber } from "@/lib/phoneUtils";
+import { kalingaPublicAddress, kalingaPublicEmail } from "@/lib/kalingaStore";
 
 interface StorefrontFooterProps {
   store: StoreData;
@@ -70,12 +71,12 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
   const year = new Date().getFullYear();
   const hours = store.business_hours as Record<string, string> | null;
   const hasHours = hours && Object.values(hours).some((v) => v?.trim());
-  const address = [store.location, store.city, store.state].filter(Boolean).join(", ");
+  const address = kalingaPublicAddress(store) ?? [store.location, store.city, store.state].filter(Boolean).join(", ");
   
 
   // owner_email is bundled in the storefront shell; the idle footer-info RPC
   // only fills in for legacy cached shells that predate the inlining.
-  const shellEmail = (store as any).owner_email as string | null | undefined;
+  const shellEmail = kalingaPublicEmail(store) ?? (store as any).owner_email as string | null | undefined;
   const { data: footerInfo } = useFooterInfo(store.id);
   const ownerEmail =
     shellEmail === undefined ? footerInfo?.publicEmail || "" : (shellEmail || "").trim();

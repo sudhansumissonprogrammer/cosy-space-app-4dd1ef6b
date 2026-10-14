@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { waPhoneNumber } from "@/lib/phoneUtils";
-import { isKalingaStore, kalingaPublicEmail } from "@/lib/kalingaStore";
+import { isKalingaStore, kalingaPublicEmail, kalingaPublicAddress } from "@/lib/kalingaStore";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Award, Leaf, Shield, Star, Sparkles, Heart, Truck, ThumbsUp,
@@ -63,7 +63,7 @@ export default function StorefrontContact() {
   const features: Feature[] = (store.features as unknown as Feature[]) || [];
   const businessHours = (store.business_hours as Record<string, string>) || {};
   const hasHours = Object.values(businessHours).some((v) => v?.trim());
-  const address = [store.location, store.city, store.state].filter(Boolean).join(", ");
+  const address = kalingaPublicAddress(store) ?? [store.location, store.city, store.state].filter(Boolean).join(", ");
 
   const submitMutation = useMutation({
     mutationFn: async () => {
