@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo } from "react";
+import { resolveKalingaPublicStore } from "@/lib/kalingaStore";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getSubdomainSlug } from "@/lib/subdomain";
@@ -202,7 +203,8 @@ export function useStorefront(slugOverride?: string) {
     }
   }, [data, queryClient]);
 
-  const store = (data as any)?.store as StoreData | undefined;
+  const rawStore = (data as any)?.store as StoreData | undefined;
+  const store = useMemo(() => rawStore ? resolveKalingaPublicStore(rawStore) : undefined, [rawStore]);
 
   return { store: store ?? null, isLoading, slug, themeConfig: (data as any)?.theme_config ?? null };
 }

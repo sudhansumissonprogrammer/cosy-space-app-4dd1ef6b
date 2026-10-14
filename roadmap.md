@@ -6,8 +6,9 @@
 - [x] Classify all Imitation World New2 products into Chain with Pendant or Pendant from their imported product details.
 
 ## Active work
-- [ ] Connect Telegram fresh after Oct 14 12:41 workspace move; verify and redeploy alerts without sending messages.
-- [ ] Update Kalinga public phone to 9692282485 and resolve stale Imitation World content on live pages.
+- [x] Connect Telegram fresh after Oct 14 12:41 workspace move; @Shopbanaobot verified and alerts redeployed without sending messages. Real delivery untested.
+- [x] Update Kalinga public phone to 9692282485 in stored content and shared presentation; seven preview routes show no old phone/brand, six tests pass and build OK.
+- [ ] Publish Kalinga shared presentation fix and save Store Settings to refresh live cached pages: direct authenticated purge denied for current account; old logo artwork still needs a replacement supplied by owner.
 - [x] Connect Telegram fresh after the Oct 14 12:29 UTC workspace move; @Shopbanaobot and app credential path verified, order alerts redeployed without messages. Real delivery untested.
 - [x] Update Kalinga Jewels' confirmed Patasanipur/Ghiakhala/Khorda address in stored details, public pages and footer; eight mobile routes pass with no old address or page errors, 11 targeted tests pass. Former-store gates retain 17 Similar Designs, care slide three, compact gallery/title/bar, Meesho/supplier; restore solid #28070E marquee without toggling enabled. Care-guide preview asset remains unavailable; frontend publication required.
 - [x] Connect Telegram fresh after the Oct 14 12:21 UTC workspace move; @Shopbanaobot and app credentials verified, alerts redeployed, no messages sent.

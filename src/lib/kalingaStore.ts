@@ -20,3 +20,29 @@ export function kalingaPublicEmail(store?: { id?: string | null; slug?: string |
 export function kalingaPublicAddress(store?: { id?: string | null; slug?: string | null } | null): string | undefined {
   return isKalingaStore(store) ? "Patasanipur, Ghiakhala, Khorda, Odisha, 752030, India" : undefined;
 }
+
+/** Normalize public presentation only, including embedded text from older edge payloads. */
+export function resolveKalingaPublicStore<T extends { id?: string | null; slug?: string | null }>(store: T): T {
+  if (!isKalingaStore(store)) return store;
+  const resolved = { ...store };
+  const fields = resolved as Record<string, unknown>;
+  for (const key of ["name", "description", "meta_title", "meta_description", "about_us_text", "shipping_policy", "return_policy"]) {
+    const value = fields[key];
+    if (typeof value !== "string") continue;
+    fields[key] = value
+      .replace(/imitation\s*world/gi, "Kalinga Jewels")
+      .replace(/imitationworld\.in/gi, "kalingajewels.com")
+      .replace(/(?:\+91\s*)?9348625925(?:[ ,]+\+91\s*9692282485)?/g, "+91 9692282485")
+      .replace(/^(Address\s*:\s*).*$/gim, `$1${kalingaPublicAddress(store)}`);
+  }
+  Object.assign(resolved, {
+    whatsapp_number: "9692282485",
+    secondary_phone: null,
+    owner_email: kalingaPublicEmail(store),
+    owner_name: "Sudhansu Sahoo",
+    location: kalingaPublicAddress(store),
+    city: null,
+    state: null,
+  });
+  return resolved;
+}
