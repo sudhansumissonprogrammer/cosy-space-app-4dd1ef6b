@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { waPhoneNumber } from "@/lib/phoneUtils";
-import { isKalingaStore } from "@/lib/kalingaStore";
+import { isKalingaStore, kalingaPublicEmail } from "@/lib/kalingaStore";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Award, Leaf, Shield, Star, Sparkles, Heart, Truck, ThumbsUp,
@@ -48,7 +48,7 @@ export default function StorefrontContact() {
   const [message, setMessage] = useState("");
 
   // Phase 3: prefer shell-bundled owner_email; only fall back to RPC for legacy shells.
-  const shellEmail = (store as any).owner_email as string | null | undefined;
+  const shellEmail = kalingaPublicEmail(store) ?? (store as any).owner_email as string | null | undefined;
   const { data: ownerEmail } = useQuery({
     queryKey: ["store-public-email", store.id],
     queryFn: async () => {

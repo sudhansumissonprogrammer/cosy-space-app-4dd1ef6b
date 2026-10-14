@@ -3,12 +3,12 @@ import type { StoreData } from "@/layouts/StorefrontLayout";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { storefrontPath } from "@/lib/subdomain";
-import { isKalingaStore } from "@/lib/kalingaStore";
+import { isKalingaStore, kalingaPublicEmail } from "@/lib/kalingaStore";
 
 export default function StorefrontTerms() {
   const store = useOutletContext<StoreData>();
   const name = store.name;
-  const ownerEmail = ((store as any).owner_email as string | undefined)?.trim();
+  const ownerEmail = kalingaPublicEmail(store) ?? ((store as any).owner_email as string | undefined)?.trim();
   const contact = store.whatsapp_number
     ? `WhatsApp us at ${store.whatsapp_number}`
     : ownerEmail
