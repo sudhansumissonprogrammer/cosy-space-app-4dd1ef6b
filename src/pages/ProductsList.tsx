@@ -454,7 +454,7 @@ export default function ProductsList() { // v2
               <Button variant="outline" size="sm" asChild>
                 <Link to={`/dashboard/stores/${storeSlug}/products/bulk-upload`}><Upload className="mr-1.5 h-3.5 w-3.5" />Import</Link>
               </Button>
-              {(storeId === "c3c5dff2-173a-4f4d-90e4-8b1c88c305d9" || storeSlug?.toLowerCase() === "imitationworld") && (
+              {(storeId === "c3c5dff2-173a-4f4d-90e4-8b1c88c305d9" || ["imitationworld","kalingajewels"].includes(storeSlug?.toLowerCase() || "")) && (
                 <Button variant="outline" size="sm" asChild>
                   <Link to={`/dashboard/stores/${storeSlug}/products/meesho-import`}><ShoppingBag className="mr-1.5 h-3.5 w-3.5" />Meesho</Link>
                 </Button>

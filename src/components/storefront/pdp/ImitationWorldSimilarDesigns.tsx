@@ -1,3 +1,4 @@
+import { isKalingaSlugOrId } from "@/lib/kalingaStore";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -91,7 +92,7 @@ export default function ImitationWorldSimilarDesigns({ storeId, storeSlug, curre
   }, []);
   const { data, isError } = useQuery({
     queryKey: ["imitationworld-similar-designs", storeId],
-    enabled: ready && storeSlug === "imitationworld",
+    enabled: ready && isKalingaSlugOrId(storeId, storeSlug),
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
     retry: false,
@@ -114,7 +115,7 @@ export default function ImitationWorldSimilarDesigns({ storeId, storeSlug, curre
     rail.scrollLeft = Math.max(0, selected.offsetLeft - rail.offsetLeft - rail.clientWidth / 2 + selected.clientWidth / 2);
   }, [rail, data, current.id]);
 
-  if (storeSlug !== "imitationworld" || isError || (data && items.length < 2)) return null;
+  if (!isKalingaSlugOrId(storeId, storeSlug) || isError || (data && items.length < 2)) return null;
   const warmDesign = (design: Design) => {
     if (design.id === current.id) return;
     prefetchProductDetail({ slug: design.slug, image: design.image_url });

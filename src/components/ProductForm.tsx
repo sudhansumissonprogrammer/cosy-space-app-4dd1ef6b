@@ -40,7 +40,7 @@ const SUPPLIER_STORE_IDS = new Set([
   "2a9f377a-d8c4-4c7b-8abf-418e9b75cc56", // carrybazaar1
   "c3c5dff2-173a-4f4d-90e4-8b1c88c305d9", // imitationworld
 ]);
-const SUPPLIER_STORE_SLUGS = new Set(["utkalwatch", "hopknock", "carrybazaar1", "imitationworld"]);
+const SUPPLIER_STORE_SLUGS = new Set(["utkalwatch", "hopknock", "carrybazaar1", "imitationworld", "kalingajewels"]);
 
 const cleanSupplierLink = (value: string) => {
   const trimmed = value.trim();

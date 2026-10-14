@@ -91,8 +91,8 @@ export default function MeeshoImport() {
 
   const importProducts = async () => {
     if (!storeId || !selected.size) return;
-    if (storeId !== IMITATIONWORLD_ID && storeSlug?.toLowerCase() !== "imitationworld") {
-      return toast.error("Meesho importing is enabled only for Imitation World.");
+    if (storeId !== IMITATIONWORLD_ID && !["imitationworld","kalingajewels"].includes(storeSlug?.toLowerCase() || "")) {
+      return toast.error("Meesho importing is enabled only for Kalinga Jewels.");
     }
     const queue = validProducts.filter((product) => selected.has(product.source_id));
     setRunning(true);
@@ -140,14 +140,14 @@ export default function MeeshoImport() {
     }
   };
 
-  const unavailable = storeId && storeId !== IMITATIONWORLD_ID && storeSlug?.toLowerCase() !== "imitationworld";
+  const unavailable = storeId && storeId !== IMITATIONWORLD_ID && !["imitationworld","kalingajewels"].includes(storeSlug?.toLowerCase() || "");
   return (
     <div className="mx-auto max-w-5xl space-y-5 p-4 sm:p-6">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" asChild><Link to={`/dashboard/stores/${storeSlug}/products`}><ArrowLeft className="h-5 w-5" /></Link></Button>
         <div><h1 className="text-2xl font-bold text-foreground">Meesho Import</h1><p className="text-sm text-muted-foreground">Collect products in Chrome, then review and add them to New2 or New3.</p></div>
       </div>
-      {unavailable && <Alert variant="destructive"><AlertDescription>This importer is available only for Imitation World.</AlertDescription></Alert>}
+      {unavailable && <Alert variant="destructive"><AlertDescription>This importer is available only for Kalinga Jewels.</AlertDescription></Alert>}
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader><CardTitle className="text-lg">1. Install the collector</CardTitle><CardDescription>It reads pages you open yourself. No ShopBanao password is stored.</CardDescription></CardHeader>
