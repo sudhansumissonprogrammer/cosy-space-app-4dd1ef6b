@@ -41,6 +41,12 @@ export function hasCustomPdpSections(store?: StoreLike): boolean {
  * query fires) for them — zero load cost, zero layout shift.
  */
 export function hidesCategoryFilters(store?: StoreLike): boolean {
-  return hasCustomPdpSections(store);
+  if (hasCustomPdpSections(store)) return true;
+  // Kalinga Jewels: single visible category, so the quick-jump row and the
+  // sort/filter bar only add noise. Gated by immutable store ID + slugs.
+  const KALINGA_ID = "c3c5dff2-173a-4f4d-90e4-8b1c88c305d9";
+  if (!store) return false;
+  if (typeof store === "string") return store === KALINGA_ID || store === "kalingajewels" || store === "imitationworld";
+  return store.id === KALINGA_ID || store.slug === "kalingajewels" || store.slug === "imitationworld";
 }
 
