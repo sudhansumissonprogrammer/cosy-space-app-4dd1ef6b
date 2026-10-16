@@ -1,5 +1,6 @@
 # Current work
 
+- [x] Connect Telegram fresh after the Oct 16 19:32 UTC workspace move; @Shopbanaobot verified, order group "Order" reachable, telegram-order-notify redeployed without messages. Real delivery untested.
 - [x] Connect Telegram fresh after the Oct 4 workspace move and redeploy order notifications (COD/PPD label fix already deployed)
 
 - [x] Move parcel-label phone and tracking extraction to the lowest-priced current Gemini vision model.
