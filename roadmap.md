@@ -1,5 +1,7 @@
 # Current work
 
+- [ ] Connect Telegram fresh after the Oct 16 21:37 UTC workspace move; verify and redeploy alerts without sending messages.
+- [x] Clean both Serdiya audience exports using specified phones and full recorded addresses plus clear demo markers; v2 files verified with 3,270 buyers and 10,391 leads, zero phone/email/account overlap. Originals and database unchanged.
 - [x] Connect Telegram fresh after the Oct 16 21:12 UTC workspace move; @Shopbanaobot verified through the app credential path, order group "Order" reachable with send permissions, telegram-order-notify redeployed without messages. Real delivery untested.
 - [x] Connect Telegram fresh after the Oct 16 19:32 UTC workspace move; @Shopbanaobot verified, order group "Order" reachable, telegram-order-notify redeployed without messages. Real delivery untested.
 - [x] Connect Telegram fresh after the Oct 4 workspace move and redeploy order notifications (COD/PPD label fix already deployed)
