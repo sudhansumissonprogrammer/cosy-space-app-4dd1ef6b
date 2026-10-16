@@ -17,6 +17,7 @@ export const SIMILAR_DESIGN_SLUGS = [
   "1-gram-gold-plated-highway-chain",
   "micro-gold-plated-daily-wear-latest-design-chain-with-beautiful-krishna-design-p-eu8q3m",
   "one-gram-gold-plated-forming-ad-pendant-chain-d19zyi",
+  "trishul-ram-new-micro-gold-plated-chain-pendant",
   "one-gram-gold-plated-forming-ad-pendant-chain-ay7shj",
   "new-micro-gold-plated-chain-pendant-hp04e0",
   "elegant-aura-gold-art-pendant-a50f0k",
