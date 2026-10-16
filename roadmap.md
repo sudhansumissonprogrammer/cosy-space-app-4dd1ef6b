@@ -1,5 +1,6 @@
 # Current work
 
+- [x] Connect Telegram fresh after the Oct 16 21:12 UTC workspace move; @Shopbanaobot verified through the app credential path, order group "Order" reachable with send permissions, telegram-order-notify redeployed without messages. Real delivery untested.
 - [x] Connect Telegram fresh after the Oct 16 19:32 UTC workspace move; @Shopbanaobot verified, order group "Order" reachable, telegram-order-notify redeployed without messages. Real delivery untested.
 - [x] Connect Telegram fresh after the Oct 4 workspace move and redeploy order notifications (COD/PPD label fix already deployed)
 
