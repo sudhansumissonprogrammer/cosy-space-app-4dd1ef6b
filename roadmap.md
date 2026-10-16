@@ -1,6 +1,6 @@
 # Current work
 
-- [x] Audit both Serdiya audience CSVs: corrected 211 city and 556 state cells across 734 rows; removed seven missed Barmer records; v3 has 3,269 buyers and 10,385 leads, zero phone/email overlap, seven validation tests pass. Ambiguous state/PIN values retained in review CSV; database unchanged.
+- [x] Audit both Serdiya audience CSVs: corrected 211 city and 556 state cells across 734 rows; removed seven missed Barmer records; v3 has 3,269 buyers and 10,385 leads, zero phone/email overlap, eight validation tests pass including exact repeated template-column preservation. 166 ambiguous state values retained in review CSV; database unchanged.
 - [x] Connect Telegram fresh after the Oct 16 22:01 UTC workspace move; @Shopbanaobot verified through connection and fresh app credentials, telegram-order-notify redeployed without sending/replaying messages. Actual order delivery remains untested.
 
 - [x] Connect Telegram fresh after the Oct 16 21:37 UTC workspace move; @Shopbanaobot verified through fresh app credentials and telegram-order-notify redeployed without sending messages. Real delivery untested.
