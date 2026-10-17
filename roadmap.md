@@ -1,5 +1,6 @@
 # Current work
 
+- [ ] Connect Telegram fresh after the Oct 17 20:55 UTC workspace move; verify the bot and redeploy order alerts without sending or replaying messages.
 - [ ] Deep-audit Kalinga's rename, public store content and former Imitation World feature gates; repair verified issues without changing product URLs or unrelated stores.
 - [ ] Diagnose Kalinga and Krishna Jewels browser Pixel/CAPI with live transmission evidence and available provider checks; repair verified wiring and report remaining access/deployment blockers.
 - [x] Connect Telegram fresh after the Oct 17 20:47 UTC workspace move; @Shopbanaobot verified through the new connection and app credentials, telegram-order-notify redeployed without sending/replaying messages. Actual order delivery remains untested.
