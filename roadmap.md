@@ -1,5 +1,7 @@
 # Current work
 
+- [ ] Deep-audit Kalinga's rename, public store content and former Imitation World feature gates; repair verified issues without changing product URLs or unrelated stores.
+- [ ] Diagnose Kalinga and Krishna Jewels browser Pixel/CAPI with live transmission evidence and available provider checks; repair verified wiring and report remaining access/deployment blockers.
 - [x] Connect Telegram fresh after the Oct 17 20:47 UTC workspace move; @Shopbanaobot verified through the new connection and app credentials, telegram-order-notify redeployed without sending/replaying messages. Actual order delivery remains untested.
 - [x] Audit Serdiya CSV mapping against uploaded Meta template/screenshot: v4 standard-list files retain 3,269 buyers and 10,385 leads, all phone/email identities and zero overlap; omit empty identifier columns and 166 invalid state values without inventing replacements. Both files ready; actual Meta upload/matching remains unverified.
 - [x] Audit both Serdiya audience CSVs: corrected 211 city and 556 state cells across 734 rows; removed seven missed Barmer records; v3 has 3,269 buyers and 10,385 leads, zero phone/email overlap, eight validation tests pass including exact repeated template-column preservation. 166 ambiguous state values retained in review CSV; database unchanged.
