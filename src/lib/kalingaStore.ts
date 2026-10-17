@@ -4,6 +4,7 @@ const SLUGS = new Set(["kalingajewels", "imitationworld"]);
 
 export function isKalingaStore(store?: { id?: string | null; slug?: string | null } | null): boolean {
   if (!store) return false;
+  if (store.id) return store.id === KALINGA_STORE_ID;
   return store.id === KALINGA_STORE_ID || SLUGS.has(String(store.slug || "").toLowerCase());
 }
 

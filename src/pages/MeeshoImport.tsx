@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
 import { useStorePurge } from "@/hooks/useStorePurge";
 import { toast } from "sonner";
+import { isKalingaSlugOrId } from "@/lib/kalingaStore";
 
 type MeeshoProduct = {
   source_id: string;
@@ -31,7 +32,6 @@ type ImportFile = {
   products: MeeshoProduct[];
 };
 
-const IMITATIONWORLD_ID = "c3c5dff2-173a-4f4d-90e4-8b1c88c305d9";
 const MAX_FILE_BYTES = 2 * 1024 * 1024;
 
 function cleanSourceUrl(value: string, sourceId?: string) {
@@ -91,7 +91,7 @@ export default function MeeshoImport() {
 
   const importProducts = async () => {
     if (!storeId || !selected.size) return;
-    if (storeId !== IMITATIONWORLD_ID && !["imitationworld","kalingajewels"].includes(storeSlug?.toLowerCase() || "")) {
+    if (!isKalingaSlugOrId(storeId, storeSlug)) {
       return toast.error("Meesho importing is enabled only for Kalinga Jewels.");
     }
     const queue = validProducts.filter((product) => selected.has(product.source_id));
@@ -140,7 +140,7 @@ export default function MeeshoImport() {
     }
   };
 
-  const unavailable = storeId && storeId !== IMITATIONWORLD_ID && !["imitationworld","kalingajewels"].includes(storeSlug?.toLowerCase() || "");
+  const unavailable = storeId && !isKalingaSlugOrId(storeId, storeSlug);
   return (
     <div className="mx-auto max-w-5xl space-y-5 p-4 sm:p-6">
       <div className="flex items-center gap-3">
