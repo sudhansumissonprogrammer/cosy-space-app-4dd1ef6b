@@ -14,6 +14,14 @@ describe("Kalinga public contact", () => {
     const other = { id: "other", slug: "other", whatsapp_number: "9348625925" };
     expect(resolveKalingaPublicStore(other)).toBe(other);
   });
+  it("does not apply Kalinga's identity to another store reusing its former slug", () => {
+    const other = { id: "another-store", slug: "imitationworld", owner_email: "other@example.com" };
+    expect(isKalingaStore(other)).toBe(false);
+    expect(resolveKalingaPublicStore(other)).toBe(other);
+  });
+  it("retains slug-only compatibility until a cached store ID is resolved", () => {
+    expect(isKalingaStore({ slug: "kalingajewels" })).toBe(true);
+  });
   it("keeps the requested public email after a store rename", () => {
     expect(kalingaPublicEmail({ id: KALINGA_STORE_ID, slug: "renamed" })).toBe("bavunisaf@gmail.com");
   });

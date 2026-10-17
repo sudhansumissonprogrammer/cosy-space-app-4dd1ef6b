@@ -9,6 +9,8 @@
  * custom PDP sections, packaging add-ons, brand eyebrow, FAQ, etc.
  */
 
+import { isKalingaStore, KALINGA_STORE_ID } from "@/lib/kalingaStore";
+
 /** Immutable store UUIDs — the source of truth. */
 export const PDP_CUSTOM_SECTION_STORE_IDS = new Set<string>([
   "ab19143d-87a9-490e-90b7-837313522782", // utkalwatch (formerly wristlife)
@@ -42,11 +44,9 @@ export function hasCustomPdpSections(store?: StoreLike): boolean {
  */
 export function hidesCategoryFilters(store?: StoreLike): boolean {
   if (hasCustomPdpSections(store)) return true;
-  // Kalinga Jewels: single visible category, so the quick-jump row and the
-  // sort/filter bar only add noise. Gated by immutable store ID + slugs.
-  const KALINGA_ID = "c3c5dff2-173a-4f4d-90e4-8b1c88c305d9";
+  // Retain Kalinga's requested hidden strips after catalogue restoration.
   if (!store) return false;
-  if (typeof store === "string") return store === KALINGA_ID || store === "kalingajewels" || store === "imitationworld";
-  return store.id === KALINGA_ID || store.slug === "kalingajewels" || store.slug === "imitationworld";
+  if (typeof store === "string") return store === KALINGA_STORE_ID || isKalingaStore({ slug: store });
+  return isKalingaStore(store);
 }
 

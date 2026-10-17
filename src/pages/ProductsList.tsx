@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
+import { isKalingaSlugOrId } from "@/lib/kalingaStore";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
@@ -454,7 +455,7 @@ export default function ProductsList() { // v2
               <Button variant="outline" size="sm" asChild>
                 <Link to={`/dashboard/stores/${storeSlug}/products/bulk-upload`}><Upload className="mr-1.5 h-3.5 w-3.5" />Import</Link>
               </Button>
-              {(storeId === "c3c5dff2-173a-4f4d-90e4-8b1c88c305d9" || ["imitationworld","kalingajewels"].includes(storeSlug?.toLowerCase() || "")) && (
+              {isKalingaSlugOrId(storeId, storeSlug) && (
                 <Button variant="outline" size="sm" asChild>
                   <Link to={`/dashboard/stores/${storeSlug}/products/meesho-import`}><ShoppingBag className="mr-1.5 h-3.5 w-3.5" />Meesho</Link>
                 </Button>
