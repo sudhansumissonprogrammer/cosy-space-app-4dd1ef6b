@@ -1,5 +1,8 @@
 # Current work
 
+- [ ] Fix Kalinga pictured pendant not opening; audit all visible category product links and preserve temporary visibility.
+- [ ] Reconnect Telegram after Oct 18 12:00 UTC workspace move; verify bot without messages or replay.
+
 - [x] Connect Telegram fresh after Oct 18 09:11 UTC workspace move; @Shopbanaobot verified with getMe and telegram-order-notify redeployed without sending or replaying messages. Real order delivery awaits a qualifying paid/partially paid Serdiya order.
 
 - [x] Add Kalinga-only checkout notes: "Fast delivery under 3 days" under the UPI price and "70% of our customers choose prepaid — get discount & faster delivery" on the Cash on Delivery button. 22 targeted tests pass, build OK, 390px live check shows both on Kalinga and neither on Serdiya with no page errors. Display-only, no amounts changed. Frontend publication required.
