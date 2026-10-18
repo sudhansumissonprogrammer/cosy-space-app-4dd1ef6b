@@ -16,7 +16,7 @@
 - Imitation World uses store-gated compact gallery sizing and hides only the underneath thumbnail strip, because existing swipe, video, and zoom behavior must remain intact without changing other stores.
 - Informational slides use shared presentation-only ordering and deferred URLs; preserve product data and opening-photo priority.
 - PDP readiness uses stable refs/passive effects, not callback-ref state. Prepare retained adjacent slides at low priority after main readiness, preventing loops and blank swipes.
-- Shared PDP photos retry a failed exact source once, then offer explicit manual recovery; successful entries never trigger extra requests and failed downloads must not leave a silent blank gallery.
+- PDP photos retry the exact source once, then offer manual recovery; successful photos never request again and failures never leave blank galleries.
 - Key PDP galleries by product and media sources, and never clear loaded-photo state when Embla initializes, because child cached-readiness effects may already have fired and will not repeat for unchanged URLs.
 - Storefront cards share sticky intersection activation; category grids arm a bounded next-row buffer after opening photos decode or scrolling starts and gate eager low-priority card images through CardImageReadiness, because zero-margin/native-lazy double gating creates blank rows while opening downloads must remain bounded. Activated cards retain paint; PDP intent warmers and transition previews use the canonical 1200px photo.
 - Bootstrap photo hints are route-scoped: one PDP main photo, two known category card variants, no arbitrary homepage or saved catalog photo hints; category collages activate at visibility, because early hints must match actual displayed sources.
