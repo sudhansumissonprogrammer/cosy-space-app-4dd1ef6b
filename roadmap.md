@@ -1,5 +1,8 @@
 # Current work
 
+- [ ] Configure and verify Kalinga SAVE50 ₹50 checkout exit offer; keep SAVE100 for abandoned carts without overlapping offers.
+- [ ] Connect Telegram fresh after Oct 18 07:18 UTC workspace move; verify without sending or replaying messages.
+
 - [ ] Complete Kalinga ad-readiness follow-up: fresh live browsing/checkout validation and event checks, targeted source/tests review, final report; no real orders/payments/messages or provider changes.
 
 - [x] Connect Telegram fresh after Oct 18 07:05 UTC workspace move; @Shopbanaobot verified with getMe, existing alerts redeployed without messages or historical replay. Actual delivery awaits a qualifying order.
