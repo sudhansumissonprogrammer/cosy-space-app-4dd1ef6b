@@ -1,5 +1,6 @@
 # Current work
 
+- [ ] Connect Telegram fresh after the Oct 18 02:31 UTC workspace move; verify bot/app credentials and redeploy order alerts without sending or replaying messages.
 - [x] Deep-check Kalinga live homepage/product/cart/checkout events: correct pixel/domain and HTTP 200 for PageView/ViewContent/AddToCart/InitiateCheckout; duplicate checkout PageView reproduced and Facebook-configured external gateway identified. No orders/payments or tracking changes; see docs/KALINGA-EVENT-TRANSMISSION-AUDIT-2026-10-18.md.
 - [x] Connect Telegram fresh after each of the three Oct 17 UTC workspace moves (20:47, 20:55, 21:02); @Shopbanaobot verified through the new connection and app credentials, telegram-order-notify redeployed each time without sending/replaying messages. Actual order delivery remains untested.
 - [x] Deep-audit Kalinga rename: 359 products, 11 categories, public pages/policies/theme/reviews checked; correct saved city to Khorda and isolate legacy-slug gates. 19 tests pass, preview PDP passes, build OK. Frontend safeguards await publication; see docs/KALINGA-KRISHNA-IDENTITY-PIXEL-AUDIT-2026-10-17.md.
