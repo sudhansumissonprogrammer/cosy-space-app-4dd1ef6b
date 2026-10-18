@@ -8,6 +8,8 @@
   backdrop-filter: blur(16px) saturate(1.15);
 }
 .review-glass-caption.lg-surface {
+  position: absolute;
+  inset: auto 0.5rem 0.5rem;
   border-radius: 8px;
   background: hsl(var(--review-glass-ink) / 0.45);
   color: hsl(var(--review-glass-highlight));
