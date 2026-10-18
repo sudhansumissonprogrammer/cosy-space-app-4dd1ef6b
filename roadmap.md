@@ -1,5 +1,8 @@
 # Current work
 
+- [ ] Refresh Kalinga review carousel below Returns & Exchange; preserve animated teaser and improve glass cards and popup.
+- [ ] Reconnect Telegram after Oct 18 03:41 UTC workspace move without sending or replaying messages.
+
 - [x] Connect Telegram fresh after Oct 18 03:17 UTC workspace move; @Shopbanaobot verified through connector and app credentials, order alerts redeployed without sending or replaying messages. Actual delivery awaits a qualifying order.
 
 - [x] Fix misleading review approval empty states and resolve route-specific owner stores instead of only the first owned store; 3 tests pass, build OK, real signed-in unauthorized access shows explicit account warning on both routes with no page errors. Database confirms Kalinga has 28 pending and Serdiya has no pending reviews; no reviews changed.
