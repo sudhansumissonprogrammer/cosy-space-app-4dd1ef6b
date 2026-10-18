@@ -2356,6 +2356,10 @@ export default function CheckoutV2Page() {
 
   const triggerExitOffer = useCallback((_explicit = false) => {
     if (!canShowExplicitExitOfferRef.current) return false;
+    // First back dismisses the full-screen photo; a subsequent back offers
+    // the checkout coupon. Never put the offer underneath the photo viewer.
+    const photoClose = document.querySelector<HTMLButtonElement>('[data-checkout-photo-preview="true"] button[aria-label="Close photo"]');
+    if (photoClose) { photoClose.click(); return true; }
     setExitOfferOpen(true);
     return true;
   }, []);

@@ -77,6 +77,7 @@ export default function CheckoutItemImage({ image, name, meta, className = "h-14
           onClick={() => setPreview(null)}
           role="dialog"
           aria-modal="true"
+          data-checkout-photo-preview="true"
           aria-label={preview.label}
         >
           <div className="relative w-full max-w-md overflow-hidden rounded-lg bg-card shadow-xl" onClick={(event) => event.stopPropagation()}>
