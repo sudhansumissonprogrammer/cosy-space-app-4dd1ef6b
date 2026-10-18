@@ -32,4 +32,4 @@
 
 - Validate exit coupons independently; replace only smaller discounts and hide competing sheets to prevent overlap.
 - Store-gated cashback display is separate from charges to keep badges consistent.
-- PDP failures retain the URL with retry; cached null defers to fresh lookup to prevent false unavailability.
+- PDP and warmup preserve errors; retry retains the URL and negative edge results defer to fresh lookup.
