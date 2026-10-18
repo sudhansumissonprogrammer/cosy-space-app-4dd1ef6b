@@ -41,6 +41,8 @@ import { fireMetaCAPI } from "@/lib/metaCapi";
 import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 import { lazy, Suspense } from "react";
 import { fetchPdpEdge } from "@/lib/storefrontEdgeApi";
+import { resolvePdpPayload } from "@/lib/pdpPayload";
+import ProductLoadError from "@/components/storefront/pdp/ProductLoadError";
 import { pdpPrefetchCache } from "@/lib/prefetchProductDetail";
 import DeferUntilVisible from "@/components/storefront/DeferUntilVisible";
 import { hasCustomPdpSections } from "@/components/storefront/pdp/storeSections/config";
@@ -225,7 +227,7 @@ export default function ProductDetail() {
     }
   }
 
-  const { data: product, isLoading } = useQuery({
+  const { data: product, isLoading, isError, isFetching, refetch } = useQuery({
     queryKey: ["storefront-product", store.id, canonicalProductSlug],
     queryFn: async () => {
       // Race edge cache vs Supabase RPC in parallel — take whichever wins.
@@ -268,7 +270,7 @@ export default function ProductDetail() {
           }
         }).catch(() => {});
       }
-      let rpc = edge ?? (await rpcPromise);
+      const rpc = await resolvePdpPayload(edge, rpcPromise);
 
       if (rpc?.product) {
         // Hydrate sibling queries so they don't refetch
@@ -641,17 +643,13 @@ export default function ProductDetail() {
     : 0;
   const waPreview = useWaCouponPreview(store?.id, waPreviewBase);
 
-  // 🚑 Dead-link rescue: shoppers arriving from a WhatsApp recovery message
-  // must never hit a dead end if the product was disabled after the message
-  // was sent — bounce them to the store home immediately (session + coupon
-  // markers are already persisted by StorefrontAutoLogin).
-  const notFound = !isLoading && !product;
-  useEffect(() => {
-    if (!notFound || !store?.slug) return;
-    navigate(storefrontPath(store.slug), { replace: true });
-  }, [notFound, store?.slug, navigate]);
+  // Keep the requested URL while loading/retrying; unavailable products
+  // retain the explicit Back to store action rather than silently redirecting.
+  if (isLoading || (isFetching && !product && !isError)) return <ProductDetailSkeleton />;
 
-  if (isLoading) return <ProductDetailSkeleton />;
+  if (isError && !product) {
+    return <ProductLoadError retry={() => { void refetch(); }} retrying={isFetching} />;
+  }
 
 
   if (!product) {
