@@ -1,8 +1,8 @@
 # Current work
 
-- [ ] Connect Telegram fresh after Oct 18 07:05 UTC workspace move; verify bot and redeploy existing alerts without messages or historical replay.
+- [x] Connect Telegram fresh after Oct 18 07:05 UTC workspace move; @Shopbanaobot verified with getMe, existing alerts redeployed without messages or historical replay. Actual delivery awaits a qualifying order.
 
-- [ ] Deep-test live Kalinga before ads: category/PDP photos, navigation, cart/checkout, public policies, saved visibility/prices/payment readiness, and browser Meta events; do not submit orders/payments/messages.
+- [x] Deep-test live Kalinga before ads: 69 visible chain products at ₹699 sale/₹999 MRP, category/PDP/gallery/zoom/cart/checkout opening and policies checked; 16 approved reviews public, 22 targeted tests pass. Duplicate Meta PageView remains; provider receipt/gateway health and completed payments unverified. No orders/payments/messages submitted. Shared price-validation/capture/COD-fallback/pending-review query risks are source findings, not confirmed Kalinga failures; no changes applied.
 
 - [x] Connect Telegram fresh after Oct 18 04:02 UTC workspace move; @Shopbanaobot verified through app credentials and existing order alerts redeployed without sending or replaying messages. Real delivery awaits a qualifying order.
 
