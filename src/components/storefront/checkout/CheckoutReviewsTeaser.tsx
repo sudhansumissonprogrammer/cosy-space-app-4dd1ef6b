@@ -11,7 +11,7 @@
  */
 import { useEffect, useMemo, useRef, useState, lazy, Suspense, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { BadgeCheck, PenLine, X } from "lucide-react";
+import { BadgeCheck, ChevronRight, PenLine, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import ReviewCard, { ReviewStars } from "@/components/storefront/reviews/ReviewCard";
 import { useStoreReviews } from "@/hooks/useStoreReviews";
@@ -22,7 +22,7 @@ import { storefrontPath } from "@/lib/subdomain";
 const ReviewMediaLightbox = lazy(() => import("@/components/storefront/reviews/ReviewMediaLightbox"));
 const importWriteReviewDialog = () => import("@/components/storefront/reviews/WriteReviewDialog");
 const WriteReviewDialog = lazy(importWriteReviewDialog);
-const ReviewCardsCarousel = lazy(() => import("@/components/storefront/pdp/ReviewCardsCarousel"));
+const GlassReviewCard = lazy(() => import("@/components/storefront/reviews/GlassReviewCard"));
 
 interface Props {
   storeId?: string;
@@ -32,7 +32,7 @@ interface Props {
   productId?: string;
   productName?: string;
   storeSlug?: string;
-  showInlineCarousel?: boolean;
+  modernReviews?: boolean;
 }
 
 export default function CheckoutReviewsTeaser({
@@ -42,7 +42,7 @@ export default function CheckoutReviewsTeaser({
   productId,
   productName,
   storeSlug,
-  showInlineCarousel = false,
+  modernReviews = false,
 }: Props) {
   // The SAME shared summary RPC the PDP uses,
   // so a shopper arriving from a PDP reuses the warm cache and pays no extra
@@ -55,6 +55,30 @@ export default function CheckoutReviewsTeaser({
   const [thumbStart, setThumbStart] = useState(0);
   const [themeFonts, setThemeFonts] = useState<CSSProperties>({});
   const teaserRef = useRef<HTMLButtonElement | null>(null);
+
+  const sheetRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const sheet = sheetRef.current;
+    sheet?.querySelector<HTMLButtonElement>('button[aria-label="Close"]')?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && galleryIndex === null && !writing) setOpen(false);
+      if (event.key !== "Tab" || galleryIndex !== null || writing || !sheet) return;
+      const items = Array.from(sheet.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], [tabindex="0"]'));
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first && last) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last && first) { event.preventDefault(); first.focus(); }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKey);
+      teaserRef.current?.focus();
+    };
+  }, [open, galleryIndex, writing]);
 
   const shown = open && allReviews.length > 0 ? allReviews : reviews;
 
@@ -105,17 +129,12 @@ export default function CheckoutReviewsTeaser({
 
   return (
     <>
-      {showInlineCarousel && (
-        <Suspense fallback={null}>
-          <ReviewCardsCarousel reviews={reviews.slice(0, 14)} total={total} average={average} />
-        </Suspense>
-      )}
       <Button
         ref={teaserRef}
         variant="outline"
         type="button"
         onClick={openReviews}
-        className="mt-2 h-auto w-full justify-start gap-2 overflow-hidden rounded-lg border-border bg-card px-2 py-1.5 text-left text-card-foreground shadow-sm hover:bg-accent/40"
+        className={`mt-2 h-auto w-full justify-start gap-2 overflow-hidden rounded-lg border-border bg-card px-2 py-1.5 text-left text-card-foreground shadow-sm hover:bg-accent/40 ${modernReviews ? "bg-card/80 backdrop-blur-md" : ""}`}
         style={{ fontFamily: "var(--storefront-body-font, inherit)" }}
         aria-label="See customer reviews"
       >
@@ -145,19 +164,20 @@ export default function CheckoutReviewsTeaser({
             <span>{total} reviews</span>
           </span>
         </span>
-        <span className="shrink-0 text-[10px] font-bold text-foreground">View</span>
+        <span className="flex shrink-0 items-center gap-1 text-[10px] font-bold text-foreground">View {modernReviews && <ChevronRight className="h-3.5 w-3.5" />}</span>
       </Button>
 
       {open && typeof document !== "undefined" && createPortal(
         <div
-          className="fixed inset-0 z-[110] flex flex-col justify-end"
+          className={`fixed inset-0 z-[110] flex flex-col justify-end ${modernReviews ? "sm:justify-center sm:p-6" : ""}`}
           role="dialog"
           aria-modal="true"
           aria-label="Customer reviews"
         >
           <div className="absolute inset-0 bg-foreground/50" onClick={() => setOpen(false)} aria-hidden />
           <div
-            className="relative mx-auto flex w-full max-w-md flex-col overflow-hidden rounded-t-2xl bg-background text-foreground max-h-[88dvh]"
+            ref={sheetRef}
+            className={`relative mx-auto flex w-full flex-col overflow-hidden rounded-t-2xl bg-background text-foreground max-h-[88dvh] ${modernReviews ? "max-w-2xl border border-border/70 bg-background/95 backdrop-blur-xl sm:rounded-lg" : "max-w-md"}`}
             style={{ ...themeFonts, fontFamily: "var(--review-body-font, var(--storefront-body-font, inherit))" }}
           >
             <div className="flex flex-shrink-0 items-center justify-between border-b border-border px-5 py-3">
@@ -181,8 +201,12 @@ export default function CheckoutReviewsTeaser({
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3">
-              <div className="grid grid-cols-2 gap-3">
-                {shown.slice(0, sheetCount).map((r, ri) => (
+              <div className={`grid grid-cols-2 gap-3 ${modernReviews ? "sm:grid-cols-3" : ""}`}>
+                {shown.slice(0, sheetCount).map((r, ri) => modernReviews ? (
+                  <Suspense key={r.id} fallback={<div className="aspect-[4/5] animate-pulse rounded-lg bg-muted" />}>
+                    <GlassReviewCard review={r} onOpenMedia={r.media.length ? (i) => setGalleryIndex(offsets[ri] + i) : undefined} />
+                  </Suspense>
+                ) : (
                   <ReviewCard
                     key={r.id}
                     review={r}

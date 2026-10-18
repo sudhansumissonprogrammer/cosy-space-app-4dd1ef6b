@@ -9,7 +9,7 @@
 
 - WhatsApp onboarding provisions through the new owner's session using CreateStore steps, because setup must match the web flow and respect RLS.
 - Capacity testing is admin-only and generates guarded Python runs, never browser traffic. Production permits only low-rate read-only canaries; ramp/spike/soak refuse production without override and require staging-marked hosts, protecting ads and payments.
-- Keep `is_best_selling` for storefront merchandising but do not restore the separate per-product award seal, because its badge controls and stored flag were deliberately retired across all stores.
+- Keep `is_best_selling` for storefront merchandising but do not restore the separate per-product award seal, because its controls and flag were retired.
 
 - JD Store Spy extension calls the JD platform API from the store page (content script), never the extension background, because the platform resolves the tenant from the request Origin.
 - Store-specific PDP similar-design rails use a lazy store-gated component, a bounded cached public product query, and rail-local image visibility, because curated navigation must not block the main photo or fetch off-screen images.
@@ -27,5 +27,5 @@
 - Checkout confirmation uses the completed payment method, not the prepaid preview, because COD must show no prepaid discount and the full delivery balance.
 
 - Resolve Kalinga public content and store-only features through its shared helper; known IDs override legacy slugs to prevent stale identity and cross-store overrides.
-- Kalinga review carousel shares the teaser cache; preserve the independent all-review popup.
+- Kalinga’s separate lazy carousel shares teaser cache; opt-in glass cards preserve the independent popup and animated teaser.
 - Review management resolves the route with an owner filter and admin fallback; distinguish loading/access errors from empty lists.

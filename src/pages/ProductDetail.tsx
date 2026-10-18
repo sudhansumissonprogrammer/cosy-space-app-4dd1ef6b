@@ -61,6 +61,7 @@ import { useGalleryPreparation } from "@/hooks/useGalleryPreparation";
 import { withImitationWorldCareGuide, imitationWorldCareGuideUrl } from "@/lib/imitationWorldCareSlides";
 
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
+const StoreReviewCardsCarousel = lazy(() => import("@/components/storefront/pdp/ReviewCardsCarousel").then((module) => ({ default: module.StoreReviewCardsCarousel })));
 const CheckoutReviewsTeaser = lazy(() => import("@/components/storefront/checkout/CheckoutReviewsTeaser"));
 import PdpReviewsBadge from "@/components/storefront/pdp/PdpReviewsBadge";
 const PdpCarousels = lazy(() => import("@/components/storefront/pdp/PdpCarousels"));
@@ -1217,7 +1218,7 @@ export default function ProductDetail() {
                   productId={product.id}
                   productName={product.name}
                   limit={14}
-                  showInlineCarousel={isKalingaStore(store)}
+                  modernReviews={isKalingaStore(store)}
                 />
               </Suspense>
             </DeferUntilVisible>
@@ -1304,6 +1305,14 @@ export default function ProductDetail() {
               </AccordionItem>
             )}
           </div>
+
+          {isKalingaStore(store) && (
+            <DeferUntilVisible rootMargin="100px" minHeight={0}>
+              <Suspense fallback={null}>
+                <StoreReviewCardsCarousel storeId={store.id} />
+              </Suspense>
+            </DeferUntilVisible>
+          )}
 
         </div>
       </div>

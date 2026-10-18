@@ -46,6 +46,7 @@ import PartialPaymentTrustCard from "@/components/storefront/PartialPaymentTrust
 import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
+const StoreReviewCardsCarousel = lazy(() => import("@/components/storefront/pdp/ReviewCardsCarousel").then((module) => ({ default: module.StoreReviewCardsCarousel })));
 const CheckoutReviewsTeaser = lazy(() => import("@/components/storefront/checkout/CheckoutReviewsTeaser"));
 const PdpCarousels = lazy(() => import("@/components/storefront/pdp/PdpCarousels"));
 const ImitationWorldSimilarDesigns = lazy(() => import("@/components/storefront/pdp/ImitationWorldSimilarDesigns"));
@@ -986,7 +987,7 @@ export default function V22ProductDetail() {
                   productId={product.id}
                   productName={product.name}
                   limit={14}
-                  showInlineCarousel={isKalingaStore(store)}
+                  modernReviews={isKalingaStore(store)}
                 />
               </Suspense>
             </DeferUntilVisible>
@@ -1059,6 +1060,14 @@ export default function V22ProductDetail() {
               </AccordionItem>
             )}
           </div>
+
+          {isKalingaStore(store) && (
+            <DeferUntilVisible rootMargin="100px" minHeight={0}>
+              <Suspense fallback={null}>
+                <StoreReviewCardsCarousel storeId={store.id} />
+              </Suspense>
+            </DeferUntilVisible>
+          )}
 
         </div>
       </div>
