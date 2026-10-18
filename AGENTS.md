@@ -23,13 +23,15 @@
 - Small photos up to 320px use the uploaded manifest; unknown and card/PDP/zoom URLs stay unchanged to preserve originals and avoid missing siblings.
 - Keep homepage route components and inactive theme layouts out of the shared storefront manual chunk; retain the dominant layout's critical path, because category/PDP ad entries should not parse homepage-only code.
 
-- Public savings estimates use a dedicated calculation, separate from stored merchant billing, so marketing changes never alter charges.
+- Public savings calculations stay separate from merchant billing to avoid changing charges.
 - Checkout confirmation uses the completed payment method, not the prepaid preview, because COD must show no prepaid discount and the full delivery balance.
 
 - Resolve Kalinga public content and store-only features through its shared helper; known IDs override legacy slugs to prevent stale identity and cross-store overrides.
 - Kalinga’s separate lazy carousel shares teaser cache; opt-in glass cards preserve the independent popup and animated teaser.
-- Reviews resolve owner-filtered routes with admin fallback; distinguish errors from empty lists.
+- Reviews use owner routes with admin fallback; errors are not empty lists.
 
 - Validate exit coupons independently; replace only smaller discounts and hide competing sheets to prevent overlap.
 - Store-gated cashback display is separate from charges to keep badges consistent.
 - PDP and warmup preserve errors; retry retains the URL and negative edge results defer to fresh lookup.
+
+- Share customer tracking URLs across dashboard and WhatsApp; Valmo has no automatic sync without a supported feed.
