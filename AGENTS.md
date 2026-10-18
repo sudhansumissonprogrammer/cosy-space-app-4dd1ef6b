@@ -30,4 +30,5 @@
 - Kalinga’s separate lazy carousel shares teaser cache; opt-in glass cards preserve the independent popup and animated teaser.
 - Reviews resolve owner-filtered routes with admin fallback; distinguish errors from empty lists.
 
-- Store-specific exit coupons are independently validated and replace only smaller discounts; hide other checkout sheets while the exit offer opens to avoid overlapping dialogs.
+- Validate exit coupons independently; replace only smaller discounts and hide competing sheets to prevent overlap.
+- Store-gated cashback display is separate from charges to keep badges consistent.
