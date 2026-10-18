@@ -4,6 +4,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useMyStore } from "@/hooks/useMyStore";
 import { useAdminStoreView } from "@/hooks/useAdminStoreView";
+import { useAuth } from "@/contexts/AuthContext";
+import { fetchOwnedReviewStore } from "@/lib/reviewManagerData";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -44,12 +46,23 @@ const MAX_PINNED = 14;
 
 export default function StoreReviewsManager() {
   const { storeSlug } = useParams<{ storeSlug: string }>();
+  const { user } = useAuth();
   const { data: ownStore, isLoading } = useMyStore();
-  const { adminStore } = useAdminStoreView(ownStore, isLoading);
+  const { adminStore, adminStoreLoading } = useAdminStoreView(ownStore, isLoading);
+  const matchesOwnStore = !!ownStore && (ownStore.slug === storeSlug || ownStore.id === storeSlug);
+  const ownedRouteStore = useQuery({
+    queryKey: ["review-manager-owned-store", user?.id, storeSlug],
+    enabled: !!user?.id && !!storeSlug && !matchesOwnStore,
+    queryFn: async () => {
+      if (!user?.id || !storeSlug) return null;
+      return fetchOwnedReviewStore(user.id, storeSlug);
+    },
+    staleTime: 5 * 60_000,
+  });
   const store =
-    ownStore && (ownStore.slug === storeSlug || ownStore.id === storeSlug)
+    matchesOwnStore
       ? ownStore
-      : adminStore;
+      : ownedRouteStore.data ?? adminStore;
   const storeId = store?.id;
   const qc = useQueryClient();
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -57,16 +70,17 @@ export default function StoreReviewsManager() {
   const [adding, setAdding] = useState(false);
 
 
-  const { data: rows = [], refetch } = useQuery({
+  const { data: rows = [], refetch, isLoading: reviewsLoading, error: reviewsError } = useQuery({
     queryKey: ["dashboard-reviews", storeId],
     enabled: !!storeId,
     queryFn: async () => {
+      if (!storeId) return [];
       const { data, error } = await supabase
         .from("product_reviews")
         .select(
           "id,product_id,customer_name,rating,title,review_text,is_verified,is_hidden,approval_status,created_at,media,pinned_rank,products(name,slug)"
         )
-        .eq("store_id", storeId!)
+        .eq("store_id", storeId)
         .order("pinned_rank", { ascending: true, nullsFirst: false })
         .order("created_at", { ascending: false })
         .limit(500);
@@ -300,6 +314,29 @@ export default function StoreReviewsManager() {
           </Button>
         </div>
       </Card>
+    );
+  }
+
+  const resolvingStore = isLoading || adminStoreLoading || ownedRouteStore.isLoading;
+  const loadError = ownedRouteStore.error || reviewsError;
+  if (resolvingStore || reviewsLoading) {
+    return <div className="p-6" role="status"><Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> Loading reviews…</div>;
+  }
+  if (loadError) {
+    return (
+      <div className="space-y-3 p-6" role="alert">
+        <h1 className="text-2xl font-bold">Reviews</h1>
+        <p className="text-destructive">Reviews could not be loaded. Please try again.</p>
+        <Button variant="outline" onClick={() => { void ownedRouteStore.refetch(); void refetch(); }}>Retry</Button>
+      </div>
+    );
+  }
+  if (!storeId) {
+    return (
+      <div className="space-y-3 p-6" role="alert">
+        <h1 className="text-2xl font-bold">Reviews</h1>
+        <p className="text-muted-foreground">This store is unavailable for this account. Sign in with its owner account to manage reviews.</p>
+      </div>
     );
   }
 

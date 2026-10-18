@@ -1,8 +1,9 @@
 # Current work
 
-- [ ] Connect Telegram fresh after Oct 18 03:17 UTC workspace move; verify bot and update order alerts without sending or replaying messages.
+- [x] Connect Telegram fresh after Oct 18 03:17 UTC workspace move; @Shopbanaobot verified through connector and app credentials, order alerts redeployed without sending or replaying messages. Actual delivery awaits a qualifying order.
 
-- [ ] Fix missing merchant review approval access across stores; verify with saved pending Kalinga reviews and approved Serdiya reviews without publishing or approving any review.
+- [x] Fix misleading review approval empty states and resolve route-specific owner stores instead of only the first owned store; 3 tests pass, build OK, real signed-in unauthorized access shows explicit account warning on both routes with no page errors. Database confirms Kalinga has 28 pending and Serdiya has no pending reviews; no reviews changed.
+- [ ] Verify pending-review display and approval with the Kalinga owner signed into preview; current requester account does not own either store and session mint for another owner was denied. Frontend publication required.
 
 - [x] Connect Telegram fresh after the Oct 18 02:44 UTC workspace move; bot and app credentials verified and alerts redeployed without messages.
 - [x] Connect Telegram fresh after the Oct 18 02:50 UTC workspace move; @Shopbanaobot and app credentials verified, alerts redeployed without sending/replaying messages. Actual delivery awaits a qualifying order.

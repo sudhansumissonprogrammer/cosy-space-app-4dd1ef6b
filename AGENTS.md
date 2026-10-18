@@ -27,4 +27,5 @@
 - Checkout confirmation uses the completed payment method, not the prepaid preview, because COD must show no prepaid discount and the full delivery balance.
 
 - Resolve Kalinga public content and store-only features through its shared helper; known IDs override legacy slugs to prevent stale identity and cross-store overrides.
-- Kalinga PDP review cards reuse the teaser's capped cache in a lazy carousel; keep its all-review popup independent to preserve existing access.
+- Kalinga review carousel shares the teaser cache; preserve the independent all-review popup.
+- Review management resolves the route with an owner filter and admin fallback; distinguish loading/access errors from empty lists.
