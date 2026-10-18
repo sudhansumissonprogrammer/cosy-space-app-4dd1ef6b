@@ -1,6 +1,6 @@
 # Current work
 
-- [ ] Temporarily hide all Kalinga products outside Chain with Pendant; keep both primary and additional category members visible, preserve restore data, and verify the public category.
+- [x] Temporarily hide all Kalinga products outside Chain with Pendant: all 69 members visible, other 131 hidden, primary/additional assignments checked, before-change restoration snapshot saved. Both read-only SQL assertions pass; live category renders without browser errors. No products deleted or prices/order changed.
 
 - [x] Reconnect Telegram after Oct 18 03:45 UTC workspace move; @Shopbanaobot verified through app credentials and order alerts redeployed without messages/replay. Real delivery awaits a qualifying order.
 
