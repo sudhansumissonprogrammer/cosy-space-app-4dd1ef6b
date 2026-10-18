@@ -1,7 +1,7 @@
 # Current work
 
-- [ ] Configure and verify Kalinga SAVE50 ₹50 checkout exit offer; keep SAVE100 for abandoned carts without overlapping offers.
-- [ ] Connect Telegram fresh after Oct 18 07:18 UTC workspace move; verify without sending or replaying messages.
+- [x] Configure Kalinga SAVE50 ₹50 checkout exit offer and recovery-only SAVE100 links; 20 tests pass, mobile/desktop SAVE50 claim and deployed recovery redirect → PDP → SAVE100 checkout verified without orders/payments/messages. SAVE100 prevents SAVE50 replacement; back closes photo before opening exit sheet. Build OK. Frontend publication and actual recovery delivery remain unverified.
+- [x] Connect Telegram fresh after Oct 18 07:18 UTC workspace move; @Shopbanaobot verified and telegram-order-notify redeployed without sending or replaying messages. Real order delivery remains unverified.
 
 - [ ] Complete Kalinga ad-readiness follow-up: fresh live browsing/checkout validation and event checks, targeted source/tests review, final report; no real orders/payments/messages or provider changes.
 
