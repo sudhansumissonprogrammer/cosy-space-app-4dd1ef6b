@@ -22,6 +22,7 @@
 // Auth: x-cron-secret header OR an admin user's Bearer token.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders, normalizePhone, loadPlatformConfig, platformConfigUsable, isValidCronHeader } from "../_shared/wa-platform.ts";
+import { KALINGA_RECOVERY_STORE_ID, KALINGA_RECOVERY_CODE, recoveryCouponToken } from "../_shared/kalinga-recovery-offer.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -130,8 +131,9 @@ Deno.serve(async (req) => {
     if (!conf) {
       const nowIso = new Date().toISOString();
       const { data: coupons } = await admin.from("coupons")
-        .select("discount_type, discount_value, min_order_amount, starts_at, expires_at, wa_exclusive")
-        .eq("store_id", storeId).eq("auto_apply", true).eq("is_active", true)
+        .select("code, discount_type, discount_value, min_order_amount, starts_at, expires_at, wa_exclusive")
+        .eq("store_id", storeId).eq("is_active", true)
+        .eq(storeId === KALINGA_RECOVERY_STORE_ID ? "code" : "auto_apply", storeId === KALINGA_RECOVERY_STORE_ID ? KALINGA_RECOVERY_CODE : true)
         .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
         .order("wa_exclusive", { ascending: false })
         .order("discount_value", { ascending: false }).limit(5);
@@ -152,7 +154,7 @@ Deno.serve(async (req) => {
         ? Math.round((payable * Number(s.partial_payment_value || 0)) / 100)
         : Math.round(Number(s.partial_payment_value || 0)))
       : 0;
-    return { discount, advance: Math.max(0, Math.min(rawAdvance, payable)) };
+    return { discount, advance: Math.max(0, Math.min(rawAdvance, payable)), coupon_code: String(c?.code || "").toUpperCase() };
   }
 
   // ── 5. Template ───────────────────────────────────────────────────────
@@ -264,7 +266,8 @@ Deno.serve(async (req) => {
         original_price: effectiveSale.toFixed(0),
         discounted_price: discountedPrice.toFixed(0),
         balance_due: balanceDue.toFixed(0),
-        cta_token: ctaToken,
+        coupon_code: offer.coupon_code,
+        cta_token: recoveryCouponToken(ctaToken, c.storeId, offer.coupon_code),
         ...(headerMediaUrl ? { header_media_url: headerMediaUrl } : {}),
       },
       priority: 4,

@@ -1,4 +1,5 @@
 // Branded WhatsApp button redirector.
+import { recoveryCouponTarget } from "../_shared/kalinga-recovery-offer.ts";
 // URL: https://shopbanao.in/r/<token>  → index.html inline script forwards
 // here → 301/302 to the store's real page.
 //
@@ -213,6 +214,8 @@ Deno.serve(async (req) => {
   // deleted/expired product fall back to the correct storefront rather than
   // the ShopBanao landing page. Older two-segment links remain compatible.
   const fallbackStoreId = tokenParts[2] || "";
+  const recoveryCode = tokenParts[3] || "";
+  const recoveryTarget = (target: string) => recoveryCouponTarget(target, fallbackStoreId, recoveryCode);
 
   const resolveFallbackStore = async (): Promise<{ base: string; host: string } | null> => {
     if (!fallbackStoreId) return null;
@@ -340,12 +343,12 @@ Deno.serve(async (req) => {
 
       const { data: p } = await admin
         .from("products")
-        .select("id, slug, is_active, stores:store_id(name, slug, custom_domain)")
+        .select("id, store_id, slug, is_active, stores:store_id(name, slug, custom_domain)")
         .eq("id", id).maybeSingle();
       if (!p) {
         const fallbackStore = await resolveFallbackStore();
         if (!fallbackStore) return redirect("https://shopbanao.in");
-        return redirect(await withAutoLogin(fallbackStore.base, suffixPhone, mintP), {
+        return redirect(await withAutoLogin(recoveryTarget(fallbackStore.base), suffixPhone, mintP), {
           status: 302,
           maxAge: 0,
           preconnectHosts: [fallbackStore.host],
@@ -359,7 +362,7 @@ Deno.serve(async (req) => {
       // renders "Product not found". Land the shopper on the storefront home
       // instead of a dead end so the click still has a chance to convert.
       if ((p as any).is_active === false) {
-        return redirect(await withAutoLogin(base, suffixPhone, mintP), {
+        return redirect(await withAutoLogin(recoveryCouponTarget(base, (p as any).store_id, recoveryCode), suffixPhone, mintP), {
           status: 302,
           maxAge: 0,
           preconnectHosts: [host, "cdn.shopbanao.in"],
@@ -369,7 +372,7 @@ Deno.serve(async (req) => {
       // No slug → home, but keep the auto-login + wa=1 markers so the shopper
       // stays logged in and still unlocks the WhatsApp-exclusive coupon.
       if (!slug) {
-        return redirect(await withAutoLogin(base, suffixPhone, mintP), {
+        return redirect(await withAutoLogin(recoveryCouponTarget(base, (p as any).store_id, recoveryCode), suffixPhone, mintP), {
           status: 302,
           maxAge: 0,
           preconnectHosts: [host],
@@ -384,7 +387,7 @@ Deno.serve(async (req) => {
       const pdpApi = `${base}/api/pdp?slug=${encodeURIComponent(slug)}`;
 
       const target = await withAutoLogin(
-        `${base}/product/${encodeURIComponent(slug)}`,
+        recoveryCouponTarget(`${base}/product/${encodeURIComponent(slug)}`, (p as any).store_id, recoveryCode),
         suffixPhone,
         mintP,
       );
@@ -403,7 +406,7 @@ Deno.serve(async (req) => {
     // failures, so recovery shoppers still remain inside the merchant store.
     const fallbackStore = await resolveFallbackStore().catch(() => null);
     if (fallbackStore) {
-      return redirect(await withAutoLogin(fallbackStore.base, suffixPhone).catch(() => withWaMarker(fallbackStore.base)), {
+      return redirect(await withAutoLogin(recoveryTarget(fallbackStore.base), suffixPhone).catch(() => withWaMarker(recoveryTarget(fallbackStore.base))), {
         status: 302,
         maxAge: 0,
         preconnectHosts: [fallbackStore.host],
