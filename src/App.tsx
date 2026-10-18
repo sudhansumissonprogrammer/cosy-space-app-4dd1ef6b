@@ -626,6 +626,7 @@ async function prefetchTargetPageData(
             .eq("slug", productSlug)
             .eq("is_active", true)
             .maybeSingle();
+          if (error) throw error;
           if (!prod && !error) {
             if (!isUUID(productSlug)) return prod;
             const result = await supabase
@@ -636,6 +637,7 @@ async function prefetchTargetPageData(
               .eq("is_active", true)
               .maybeSingle();
             prod = result.data;
+            if (result.error) throw result.error;
           }
           if (prod && typeof (prod as any).id === "string") {
             const prodId = (prod as any).id as string;
