@@ -1,5 +1,7 @@
 # Current work
 
+- [x] Add Kalinga-only checkout notes: "Fast delivery under 3 days" under the UPI price and "70% of our customers choose prepaid — get discount & faster delivery" on the Cash on Delivery button. 22 targeted tests pass, build OK, 390px live check shows both on Kalinga and neither on Serdiya with no page errors. Display-only, no amounts changed. Frontend publication required.
+
 - [x] Configure Kalinga SAVE50 ₹50 checkout exit offer and recovery-only SAVE100 links; 20 tests pass, mobile/desktop SAVE50 claim and deployed recovery redirect → PDP → SAVE100 checkout verified without orders/payments/messages. SAVE100 prevents SAVE50 replacement; back closes photo before opening exit sheet. Build OK. Frontend publication and actual recovery delivery remain unverified.
 - [x] Connect Telegram fresh after Oct 18 07:18 UTC workspace move; @Shopbanaobot verified and telegram-order-notify redeployed without sending or replaying messages. Real order delivery remains unverified.
 
