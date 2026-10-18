@@ -59,6 +59,7 @@ import { getFunctionErrorMessage } from "@/lib/functionError";
 import { checkoutConfirmationAmounts } from "@/lib/checkoutConfirmationAmounts";
 import { isKalingaStore } from "@/lib/kalingaStore";
 import { checkoutExitCoupon, KALINGA_EXIT_CODE } from "@/lib/checkoutExitCoupon";
+import { checkoutCashback } from "@/lib/checkoutCashback";
 
 type UpiApp = "gpay" | "phonepe" | "paytm" | "bhim" | "any";
 type PayMethod = "upi" | "gateway" | "cod";
@@ -5740,7 +5741,7 @@ export default function CheckoutV2Page() {
                     boxShadow: "0 1px 3px -1px rgba(198,40,40,0.6), inset 0 1px 0 rgba(255,255,255,0.4)",
                   }}
                 >
-                  ₹{isPartialOrder ? 50 : 100} Cashback
+                  ₹{checkoutCashback(store, isPartialOrder)} Cashback
                 </span>
                 {(openingGateway || tappedUpiApp === "any")
                   ? <><Loader2 className="h-4 w-4 animate-spin" /> Opening {gatewayLabel}…</>
@@ -5835,7 +5836,7 @@ export default function CheckoutV2Page() {
                             textShadow: "0 1px 1px rgba(0,0,0,0.25)",
                           }}
                         >
-                          ₹{isPartialOrder ? 50 : 100} Cashback
+                          ₹{checkoutCashback(store, isPartialOrder)} Cashback
                         </span>
                       )}
 
