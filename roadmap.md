@@ -1,6 +1,7 @@
 # Current work
 
-- [ ] Connect Telegram fresh after the Oct 18 02:44 UTC workspace move; verify bot and redeploy alerts without sending or replaying messages.
+- [x] Connect Telegram fresh after the Oct 18 02:44 UTC workspace move; bot and app credentials verified and alerts redeployed without messages.
+- [ ] Connect Telegram fresh after the Oct 18 02:50 UTC workspace move; verify and redeploy without sending or replaying messages.
 
 - [ ] Restore Kalinga PDP customer review card carousel while preserving the existing all-reviews popup button; verify card browsing and popup with real approved reviews.
 
