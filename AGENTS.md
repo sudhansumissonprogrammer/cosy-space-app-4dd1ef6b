@@ -31,4 +31,4 @@
 - Reviews resolve owner-filtered routes with admin fallback; distinguish errors from empty lists.
 
 - Validate exit coupons independently; replace only smaller discounts and hide competing sheets to prevent overlap.
-- Store-gated cashback display stays separate from charges to keep badges consistent.
+- Store-gated cashback display is separate from charges to keep badges consistent.
