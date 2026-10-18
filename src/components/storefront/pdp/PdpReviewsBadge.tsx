@@ -34,14 +34,14 @@ export default function PdpReviewsBadge({ storeId, className = "" }: { storeId?:
     <button
       type="button"
       onClick={goToReviews}
-      className={`flex items-center gap-1.5 rounded-full border border-white/25 bg-black/55 px-2.5 py-1.5 text-white shadow-lg backdrop-blur-sm transition-transform active:scale-95 ${className}`}
+      className={`flex items-center gap-1 rounded-full border border-white/25 bg-black/55 px-1.5 py-0.5 text-white shadow-md backdrop-blur-sm transition-transform active:scale-95 ${className}`}
       aria-label={`See all ${total} customer reviews`}
     >
       <span className="flex items-center gap-0.5">
-        <Star className="h-3.5 w-3.5 fill-emerald-400 text-emerald-400" />
-        <Star className="h-3.5 w-3.5 fill-emerald-400 text-emerald-400" />
+        <Star className="h-2.5 w-2.5 fill-emerald-400 text-emerald-400" />
+        <Star className="h-2.5 w-2.5 fill-emerald-400 text-emerald-400" />
       </span>
-      <span className="text-[11px] font-semibold leading-none text-white/90">See reviews</span>
+      <span className="text-[9px] font-semibold leading-none text-white/90">See reviews</span>
     </button>
   );
 }
