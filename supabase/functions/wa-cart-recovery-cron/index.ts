@@ -243,11 +243,10 @@ Deno.serve(async (req) => {
     // is a marketing-policy red flag (low-quality messaging → quality drop).
     if (!items.length || total <= 0) { emptyCart++; continue; }
 
-    // 🛡️ RECENT-BUYER GUARD (7 days, platform-wide, product-aware):
-    // anyone who actually paid for an order in the last 7 days must never be
-    // re-pitched that same product — in ANY store, regardless of whether the
-    // order came before or after the cart. A genuinely different product is
-    // still allowed. Unknown cart products = block (fail safe).
+    // 🛡️ RECENT-BUYER GUARD (4 days, platform-wide, STRICT):
+    // anyone who actually paid for an order in the last 4 days gets NO
+    // marketing message at all — any product, in ANY store, regardless of
+    // whether the order came before or after the cart.
     const cartProductIds = items
       .map((it: any) => String(it?.productId || it?.product_id || ""))
       .filter(Boolean);
@@ -512,7 +511,7 @@ Deno.serve(async (req) => {
         .gte("created_at", (o as any).created_at);
       if ((completedCount ?? 0) > 0) { payDropCompleted++; continue; }
 
-      // 🛡️ RECENT-BUYER GUARD (7 days, platform-wide, product-aware).
+      // 🛡️ RECENT-BUYER GUARD (4 days, platform-wide, STRICT — no marketing at all).
       const dropItems0 = Array.isArray((o as any).order_items) ? (o as any).order_items : [];
       const dropProductIds = dropItems0
         .map((it: any) => String(it?.product_id || ""))
