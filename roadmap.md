@@ -1,6 +1,6 @@
 # Current work
 
-- [ ] Connect Telegram fresh after Oct 18 04:02 UTC workspace move; verify bot and redeploy existing order alerts without sending or replaying messages.
+- [x] Connect Telegram fresh after Oct 18 04:02 UTC workspace move; @Shopbanaobot verified through app credentials and existing order alerts redeployed without sending or replaying messages. Real delivery awaits a qualifying order.
 
 - [x] Temporarily hide all Kalinga products outside Chain with Pendant: all 69 members visible, other 131 hidden, primary/additional assignments checked, before-change restoration snapshot saved. Both read-only SQL assertions pass; live category renders without browser errors. No products deleted or prices/order changed.
 
