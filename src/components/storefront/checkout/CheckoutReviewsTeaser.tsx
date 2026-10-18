@@ -22,6 +22,7 @@ import { storefrontPath } from "@/lib/subdomain";
 const ReviewMediaLightbox = lazy(() => import("@/components/storefront/reviews/ReviewMediaLightbox"));
 const importWriteReviewDialog = () => import("@/components/storefront/reviews/WriteReviewDialog");
 const WriteReviewDialog = lazy(importWriteReviewDialog);
+const ReviewCardsCarousel = lazy(() => import("@/components/storefront/pdp/ReviewCardsCarousel"));
 
 interface Props {
   storeId?: string;
@@ -31,6 +32,7 @@ interface Props {
   productId?: string;
   productName?: string;
   storeSlug?: string;
+  showInlineCarousel?: boolean;
 }
 
 export default function CheckoutReviewsTeaser({
@@ -40,6 +42,7 @@ export default function CheckoutReviewsTeaser({
   productId,
   productName,
   storeSlug,
+  showInlineCarousel = false,
 }: Props) {
   // The SAME shared summary RPC the PDP uses,
   // so a shopper arriving from a PDP reuses the warm cache and pays no extra
@@ -102,6 +105,11 @@ export default function CheckoutReviewsTeaser({
 
   return (
     <>
+      {showInlineCarousel && (
+        <Suspense fallback={null}>
+          <ReviewCardsCarousel reviews={reviews.slice(0, 14)} total={total} average={average} />
+        </Suspense>
+      )}
       <Button
         ref={teaserRef}
         variant="outline"

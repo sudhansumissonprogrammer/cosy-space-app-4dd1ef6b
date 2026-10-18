@@ -1217,6 +1217,7 @@ export default function ProductDetail() {
                   productId={product.id}
                   productName={product.name}
                   limit={14}
+                  showInlineCarousel={isKalingaStore(store)}
                 />
               </Suspense>
             </DeferUntilVisible>
