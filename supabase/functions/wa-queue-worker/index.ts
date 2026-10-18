@@ -166,10 +166,11 @@ Deno.serve(async (req) => {
     }
 
     // 🛡️ Second guard (send-time backstop): a shopper who actually PAID for an
-    // order in the last 7 days — in any store — must never be re-pitched the
-    // same product. A different product is still allowed. If we can't tell
-    // which product this message is about, we block (fail safe).
-    if (row.message_type === "abandoned_cart" && row.recipient_phone) {
+    // order in the last 4 days — in any store — gets NO marketing message at
+    // all (abandoned-cart recovery or bulk campaign). Utility/order messages
+    // (confirmation, shipping, delivery) are not marketing and pass through.
+    const MARKETING_TYPES = new Set(["abandoned_cart", "campaign"]);
+    if (MARKETING_TYPES.has(row.message_type) && row.recipient_phone) {
       const buyer = await loadRecentBuyer(admin, row.recipient_phone);
       let candidateIds: string[] = [];
       const tok = String((row as any).cta_token || "");

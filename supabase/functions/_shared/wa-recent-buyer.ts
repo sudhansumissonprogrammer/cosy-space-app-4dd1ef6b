@@ -1,16 +1,17 @@
 // 🛡️ Recent-buyer marketing guard.
 //
-// Rule (product-aware, 7 days, platform-wide):
-//   • If a phone number has placed a REAL order in the last 7 days, never
-//     re-pitch a product they already bought in that window.
-//   • When we can't identify the cart's products, block outright — a shopper
-//     who just paid must not receive generic marketing for 7 days.
-//   • A genuinely DIFFERENT product may still be pitched.
+// Rule (STRICT, 4 days, platform-wide):
+//   • If a phone number has placed a REAL order in the last 4 days, NO
+//     marketing message goes to that number at all — any product, any store.
+//   • Utility/order messages (confirmation, shipping, delivery) are NOT
+//     affected; they never pass through this guard.
+//   • After the 4-day window, marketing (e.g. a pending-order recovery
+//     coupon) may go out again.
 //
 // Orders that are cancelled / failed / rejected / still-pending payment are
 // NOT purchases: those leads are exactly who recovery messaging is for.
 
-export const RECENT_BUYER_WINDOW_DAYS = 7;
+export const RECENT_BUYER_WINDOW_DAYS = 4;
 
 export function phoneVariantsOf(raw: string | null | undefined): string[] {
   const digits = String(raw || "").replace(/\D/g, "");
@@ -22,7 +23,7 @@ export function phoneVariantsOf(raw: string | null | undefined): string[] {
 export type RecentBuyer = {
   hasPurchase: boolean;
   productIds: Set<string>;
-  /** Blocks marketing for the given cart/order product ids. */
+  /** Blocks ALL marketing for the given cart/order product ids. */
   blocks: (candidateProductIds: string[]) => { blocked: boolean; reason?: string };
 };
 
@@ -55,16 +56,11 @@ export async function loadRecentBuyer(
   return {
     hasPurchase,
     productIds,
-    blocks(candidateProductIds: string[]) {
+    blocks(_candidateProductIds: string[]) {
       if (!hasPurchase) return { blocked: false };
-      const ids = (candidateProductIds || []).map((p) => String(p || "")).filter(Boolean);
-      if (!ids.length) {
-        return { blocked: true, reason: `recent_buyer_${windowDays}d_unknown_product` };
-      }
-      if (ids.some((id) => productIds.has(id))) {
-        return { blocked: true, reason: `recent_buyer_${windowDays}d_same_product` };
-      }
-      return { blocked: false };
+      // STRICT: any real purchase inside the window blocks every marketing
+      // message to this number, regardless of product.
+      return { blocked: true, reason: `recent_buyer_${windowDays}d` };
     },
   };
 }
