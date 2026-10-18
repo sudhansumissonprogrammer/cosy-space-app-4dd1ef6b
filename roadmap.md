@@ -1,5 +1,6 @@
 # Current work
 
+- [ ] Deep-check Kalinga's current domain and every configured Meta event; verify live browser transmission and provider receipt where access permits, without creating real orders.
 - [x] Connect Telegram fresh after each of the three Oct 17 UTC workspace moves (20:47, 20:55, 21:02); @Shopbanaobot verified through the new connection and app credentials, telegram-order-notify redeployed each time without sending/replaying messages. Actual order delivery remains untested.
 - [x] Deep-audit Kalinga rename: 359 products, 11 categories, public pages/policies/theme/reviews checked; correct saved city to Khorda and isolate legacy-slug gates. 19 tests pass, preview PDP passes, build OK. Frontend safeguards await publication; see docs/KALINGA-KRISHNA-IDENTITY-PIXEL-AUDIT-2026-10-17.md.
 - [ ] Finish Kalinga/Krishna tracking setup: Kalinga live PageView/ViewContent/AddToCart HTTP 200 verified; server token cleared Sept 23, gateway requests abort. Krishna has no pixel/token. Blocked on correct Krishna pixel selection, Meta access/provider receipt checks, safe Purchase test and frontend publication.
