@@ -57,6 +57,8 @@ import { useAutoFreeGiftLine } from "@/hooks/useAutoFreeGiftLine";
 import CheckoutItemImage from "@/components/storefront/CheckoutItemImage";
 import { getFunctionErrorMessage } from "@/lib/functionError";
 import { checkoutConfirmationAmounts } from "@/lib/checkoutConfirmationAmounts";
+import { isKalingaStore } from "@/lib/kalingaStore";
+import { checkoutExitCoupon, KALINGA_EXIT_CODE } from "@/lib/checkoutExitCoupon";
 
 type UpiApp = "gpay" | "phonepe" | "paytm" | "bhim" | "any";
 type PayMethod = "upi" | "gateway" | "cod";
@@ -1377,6 +1379,20 @@ export default function CheckoutV2Page() {
     },
   });
 
+  // Separate from WhatsApp recovery: offered only on checkout exit.
+  const { data: kalingaExitCoupon } = useQuery({
+    queryKey: ["checkout-exit-coupon", store?.id, KALINGA_EXIT_CODE],
+    enabled: isKalingaStore(store),
+    staleTime: 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc("validate_store_coupon", {
+        _store_id: store.id, _code: KALINGA_EXIT_CODE,
+      });
+      if (error) throw error;
+      return Array.isArray(data) ? data[0] ?? null : data ?? null;
+    },
+  });
+
   // The order/UPI amount must never be minted before we know whether an
   // auto-apply coupon exists — otherwise the shopper is charged the
   // undiscounted amount while the server books the discounted total.
@@ -2304,22 +2320,15 @@ export default function CheckoutV2Page() {
   // Opens only after a deliberate leave attempt: the checkout header back
   // arrow or browser/mobile back. Never interrupt a shopper because they are
   // reading reviews, comparing payment methods, or spending longer on checkout.
-  // Offers the store's WhatsApp-exclusive coupon (bigger than the store-wide
-  // auto coupon) which replaces the currently applied one on claim.
+  // Kalinga uses separate SAVE50; other stores retain their WhatsApp offer.
+  // Claim replaces, never stacks coupons.
   const [exitOfferOpen, setExitOfferOpen] = useState(false);
   const exitGuardPushedRef = useRef(false);
 
   const exitCoupon = useMemo(() => {
-    if (!waCoupon?.code || subtotal <= 0) return null;
-    if (Number(waCoupon.min_order_amount || 0) > subtotal) return null;
-    if (appliedCoupon?.code && String(appliedCoupon.code).toUpperCase() === String(waCoupon.code).toUpperCase()) return null;
-    const raw = waCoupon.discount_type === "percentage"
-      ? (subtotal * Number(waCoupon.discount_value)) / 100
-      : Number(waCoupon.discount_value);
-    const value = Math.min(Math.round(raw), subtotal);
-    if (value <= couponDiscount) return null;
-    return { code: String(waCoupon.code).toUpperCase(), value };
-  }, [waCoupon, subtotal, appliedCoupon, couponDiscount]);
+    return checkoutExitCoupon(store, isKalingaStore(store) ? kalingaExitCoupon : waCoupon,
+      subtotal, appliedCoupon?.code, couponDiscount);
+  }, [store, kalingaExitCoupon, waCoupon, subtotal, appliedCoupon, couponDiscount]);
 
   const exitExtraSaving = exitCoupon ? Math.max(0, exitCoupon.value - couponDiscount) : 0;
 
@@ -2347,6 +2356,10 @@ export default function CheckoutV2Page() {
 
   const triggerExitOffer = useCallback((_explicit = false) => {
     if (!canShowExplicitExitOfferRef.current) return false;
+    // First back dismisses the full-screen photo; a subsequent back offers
+    // the checkout coupon. Never put the offer underneath the photo viewer.
+    const photoClose = document.querySelector<HTMLButtonElement>('[data-checkout-photo-preview="true"] button[aria-label="Close photo"]');
+    if (photoClose) { photoClose.click(); return true; }
     setExitOfferOpen(true);
     return true;
   }, []);
@@ -2401,8 +2414,8 @@ export default function CheckoutV2Page() {
   const exitOfferDialog = (
     <CheckoutExitOffer
       open={exitOfferOpen}
-      offerLabel={exitCoupon ? `${formatPrice(exitCoupon.value, currency)} OFF` : couponDiscount > 0 ? `${formatPrice(couponDiscount, currency)} OFF` : undefined}
-      offerCode={exitCoupon?.code || appliedCoupon?.code}
+      offerLabel={exitCoupon ? `${formatPrice(exitCoupon.value, currency)} OFF` : !isKalingaStore(store) && couponDiscount > 0 ? `${formatPrice(couponDiscount, currency)} OFF` : undefined}
+      offerCode={exitCoupon?.code || (!isKalingaStore(store) ? appliedCoupon?.code : undefined)}
       currentTotalLabel={exitExtraSaving > 0 ? formatPrice(total, currency) : undefined}
       newTotalLabel={exitExtraSaving > 0 ? formatPrice(Math.max(0, total - exitExtraSaving), currency) : formatPrice(total, currency)}
       alreadyClaimed={!exitCoupon}
@@ -4703,6 +4716,7 @@ export default function CheckoutV2Page() {
             storeLogo={store?.logo_url}
             storePhone={(store as any)?.secondary_phone || (store as any)?.whatsapp_number || null}
             cartItems={checkoutItems as any}
+            appliedOffer={isKalingaStore(store) ? appliedCoupon ? { code: appliedCoupon.code, discount: couponDiscount } : null : undefined}
             isSingleMode={isSingleMode}
             onBack={goBack}
             onQuantityChange={(item, nextQty) => {
@@ -4865,7 +4879,7 @@ export default function CheckoutV2Page() {
           )}
 
           {/* Order Summary bottom sheet */}
-          {summaryOpen && typeof document !== "undefined" && createPortal(
+          {summaryOpen && !exitOfferOpen && typeof document !== "undefined" && createPortal(
             <div className="fixed inset-0 z-[100] flex flex-col justify-end pointer-events-auto" role="dialog" aria-modal="true" aria-label="Order summary">
               <div className="absolute inset-0 bg-black/50" onClick={() => setSummaryOpen(false)} aria-hidden />
               <div className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl flex flex-col overflow-hidden max-h-[85dvh]">
@@ -5159,7 +5173,7 @@ export default function CheckoutV2Page() {
               dismiss) so the shopper cannot land on an empty checkout. Once
               the address is filled, tapping "Change" reopens it in editable
               mode with a close chip. */}
-          {showAddressFormSheet && typeof document !== "undefined" && createPortal(
+          {showAddressFormSheet && !exitOfferOpen && typeof document !== "undefined" && createPortal(
             <div className="fixed inset-0 z-[100] flex flex-col justify-end pointer-events-auto" role="dialog" aria-modal="true" aria-label="Add delivery address">
               {/* Scrim — always dismissible in payment-first flow so the shopper
                   can see the checkout underneath. If they try to pay without
@@ -5552,7 +5566,7 @@ export default function CheckoutV2Page() {
           )}
 
           {/* Payment breakup bottom sheet — trust + explanation */}
-          {breakupOpen && typeof document !== "undefined" && createPortal(
+          {breakupOpen && !exitOfferOpen && typeof document !== "undefined" && createPortal(
             <div className="fixed inset-0 z-[100] flex flex-col justify-end pointer-events-auto" role="dialog" aria-modal="true" aria-label="Payment breakup">
               <div className="absolute inset-0 bg-black/50" onClick={() => setBreakupOpen(false)} aria-hidden />
               <div className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl flex flex-col overflow-hidden max-h-[88dvh]">
@@ -5959,7 +5973,7 @@ export default function CheckoutV2Page() {
           )}
 
           {/* COD confirm popup — bottom sheet, standalone COD only. */}
-          {codConfirmOpen && typeof document !== "undefined" && createPortal(
+          {codConfirmOpen && !exitOfferOpen && typeof document !== "undefined" && createPortal(
             <div className="fixed inset-0 z-[120] flex flex-col justify-end" role="dialog" aria-modal="true" aria-label="Confirm your order">
               <div className="absolute inset-0 bg-black/60" onClick={() => { if (!placingCod) setCodConfirmOpen(false); }} aria-hidden />
               <button
@@ -6055,7 +6069,7 @@ export default function CheckoutV2Page() {
 
       {/* Address book dialog (saved addresses sheet) */}
       {/* Address book bottom-sheet */}
-      {showAddressDialog && (
+      {showAddressDialog && !exitOfferOpen && (
         <>
           <div
             className="fixed inset-0 z-40 bg-black/50"

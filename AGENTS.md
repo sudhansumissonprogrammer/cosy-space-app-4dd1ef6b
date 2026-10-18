@@ -12,10 +12,10 @@
 - Keep `is_best_selling` for storefront merchandising but do not restore the separate per-product award seal, because its controls and flag were retired.
 
 - JD Store Spy extension calls the JD platform API from the store page (content script), never the extension background, because the platform resolves the tenant from the request Origin.
-- Store-specific PDP similar-design rails use a lazy store-gated component, a bounded cached public product query, and rail-local image visibility, because curated navigation must not block the main photo or fetch off-screen images.
+- Store-gated similar rails use lazy components, bounded cached queries and local image visibility so navigation never blocks the main photo.
 - Imitation World uses store-gated compact gallery sizing and hides only the underneath thumbnail strip, because existing swipe, video, and zoom behavior must remain intact without changing other stores.
 - Store-specific informational gallery slides use a shared presentation-only ordering helper and deferred asset URL, because category/product data must remain untouched and the opening photo must not compete with an infographic download.
-- PDP cached readiness uses stable refs and passive effects, never callback-ref state updates, to prevent update loops. After main readiness, prepare a retained adjacent-slide ring at low priority so swipe downloads start before gestures.
+- PDP readiness uses stable refs/passive effects, not callback-ref state. Prepare retained adjacent slides at low priority after main readiness, preventing loops and blank swipes.
 - Shared PDP photos retry a failed exact source once, then offer explicit manual recovery; successful entries never trigger extra requests and failed downloads must not leave a silent blank gallery.
 - Key PDP galleries by product and media sources, and never clear loaded-photo state when Embla initializes, because child cached-readiness effects may already have fired and will not repeat for unchanged URLs.
 - Storefront cards share sticky intersection activation; category grids arm a bounded next-row buffer after opening photos decode or scrolling starts and gate eager low-priority card images through CardImageReadiness, because zero-margin/native-lazy double gating creates blank rows while opening downloads must remain bounded. Activated cards retain paint; PDP intent warmers and transition previews use the canonical 1200px photo.
@@ -28,4 +28,6 @@
 
 - Resolve Kalinga public content and store-only features through its shared helper; known IDs override legacy slugs to prevent stale identity and cross-store overrides.
 - Kalinga’s separate lazy carousel shares teaser cache; opt-in glass cards preserve the independent popup and animated teaser.
-- Review management resolves the route with an owner filter and admin fallback; distinguish loading/access errors from empty lists.
+- Reviews resolve owner-filtered routes with admin fallback; distinguish errors from empty lists.
+
+- Store-specific exit coupons are independently validated and replace only smaller discounts; hide other checkout sheets while the exit offer opens to avoid overlapping dialogs.

@@ -3,6 +3,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders, normalizePhone, loadPlatformConfig, platformConfigUsable, isValidCronHeader, hasApprovedTemplates, getMetaBreaker, isMetaBreakerOpen, recoveryDripDecision, DRIP_WINDOW_MS } from "../_shared/wa-platform.ts";
 import { loadRecentBuyer } from "../_shared/wa-recent-buyer.ts";
+import { KALINGA_RECOVERY_STORE_ID, KALINGA_RECOVERY_CODE, recoveryCouponToken } from "../_shared/kalinga-recovery-offer.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -34,7 +35,8 @@ Deno.serve(async (req) => {
       const [{ data: coupons }, { data: st }] = await Promise.all([
         admin.from("coupons")
           .select("code, discount_type, discount_value, min_order_amount, starts_at, expires_at, wa_exclusive")
-          .eq("store_id", storeId).eq("auto_apply", true).eq("is_active", true)
+          .eq("store_id", storeId).eq("is_active", true)
+          .eq(storeId === KALINGA_RECOVERY_STORE_ID ? "code" : "auto_apply", storeId === KALINGA_RECOVERY_STORE_ID ? KALINGA_RECOVERY_CODE : true)
           .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
           // WhatsApp-exclusive coupons win for recovery recipients — they are
           // the ones checkout will auto-apply when the shopper taps the link.
@@ -385,7 +387,7 @@ Deno.serve(async (req) => {
         advance_amount: ADVANCE_AMOUNT.toFixed(0),
         discount_amount: OFFER_DISCOUNT.toFixed(0),
         coupon_code: offer.coupon_code,
-        cta_token: ctaToken,
+        cta_token: recoveryCouponToken(ctaToken, (c as any).store_id, offer.coupon_code),
         // v7_img — dynamic header image. Ignored by TEXT-header templates.
         ...(headerMediaUrl ? { header_media_url: headerMediaUrl } : {}),
       },
@@ -592,7 +594,7 @@ Deno.serve(async (req) => {
           advance_amount: offer2.advance.toFixed(0),
           discount_amount: offer2.discount.toFixed(0),
           coupon_code: offer2.coupon_code,
-          cta_token: ctaToken,
+          cta_token: recoveryCouponToken(ctaToken, (o as any).store_id, offer2.coupon_code),
           ...(headerMediaUrl2 ? { header_media_url: headerMediaUrl2 } : {}),
         },
         priority: 4, // slightly higher than cart-only (5) — these are hotter leads
