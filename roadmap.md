@@ -1,5 +1,7 @@
 # Current work
 
+- [x] Temporarily hide all Kalinga products outside Chain with Pendant: all 69 members visible, other 131 hidden, primary/additional assignments checked, before-change restoration snapshot saved. Both read-only SQL assertions pass; live category renders without browser errors. No products deleted or prices/order changed.
+
 - [x] Reconnect Telegram after Oct 18 03:45 UTC workspace move; @Shopbanaobot verified through app credentials and order alerts redeployed without messages/replay. Real delivery awaits a qualifying order.
 
 - [x] Refresh Kalinga carousel below Returns & Exchange in both PDP layouts; independent animated teaser preserved, opt-in glass cards and popup updated. 11 existing tests pass, build OK, 390px/1280px fixture checks pass placement/arrows/popup/media with no page errors or horizontal overflow. Public approved-review verification remains blocked by pending reviews; no review data changed. Publication required.
