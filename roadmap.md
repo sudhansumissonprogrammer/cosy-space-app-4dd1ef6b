@@ -1,5 +1,7 @@
 # Current work
 
+- [ ] Reconnect Telegram after Oct 18 03:45 UTC workspace move without messages or replay.
+
 - [ ] Refresh Kalinga review carousel below Returns & Exchange; preserve animated teaser and improve glass cards and popup.
 - [ ] Reconnect Telegram after Oct 18 03:41 UTC workspace move without sending or replaying messages.
 
