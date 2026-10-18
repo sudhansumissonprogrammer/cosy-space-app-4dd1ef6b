@@ -1,5 +1,7 @@
 # Current work
 
+- [ ] Connect Telegram fresh after Oct 18 07:05 UTC workspace move; verify bot and redeploy existing alerts without messages or historical replay.
+
 - [ ] Deep-test live Kalinga before ads: category/PDP photos, navigation, cart/checkout, public policies, saved visibility/prices/payment readiness, and browser Meta events; do not submit orders/payments/messages.
 
 - [x] Connect Telegram fresh after Oct 18 04:02 UTC workspace move; @Shopbanaobot verified through app credentials and existing order alerts redeployed without sending or replaying messages. Real delivery awaits a qualifying order.
