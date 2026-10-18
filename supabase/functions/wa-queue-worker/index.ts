@@ -186,11 +186,11 @@ Deno.serve(async (req) => {
       const decision = buyer.blocks(candidateIds);
       if (decision.blocked) {
         await admin.from("wa_send_queue").update({
-          status: "skipped", last_error: decision.reason || "recent_buyer_7d", locked_until: null,
+          status: "skipped", last_error: decision.reason || "recent_buyer_4d", locked_until: null,
         } as any).eq("id", row.id);
         if (row.abandoned_cart_id) {
           await admin.from("abandoned_carts")
-            .update({ recovered: true, recovery_status: "skipped", recovery_error: decision.reason || "recent_buyer_7d" })
+            .update({ recovered: true, recovery_status: "skipped", recovery_error: decision.reason || "recent_buyer_4d" })
             .eq("id", row.abandoned_cart_id);
         }
         skippedPaused++;
