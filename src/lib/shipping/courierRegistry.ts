@@ -1,6 +1,8 @@
 // Client-side courier metadata (display only). Courier API logic lives in
 // supabase/functions/_shared/tracking/couriers/*. The UI never branches on
 // courier — it just looks up a label here.
+import { customerTrackingUrl } from "../../../supabase/functions/_shared/customer-tracking";
+export { customerTrackingUrl, validShipmentTrackingNumber } from "../../../supabase/functions/_shared/customer-tracking";
 
 export type ShipmentStatus =
   | "confirmed" | "packed" | "shipped" | "in_transit" | "reached_hub"
@@ -43,6 +45,7 @@ export interface CourierMeta {
 }
 
 export const COURIERS: CourierMeta[] = [
+  { slug: "valmo", name: "Valmo", api: false, domain: "valmo.in" },
   { slug: "shiprocket", name: "Shiprocket", api: true, domain: "shiprocket.in" },
   { slug: "delhivery", name: "Delhivery", api: true, domain: "delhivery.com" },
   { slug: "ekart", name: "Ekart Logistics", api: true, domain: "ekartlogistics.com" },
@@ -75,15 +78,14 @@ export function courierLogo(slug?: string | null, size = 64): string | null {
 
 /** Prefilled Speed Post Track destination used for customer tracking links. */
 export function aggregatorTrackingUrl(awb: string) {
-  const payload = JSON.stringify({ t: awb.trim(), c: "speedpost" });
-  const encoded = btoa(payload);
-  return `https://speedposttrack.io/tracking-result?d=${encodeURIComponent(encoded)}&utm_source=copy&utm_medium=share&utm_campaign=parcel_tracking`;
+  return customerTrackingUrl("india_post", awb);
 }
 
 export function officialTrackingUrl(slug: string | null | undefined, awb: string | null | undefined): string | null {
   if (!awb) return null;
   const a = encodeURIComponent(awb.trim());
   switch (slug) {
+    case "valmo": return customerTrackingUrl(slug, awb);
     case "shiprocket": return `https://shiprocket.co/tracking/${a}`;
     case "delhivery": return `https://www.delhivery.com/track-v2/package/${a}`;
     case "ekart": return `https://ekartlogistics.com/shipmenttrack/${a}`;

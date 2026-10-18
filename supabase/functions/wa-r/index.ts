@@ -1,5 +1,6 @@
 // Branded WhatsApp button redirector.
 import { recoveryCouponTarget } from "../_shared/kalinga-recovery-offer.ts";
+import { customerTrackingUrl } from "../_shared/customer-tracking.ts";
 // URL: https://shopbanao.in/r/<token>  → index.html inline script forwards
 // here → 301/302 to the store's real page.
 //
@@ -39,11 +40,6 @@ const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 // Module-scope client → connection pool + TLS reuse across invocations.
 const admin = createClient(SUPABASE_URL, SERVICE_KEY);
-
-function speedPostTrackingUrl(awb: string): string {
-  const payload = btoa(JSON.stringify({ t: awb.trim(), c: "speedpost" }));
-  return `https://speedposttrack.io/tracking-result?d=${encodeURIComponent(payload)}&utm_source=copy&utm_medium=share&utm_campaign=parcel_tracking`;
-}
 
 /**
  * Kick off a pre-mint as early as possible (in parallel with the DB lookup)
@@ -258,10 +254,18 @@ Deno.serve(async (req) => {
       if (kind === "t-") {
         const awb = String((o as any).tracking_number || "").trim();
         if (awb) {
-          return redirect(speedPostTrackingUrl(awb), {
+          const { data: shipment, error: shipmentError } = await admin.from("order_shipments")
+            .select("tracking_slug")
+            .eq("order_id", id)
+            .eq("awb", awb)
+            .order("updated_at", { ascending: false })
+            .limit(1).maybeSingle();
+          if (shipmentError) return redirect(`${base}/account/orders/${id}#shipment`);
+          const courier = shipment?.tracking_slug;
+          return redirect(customerTrackingUrl(courier, awb), {
             status: 302,
             maxAge: 0,
-            preconnectHosts: ["speedposttrack.io"],
+            preconnectHosts: [courier === "valmo" ? "www.valmo.in" : "speedposttrack.io"],
           });
         }
       }

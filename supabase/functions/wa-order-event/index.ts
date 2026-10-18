@@ -3,6 +3,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders, normalizePhone, isValidCronHeader, loadPlatformConfig, platformConfigUsable, getCronSecret } from "../_shared/wa-platform.ts";
 import { formatExpectedDelivery, formatPaymentStatusLine, formatPaidSummary, formatCodDueLine, inferCourierName } from "../_shared/wa-content.ts";
+import { customerTrackingUrl } from "../_shared/customer-tracking.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -319,7 +320,8 @@ Deno.serve(async (req) => {
       cod_due_line: codDueLine,
       expected_delivery: expectedDelivery,
       order_link: orderLink,
-      tracking_url: trackingUrl,
+      tracking_url: body.event === "order_shipped" && (shipRow as any)?.tracking_slug === "valmo"
+        ? customerTrackingUrl("valmo", o.tracking_number) : trackingUrl,
       tracking_number: o.tracking_number || "",
       courier_name: courierName,
       review_url: reviewUrl,

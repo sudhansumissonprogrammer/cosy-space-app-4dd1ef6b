@@ -2,7 +2,7 @@ import { useState } from "react";
 import { AlertTriangle, Check, Copy, ExternalLink, MapPin, PackageCheck } from "lucide-react";
 import {
   SHIPMENT_STATUS_LABEL, SHIPMENT_STEPS, courierMeta, isTerminal,
-  aggregatorTrackingUrl, shipmentStatusRank, type ShipmentStatus,
+  customerTrackingUrl, shipmentStatusRank, type ShipmentStatus,
 } from "@/lib/shipping/courierRegistry";
 import type { ShipmentTracking } from "@/hooks/useShipmentTracking";
 import CourierLogo from "./CourierLogo";
@@ -46,7 +46,7 @@ export default function ShipmentTimeline({ shipment }: { shipment: ShipmentTrack
   const currentIdx = shipmentStatusRank(status);
   const failed = status === "cancelled" || status === "returned";
   const slug = shipment.tracking_slug || shipment.provider;
-  const official = shipment.awb ? aggregatorTrackingUrl(shipment.awb) : null;
+  const official = shipment.awb ? customerTrackingUrl(slug, shipment.awb) : null;
 
   const events = shipment.events ?? [];
   const availability = trackingAvailability(shipment.last_error);
@@ -193,7 +193,7 @@ export default function ShipmentTimeline({ shipment }: { shipment: ShipmentTrack
         <a href={official} target="_blank" rel="noopener noreferrer"
            className="mt-4 inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold"
            style={{ borderColor: softBorder }}>
-           Track on Speed Post Track <ExternalLink className="h-3 w-3" />
+           Track on {slug === "valmo" ? "Valmo" : "Speed Post Track"} <ExternalLink className="h-3 w-3" />
         </a>
       )}
     </div>

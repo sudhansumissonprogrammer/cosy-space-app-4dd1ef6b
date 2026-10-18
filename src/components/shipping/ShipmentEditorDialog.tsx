@@ -3,11 +3,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { COURIERS, SHIPMENT_STATUS_LABEL, SHIPMENT_STEPS, aggregatorTrackingUrl, courierMeta } from "@/lib/shipping/courierRegistry";
+import { COURIERS, SHIPMENT_STATUS_LABEL, SHIPMENT_STEPS, customerTrackingUrl, courierMeta, validShipmentTrackingNumber } from "@/lib/shipping/courierRegistry";
 import type { ShipmentTracking } from "@/hooks/useShipmentTracking";
 import CourierLogo from "./CourierLogo";
 import ParcelLabelScanner from "./ParcelLabelScanner";
@@ -103,7 +104,7 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
         _slug: slug,
         _courier_name: meta.name,
         _awb: awb.trim(),
-        _tracking_url: aggregatorTrackingUrl(awb.trim()),
+        _tracking_url: customerTrackingUrl(slug, awb),
         _status: isRto ? "returned" : isNewShipment ? "shipped" : status,
         _shipment_id: matchedShipmentId,
         // 🔕 Persisted with the shipment so every later path (courier auto-sync,
@@ -121,17 +122,18 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
       // idempotency (one row per order + event), so a re-save never spams.
       let waResult: any = null;
       const savedStatus = isRto ? "returned" : isNewShipment ? "shipped" : status;
-      if (!isRto && (notify || verifiedScanId) && (savedStatus === "shipped" || savedStatus === "in_transit")) {
-        const { data: waData } = await supabase.functions.invoke("wa-order-event", {
-          body: { event: "order_shipped", order_id: orderId, parcel_scan_id: verifiedScanId },
+      if (!isRto && notify && (savedStatus === "shipped" || savedStatus === "in_transit")) {
+        const { data: waData, error: waError } = await supabase.functions.invoke("wa-order-event", {
+          body: { event: "order_shipped", order_id: orderId },
         });
-        waResult = waData;
+        waResult = waError || waData?.error ? { notificationFailed: true } : waData;
       }
 
       return waResult;
     },
     onSuccess: (waResult: any) => {
-      if (waResult?.queued) toast.success("Shipment saved · WhatsApp message queued");
+      if (waResult?.notificationFailed) toast.warning("Shipment saved, but WhatsApp could not be queued. Try saving again.");
+      else if (waResult?.queued) toast.success("Shipment saved · WhatsApp message queued");
       else if (waResult?.reason === "already_enqueued") toast.success("Shipment saved · WhatsApp already sent");
       else if (waResult?.skipped) toast.success(`Shipment saved · WhatsApp skipped (${waResult.reason})`);
       else toast.success("Shipment saved");
@@ -155,7 +157,7 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
         </DialogHeader>
 
         <div className="space-y-4">
-          {(isNewShipment || (isRto && !matchedShipmentId)) && (
+          {isRto && !matchedShipmentId && (
             <ParcelLabelScanner
               orderId={orderId}
               disabled={save.isPending}
@@ -174,7 +176,28 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
             />
           )}
 
-          {awb && slug && (
+          {!isRto && (
+            <>
+              <div className="space-y-1.5">
+                <Label htmlFor="shipment-courier">Courier partner</Label>
+                <Select value={slug} onValueChange={setSlug} disabled={save.isPending}>
+                  <SelectTrigger id="shipment-courier"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {COURIERS.map((courier) => (
+                      <SelectItem key={courier.slug} value={courier.slug}>{courier.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="shipment-tracking">Tracking number</Label>
+                <Input id="shipment-tracking" value={awb} onChange={(event) => setAwb(event.target.value)}
+                  placeholder="Enter tracking number" maxLength={40} autoComplete="off" disabled={save.isPending} />
+              </div>
+            </>
+          )}
+
+          {isRto && awb && slug && (
             <div className="space-y-2 rounded-md border bg-muted/40 px-3 py-3">
               <p className="text-xs font-medium text-muted-foreground">Verified label details</p>
               <div className="flex items-center gap-2 text-sm font-medium">
@@ -206,7 +229,7 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
             <div className="rounded-md border bg-muted/40 px-3 py-2.5">
               <p className="text-sm font-medium">Status: Shipped</p>
               <p className="mt-0.5 text-[11px] text-muted-foreground">
-                Saving the verified label marks the order as shipped. You can record delivery or RTO later.
+                Saving marks the order as shipped.
               </p>
             </div>
           ) : (
@@ -232,7 +255,7 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
               Notify customer on WhatsApp
               <span className="block text-[11px] text-muted-foreground">
                 {notify
-                  ? "Sends the verified parcel photo, tracking number, courier and expected delivery date. Sent only once per order."
+                  ? "Sends the courier, tracking number and tracking link. Sent only once per order."
                   : "Off — no shipping message will be sent for this order, including later automatic tracking updates."}
               </span>
               <span className="mt-1 block text-[11px] text-muted-foreground">
@@ -245,7 +268,7 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={() => save.mutate()} disabled={save.isPending || awb.trim().length < 4 || (isRto && !verifiedScanId && !matchedShipmentId)}>
+          <Button onClick={() => save.mutate()} disabled={save.isPending || !validShipmentTrackingNumber(awb) || (isRto && !verifiedScanId && !matchedShipmentId)}>
             {save.isPending ? "Saving…" : isRto ? "Mark RTO" : "Save shipment"}
           </Button>
         </DialogFooter>

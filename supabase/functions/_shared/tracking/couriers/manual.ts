@@ -1,5 +1,6 @@
 import { TrackingAdapter } from "../types.ts";
 import { hasPublicFeed, publicAdapter } from "./public.ts";
+import { customerTrackingUrl } from "../../customer-tracking.ts";
 
 /**
  * Couriers a merchant can pick without any onboarding.
@@ -16,6 +17,7 @@ function courier(slug: string, displayName: string, url: (awb: string) => string
 }
 
 export const manualAdapters: TrackingAdapter[] = [
+  { slug: "valmo", displayName: "Valmo", supportsApi: false, officialUrl: (awb) => customerTrackingUrl("valmo", awb) },
   courier("india_post", "India Post", () => "https://www.indiapost.gov.in/_layouts/15/DOP.Portal.Tracking/TrackConsignment.aspx"),
   courier("dtdc", "DTDC", (awb) => `https://www.dtdc.in/tracking/shipment-tracking?strCnno=${encodeURIComponent(awb)}`),
   courier("xpressbees", "Xpressbees", (awb) => `https://www.xpressbees.com/shipment/tracking?awbNo=${encodeURIComponent(awb)}`),
