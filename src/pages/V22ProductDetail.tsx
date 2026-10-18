@@ -40,7 +40,7 @@ import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 import { lazy, Suspense } from "react";
 import { fetchPdpEdge } from "@/lib/storefrontEdgeApi";
-import { resolvePdpPayload } from "@/lib/pdpPayload";
+import { readPdpRpcResult, resolvePdpPayload } from "@/lib/pdpPayload";
 import ProductLoadError from "@/components/storefront/pdp/ProductLoadError";
 import DeferUntilVisible from "@/components/storefront/DeferUntilVisible";
 import PartialPaymentTrustCard from "@/components/storefront/PartialPaymentTrustCard";
@@ -215,10 +215,14 @@ export default function V22ProductDetail() {
       // Race edge cache vs Supabase RPC in parallel — see ProductDetail.tsx
       // for full rationale. Saves 400-800ms on every cold-edge miss.
       const edgePromise = fetchPdpEdge(canonicalProductSlug).catch(() => null);
+      let rpcFailure: unknown = null;
       const rpcPromise = (supabase as any).rpc("get_product_page", {
         _store_slug: store.slug,
         _product_slug: canonicalProductSlug,
-      }).then((r: any) => r?.data).catch(() => null);
+      }).then((r: any) => readPdpRpcResult(r)).catch((error: unknown) => {
+        rpcFailure = error;
+        return null;
+      });
 
       const edge = await edgePromise;
       if (edge?.product) {
@@ -260,6 +264,7 @@ export default function V22ProductDetail() {
         .maybeSingle();
 
       if (!data && !error) {
+        if (rpcFailure) throw rpcFailure;
         if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(canonicalProductSlug)) {
           if (error) throw error;
           return data;
@@ -276,6 +281,7 @@ export default function V22ProductDetail() {
       }
 
       if (error) throw error;
+      if (!data && rpcFailure) throw rpcFailure;
       return data;
     },
     initialData: () => {
