@@ -1,5 +1,7 @@
 # Current work
 
+- [ ] Restore Kalinga PDP customer review card carousel while preserving the existing all-reviews popup button; verify card browsing and popup with real approved reviews.
+
 - [x] Connect Telegram fresh after the Oct 18 02:31 UTC workspace move; @Shopbanaobot verified through connector and app credentials, order alerts redeployed without sending/replaying messages. Real order delivery remains untested.
 - [x] Deep-check Kalinga live homepage/product/cart/checkout events: correct pixel/domain and HTTP 200 for PageView/ViewContent/AddToCart/InitiateCheckout; duplicate checkout PageView reproduced and Facebook-configured external gateway identified. No orders/payments or tracking changes; see docs/KALINGA-EVENT-TRANSMISSION-AUDIT-2026-10-18.md.
 - [x] Connect Telegram fresh after each of the three Oct 17 UTC workspace moves (20:47, 20:55, 21:02); @Shopbanaobot verified through the new connection and app credentials, telegram-order-notify redeployed each time without sending/replaying messages. Actual order delivery remains untested.
