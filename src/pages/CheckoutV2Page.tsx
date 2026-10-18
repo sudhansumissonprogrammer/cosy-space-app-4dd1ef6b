@@ -4712,6 +4712,7 @@ export default function CheckoutV2Page() {
             storeLogo={store?.logo_url}
             storePhone={(store as any)?.secondary_phone || (store as any)?.whatsapp_number || null}
             cartItems={checkoutItems as any}
+            appliedOffer={isKalingaStore(store) ? appliedCoupon ? { code: appliedCoupon.code, discount: couponDiscount } : null : undefined}
             isSingleMode={isSingleMode}
             onBack={goBack}
             onQuantityChange={(item, nextQty) => {

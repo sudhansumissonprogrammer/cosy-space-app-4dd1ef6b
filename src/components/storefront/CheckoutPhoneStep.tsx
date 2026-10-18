@@ -57,6 +57,8 @@ interface Props {
   /** Store owner / customer-care number shown in the header (same as payment step). */
   storePhone?: string | null;
   cartItems: CartItem[];
+  /** Parent-validated coupon, so the phone gate reflects claimed exit/recovery offers. */
+  appliedOffer?: { code: string; discount: number } | null;
   /** True when in buy-now single mode — hides Remove (no cart to fall back to). */
   isSingleMode?: boolean;
   /** Called when the shopper taps +/- on a row. Parent decides cart vs buy-now qty. */
@@ -112,6 +114,7 @@ export default function CheckoutPhoneStep({
   storeLogo,
   storePhone,
   cartItems,
+  appliedOffer,
   isSingleMode,
   onQuantityChange,
   onRemoveItem,
@@ -196,6 +199,10 @@ export default function CheckoutPhoneStep({
   };
 
   const { bestCoupon, autoCouponDiscount } = useMemo(() => {
+    if (appliedOffer !== undefined) return {
+      bestCoupon: appliedOffer,
+      autoCouponDiscount: appliedOffer?.discount || 0,
+    };
     const a = valueOf(autoCoupon);
     // The exclusive coupon is only advertised to shoppers who actually
     // claimed it from the exit-intent popup.
@@ -211,7 +218,7 @@ export default function CheckoutPhoneStep({
       ? { bestCoupon: exclusiveCoupon, autoCouponDiscount: e }
       : { bestCoupon: autoCoupon, autoCouponDiscount: a };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoCoupon, exclusiveCoupon, subtotal, storeId]);
+  }, [autoCoupon, exclusiveCoupon, subtotal, storeId, appliedOffer]);
 
 
   const setQty = (item: CartItem, next: number) => {
