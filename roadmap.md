@@ -1,9 +1,10 @@
 # Current work
 
 - [x] Connect Telegram fresh after the Oct 18 02:44 UTC workspace move; bot and app credentials verified and alerts redeployed without messages.
-- [ ] Connect Telegram fresh after the Oct 18 02:50 UTC workspace move; verify and redeploy without sending or replaying messages.
+- [x] Connect Telegram fresh after the Oct 18 02:50 UTC workspace move; @Shopbanaobot and app credentials verified, alerts redeployed without sending/replaying messages. Actual delivery awaits a qualifying order.
 
-- [ ] Restore Kalinga PDP customer review card carousel while preserving the existing all-reviews popup button; verify card browsing and popup with real approved reviews.
+- [x] Restore Kalinga PDP customer review carousel and preserve all-reviews popup button; preview-only carousel movement and popup pass at 390px/1280px, 10 identity tests pass, build OK. No review approvals or data changed.
+- [ ] Verify carousel with real public Kalinga reviews after merchant approval: all 28 saved reviews are hidden/pending, so public review button and carousel currently have no approved content. Frontend publication required.
 
 - [x] Connect Telegram fresh after the Oct 18 02:31 UTC workspace move; @Shopbanaobot verified through connector and app credentials, order alerts redeployed without sending/replaying messages. Real order delivery remains untested.
 - [x] Deep-check Kalinga live homepage/product/cart/checkout events: correct pixel/domain and HTTP 200 for PageView/ViewContent/AddToCart/InitiateCheckout; duplicate checkout PageView reproduced and Facebook-configured external gateway identified. No orders/payments or tracking changes; see docs/KALINGA-EVENT-TRANSMISSION-AUDIT-2026-10-18.md.
