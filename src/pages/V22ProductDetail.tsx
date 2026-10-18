@@ -40,6 +40,8 @@ import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 import { lazy, Suspense } from "react";
 import { fetchPdpEdge } from "@/lib/storefrontEdgeApi";
+import { readPdpRpcResult, resolvePdpPayload } from "@/lib/pdpPayload";
+import ProductLoadError from "@/components/storefront/pdp/ProductLoadError";
 import DeferUntilVisible from "@/components/storefront/DeferUntilVisible";
 import PartialPaymentTrustCard from "@/components/storefront/PartialPaymentTrustCard";
 // BuyNowPhoneModal deprecated — phone capture is now Step 1 of CheckoutPage.
@@ -207,16 +209,20 @@ export default function V22ProductDetail() {
     }
   }
 
-  const { data: product, isLoading } = useQuery({
+  const { data: product, isLoading, isError, isFetching, refetch } = useQuery({
     queryKey: ["storefront-product", store.id, canonicalProductSlug],
     queryFn: async () => {
       // Race edge cache vs Supabase RPC in parallel — see ProductDetail.tsx
       // for full rationale. Saves 400-800ms on every cold-edge miss.
       const edgePromise = fetchPdpEdge(canonicalProductSlug).catch(() => null);
+      let rpcFailure: unknown = null;
       const rpcPromise = (supabase as any).rpc("get_product_page", {
         _store_slug: store.slug,
         _product_slug: canonicalProductSlug,
-      }).then((r: any) => r?.data).catch(() => null);
+      }).then((r: any) => readPdpRpcResult(r)).catch((error: unknown) => {
+        rpcFailure = error;
+        return null;
+      });
 
       const edge = await edgePromise;
       if (edge?.product) {
@@ -237,7 +243,7 @@ export default function V22ProductDetail() {
           }
         }).catch(() => {});
       }
-      let rpc = edge ?? (await rpcPromise);
+      const rpc = await resolvePdpPayload(edge, rpcPromise);
 
       if (rpc?.product) {
         // Hydrate sibling queries so they don't refetch
@@ -258,6 +264,7 @@ export default function V22ProductDetail() {
         .maybeSingle();
 
       if (!data && !error) {
+        if (rpcFailure) throw rpcFailure;
         if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(canonicalProductSlug)) {
           if (error) throw error;
           return data;
@@ -274,6 +281,7 @@ export default function V22ProductDetail() {
       }
 
       if (error) throw error;
+      if (!data && rpcFailure) throw rpcFailure;
       return data;
     },
     initialData: () => {
@@ -552,7 +560,11 @@ export default function V22ProductDetail() {
     return url ? { url, poster: freshProductMedia?.video_poster_url || allImages[0] || "" } : null;
   })();
 
-  if (isLoading) return <ProductDetailSkeleton />;
+  if (isLoading || (isFetching && !product && !isError)) return <ProductDetailSkeleton />;
+
+  if (isError && !product) {
+    return <ProductLoadError retry={() => { void refetch(); }} retrying={isFetching} />;
+  }
 
   if (!product) {
     return (

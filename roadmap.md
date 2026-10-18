@@ -1,7 +1,7 @@
 # Current work
 
-- [ ] Fix Kalinga pictured pendant not opening; audit all visible category product links and preserve temporary visibility.
-- [ ] Reconnect Telegram after Oct 18 12:00 UTC workspace move; verify bot without messages or replay.
+- [x] Fix shared false product-unavailability path: early prefetch swallowed service errors and cached null; preserve errors, fresh lookup after negative edge payload, URL retained with retry. Browser 503 → retry → correct product passes; 69/69 live category PDP endpoints and public lookups match; 13 tests pass, build OK. Visibility/prices unchanged. Frontend publication required; exact screenshot-time trigger cannot be proven.
+- [x] Reconnect Telegram after Oct 18 12:00 UTC workspace move; @Shopbanaobot verified and order-alert function redeployed without messages or replay. Real delivery awaits a qualifying order.
 
 - [x] Connect Telegram fresh after Oct 18 09:11 UTC workspace move; @Shopbanaobot verified with getMe and telegram-order-notify redeployed without sending or replaying messages. Real order delivery awaits a qualifying paid/partially paid Serdiya order.
 

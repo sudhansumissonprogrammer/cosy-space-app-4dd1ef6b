@@ -14,7 +14,7 @@
 - JD Store Spy extension calls the JD platform API from the store page (content script), never the extension background, because the platform resolves the tenant from the request Origin.
 - Store-gated similar rails use lazy components, bounded cached queries and local image visibility so navigation never blocks the main photo.
 - Imitation World uses store-gated compact gallery sizing and hides only the underneath thumbnail strip, because existing swipe, video, and zoom behavior must remain intact without changing other stores.
-- Store-specific informational gallery slides use a shared presentation-only ordering helper and deferred asset URL, because category/product data must remain untouched and the opening photo must not compete with an infographic download.
+- Informational slides use shared presentation-only ordering and deferred URLs; preserve product data and opening-photo priority.
 - PDP readiness uses stable refs/passive effects, not callback-ref state. Prepare retained adjacent slides at low priority after main readiness, preventing loops and blank swipes.
 - Shared PDP photos retry a failed exact source once, then offer explicit manual recovery; successful entries never trigger extra requests and failed downloads must not leave a silent blank gallery.
 - Key PDP galleries by product and media sources, and never clear loaded-photo state when Embla initializes, because child cached-readiness effects may already have fired and will not repeat for unchanged URLs.
@@ -32,3 +32,4 @@
 
 - Validate exit coupons independently; replace only smaller discounts and hide competing sheets to prevent overlap.
 - Store-gated cashback display is separate from charges to keep badges consistent.
+- PDP and warmup preserve errors; retry retains the URL and negative edge results defer to fresh lookup.

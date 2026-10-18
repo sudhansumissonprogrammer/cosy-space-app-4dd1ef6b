@@ -41,6 +41,8 @@ import { fireMetaCAPI } from "@/lib/metaCapi";
 import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 import { lazy, Suspense } from "react";
 import { fetchPdpEdge } from "@/lib/storefrontEdgeApi";
+import { readPdpRpcResult, resolvePdpPayload } from "@/lib/pdpPayload";
+import ProductLoadError from "@/components/storefront/pdp/ProductLoadError";
 import { pdpPrefetchCache } from "@/lib/prefetchProductDetail";
 import DeferUntilVisible from "@/components/storefront/DeferUntilVisible";
 import { hasCustomPdpSections } from "@/components/storefront/pdp/storeSections/config";
@@ -225,7 +227,7 @@ export default function ProductDetail() {
     }
   }
 
-  const { data: product, isLoading } = useQuery({
+  const { data: product, isLoading, isError, isFetching, refetch } = useQuery({
     queryKey: ["storefront-product", store.id, canonicalProductSlug],
     queryFn: async () => {
       // Race edge cache vs Supabase RPC in parallel — take whichever wins.
@@ -240,10 +242,14 @@ export default function ProductDetail() {
       // clicks and doubles as a free dedupe when the user taps quickly.
       const prefetched = pdpPrefetchCache.get(canonicalProductSlug);
       const edgePromise = (prefetched ?? fetchPdpEdge(canonicalProductSlug)).catch(() => null);
+      let rpcFailure: unknown = null;
       const rpcPromise = (supabase as any).rpc("get_product_page", {
         _store_slug: store.slug,
         _product_slug: canonicalProductSlug,
-      }).then((r: any) => r?.data).catch(() => null);
+      }).then((r: any) => readPdpRpcResult(r)).catch((error: unknown) => {
+        rpcFailure = error;
+        return null;
+      });
 
       const edge = await edgePromise;
       if (edge?.product) {
@@ -268,7 +274,7 @@ export default function ProductDetail() {
           }
         }).catch(() => {});
       }
-      let rpc = edge ?? (await rpcPromise);
+      const rpc = await resolvePdpPayload(edge, rpcPromise);
 
       if (rpc?.product) {
         // Hydrate sibling queries so they don't refetch
@@ -289,6 +295,7 @@ export default function ProductDetail() {
         .maybeSingle();
 
       if (!data && !error) {
+        if (rpcFailure) throw rpcFailure;
         if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(canonicalProductSlug)) {
           if (error) throw error;
           return data;
@@ -305,6 +312,7 @@ export default function ProductDetail() {
       }
 
       if (error) throw error;
+      if (!data && rpcFailure) throw rpcFailure;
       return data;
     },
     initialData: () => {
@@ -641,17 +649,13 @@ export default function ProductDetail() {
     : 0;
   const waPreview = useWaCouponPreview(store?.id, waPreviewBase);
 
-  // 🚑 Dead-link rescue: shoppers arriving from a WhatsApp recovery message
-  // must never hit a dead end if the product was disabled after the message
-  // was sent — bounce them to the store home immediately (session + coupon
-  // markers are already persisted by StorefrontAutoLogin).
-  const notFound = !isLoading && !product;
-  useEffect(() => {
-    if (!notFound || !store?.slug) return;
-    navigate(storefrontPath(store.slug), { replace: true });
-  }, [notFound, store?.slug, navigate]);
+  // Keep the requested URL while loading/retrying; unavailable products
+  // retain the explicit Back to store action rather than silently redirecting.
+  if (isLoading || (isFetching && !product && !isError)) return <ProductDetailSkeleton />;
 
-  if (isLoading) return <ProductDetailSkeleton />;
+  if (isError && !product) {
+    return <ProductLoadError retry={() => { void refetch(); }} retrying={isFetching} />;
+  }
 
 
   if (!product) {
