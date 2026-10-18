@@ -1,5 +1,7 @@
 # Current work
 
+- [ ] Replace shipping photo entry with tracking number and courier selection; add verified Valmo links and reuse approved text shipping template. Preserve separate RTO verification and marketing safeguards; verify without messaging real customers.
+
 - [x] Fix shared false product-unavailability path: early prefetch swallowed service errors and cached null; preserve errors, fresh lookup after negative edge payload, URL retained with retry. Browser 503 → retry → correct product passes; 69/69 live category PDP endpoints and public lookups match; 13 tests pass, build OK. Visibility/prices unchanged. Frontend publication required; exact screenshot-time trigger cannot be proven.
 - [x] Reconnect Telegram after Oct 18 12:00 UTC workspace move; @Shopbanaobot verified and order-alert function redeployed without messages or replay. Real delivery awaits a qualifying order.
 
