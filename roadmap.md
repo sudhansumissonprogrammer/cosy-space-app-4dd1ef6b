@@ -1,5 +1,7 @@
 # Current work
 
+- [ ] Fix missing merchant review approval access across stores; verify with saved pending Kalinga reviews and approved Serdiya reviews without publishing or approving any review.
+
 - [x] Connect Telegram fresh after the Oct 18 02:44 UTC workspace move; bot and app credentials verified and alerts redeployed without messages.
 - [x] Connect Telegram fresh after the Oct 18 02:50 UTC workspace move; @Shopbanaobot and app credentials verified, alerts redeployed without sending/replaying messages. Actual delivery awaits a qualifying order.
 
