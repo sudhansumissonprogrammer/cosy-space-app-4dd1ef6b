@@ -1,5 +1,7 @@
 # Current work
 
+- [ ] Complete Kalinga ad-readiness follow-up: fresh live browsing/checkout validation and event checks, targeted source/tests review, final report; no real orders/payments/messages or provider changes.
+
 - [x] Connect Telegram fresh after Oct 18 07:05 UTC workspace move; @Shopbanaobot verified with getMe, existing alerts redeployed without messages or historical replay. Actual delivery awaits a qualifying order.
 
 - [x] Deep-test live Kalinga before ads: 69 visible chain products at ₹699 sale/₹999 MRP, category/PDP/gallery/zoom/cart/checkout opening and policies checked; 16 approved reviews public, 22 targeted tests pass. Duplicate Meta PageView remains; provider receipt/gateway health and completed payments unverified. No orders/payments/messages submitted. Shared price-validation/capture/COD-fallback/pending-review query risks are source findings, not confirmed Kalinga failures; no changes applied.
