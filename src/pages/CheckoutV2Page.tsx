@@ -60,6 +60,7 @@ import { checkoutConfirmationAmounts } from "@/lib/checkoutConfirmationAmounts";
 import { isKalingaStore } from "@/lib/kalingaStore";
 import { checkoutExitCoupon, KALINGA_EXIT_CODE } from "@/lib/checkoutExitCoupon";
 import { checkoutCashback } from "@/lib/checkoutCashback";
+import { kalingaCodPrepaidHint, kalingaUpiDeliveryHint } from "@/lib/kalingaCheckoutHints";
 
 type UpiApp = "gpay" | "phonepe" | "paytm" | "bhim" | "any";
 type PayMethod = "upi" | "gateway" | "cod";
@@ -688,6 +689,9 @@ export default function CheckoutV2Page() {
   /** A store with no online gateway configured must still be orderable:
    *  fall back to Cash on Delivery so checkout never dead-ends. */
   const codAvailable = hasCod || (!hasOnline && paymentConfigLoaded);
+  /** Kalinga-only display notes; null for every other store. */
+  const upiDeliveryHint = kalingaUpiDeliveryHint(store);
+  const codPrepaidHint = kalingaCodPrepaidHint(store);
   const activeGateway: "razorpay" | "cashfree" | "payu" | null =
     hasRazorpay ? "razorpay" : hasCashfree ? "cashfree" : hasPayu ? "payu" : null;
   const gatewayLabel = activeGateway === "razorpay" ? "Razorpay" : activeGateway === "cashfree" ? "Cashfree" : "PayU";
@@ -5721,7 +5725,12 @@ export default function CheckoutV2Page() {
                   <img src="/icons/upi.png" alt="UPI" className="h-8 w-auto object-contain" />
                   <div className="text-[17px] font-bold tracking-tight">UPI, Cards & More</div>
                 </div>
-                <div className="text-[15px] font-bold">{formatPrice(chargeAmount, currency)}</div>
+                <div className="text-right">
+                  <div className="text-[15px] font-bold">{formatPrice(chargeAmount, currency)}</div>
+                  {upiDeliveryHint && (
+                    <div className="text-[10px] font-semibold text-emerald-700 leading-tight">{upiDeliveryHint}</div>
+                  )}
+                </div>
               </div>
 
               <button
@@ -5773,7 +5782,12 @@ export default function CheckoutV2Page() {
                   <img src="/icons/upi.png" alt="UPI" className="h-8 w-auto object-contain" />
                   <div className="text-[17px] font-bold tracking-tight">UPI</div>
                 </div>
-                <div className="text-[15px] font-bold">{formatPrice(chargeAmount, currency)}</div>
+                <div className="text-right">
+                  <div className="text-[15px] font-bold">{formatPrice(chargeAmount, currency)}</div>
+                  {upiDeliveryHint && (
+                    <div className="text-[10px] font-semibold text-emerald-700 leading-tight">{upiDeliveryHint}</div>
+                  )}
+                </div>
               </div>
               <div className="grid grid-cols-4 gap-2">
                 {UPI_APPS.slice(0, 4).map((app, i) => {
@@ -5962,6 +5976,11 @@ export default function CheckoutV2Page() {
                   {partialEnabled && (
                     <div className="text-[11px] text-muted-foreground mt-0.5">
                       Pay full amount on delivery
+                    </div>
+                  )}
+                  {codPrepaidHint && (
+                    <div className="text-[10.5px] font-semibold text-emerald-700 mt-0.5 leading-tight">
+                      {codPrepaidHint}
                     </div>
                   )}
                 </div>
