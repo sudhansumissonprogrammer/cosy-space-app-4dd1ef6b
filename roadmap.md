@@ -1,9 +1,9 @@
 # Current work
 
-- [ ] Reconnect Telegram after Oct 18 03:45 UTC workspace move without messages or replay.
+- [x] Reconnect Telegram after Oct 18 03:45 UTC workspace move; @Shopbanaobot verified through app credentials and order alerts redeployed without messages/replay. Real delivery awaits a qualifying order.
 
-- [ ] Refresh Kalinga review carousel below Returns & Exchange; preserve animated teaser and improve glass cards and popup.
-- [ ] Reconnect Telegram after Oct 18 03:41 UTC workspace move without sending or replaying messages.
+- [x] Refresh Kalinga carousel below Returns & Exchange in both PDP layouts; independent animated teaser preserved, opt-in glass cards and popup updated. 11 existing tests pass, build OK, 390px/1280px fixture checks pass placement/arrows/popup/media with no page errors or horizontal overflow. Public approved-review verification remains blocked by pending reviews; no review data changed. Publication required.
+- [x] Reconnect Telegram after Oct 18 03:41 UTC workspace move; bot verified and alerts redeployed without messages/replay.
 
 - [x] Connect Telegram fresh after Oct 18 03:17 UTC workspace move; @Shopbanaobot verified through connector and app credentials, order alerts redeployed without sending or replaying messages. Actual delivery awaits a qualifying order.
 
