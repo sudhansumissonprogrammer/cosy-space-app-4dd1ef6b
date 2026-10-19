@@ -18,7 +18,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, ShoppingBag, Truck, Search, X, CalendarIcon, CheckSquare, ChevronRight, Phone, MapPin, CreditCard, Package, FileText, Copy, Trash2, Send, MessageCircle, Plus, ExternalLink } from "lucide-react";
+import { ArrowLeft, ShoppingBag, Truck, Search, X, CalendarIcon, CheckSquare, ChevronRight, Phone, MapPin, CreditCard, Package, FileText, Copy, Trash2, Send, MessageCircle, Plus, ExternalLink, Download } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -50,6 +50,8 @@ import { buildOrderCopyText } from "@/lib/orderCopyText";
 import { buildOrderBreakdown } from "@/lib/orderPaymentBreakdown";
 import { waPhoneNumber } from "@/lib/phoneUtils";
 import { aggregatorTrackingUrl } from "@/lib/shipping/courierRegistry";
+import OrderCsvExportDialog from "@/components/dashboard/OrderCsvExportDialog";
+import { togglePageSelection } from "@/lib/orderCsvExport";
 const STATUS_OPTIONS = ORDER_STATUS_OPTIONS.map(o => o.value);
 const BULK_STATUS_OPTIONS = STATUS_OPTIONS.filter((status) => status !== "rto");
 const statusColor = (status: string) => orderStatusBadgeClass(status);
@@ -66,6 +68,7 @@ export default function StoreOrders() {
   const [trackingOrder, setTrackingOrder] = useState<{ order: any; mode: "shipping" | "rto" } | null>(null);
   const [invoiceOrder, setInvoiceOrder] = useState<any>(null);
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
+  const [csvScope, setCsvScope] = useState<"all" | "selected" | null>(null);
   const [bulkStatus, setBulkStatus] = useState<string>("");
   const [mobileDetailOrder, setMobileDetailOrder] = useState<any>(null);
   const [sendingInvoiceId, setSendingInvoiceId] = useState<string | null>(null);
@@ -426,12 +429,9 @@ export default function StoreOrders() {
   };
 
   const toggleSelectAll = () => {
-    if (selectedOrders.size === paginatedOrders.length) {
-      setSelectedOrders(new Set());
-    } else {
-      setSelectedOrders(new Set(paginatedOrders.map((o: any) => o.id)));
-    }
+    setSelectedOrders(prev => togglePageSelection(prev, paginatedOrders.map((o: any) => o.id)));
   };
+  const pageFullySelected = paginatedOrders.length > 0 && paginatedOrders.every((order: any) => selectedOrders.has(order.id));
 
   const getOrderDisplayId = (order: any) =>
     order.order_number ? `#${1000 + order.order_number}` : `#${order.id.slice(0, 8)}`;
@@ -492,6 +492,9 @@ export default function StoreOrders() {
           <h1 className="text-2xl font-semibold text-foreground">Orders</h1>
           <p className="text-sm text-muted-foreground truncate">{store?.name}</p>
         </div>
+        <Button size="sm" variant="outline" className="h-9 gap-1.5 shrink-0" disabled={!storeId} onClick={() => setCsvScope("all")}>
+          <Download className="h-4 w-4" />Export CSV
+        </Button>
         <Button
           size="sm"
           className="hidden sm:inline-flex h-9 gap-1.5 shrink-0"
@@ -502,6 +505,9 @@ export default function StoreOrders() {
           <span>Create Order</span>
         </Button>
       </div>
+
+      {storeId && <OrderCsvExportDialog open={csvScope !== null} onOpenChange={open => { if (!open) setCsvScope(null); }}
+        storeId={storeId} storeSlug={store?.slug} selectedIds={Array.from(selectedOrders)} initialScope={csvScope ?? "all"} />}
 
       {storeId && (
         <CreateOrderDialog
@@ -615,6 +621,9 @@ export default function StoreOrders() {
                 <span className="text-sm font-medium text-foreground">
                   {selectedOrders.size} order{selectedOrders.size > 1 ? "s" : ""} selected
                 </span>
+                <Button size="sm" variant="outline" className="h-9 text-xs gap-1.5" onClick={() => setCsvScope("selected")}>
+                  <Download className="h-3.5 w-3.5" />Export selected CSV
+                </Button>
                 <Select value={bulkStatus} onValueChange={setBulkStatus}>
                   <SelectTrigger className="h-8 w-36 text-xs">
                     <SelectValue placeholder="Set status..." />
@@ -679,7 +688,7 @@ export default function StoreOrders() {
               {selectedOrders.size > 0 ? (
                 <div className="flex items-center gap-2 px-1">
                   <Checkbox
-                    checked={paginatedOrders.length > 0 && selectedOrders.size === paginatedOrders.length}
+                    checked={pageFullySelected}
                     onCheckedChange={toggleSelectAll}
                   />
                   <span className="text-xs text-muted-foreground">Select all on this page</span>
@@ -781,7 +790,7 @@ export default function StoreOrders() {
                     <TableRow>
                       <TableHead className="w-10">
                         <Checkbox
-                          checked={paginatedOrders.length > 0 && selectedOrders.size === paginatedOrders.length}
+                          checked={pageFullySelected}
                           onCheckedChange={toggleSelectAll}
                         />
                       </TableHead>
