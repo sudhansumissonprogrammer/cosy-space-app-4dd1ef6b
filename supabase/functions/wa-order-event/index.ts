@@ -283,12 +283,13 @@ Deno.serve(async (req) => {
     const { data: tpls } = await admin
       .from("platform_wa_templates")
       .select("name, is_active, paused, meta_status")
-       .in("name", ["order_shipped_v3", "order_shipped_v3_img"]);
+       .in("name", ["order_shipped_v3", "order_shipped_v3_img", "order_shipped_v3_product"]);
     const usable = (name: string) =>
       (tpls || []).some((t: any) =>
         t.name === name && t.is_active && !t.paused &&
         String(t.meta_status || "").toUpperCase() === "APPROVED");
     if (parcelPhotoUrl && usable("order_shipped_v3_img")) templateName = "order_shipped_v3_img";
+    else if (headerImage && usable("order_shipped_v3_product")) templateName = "order_shipped_v3_product";
     else if (usable("order_shipped_v3")) templateName = "order_shipped_v3";
     else {
       console.warn("order_shipped skipped: no approved shipping template", { order_id: o.id });
@@ -328,7 +329,7 @@ Deno.serve(async (req) => {
       cta_token: ctaToken,
       delivery_address: deliveryAddress,
       ...(parcelPhotoUrl ? { header_media_url: parcelPhotoUrl, parcel_scan_id: verifiedParcelScanId } : {}),
-      ...(headerImage && body.event !== "order_shipped" ? { header_media_url: headerImage } : {}),
+      ...(headerImage && (body.event !== "order_shipped" || templateName === "order_shipped_v3_product") ? { header_media_url: headerImage } : {}),
 
     },
 
