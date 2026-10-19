@@ -219,9 +219,7 @@ Deno.serve(async (req) => {
         admin.from("parcel_label_scans").select("order_id").eq("store_id", order.store_id).eq("tracking_number", manualAwb).eq("decision", "accepted").neq("order_id", orderId).limit(1),
         admin.from("order_shipments").select("order_id").eq("store_id", order.store_id).eq("awb", manualAwb).neq("order_id", orderId).limit(1),
       ]);
-      if ((priorScan ?? []).length > 0 || (priorShipment ?? []).length > 0) {
-        return json({ error: "This tracking number is already attached to another order" }, 409);
-      }
+      void priorScan; void priorShipment; // shared tracking numbers are allowed
       const { error: confirmError } = await admin.from("parcel_label_scans").update({
         decision: "accepted",
         confidence: 1,
@@ -329,10 +327,7 @@ Deno.serve(async (req) => {
           .neq("order_id", orderId)
           .limit(1),
       ]);
-      if ((priorAcceptedAwb ?? []).some((scan) => scan.order_id !== orderId)) {
-        hardFailures.push("This tracking number was already verified for another order.");
-      }
-      if ((usedAwb ?? []).length > 0) hardFailures.push("This tracking number is already attached to another order.");
+      void priorAcceptedAwb; void usedAwb; // shared tracking numbers are allowed
     }
 
     const confidence = candidateAwb && phoneMatched ? 1 : 0;
