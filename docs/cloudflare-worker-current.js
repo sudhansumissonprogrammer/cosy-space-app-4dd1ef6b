@@ -243,7 +243,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.99.0-pdp-fast-handoff";
+const WORKER_VERSION = "9.0.0-instant-page-preview";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -4754,7 +4754,7 @@ async function serveStreamedHtml(
       let splashLogoPreload = "";
       {
         const _splashLogo = (themeLite && (themeLite.logo_url || themeLite.logo)) || "";
-        if (_splashLogo && /^https?:\/\//i.test(_splashLogo) && !(_isPdpPreload && _pdpHeroRaw)) {
+        if (false && _splashLogo) {
           splashLogoPreload =
             `<link rel="preload" as="image" href="${escapeHtml(_splashLogo)}" fetchpriority="high" />`;
         }
