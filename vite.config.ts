@@ -41,6 +41,31 @@ function beastiesPlugin() {
   };
 }
 
+/**
+ * Ad-entry PDP speed: on /product/* cold loads, start downloading the
+ * ProductDetail route chunk (and its static deps) in parallel with the
+ * entry chain instead of ~4 sequential hops later. Other paths: no-op.
+ */
+function pdpModulePreloadPlugin() {
+  return {
+    name: "pdp-modulepreload",
+    apply: "build" as const,
+    transformIndexHtml: {
+      order: "post" as const,
+      handler(html: string, ctx: any) {
+        const bundle = ctx?.bundle;
+        if (!bundle) return html;
+        const chunks = Object.values(bundle) as any[];
+        const pdp = chunks.find((c) => c.type === "chunk" && /src\/pages\/ProductDetail\.tsx$/.test(c.facadeModuleId || ""));
+        if (!pdp) return html;
+        const files = [pdp.fileName, ...(pdp.imports || [])].slice(0, 24);
+        const script = `<script>(function(){try{if(location.pathname.indexOf('/product/')<0)return;var f=${JSON.stringify(files)};for(var i=0;i<f.length;i++){var l=document.createElement('link');l.rel='modulepreload';l.href='/'+f[i];document.head.appendChild(l);}}catch(_){}})();</script>`;
+        return html.replace("</head>", `${script}</head>`);
+      },
+    },
+  };
+}
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
@@ -55,6 +80,7 @@ export default defineConfig(({ mode }) => ({
     mcpPlugin(),
     mode === "development" && componentTagger(),
     beastiesPlugin(),
+    pdpModulePreloadPlugin(),
     // Brotli + gzip precompression of build assets. Cloudflare/most CDNs serve
     // .br when the client supports it → 15-25% smaller JS/CSS than gzip.
     // Build-only, zero dev impact. Threshold skips tiny files where compression
