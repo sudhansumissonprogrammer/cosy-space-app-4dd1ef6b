@@ -1,4 +1,5 @@
-import careGuide from "@/assets/imitationworld/care-guide.webp.asset.json";
+import careGuideAsset from "@/assets/imitationworld/care-guide.webp.asset.json";
+const careGuide = careGuideAsset as { url: string };
 
 export type CareGallerySlide =
   | { kind: "image"; url: string }
