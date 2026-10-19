@@ -4560,6 +4560,48 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
    FIX #2: storefrontPromise is already running when this is called
    ============================================================ */
 
+/* v8.97.0 — PDP PHOTO-FIRST HOLD.
+   Live film (slow 4G, 4x CPU): the main photo shared the connection with
+   ~1MB of app code/CSS and finished at ~5s; holding code until the photo
+   lands brought it to ~1.6s (800w). Rewrites ONLY same-origin /assets/
+   entry script, modulepreload and stylesheet-preload tags into inert
+   placeholders; _PDP_HOLD_SCRIPT restores them when the photo loads/errors,
+   or after 1.8s, whichever is first. index.html's PDP modulepreload script
+   waits for the same sf:pdp-release event. */
+const _PDP_HOLD_SCRIPT =
+  `<script>window.__SF_PDP_HOLD__=true;(function(){var done=false;function rel(){if(done)return;done=true;window.__SF_PDP_HOLD__=false;` +
+  `var h=document.head,i,n,l,seen={};` +
+  `l=document.querySelectorAll('link[rel="sf-held-modulepreload"]');for(i=0;i<l.length;i++){n=document.createElement('link');n.rel='modulepreload';n.href=l[i].getAttribute('href');h.appendChild(n);}` +
+  `l=document.querySelectorAll('link[rel="sf-held-style"]');for(i=0;i<l.length;i++){var u=l[i].getAttribute('href');if(seen[u])continue;seen[u]=1;n=document.createElement('link');n.rel='stylesheet';n.crossOrigin='anonymous';n.href=u;h.appendChild(n);}` +
+  `l=document.querySelectorAll('script[type="text/sf-held"]');for(i=0;i<l.length;i++){n=document.createElement('script');n.type='module';n.crossOrigin='anonymous';n.src=l[i].getAttribute('data-sf-src');h.appendChild(n);}` +
+  `try{window.dispatchEvent(new Event('sf:pdp-release'));}catch(e){}}` +
+  `function go(){if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',rel,{once:true});else rel();}` +
+  `window.__sfPdpRelease=go;setTimeout(go,1800);})();</script>`;
+
+function _holdPdpAppCode(head) {
+  try {
+    let out = head;
+    out = out.replace(
+      /<script\b[^>]*\btype=["']module["'][^>]*\bsrc=["'](\/assets\/[^"']+\.js)["'][^>]*><\/script>/gi,
+      '<script type="text/sf-held" data-sf-src="$1"></script>',
+    );
+    out = out.replace(/<link\b[^>]*\brel=["']modulepreload["'][^>]*>/gi, (tag) => {
+      const m = tag.match(/\bhref=["'](\/assets\/[^"']+\.js)["']/i);
+      return m ? `<link rel="sf-held-modulepreload" href="${m[1]}">` : tag;
+    });
+    out = out.replace(/<link\b[^>]*\brel=["']preload["'][^>]*>/gi, (tag) => {
+      if (!/\bas=["']style["']/i.test(tag)) return tag;
+      const m = tag.match(/\bhref=["'](\/assets\/[^"']+\.css)["']/i);
+      return m ? `<link rel="sf-held-style" href="${m[1]}">` : tag;
+    });
+    // If no entry script could be held, never ship a half-held page.
+    if (!/type="text\/sf-held"/.test(out)) return head;
+    return out.replace("<head>", `<head>${_PDP_HOLD_SCRIPT}`);
+  } catch {
+    return head;
+  }
+}
+
 async function serveStreamedHtml(
   slug,
   shellResult,
@@ -4690,6 +4732,7 @@ async function serveStreamedHtml(
              LCP entry it already recorded. */
       let pdpImgPreconnect = "";
       let pdpEdgeHero = "";
+      let _pdpHold = false;
       // v8.92.0: the branded splash paints a <img> of the store logo, but the
       // logo URL was only discoverable once that markup streamed. Emitting a
       // high-priority preload in the FIRST head chunk (from the cached
@@ -4727,7 +4770,7 @@ async function serveStreamedHtml(
              at ~5s. Now, on PDPs with an inline product, the splash is
              skipped and this preview (photo + title + price) is the first
              thing painted, ABOVE #root. App code/CSS is held until the photo
-             finishes (max 2.5s, see _PDP_HOLD_SCRIPT) so the photo gets the
+             finishes (max 1.8s, see _PDP_HOLD_SCRIPT) so the photo gets the
              whole connection. The preview hands over once React's own gallery
              photo is visible (sf:pdp-hero-painted / DOM check), when the URL
              leaves /product/, 4.5s after storefront:content-ready, or 15s. */
@@ -4761,6 +4804,7 @@ async function serveStreamedHtml(
             `window.addEventListener('storefront:content-ready',function(){setTimeout(d,4500);},{once:true});` +
             `(function p(){if(gone)return;if(window.__SF_READY_FIRED__&&seen()){setTimeout(d,120);return;}setTimeout(p,200);})();` +
             `setTimeout(d,15000);})()</script>`;
+          _pdpHold = true;
         } catch {}
       }
 
@@ -4829,6 +4873,7 @@ async function serveStreamedHtml(
       // `<link rel="preload" as="image">`; it wastes a preload slot and can
       // slow the real first product image on mobile cold loads.
       headChunk = headChunk.replace(/<link\s+rel=["']preload["']\s+as=["']image["']\s*\/?>(\s*)/gi, "$1");
+      if (_pdpHold) headChunk = _holdPdpAppCode(headChunk);
       headChunk += "</head>";
 
       await writeChunk(enc.encode(headChunk));
@@ -4841,7 +4886,8 @@ async function serveStreamedHtml(
       try { storefrontPromise.then(() => {}).catch(() => {}); } catch {}
 
       const skeletonMuted = getSkeletonMuted(textColor);
-      const skeleton = buildSkeleton(
+      // v8.97.0 — the instant PDP preview replaces the splash (never both).
+      const skeleton = _pdpHold ? `<script>window.__SF_WORKER__=true;</script>` : buildSkeleton(
         bgColor,
         skeletonMuted,
         true,
@@ -4873,6 +4919,8 @@ async function serveStreamedHtml(
         !_isPdpPreload && preloaderProductsJson ? _buildProductPreloaderGrid(preloaderProductsJson, 2) : "";
 
       let bodyChunk = html.slice(headEnd + 7);
+      // v8.97.0 — editor/badge script is never needed on a live storefront.
+      bodyChunk = bodyChunk.replace(/<script[^>]*src="https:\/\/cdn\.gpteng\.co\/lovable\.js"[^>]*><\/script>/gi, "");
 
       // v8.45.0 — homepage SEO body block (hidden, crawler-readable) for the
       // streaming path. Skipped on PDP/category (those have their own per-route
@@ -5050,7 +5098,7 @@ async function fetchAndInjectSlug(
   // response HEADERS — earlier than any tag in the streamed body.
   const topImages = kvBatch.imgs;
   const linkHeader = _isPdpPath(new URL(request.url).pathname)
-    ? _buildLinkPreloadHeader(shellResult.html)
+    ? ""
     : _withImageLinkPreload(_buildLinkPreloadHeader(shellResult.html), topImages);
 
   const newHeaders = new Headers();
@@ -8449,7 +8497,7 @@ async function _handleFetch(request, env, ctx) {
     // /category/* route, so cold category loads preload the RIGHT LCP image.
     const topImages = (pdpCategoryRoute ? (pdpCategoryRoute.kind === "category" ? kvBatch.catImgs : null) : kvBatch.imgs) || null;
     const linkHeader = _isPdpPath(new URL(request.url).pathname)
-    ? _buildLinkPreloadHeader(shellResult.html)
+    ? ""
     : _withImageLinkPreload(_buildLinkPreloadHeader(shellResult.html), topImages);
 
     const responseHeaders = new Headers();
@@ -8664,7 +8712,7 @@ async function _handleFetch(request, env, ctx) {
     // v8.75.0 — per-category images take priority on /category/*.
     const topImagesCD = (pdpCategoryRouteCD ? (pdpCategoryRouteCD.kind === "category" ? kvBatchCD.catImgs : null) : kvBatchCD.imgs) || null;
     const linkHeaderCD = _isPdpPath(new URL(request.url).pathname)
-      ? _buildLinkPreloadHeader(shellResultCD.html)
+      ? ""
       : _withImageLinkPreload(_buildLinkPreloadHeader(shellResultCD.html), topImagesCD);
 
     const responseHeadersCD = new Headers();
