@@ -594,11 +594,11 @@
             var l=document.createElement('link');
             l.rel='preload';l.as='image';l.href=u;
             // Mirror getPdpHeroSrcSet: phones pick the existing 800w sibling.
-            if(pdp&&/^https:\/\/cdn\.shopbanao\.in\//.test(u)&&!/-thumb160-1200w\./i.test(u)){
+            if(pdp&&/^https:\/\/cdn\.shopbanao\.in\//.test(u)){
               var hm=u.match(/\/(\d{13})-[^/]+-1200w\.(webp|jpg|jpeg)$/i);
               if(hm&&Number(hm[1])>=1790747949000){
                 l.setAttribute('imagesrcset',u.replace(/-1200w\.(webp|jpg|jpeg)$/i,'-800w.$1')+' 800w, '+u+' 1200w');
-                l.setAttribute('imagesizes','(max-width: 640px) 100vw, 50vw');
+                l.setAttribute('imagesizes','(max-width: 640px) 70vw, 50vw');
               }
             }
             l.setAttribute('data-sf-img-pre',u);

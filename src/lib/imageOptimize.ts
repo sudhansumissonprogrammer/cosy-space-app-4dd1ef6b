@@ -324,19 +324,23 @@ export function preloadHeroImage(
   };
 }
 
-/** Must mirror the Worker PDP hero preload srcset/sizes byte-for-byte. */
-export const PDP_HERO_SIZES = "(max-width: 640px) 100vw, 50vw";
+/**
+ * Must mirror the Worker PDP hero preload srcset/sizes byte-for-byte.
+ * 70vw on phones makes DPR≤2.7 devices pick the 800w file (~120KB instead of
+ * ~290KB) so the main photo lands well under 3s on slow mobile data.
+ */
+export const PDP_HERO_SIZES = "(max-width: 640px) 70vw, 50vw";
 
 /**
  * Main PDP photo: offer the existing 800w sibling next to the canonical 1200w
- * so DPR≤2 phones download ~60% less. Only for upload families whose 800w
- * sibling is known to exist; everything else keeps the single 1200w URL.
+ * so phones download ~60% less. Only for timestamped upload families after
+ * the 800w-card era (thumb160 families included — they carry the same 800w
+ * sibling); everything else keeps the single 1200w URL.
  */
 export function getPdpHeroSrcSet(url: string | null | undefined): string {
   if (!url || url.includes("supabase.co/storage")) return "";
   if (!/^https:\/\/cdn\.shopbanao\.in\//.test(url)) return "";
-  if (/-thumb160-1200w\./i.test(url)) return "";
   if (!/\/\d{13}-[^/]+-1200w\.(webp|jpg|jpeg)$/i.test(url)) return "";
   if (getProductCardVariantWidth(url) !== 800) return "";
-  return `${resolveVariantUrl(url, 800)} 800w, ${url} 1200w`;
+  return `${url.replace(/-1200w\.(webp|jpg|jpeg)$/i, "-800w.$1")} 800w, ${url} 1200w`;
 }

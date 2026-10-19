@@ -15,4 +15,8 @@ describe("PDP hero srcset", () => {
     expect(getPdpHeroSrcSet(`${base}meesho-raw.jpg`)).toBe("");
     expect(getPdpHeroSrcSet(`${base}1791307529627-x-800w.webp`)).toBe("");
   });
+  it("offers the thumb160 family's own 800w sibling", () => {
+    const u = `${base}1791649126259-pfofpc-thumb160-1200w.webp`;
+    expect(getPdpHeroSrcSet(u)).toBe(`${base}1791649126259-pfofpc-thumb160-800w.webp 800w, ${u} 1200w`);
+  });
 });
