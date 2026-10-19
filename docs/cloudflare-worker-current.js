@@ -243,7 +243,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "9.0.0-instant-page-preview";
+const WORKER_VERSION = "9.1.0-instant-splash";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -4673,6 +4673,15 @@ async function serveStreamedHtml(
         const varName = pdpCategoryInline.kind === "product" ? "__PRODUCT_INLINE__" : "__CATEGORY_INLINE__";
         pdpCatHint = `window.${varName}=${safeJson};`;
       }
+      /* v9.1.0 — the ~90KB category JSON sat at the TOP of <head>, so the
+         black logo splash (first thing in <body>) could not paint until it
+         downloaded (~1.5-3s on slow phones). Ship it right AFTER the splash
+         instead; app modules run after full parse so they still see it. */
+      let catBodyHint = "";
+      if (pdpCategoryInline?.kind === "category" && pdpCatHint) {
+        catBodyHint = `<script>${pdpCatHint}</script>`;
+        pdpCatHint = "";
+      }
       // Set __SF_WORKER__ in the first injected script, before index.html's
       // bootstrap script executes. That lets the app skip its preview-only
       // shell/products/font fallback fetches on real Worker-served storefronts.
@@ -4754,7 +4763,7 @@ async function serveStreamedHtml(
       let splashLogoPreload = "";
       {
         const _splashLogo = (themeLite && (themeLite.logo_url || themeLite.logo)) || "";
-        if (false && _splashLogo) {
+        if (_splashLogo && !_isPdpPreload) {
           splashLogoPreload =
             `<link rel="preload" as="image" href="${escapeHtml(_splashLogo)}" fetchpriority="high" />`;
         }
@@ -4915,62 +4924,8 @@ async function serveStreamedHtml(
       try { storefrontPromise.then(() => {}).catch(() => {}); } catch {}
 
       const skeletonMuted = getSkeletonMuted(textColor);
-      /* v9.0.0 — INSTANT PAGE-SHAPED PREVIEW for home/category (non-PDP).
-         The full-screen BLACK splash stayed until React painted (~4-5s on
-         slow phones), so shoppers stared at a black logo screen. Now the
-         first paint is the store's own light page: header with store name,
-         and on /category/* the first 4 product cards (photo, name, price)
-         using the SAME card URLs as the early preloads (no extra download).
-         Keeps id="sf-skel" + data-splash so the existing cleanup removes it
-         as soon as React paints, and index.html skips its own splash. */
-      let _edgeShell = "";
-      if (!_pdpHold) {
-        try {
-          const _sn = escapeHtml(String(
-            (storefrontResult && storefrontResult.data && storefrontResult.data.store && storefrontResult.data.store.name) ||
-            (themeLite && (themeLite.name || themeLite.store_name)) || slug || ""));
-          const _fmtP = (n) => { try { return "\u20B9" + Math.round(n).toLocaleString("en-IN"); } catch { return "\u20B9" + Math.round(n); } };
-          const _F = "system-ui,-apple-system,Segoe UI,Roboto,sans-serif";
-          let _body = "";
-          if (pdpCategoryInline?.kind === "category" && pdpCategoryInline?.json) {
-            const _cp = JSON.parse(pdpCategoryInline.json);
-            const _prods = Array.isArray(_cp?.products) ? _cp.products : [];
-            const _cname = escapeHtml(String((_cp?.category && _cp.category.name) || ""));
-            let _cards = "";
-            let _n = 0;
-            for (let i = 0; i < _prods.length && _n < 4; i++) {
-              const p = _prods[i];
-              const raw = (p && (p.image_url || (Array.isArray(p.product_images) && p.product_images[0]?.image_url))) || "";
-              if (!raw || typeof raw !== "string" || !raw.startsWith("http")) continue;
-              const src = _toGalleryUrl(raw, 400, 75);
-              const pr = Number(p.price) || 0;
-              const sl = Number(p.sale_price) || 0;
-              const now = sl > 0 && sl < pr ? sl : pr;
-              _cards +=
-                `<div style="min-width:0">` +
-                `<div style="aspect-ratio:3/4;background:rgba(127,127,127,.10);overflow:hidden">` +
-                `<img src="${escapeHtml(src)}" alt="" decoding="async"${_n === 0 ? ' fetchpriority="high"' : ""} style="width:100%;height:100%;object-fit:cover;display:block" /></div>` +
-                `<div style="font:500 13px/1.3 ${_F};padding:6px 4px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${escapeHtml(String(p.name || ""))}</div>` +
-                (now > 0 ? `<div style="font:700 14px/1.3 ${_F};padding:2px 4px 0">${_fmtP(now)}${sl > 0 && sl < pr ? ` <span style="font-weight:400;opacity:.55;text-decoration:line-through;font-size:12px">${_fmtP(pr)}</span>` : ""}</div>` : "") +
-                `</div>`;
-              _n++;
-            }
-            _body =
-              (_cname ? `<div style="font:700 17px/1.3 ${_F};padding:12px 8px 8px">${_cname}</div>` : "") +
-              `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:0 4px;max-width:900px;margin:0 auto">${_cards}</div>`;
-          } else {
-            const _blk = (h) => `<div style="height:${h};background:rgba(127,127,127,.10);border-radius:6px;margin:8px"></div>`;
-            _body = _blk("min(56vw,420px)") +
-              `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:0 4px">` +
-              `<div style="aspect-ratio:3/4;background:rgba(127,127,127,.10)"></div><div style="aspect-ratio:3/4;background:rgba(127,127,127,.10)"></div></div>`;
-          }
-          _edgeShell =
-            `<script>window.__SF_WORKER__=true;</script>` +
-            `<div id="sf-skel" data-splash="1" aria-hidden="true" style="position:fixed;inset:0;min-height:100vh;background:${escapeHtml(bgColor)} !important;color:${escapeHtml(textColor)};z-index:2147483000;pointer-events:none;overflow:hidden">` +
-            `<div style="height:56px;display:flex;align-items:center;justify-content:center;font:700 15px/1 ${_F};letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid rgba(127,127,127,.15)">${_sn}</div>` +
-            _body + `</div>` + getSkeletonCleanupScript();
-        } catch { _edgeShell = ""; }
-      }
+      // v9.1.0 — black logo splash restored on all non-PDP pages.
+      const _edgeShell = "";
       // v8.97.0 — the instant PDP preview replaces the splash (never both).
       const skeleton = _pdpHold ? `<script>window.__SF_WORKER__=true;</script>` : _edgeShell || buildSkeleton(
         bgColor,
@@ -5033,7 +4988,7 @@ async function serveStreamedHtml(
         homepageSeoBody = _buildSeoBodyBlock(_s, _cats, _prods);
         homepageJsonLdScripts = _buildHomepageJsonLd(_s, _canonBase, _cats, _prods);
       }
-      bodyChunk = bodyChunk.replace('<div id="root">', `${skeleton}${pdpEdgeHero}${productPreloaderGrid}${homepageSeoBody}${homepageJsonLdScripts}<div id="root">`);
+      bodyChunk = bodyChunk.replace('<div id="root">', `${skeleton}${catBodyHint}${pdpEdgeHero}${productPreloaderGrid}${homepageSeoBody}${homepageJsonLdScripts}<div id="root">`);
 
       // v8.36.0: place __STOREFRONT_DATA__ BEFORE the first <script type="module">
       // so React modules can read it on first render. Previously we injected it
