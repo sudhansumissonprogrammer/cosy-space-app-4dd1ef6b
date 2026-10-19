@@ -1,5 +1,8 @@
 # Current work
 
+- [ ] Add dashboard CSV export for all or selected orders with separate checkout address fields and supplier PDP links; verify downloads.
+- [ ] Connect Telegram fresh after Oct 19 workspace move; verify bot and redeploy existing notifications without replaying history.
+
 - [x] Replace shipping photo entry with tracking number and courier selection; Valmo official links share dashboard/WhatsApp resolver, approved text order_shipped_v3 verified. 8 tests and desktop/mobile dialog intercepted-save checks pass, build OK; services deployed. RTO verification/marketing safeguards unchanged. Frontend publication required; real order save/message delivery unverified (preview account has no stores); no customer contacted.
 
 - [x] Fix shared false product-unavailability path: early prefetch swallowed service errors and cached null; preserve errors, fresh lookup after negative edge payload, URL retained with retry. Browser 503 → retry → correct product passes; 69/69 live category PDP endpoints and public lookups match; 13 tests pass, build OK. Visibility/prices unchanged. Frontend publication required; exact screenshot-time trigger cannot be proven.
