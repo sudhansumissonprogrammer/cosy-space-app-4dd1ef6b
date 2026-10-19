@@ -1,0 +1,30 @@
+/**
+ * Kalinga Jewels only (gated by the `sf-kalinga-mobile` class set on the
+ * storefront shell root). Tightens mobile product-card gutters so cards —
+ * and the photos inside them — render wider.
+ *
+ * Pure CSS, mobile media query only: no JS, no new requests, no image URL
+ * changes, so cold load behaviour is untouched.
+ */
+@media (max-width: 639.98px) {
+  /* Page side padding: 12px → 8px on both edges */
+  .sf-kalinga-mobile .max-w-7xl.px-3 {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
+  /* Horizontal gutter between cards in the product grid: 6-8px → 4px.
+     Row gap is untouched, so vertical rhythm stays identical. */
+  .sf-kalinga-mobile .grid.grid-cols-2:has(> .stagger-card) {
+    column-gap: 0.25rem;
+  }
+
+  /* Card internals: photo frame 4px → 2px, text block 12px → 8px */
+  .sf-kalinga-mobile .stagger-card a.p-1 {
+    padding: 0.125rem 0.125rem 0;
+  }
+  .sf-kalinga-mobile .stagger-card > div.px-3.pt-2 {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
