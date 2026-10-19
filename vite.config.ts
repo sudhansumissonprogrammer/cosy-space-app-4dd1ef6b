@@ -59,7 +59,9 @@ function pdpModulePreloadPlugin() {
         const pdp = chunks.find((c) => c.type === "chunk" && /src\/pages\/ProductDetail\.tsx$/.test(c.facadeModuleId || ""));
         if (!pdp) return html;
         const files = [pdp.fileName, ...(pdp.imports || [])].slice(0, 24);
-        const script = `<script>(function(){try{if(location.pathname.indexOf('/product/')<0)return;var f=${JSON.stringify(files)};for(var i=0;i<f.length;i++){var l=document.createElement('link');l.rel='modulepreload';l.href='/'+f[i];document.head.appendChild(l);}}catch(_){}})();</script>`;
+        // When the Worker holds app code until the main photo lands
+        // (window.__SF_PDP_HOLD__), wait for its sf:pdp-release signal.
+        const script = `<script>(function(){try{if(location.pathname.indexOf('/product/')<0)return;var f=${JSON.stringify(files)};function go(){for(var i=0;i<f.length;i++){var l=document.createElement('link');l.rel='modulepreload';l.href='/'+f[i];document.head.appendChild(l);}}if(window.__SF_PDP_HOLD__)window.addEventListener('sf:pdp-release',go,{once:true});else go();}catch(_){}})();</script>`;
         return html.replace("</head>", `${script}</head>`);
       },
     },

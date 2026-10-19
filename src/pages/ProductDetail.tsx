@@ -1778,6 +1778,16 @@ function ImageGallery({
 
   const len = slides.length;
   const [activatedSlides, setActivatedSlides] = useGalleryPreparation(activeIndex, len, !!imageLoaded[0]);
+
+  // Tell the Worker's instant edge preview (photo + title + price) that the
+  // real gallery photo is on screen, so it hands over without a flash.
+  // Fires after the 200ms opacity fade.
+  const mainSlideReady = !!imageLoaded[0] || slides[0]?.kind === "video" || len === 0;
+  useEffect(() => {
+    if (!mainSlideReady) return;
+    const t = setTimeout(() => window.dispatchEvent(new Event("sf:pdp-hero-painted")), 220);
+    return () => clearTimeout(t);
+  }, [mainSlideReady]);
   // A "duplicated single" is the special case above: exactly two image slides
   // pointing at the same URL, no video. In that case we keep the carousel
   // slideable but hide counter/dots/thumbs so it visually looks like one image.

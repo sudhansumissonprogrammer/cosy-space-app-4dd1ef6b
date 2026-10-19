@@ -243,7 +243,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.96.0-pdp-light-hero";
+const WORKER_VERSION = "8.97.0-pdp-instant-preview";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -3256,12 +3256,13 @@ function _isRawPassthrough(rawUrl) {
   return _toGalleryUrl(rawUrl, 400, 75) === rawUrl;
 }
 
-/** v8.96.0 — mirrors imageOptimize.ts getPdpHeroSrcSet + PDP_HERO_SIZES exactly. */
-const PDP_HERO_SIZES = "(max-width: 640px) 100vw, 50vw";
+/** v8.97.0 — mirrors imageOptimize.ts getPdpHeroSrcSet + PDP_HERO_SIZES exactly.
+ *  70vw on phones => DPR<=2.7 devices pick the ~120KB 800w file; thumb160
+ *  families carry the same 800w sibling, so they qualify too. */
+const PDP_HERO_SIZES = "(max-width: 640px) 70vw, 50vw";
 function _pdpHeroSrcSet(rawUrl) {
   try {
     if (!rawUrl || !/^https:\/\/cdn\.shopbanao\.in\//.test(rawUrl)) return "";
-    if (/-thumb160-1200w\./i.test(rawUrl)) return "";
     const m = rawUrl.match(/\/(\d{13})-[^/]+-1200w\.(webp|jpg|jpeg)$/i);
     if (!m || Number(m[1]) < 1790747949000) return "";
     const small = rawUrl.replace(/-1200w\.(webp|jpg|jpeg)$/i, "-800w.$1");
@@ -4646,6 +4647,9 @@ async function serveStreamedHtml(
          preload scanner starts it at byte 0 instead of ~6.6s. */
       let _pdpHeroRaw = "";
       let _pdpHasVideo = false;
+      let _pdpName = "";
+      let _pdpPrice = 0;
+      let _pdpSale = 0;
       if (pdpCategoryInline?.kind === "product" && pdpCategoryInline?.json) {
         try {
           const _pp = JSON.parse(pdpCategoryInline.json);
@@ -4658,6 +4662,9 @@ async function serveStreamedHtml(
           // v8.89.0 — remembered for the edge-rendered hero <img> below.
           _pdpHeroRaw = heroList[0]?.image_url || "";
           _pdpHasVideo = !!(_pp?.product?.video_url);
+          _pdpName = String(_pp?.product?.name || "");
+          _pdpPrice = Number(_pp?.product?.price) || 0;
+          _pdpSale = Number(_pp?.product?.sale_price) || 0;
         } catch {}
       }
       const _isPdpPreload = pdpCategoryInline?.kind === "product" && !!pdpCategoryInline?.json;
@@ -4691,7 +4698,7 @@ async function serveStreamedHtml(
       let splashLogoPreload = "";
       {
         const _splashLogo = (themeLite && (themeLite.logo_url || themeLite.logo)) || "";
-        if (_splashLogo && /^https?:\/\//i.test(_splashLogo)) {
+        if (_splashLogo && /^https?:\/\//i.test(_splashLogo) && !(_isPdpPreload && _pdpHeroRaw)) {
           splashLogoPreload =
             `<link rel="preload" as="image" href="${escapeHtml(_splashLogo)}" fetchpriority="high" />`;
         }
@@ -4714,13 +4721,46 @@ async function serveStreamedHtml(
           // Same viewport box the gallery reserves (see ProductDetail.tsx
           // viewportHeightClass) so the frame the browser paints matches.
           const _h = _pdpHasVideo ? "min(168vw,86svh)" : "min(132vw,70svh)";
+          /* v8.97.0 — INSTANT PDP PREVIEW. Measured live (slow 4G, 4x CPU):
+             the edge hero sat UNDER the black splash, so shoppers saw nothing
+             until React painted (~10-13s) even though the photo bytes landed
+             at ~5s. Now, on PDPs with an inline product, the splash is
+             skipped and this preview (photo + title + price) is the first
+             thing painted, ABOVE #root. App code/CSS is held until the photo
+             finishes (max 2.5s, see _PDP_HOLD_SCRIPT) so the photo gets the
+             whole connection. The preview hands over once React's own gallery
+             photo is visible (sf:pdp-hero-painted / DOM check), when the URL
+             leaves /product/, 4.5s after storefront:content-ready, or 15s. */
+          const _fmt = (n) => { try { return "\u20B9" + Math.round(n).toLocaleString("en-IN"); } catch { return "\u20B9" + Math.round(n); } };
+          const _sale = _pdpSale > 0 && _pdpSale < _pdpPrice ? _pdpSale : 0;
+          const _now = _sale || _pdpPrice;
+          const _off = _sale ? Math.round(((_pdpPrice - _sale) / _pdpPrice) * 100) : 0;
+          const _storeName = escapeHtml(String((themeLite && (themeLite.name || themeLite.store_name)) || slug || ""));
+          const _priceHtml = _now > 0
+            ? `<div style="display:flex;align-items:baseline;gap:8px;margin-top:8px">` +
+              `<span style="font:700 20px/1.2 system-ui,-apple-system,Segoe UI,Roboto,sans-serif">${_fmt(_now)}</span>` +
+              (_sale ? `<span style="font:400 14px/1.2 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;opacity:.55;text-decoration:line-through">${_fmt(_pdpPrice)}</span>` +
+                `<span style="font:700 13px/1.2 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#15803d">${_off}% off</span>` : "") +
+              `</div>`
+            : "";
           pdpEdgeHero =
-            `<div id="sf-hero-edge" aria-hidden="true" style="position:fixed;top:0;left:0;width:100vw;height:${_h};z-index:1;overflow:hidden;pointer-events:none;contain:layout paint">` +
+            `<div id="sf-hero-edge" aria-hidden="true" style="position:fixed;inset:0;z-index:2147483000;background:${escapeHtml(bgColor)};color:${escapeHtml(textColor)};overflow:hidden;transition:opacity .15s linear">` +
+            `<div style="height:56px;display:flex;align-items:center;justify-content:center;font:700 15px/1 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid rgba(127,127,127,.15)">${_storeName}</div>` +
+            `<div style="position:relative;width:100%;max-width:640px;margin:0 auto;height:${_h}">` +
             `<img class="sf-hero-img" src="${escapeHtml(_main)}"${_srcsetAttr} alt="" fetchpriority="high" decoding="async" ` +
+            `onload="window.__sfPdpRelease&&window.__sfPdpRelease()" onerror="window.__sfPdpRelease&&window.__sfPdpRelease()" ` +
             `style="position:absolute;inset:0;margin:auto;width:auto;height:auto;max-width:100%;max-height:100%;object-fit:contain" />` +
             `</div>` +
-            `<script>(function(){function d(){var e=document.getElementById('sf-hero-edge');if(e&&e.parentNode)e.parentNode.removeChild(e);}` +
-            `window.addEventListener('storefront:content-ready',d,{once:true});setTimeout(d,12000);})()</script>`;
+            `<div style="max-width:640px;margin:0 auto;padding:12px 14px 0">` +
+            `<div style="font:600 16px/1.35 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${escapeHtml(_pdpName)}</div>` +
+            _priceHtml +
+            `</div></div>` +
+            `<script>(function(){var gone=false;function d(){if(gone)return;gone=true;var e=document.getElementById('sf-hero-edge');if(!e)return;e.style.opacity='0';setTimeout(function(){if(e.parentNode)e.parentNode.removeChild(e);},160);}` +
+            `function seen(){if(location.pathname.indexOf('/product/')<0)return true;var r=document.getElementById('root');if(!r)return false;var im=r.querySelectorAll('img');for(var i=0;i<im.length;i++){var x=im[i];if(!x.complete||!x.naturalWidth)continue;var b=x.getBoundingClientRect();if(b.width<200||b.top>900||b.bottom<0)continue;if(getComputedStyle(x).opacity==='1')return true;}return false;}` +
+            `window.addEventListener('sf:pdp-hero-painted',d,{once:true});` +
+            `window.addEventListener('storefront:content-ready',function(){setTimeout(d,4500);},{once:true});` +
+            `(function p(){if(gone)return;if(window.__SF_READY_FIRED__&&seen()){setTimeout(d,120);return;}setTimeout(p,200);})();` +
+            `setTimeout(d,15000);})()</script>`;
         } catch {}
       }
 
