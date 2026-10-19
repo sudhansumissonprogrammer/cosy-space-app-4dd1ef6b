@@ -4566,7 +4566,7 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
    lands brought it to ~1.6s (800w). Rewrites ONLY same-origin /assets/
    entry script, modulepreload and stylesheet-preload tags into inert
    placeholders; _PDP_HOLD_SCRIPT restores them when the photo loads/errors,
-   or after 2.5s, whichever is first. index.html's PDP modulepreload script
+   or after 1.8s, whichever is first. index.html's PDP modulepreload script
    waits for the same sf:pdp-release event. */
 const _PDP_HOLD_SCRIPT =
   `<script>window.__SF_PDP_HOLD__=true;(function(){var done=false;function rel(){if(done)return;done=true;window.__SF_PDP_HOLD__=false;` +
@@ -4576,7 +4576,7 @@ const _PDP_HOLD_SCRIPT =
   `l=document.querySelectorAll('script[type="text/sf-held"]');for(i=0;i<l.length;i++){n=document.createElement('script');n.type='module';n.crossOrigin='anonymous';n.src=l[i].getAttribute('data-sf-src');h.appendChild(n);}` +
   `try{window.dispatchEvent(new Event('sf:pdp-release'));}catch(e){}}` +
   `function go(){if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',rel,{once:true});else rel();}` +
-  `window.__sfPdpRelease=go;setTimeout(go,2500);})();</script>`;
+  `window.__sfPdpRelease=go;setTimeout(go,1800);})();</script>`;
 
 function _holdPdpAppCode(head) {
   try {
@@ -4770,7 +4770,7 @@ async function serveStreamedHtml(
              at ~5s. Now, on PDPs with an inline product, the splash is
              skipped and this preview (photo + title + price) is the first
              thing painted, ABOVE #root. App code/CSS is held until the photo
-             finishes (max 2.5s, see _PDP_HOLD_SCRIPT) so the photo gets the
+             finishes (max 1.8s, see _PDP_HOLD_SCRIPT) so the photo gets the
              whole connection. The preview hands over once React's own gallery
              photo is visible (sf:pdp-hero-painted / DOM check), when the URL
              leaves /product/, 4.5s after storefront:content-ready, or 15s. */
