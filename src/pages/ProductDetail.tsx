@@ -896,7 +896,7 @@ export default function ProductDetail() {
           )}
 
           {/* Product Title — right under image */}
-          <h1 className={`text-xl font-semibold leading-snug sm:text-2xl lg:text-[1.7rem] ${isKalingaStore(store) ? "-mx-3 break-words sm:mx-0" : ""}`} style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif", ...(isV18 ? { color: "#ffffff", fontWeight: 400, letterSpacing: "0.01em" } : { color: undefined }) }}>
+          <h1 className={`${isKalingaStore(store) ? "text-base sm:text-xl lg:text-2xl -mx-3 break-words sm:mx-0" : "text-xl sm:text-2xl lg:text-[1.7rem]"} font-semibold leading-snug`} style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif", ...(isV18 ? { color: "#ffffff", fontWeight: 400, letterSpacing: "0.01em" } : { color: undefined }) }}>
             {product.name}
           </h1>
 
@@ -942,7 +942,7 @@ export default function ProductDetail() {
                   </span>
                 </>
               ) : (
-                <span className={`text-2xl font-extrabold sm:text-3xl ${isV18 ? '' : 'text-foreground'}`} style={isV18 ? { color: "#ffffff", ...v18Font, fontWeight: 400 } : {}}>
+                <span className={`${isKalingaStore(store) ? "text-xl sm:text-2xl" : "text-2xl sm:text-3xl"} font-extrabold ${isV18 ? '' : 'text-foreground'}`} style={isV18 ? { color: "#ffffff", ...v18Font, fontWeight: 400 } : {}}>
                   {isV18 ? `₹${Number(variantPrice).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${formatPrice(Number(variantPrice), currency)}`}
                 </span>
               )}
@@ -1008,7 +1008,7 @@ export default function ProductDetail() {
           {(variants || []).length > 0 && (
             <div id="variant-picker" className="mt-5 space-y-2 scroll-mt-24" style={isV18 ? { borderTop: "1px solid #333", paddingTop: 16 } : {}}>
               <Label className={isV18 ? "text-xs font-bold uppercase tracking-wider" : "text-sm font-bold uppercase tracking-wider text-muted-foreground"} style={isV18 ? { color: "#ffffff", ...v18Font } : {}}>
-                {isV18 ? `SIZE: ${selectedVariant?.name || ""}` : <>Select Variant<span className="text-destructive ml-0.5">*</span>: <span className="text-foreground normal-case tracking-normal">{selectedVariant?.name || "None"}</span></>}
+                {isV18 ? `SIZE: ${selectedVariant?.name || ""}` : <>{isKalingaStore(store) ? "Select Chain Length" : "Select Variant"}<span className="text-destructive ml-0.5">*</span>: <span className="text-foreground normal-case tracking-normal">{selectedVariant?.name || "None"}</span></>}
               </Label>
               <div className="flex flex-wrap gap-2">
                 {(variants || []).map((v) => (
