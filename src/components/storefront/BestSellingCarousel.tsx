@@ -11,6 +11,7 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel";
 import UniversalProductCard from "./UniversalProductCard";
+import { isKalingaStore } from "@/lib/kalingaStore";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import BestSellerBadge from "@/components/storefront/BestSellerBadge";
@@ -26,6 +27,7 @@ export default function BestSellingCarousel({ products, slug, store, cardStyle =
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
   const [count, setCount] = useState(0);
+  const isKalinga = isKalingaStore(store);
 
   useEffect(() => {
     if (!api) return;
@@ -60,11 +62,11 @@ export default function BestSellingCarousel({ products, slug, store, cardStyle =
           ]}
           className="w-full"
         >
-          <CarouselContent className="-ml-2">
+          <CarouselContent className={isKalinga ? "-ml-1" : "-ml-2"}>
             {products.map((product) => (
               <CarouselItem
                 key={product.id}
-                className="pl-2 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5"
+                className={`${isKalinga ? "pl-1" : "pl-2"} basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5`}
               >
                 <UniversalProductCard
                   product={product}

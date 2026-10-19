@@ -1,5 +1,6 @@
 import { useEffect, useRef, useMemo, useState, Suspense, lazy, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
+import { isKalingaStore } from "@/lib/kalingaStore";
 import { useStorefront, type StoreData } from "@/layouts/StorefrontLayout.logic";
 import { CartProvider } from "@/contexts/CartContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
@@ -23,6 +24,7 @@ import { buildThemeStyle, loadGoogleFonts } from "@/lib/themeUtils";
 import StorefrontNotFound from "@/components/storefront/StorefrontNotFound";
 import { initSfGlass } from "@/lib/sfGlassRuntime";
 import "@/styles/sf-glass.css";
+import "@/styles/sf-kalinga-mobile.css";
 
 // Lazy-load non-critical overlays
 const SideCart = lazy(() => import("@/components/storefront/SideCart"));
@@ -432,7 +434,7 @@ export default function StorefrontShell({
 
   // Build provider tree — conditionally include WishlistProvider
   const content = (
-    <div className={wrapperClassName} style={mergedStyle} data-storefront-ready="true">
+    <div className={`${wrapperClassName}${isKalingaStore(store) ? " sf-kalinga-mobile" : ""}`} style={mergedStyle} data-storefront-ready="true">
       {children(renderProps)}
 
       {/* Lazy overlays — shared across all themes */}
