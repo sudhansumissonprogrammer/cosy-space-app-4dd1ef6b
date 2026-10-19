@@ -37,3 +37,4 @@
 - Share customer tracking URLs across dashboard and WhatsApp; Valmo has no automatic sync without a supported feed.
 
 - Order CSV uses store-scoped pages, saved order addresses and one row per item with shared supplier links; prepare before download for mobile support.
+- The PDP main photo offers the existing 800w sibling via one shared srcset/sizes, mirrored in the app, index.html and the Worker, because preload and gallery must choose the same file; only timestamped post-800w-era uploads qualify.
