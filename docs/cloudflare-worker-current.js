@@ -243,7 +243,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.97.0-pdp-instant-preview";
+const WORKER_VERSION = "8.97.1-pdp-preview-fullsize";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -4792,7 +4792,7 @@ async function serveStreamedHtml(
             `<div style="position:relative;width:100%;max-width:640px;margin:0 auto;height:${_h}">` +
             `<img class="sf-hero-img" src="${escapeHtml(_main)}"${_srcsetAttr} alt="" fetchpriority="high" decoding="async" ` +
             `onload="window.__sfPdpRelease&&window.__sfPdpRelease()" onerror="window.__sfPdpRelease&&window.__sfPdpRelease()" ` +
-            `style="position:absolute;inset:0;margin:auto;width:auto;height:auto;max-width:100%;max-height:100%;object-fit:contain" />` +
+            `style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center" />` +
             `</div>` +
             `<div style="max-width:640px;margin:0 auto;padding:12px 14px 0">` +
             `<div style="font:600 16px/1.35 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${escapeHtml(_pdpName)}</div>` +
