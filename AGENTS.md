@@ -7,8 +7,8 @@
 - Reserve every PayU attempt with a service-role-only row-locked database function and treat unknown attempts as unsettled, because concurrent retries must not lose a paid reference or cancel an unresolved payment.
 - Open Cashfree in the current page only for Serdiya.com while retaining the modal elsewhere, because delayed modal launches are blocked by some WhatsApp/Instagram mobile browsers.
 
-- WhatsApp onboarding provisions through the new owner's session using CreateStore steps, because setup must match the web flow and respect RLS.
-- Capacity testing is admin-only and generates guarded Python runs, never browser traffic. Production permits only low-rate read-only canaries; ramp/spike/soak refuse production without override and require staging-marked hosts, protecting ads and payments.
+- WhatsApp onboarding uses the new owner session and CreateStore steps to match web setup and RLS.
+- Capacity tests are admin-only guarded Python, never browser traffic. Production allows low-rate read-only canaries; ramp/spike/soak require staging hosts unless overridden, protecting ads/payments.
 - Keep `is_best_selling` for storefront merchandising but do not restore the separate per-product award seal, because its controls and flag were retired.
 
 - JD Store Spy extension calls the JD platform API from the store page (content script), never the extension background, because the platform resolves the tenant from the request Origin.
@@ -35,3 +35,5 @@
 - PDP and warmup preserve errors; retry retains the URL and negative edge results defer to fresh lookup.
 
 - Share customer tracking URLs across dashboard and WhatsApp; Valmo has no automatic sync without a supported feed.
+
+- Order CSV uses store-scoped pages, saved order addresses and one row per item with shared supplier links; prepare before download for mobile support.
