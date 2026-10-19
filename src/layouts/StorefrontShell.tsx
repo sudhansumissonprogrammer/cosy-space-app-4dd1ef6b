@@ -24,6 +24,7 @@ import { buildThemeStyle, loadGoogleFonts } from "@/lib/themeUtils";
 import StorefrontNotFound from "@/components/storefront/StorefrontNotFound";
 import { initSfGlass } from "@/lib/sfGlassRuntime";
 import "@/styles/sf-glass.css";
+import "@/styles/sf-kalinga-mobile.css";
 
 // Lazy-load non-critical overlays
 const SideCart = lazy(() => import("@/components/storefront/SideCart"));
