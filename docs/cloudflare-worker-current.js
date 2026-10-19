@@ -4601,7 +4601,15 @@ function _holdPdpAppCode(head) {
     });
     // If no entry script could be held, never ship a half-held page.
     if (!/type="text\/sf-held"/.test(out)) return head;
-    return out.replace("<head>", `<head>${_PDP_HOLD_SCRIPT}`);
+    /* v8.99.0 — the viewport meta sat ~9KB down the head, AFTER the hero
+       preload. Chrome's preload scanner then resolved imagesizes="70vw"
+       against the 980px default layout and fetched the 355KB 1200w on
+       phones instead of the 800w. Declaring it first fixes the choice; the
+       later identical tag is harmless. */
+    return out.replace(
+      "<head>",
+      `<head><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">${_PDP_HOLD_SCRIPT}`,
+    );
   } catch {
     return head;
   }
