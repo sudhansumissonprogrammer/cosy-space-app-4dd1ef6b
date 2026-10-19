@@ -30,7 +30,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
-import { optimizeImageUrl, splitImageUrls, getImageSrcSet } from "@/lib/imageOptimize";
+import { optimizeImageUrl, splitImageUrls, getImageSrcSet, getPdpHeroSrcSet, PDP_HERO_SIZES } from "@/lib/imageOptimize";
 import { normalizeProductVideoUrl } from "@/lib/productVideoUrl";
 // UniversalProductCard removed from PDP critical path — reached via lazy RelatedProducts
 import { VariantCountProvider } from "@/hooks/useVariantCounts";
@@ -1961,7 +1961,7 @@ function ImageGallery({
                 const optimizedUrl = activatedSlides.has(realIdx) ? optimizeImageUrl(slide.url, 1200) : undefined;
                 // Responsive gallery: on resizable sources this ships a
                 // ~400-600px file to phones instead of the 800/original.
-                const gallerySrcSet = "";
+                const gallerySrcSet = realIdx === 0 && optimizedUrl === slide.url ? getPdpHeroSrcSet(slide.url) : "";
 
                 return (
                   <div
@@ -1977,7 +1977,7 @@ function ImageGallery({
                     <GalleryImage
                       src={optimizedUrl}
                       srcSet={gallerySrcSet || undefined}
-                      sizes={gallerySrcSet ? "(max-width: 640px) 100vw, 50vw" : undefined}
+                      sizes={gallerySrcSet ? PDP_HERO_SIZES : undefined}
                       alt={slide.url === imitationWorldCareGuideUrl ? "Kalinga Jewels warranty and jewellery care guide" : productName}
 
                       className={`absolute inset-0 z-[1] h-full w-full object-contain object-center transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`}

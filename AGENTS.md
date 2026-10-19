@@ -15,9 +15,7 @@
 - Store-gated similar rails use lazy components, bounded cached queries and local image visibility so navigation never blocks the main photo.
 - Imitation World uses store-gated compact gallery sizing and hides only the underneath thumbnail strip, because existing swipe, video, and zoom behavior must remain intact without changing other stores.
 - Informational slides use shared presentation-only ordering and deferred URLs; preserve product data and opening-photo priority.
-- PDP readiness uses stable refs/passive effects, not callback-ref state. Prepare retained adjacent slides at low priority after main readiness, preventing loops and blank swipes.
-- PDP photos retry the exact source once, then offer manual recovery; successful photos never request again and failures never leave blank galleries.
-- Key PDP galleries by product and media sources, and never clear loaded-photo state when Embla initializes, because child cached-readiness effects may already have fired and will not repeat for unchanged URLs.
+- PDP galleries: stable refs/passive readiness; key by product+media and never clear loaded state on Embla init; prepare adjacent slides at low priority after main readiness; retry an exact source once then offer manual recovery, because cached-readiness effects don't repeat and blank/looping galleries must not occur.
 - Storefront cards share sticky intersection activation; category grids arm a bounded next-row buffer after opening photos decode or scrolling starts and gate eager low-priority card images through CardImageReadiness, because zero-margin/native-lazy double gating creates blank rows while opening downloads must remain bounded. Activated cards retain paint; PDP intent warmers and transition previews use the canonical 1200px photo.
 - Bootstrap photo hints are route-scoped: one PDP main photo, two known category card variants, no arbitrary homepage or saved catalog photo hints; category collages activate at visibility, because early hints must match actual displayed sources.
 - Small photos up to 320px use the uploaded manifest; unknown and card/PDP/zoom URLs stay unchanged to preserve originals and avoid missing siblings.
@@ -37,3 +35,5 @@
 - Share customer tracking URLs across dashboard and WhatsApp; Valmo has no automatic sync without a supported feed.
 
 - Order CSV uses store-scoped pages, saved order addresses and one row per item with shared supplier links; prepare before download for mobile support.
+
+- PDP main photo srcset/sizes (800w sibling + 1200w) is mirrored in app, index.html and Worker so preload and gallery pick one file; only timestamped post-800w-era uploads qualify.
