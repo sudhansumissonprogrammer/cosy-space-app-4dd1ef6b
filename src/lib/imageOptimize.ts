@@ -336,6 +336,7 @@ export function getPdpHeroSrcSet(url: string | null | undefined): string {
   if (!url || url.includes("supabase.co/storage")) return "";
   if (!/^https:\/\/cdn\.shopbanao\.in\//.test(url)) return "";
   if (/-thumb160-1200w\./i.test(url)) return "";
+  if (!/\/\d{13}-[^/]+-1200w\.(webp|jpg|jpeg)$/i.test(url)) return "";
   if (getProductCardVariantWidth(url) !== 800) return "";
   return `${resolveVariantUrl(url, 800)} 800w, ${url} 1200w`;
 }
