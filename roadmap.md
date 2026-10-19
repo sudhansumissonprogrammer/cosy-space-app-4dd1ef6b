@@ -1,5 +1,8 @@
 # Current work
 
+- [ ] Activate approved product-photo shipped notifications for future shipments; verify approval, template selection, and photo payload without replaying messages.
+- [ ] Connect Telegram fresh after Oct 19 13:01 UTC workspace move; verify bot and redeploy notifications without history replay.
+
 - [x] Add all/selected order CSV export with separate saved checkout address fields and supplier PDP links per item. Cross-page selection retained; 8 tests and sample downloads (301 all, 2 selected) pass, build OK. Real-order export awaits a merchant account: current preview account has no stores/order access. Frontend publication required.
 - [ ] Connect Telegram fresh after Oct 19 workspace move; user declined connection card, so remains unlinked. Bot verification/deployment await approval; no messages or history replayed.
 
