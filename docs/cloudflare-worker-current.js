@@ -243,7 +243,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.95.0-cold-entry-photos";
+const WORKER_VERSION = "8.96.0-pdp-light-hero";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -1393,7 +1393,7 @@ function buildThemeCssFromConfig(tc) {
         for (const f of (picks.length ? picks : [SELF_HOSTED[fam][0]])) {
           if (seen.has(f.url)) continue;
           seen.add(f.url);
-          css += `<link rel="preload" as="font" type="font/woff2" href="${f.url}" crossorigin fetchpriority="high" data-sf-font="1" />\n`;
+          css += `<link rel="preload" as="font" type="font/woff2" href="${f.url}" crossorigin data-sf-font="1" />\n`;
         }
       }
     }
@@ -3256,11 +3256,26 @@ function _isRawPassthrough(rawUrl) {
   return _toGalleryUrl(rawUrl, 400, 75) === rawUrl;
 }
 
+/** v8.96.0 — mirrors imageOptimize.ts getPdpHeroSrcSet + PDP_HERO_SIZES exactly. */
+const PDP_HERO_SIZES = "(max-width: 640px) 100vw, 50vw";
+function _pdpHeroSrcSet(rawUrl) {
+  try {
+    if (!rawUrl || !/^https:\/\/cdn\.shopbanao\.in\//.test(rawUrl)) return "";
+    if (/-thumb160-1200w\./i.test(rawUrl)) return "";
+    const m = rawUrl.match(/\/(\d{13})-[^/]+-1200w\.(webp|jpg|jpeg)$/i);
+    if (!m || Number(m[1]) < 1790747949000) return "";
+    const small = rawUrl.replace(/-1200w\.(webp|jpg|jpeg)$/i, "-800w.$1");
+    return `${small} 800w, ${rawUrl} 1200w`;
+  } catch { return ""; }
+}
+
 function _buildProductImagePreloads(inlineProductsStr, count = 2, opts) {
   const pdp = !!(opts && opts.pdp);
   return _extractTopProductImages(inlineProductsStr, pdp ? 1 : count).map((item, i) => {
     const href = _toGalleryUrl(item.url, pdp ? 1200 : 400, pdp ? 85 : 75);
-    return `<link rel="preload" as="image" href="${escapeHtml(href)}"${i === 0 ? ' fetchpriority="high"' : ''} />\n`;
+    const ss = pdp && i === 0 && href === item.url ? _pdpHeroSrcSet(item.url) : "";
+    const ssAttr = ss ? ` imagesrcset="${escapeHtml(ss)}" imagesizes="${PDP_HERO_SIZES}"` : "";
+    return `<link rel="preload" as="image" href="${escapeHtml(href)}"${ssAttr}${i === 0 ? ' fetchpriority="high"' : ''} />\n`;
   }).join("");
 }
 
@@ -4694,7 +4709,8 @@ async function serveStreamedHtml(
             ? `<link rel="preconnect" href="${escapeHtml(_origin)}" crossorigin />` +
               `<link rel="dns-prefetch" href="${escapeHtml(_origin)}" />`
             : "";
-          const _srcsetAttr = "";
+          const _hss = _main === _pdpHeroRaw ? _pdpHeroSrcSet(_pdpHeroRaw) : "";
+          const _srcsetAttr = _hss ? ` srcset="${escapeHtml(_hss)}" sizes="${PDP_HERO_SIZES}"` : "";
           // Same viewport box the gallery reserves (see ProductDetail.tsx
           // viewportHeightClass) so the frame the browser paints matches.
           const _h = _pdpHasVideo ? "min(168vw,86svh)" : "min(132vw,70svh)";
