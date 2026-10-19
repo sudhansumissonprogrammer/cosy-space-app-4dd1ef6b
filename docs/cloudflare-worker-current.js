@@ -243,7 +243,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.98.0-pdp-instant-preview";
+const WORKER_VERSION = "8.99.0-pdp-fast-handoff";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -4238,7 +4238,12 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
     // v8.63.0: LCP image preload — starts hero image download at HTML parse time
     // (~50ms) instead of waiting for React hydration (~2000-2500ms). Saves 1.5-2.5s LCP.
     if (ogImg) {
-      html += `<link rel="preload" as="image" href="${ogImg}" fetchpriority="high">`;
+      // v8.99.0 — srcset-aware: a plain 1200w preload made phones download the
+      // 355KB 1200w AND the 800w the preview/gallery actually paints.
+      const _ogSs = _pdpHeroSrcSet(heroImg);
+      html += _ogSs
+        ? `<link rel="preload" as="image" href="${ogImg}" imagesrcset="${escapeHtml(_ogSs)}" imagesizes="${PDP_HERO_SIZES}" fetchpriority="high">`
+        : `<link rel="preload" as="image" href="${ogImg}" fetchpriority="high">`;
     }
     // v8.46.0: rich-result hints + AI engines
     html += `<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">`;
@@ -4576,7 +4581,7 @@ const _PDP_HOLD_SCRIPT =
   `l=document.querySelectorAll('script[type="text/sf-held"]');for(i=0;i<l.length;i++){n=document.createElement('script');n.type='module';n.crossOrigin='anonymous';n.src=l[i].getAttribute('data-sf-src');h.appendChild(n);}` +
   `try{window.dispatchEvent(new Event('sf:pdp-release'));}catch(e){}}` +
   `function go(){if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',rel,{once:true});else rel();}` +
-  `window.__sfPdpRelease=go;setTimeout(go,1800);})();</script>`;
+  `window.__sfPdpRelease=go;setTimeout(go,900);})();</script>`;
 
 function _holdPdpAppCode(head) {
   try {
@@ -4777,7 +4782,7 @@ async function serveStreamedHtml(
             pdpImgPreconnect = `<link rel="preload" as="image" href="${escapeHtml(_tiny)}" fetchpriority="high" />` + pdpImgPreconnect;
           }
           const _tinyImg = _tiny
-            ? `<img src="${escapeHtml(_tiny)}" alt="" decoding="sync" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center;filter:blur(6px);transform:scale(1.02)" />`
+            ? `<img src="${escapeHtml(_tiny)}" alt="" decoding="sync" onload="setTimeout(function(){window.__sfPdpRelease&&window.__sfPdpRelease()},150)" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center;filter:blur(6px);transform:scale(1.02)" />`
             : "";
           /* v8.97.0 — INSTANT PDP PREVIEW. Measured live (slow 4G, 4x CPU):
              the edge hero sat UNDER the black splash, so shoppers saw nothing
