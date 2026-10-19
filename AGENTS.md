@@ -36,4 +36,4 @@
 
 - Order CSV uses store-scoped pages, saved order addresses and one row per item with shared supplier links; prepare before download for mobile support.
 
-- PDP main photo srcset/sizes (800w sibling + 1200w) is mirrored in app, index.html and Worker so preload and gallery pick one file; only timestamped post-800w-era uploads qualify.
+- Mirror PDP photo srcset/sizes in app, index.html and Worker (post-800w-era only); the Worker preview hands off on sf:pdp-hero-painted after briefly holding code, so the photo paints first.
