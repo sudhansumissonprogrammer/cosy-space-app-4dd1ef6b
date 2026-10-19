@@ -7,24 +7,24 @@
  * changes, so cold load behaviour is untouched.
  */
 @media (max-width: 639.98px) {
-  /* Page side padding: 12px → 8px on both edges */
+  /* Page side padding: 12px → 4px on both edges */
   .sf-kalinga-mobile .max-w-7xl.px-3 {
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
   }
 
-  /* Horizontal gutter between cards in the product grid: 6-8px → 4px.
+  /* Horizontal gutter between cards in the product grid: 6-8px → 2px.
      Row gap is untouched, so vertical rhythm stays identical. */
   .sf-kalinga-mobile .grid.grid-cols-2:has(> .stagger-card) {
-    column-gap: 0.25rem;
+    column-gap: 0.125rem;
   }
 
-  /* Card internals: photo frame 4px → 2px, text block 12px → 8px */
+  /* Card internals: photo frame 4px → 0, text block 12px → 6px */
   .sf-kalinga-mobile .stagger-card a.p-1 {
-    padding: 0.125rem 0.125rem 0;
+    padding: 0;
   }
   .sf-kalinga-mobile .stagger-card > div.px-3.pt-2 {
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
+    padding-left: 0.375rem;
+    padding-right: 0.375rem;
   }
 }
