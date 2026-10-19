@@ -243,7 +243,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.97.1-pdp-preview-fullsize";
+const WORKER_VERSION = "8.98.0-pdp-instant-preview";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -4764,6 +4764,21 @@ async function serveStreamedHtml(
           // Same viewport box the gallery reserves (see ProductDetail.tsx
           // viewportHeightClass) so the frame the browser paints matches.
           const _h = _pdpHasVideo ? "min(168vw,86svh)" : "min(132vw,70svh)";
+          /* v8.98.0 — tiny 160w placeholder (only for upload families that
+             really have a -thumb160-160w sibling) paints ~5KB within ~1s and
+             is blurred until the sharp photo covers it. */
+          let _tiny = "";
+          try {
+            if (/^https:\/\/cdn\.shopbanao\.in\//.test(_pdpHeroRaw) && /-thumb160-\d+w\.webp$/i.test(_pdpHeroRaw)) {
+              _tiny = _pdpHeroRaw.replace(/-thumb160-\d+w\.webp$/i, "-thumb160-160w.webp");
+            }
+          } catch { _tiny = ""; }
+          if (_tiny) {
+            pdpImgPreconnect = `<link rel="preload" as="image" href="${escapeHtml(_tiny)}" fetchpriority="high" />` + pdpImgPreconnect;
+          }
+          const _tinyImg = _tiny
+            ? `<img src="${escapeHtml(_tiny)}" alt="" decoding="sync" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center;filter:blur(6px);transform:scale(1.02)" />`
+            : "";
           /* v8.97.0 — INSTANT PDP PREVIEW. Measured live (slow 4G, 4x CPU):
              the edge hero sat UNDER the black splash, so shoppers saw nothing
              until React painted (~10-13s) even though the photo bytes landed
@@ -4790,6 +4805,7 @@ async function serveStreamedHtml(
             `<div id="sf-hero-edge" aria-hidden="true" style="position:fixed;inset:0;z-index:2147483000;background:${escapeHtml(bgColor)};color:${escapeHtml(textColor)};overflow:hidden;transition:opacity .15s linear">` +
             `<div style="height:56px;display:flex;align-items:center;justify-content:center;font:700 15px/1 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid rgba(127,127,127,.15)">${_storeName}</div>` +
             `<div style="position:relative;width:100%;max-width:640px;margin:0 auto;height:${_h}">` +
+            _tinyImg +
             `<img class="sf-hero-img" src="${escapeHtml(_main)}"${_srcsetAttr} alt="" fetchpriority="high" decoding="async" ` +
             `onload="window.__sfPdpRelease&&window.__sfPdpRelease()" onerror="window.__sfPdpRelease&&window.__sfPdpRelease()" ` +
             `style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center" />` +
@@ -4818,7 +4834,7 @@ async function serveStreamedHtml(
           // v8.51.0 — race against 200ms deadline (same reason as homepage below).
           earlyStorefrontResult = await Promise.race([
             storefrontPromise,
-            new Promise((resolve) => setTimeout(() => resolve(null), 200)),
+            new Promise((resolve) => setTimeout(() => resolve(null), _pdpHold ? 40 : 200)),
           ]);
         } catch {}
         const earlyStore = earlyStorefrontResult?.data?.store;
@@ -4919,6 +4935,17 @@ async function serveStreamedHtml(
         !_isPdpPreload && preloaderProductsJson ? _buildProductPreloaderGrid(preloaderProductsJson, 2) : "";
 
       let bodyChunk = html.slice(headEnd + 7);
+      // v8.98.0 — index.html's #inline-skel + ShopBanao #landing-skel (~16KB)
+      // are removed by its own script whenever __SF_WORKER__ is set, so on
+      // Worker-streamed storefronts they are pure parse cost ahead of the
+      // preview photo. Strip them (guarded: both markers, in order).
+      {
+        const _a = bodyChunk.indexOf('<style id="sf-skel-anim">');
+        const _b = bodyChunk.indexOf('<div id="root">');
+        if (_a !== -1 && _b > _a && bodyChunk.slice(_a, _b).indexOf('id="landing-skel"') !== -1) {
+          bodyChunk = bodyChunk.slice(0, _a) + bodyChunk.slice(_b);
+        }
+      }
       // v8.97.0 — editor/badge script is never needed on a live storefront.
       bodyChunk = bodyChunk.replace(/<script[^>]*src="https:\/\/cdn\.gpteng\.co\/lovable\.js"[^>]*><\/script>/gi, "");
 
