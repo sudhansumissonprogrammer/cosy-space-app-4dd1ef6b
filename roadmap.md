@@ -1,7 +1,7 @@
 # Current work
 
-- [ ] Add dashboard CSV export for all or selected orders with separate checkout address fields and supplier PDP links; verify downloads.
-- [ ] Connect Telegram fresh after Oct 19 workspace move; verify bot and redeploy existing notifications without replaying history.
+- [x] Add all/selected order CSV export with separate saved checkout address fields and supplier PDP links per item. Cross-page selection retained; 8 tests and sample downloads (301 all, 2 selected) pass, build OK. Real-order export awaits a merchant account: current preview account has no stores/order access. Frontend publication required.
+- [ ] Connect Telegram fresh after Oct 19 workspace move; user declined connection card, so remains unlinked. Bot verification/deployment await approval; no messages or history replayed.
 
 - [x] Replace shipping photo entry with tracking number and courier selection; Valmo official links share dashboard/WhatsApp resolver, approved text order_shipped_v3 verified. 8 tests and desktop/mobile dialog intercepted-save checks pass, build OK; services deployed. RTO verification/marketing safeguards unchanged. Frontend publication required; real order save/message delivery unverified (preview account has no stores); no customer contacted.
 

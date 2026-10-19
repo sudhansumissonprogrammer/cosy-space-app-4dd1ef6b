@@ -11,7 +11,7 @@
 - Capacity tests are admin-only guarded Python, never browser traffic. Production allows low-rate read-only canaries; ramp/spike/soak require staging hosts unless overridden, protecting ads/payments.
 - Keep `is_best_selling` for storefront merchandising but do not restore the separate per-product award seal, because its controls and flag were retired.
 
-- JD Store Spy extension calls the JD platform API from the store page (content script), never the extension background, because the platform resolves the tenant from the request Origin.
+- JD Store Spy calls the platform API from store-page content scripts, never background, because Origin identifies the tenant.
 - Store-gated similar rails use lazy components, bounded cached queries and local image visibility so navigation never blocks the main photo.
 - Imitation World uses store-gated compact gallery sizing and hides only the underneath thumbnail strip, because existing swipe, video, and zoom behavior must remain intact without changing other stores.
 - Informational slides use shared presentation-only ordering and deferred URLs; preserve product data and opening-photo priority.
