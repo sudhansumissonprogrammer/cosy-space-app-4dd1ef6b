@@ -371,6 +371,18 @@ export default function ProductDetail() {
     });
   }, [isLoading, productSlug]);
 
+  // Tell the Worker's instant edge preview (photo + title + price) that the
+  // real gallery photo is on screen, so it can hand over without a flash.
+  // Fires after the 200ms opacity fade.
+  const heroPaintedRef = useRef(false);
+  const mainSlideReady = !!imageLoaded[0] || slides[0]?.kind === "video" || (!isLoading && slides.length === 0);
+  useEffect(() => {
+    if (heroPaintedRef.current || isLoading || !mainSlideReady) return;
+    heroPaintedRef.current = true;
+    const t = setTimeout(() => window.dispatchEvent(new Event("sf:pdp-hero-painted")), 220);
+    return () => clearTimeout(t);
+  }, [isLoading, mainSlideReady]);
+
   // Show sticky bar when inline CTA scrolls out of view (works on all screens)
   // Re-run after loading completes so the ref is attached to the DOM
   useEffect(() => {
