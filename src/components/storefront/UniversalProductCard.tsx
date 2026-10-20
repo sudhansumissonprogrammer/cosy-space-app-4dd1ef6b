@@ -4,6 +4,7 @@ import ProductCardStyle1 from "./ProductCardStyle1";
 import ProductCardSkeleton from "./ProductCardSkeleton";
 import { useImageActivation } from "@/hooks/useImageActivation";
 import { CardImageReadiness } from "./CardImageReadiness";
+import { kalingaCouponPrice, usePendingCoupon } from "@/lib/kalingaCouponPreview";
 
 
 // ── Variant cards: lazy ─────────────────────────────────────────────
@@ -116,6 +117,8 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
   const cardVideoOff = useAppDisabled(slug, "card-video", !!cardVideoUrl);
   const showCardVideo = !!cardVideoUrl && !cardVideoOff;
   const hasSale = Number(product?.sale_price) > 0 && Number(product.sale_price) < Number(product?.price);
+  const pendingCoupon = usePendingCoupon();
+  const couponPrice = kalingaCouponPrice(store?.id, pendingCoupon, hasSale ? Number(product.sale_price) : Number(product?.price));
 
   const variantCount = useVariantCount(product.id);
   const hasVariants = variantCount > 0;
@@ -210,6 +213,11 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
       onPointerDown={prime}
     >
       {active ? <CardImageReadiness.Provider value>{wrapped}</CardImageReadiness.Provider> : <ProductCardSkeleton />}
+      {couponPrice != null && (
+        <p className="mt-1 px-1.5 text-xs font-extrabold text-destructive">
+          ₹{couponPrice.toLocaleString("en-IN")} <span className="font-semibold">with SAVE100 (−₹100)</span>
+        </p>
+      )}
       {active && hasSale && (
         <FestivalSaleBadge placement="card" className="absolute left-1.5 top-1.5 z-[5] drop-shadow-md" />
       )}
