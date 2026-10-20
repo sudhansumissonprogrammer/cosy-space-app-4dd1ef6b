@@ -234,16 +234,21 @@ Deno.serve(async (req) => {
   const ctaToken = body.event === "order_shipped" ? `t-${o.id}` : `o-${o.id}`;
 
   // 🧾 COD confirmation must never go out on an unapproved template — quick-reply
-  // buttons only exist once Meta approves cod_order_confirm_v1.
+  // buttons only exist once Meta approves the template. Prefer the JD-style v2
+  // copy once approved; fall back to v1 while v2 is still in review.
+  let codTemplateName = TEMPLATE_BY_EVENT.cod_confirmation;
   if (body.event === "cod_confirmation") {
-    const { data: codTpl } = await admin
+    const { data: codTpls } = await admin
       .from("platform_wa_templates")
-      .select("is_active, paused, meta_status")
-      .eq("name", TEMPLATE_BY_EVENT.cod_confirmation)
-      .maybeSingle();
-    const ok = codTpl && (codTpl as any).is_active && !(codTpl as any).paused &&
-      String((codTpl as any).meta_status || "").toUpperCase() === "APPROVED";
-    if (!ok) return json({ skipped: true, reason: "no_approved_cod_template" });
+      .select("name, is_active, paused, meta_status")
+      .in("name", ["cod_order_confirm_v2", "cod_order_confirm_v1"]);
+    const usable = (name: string) =>
+      (codTpls || []).some((t: any) =>
+        t.name === name && t.is_active && !t.paused &&
+        String(t.meta_status || "").toUpperCase() === "APPROVED");
+    if (usable("cod_order_confirm_v2")) codTemplateName = "cod_order_confirm_v2";
+    else if (usable("cod_order_confirm_v1")) codTemplateName = "cod_order_confirm_v1";
+    else return json({ skipped: true, reason: "no_approved_cod_template" });
   }
 
   let parcelPhotoUrl = "";
