@@ -13,7 +13,8 @@ export const kalingaChainPosterUrl = chainPoster.url;
 /**
  * Presentation-only: never add these posters to product data or category photos.
  * Slide order: photo 1, photo 2 (same photo repeated when there is only one),
- * 18K chain poster, jewellery care guide, then any remaining slides.
+ * 18K chain poster, then any remaining slides, and the jewellery care guide
+ * always last.
  */
 export function withImitationWorldCareGuide<T extends CareGallerySlide>(
   slides: T[],
@@ -34,7 +35,7 @@ export function withImitationWorldCareGuide<T extends CareGallerySlide>(
     first,
     second,
     { kind: "image", url: chainPoster.url },
-    { kind: "image", url: careGuide.url },
     ...remaining,
+    { kind: "image", url: careGuide.url },
   ];
 }
