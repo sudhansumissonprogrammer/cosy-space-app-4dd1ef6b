@@ -43,6 +43,13 @@
       "when": 1792471778473,
       "tag": "0005_allow_cod_address_pending",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792472605233,
+      "tag": "0006_wa_send_queue_sent_message_id_idx",
+      "breakpoints": true
     }
   ]
 }

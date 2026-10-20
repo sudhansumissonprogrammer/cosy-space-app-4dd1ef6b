@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS idx_wa_send_queue_sent_message_id ON public.wa_send_queue (sent_message_id) WHERE sent_message_id IS NOT NULL;

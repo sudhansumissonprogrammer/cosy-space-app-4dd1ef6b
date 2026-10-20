@@ -112,6 +112,10 @@ async function sendReply(
 
   // Fallback: route through wa-platform-send (slower, but full guardrails).
   try {
+    if (!ctx.cronSecret) {
+      const { data: cronRow } = await admin.from("cron_auth").select("secret").eq("id", true).maybeSingle();
+      ctx.cronSecret = (cronRow as any)?.secret || "";
+    }
     await fetch(`${SUPABASE_URL}/functions/v1/wa-platform-send`, {
       method: "POST",
       headers: {
