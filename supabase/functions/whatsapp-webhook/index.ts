@@ -317,15 +317,18 @@ Deno.serve(async (req) => {
               sent_via: isPlatformDelivery ? "platform" : "merchant",
             });
 
-            // Mark our most-recent outbound to this phone as "replied"
-            await adminClient
+            // Mark our most-recent outbound to this phone as "replied".
+            // Background: never delay the customer's button reply for analytics.
+            const repliedWork = Promise.resolve(adminClient
               .from("whatsapp_messages")
               .update({ replied_at: new Date().toISOString() })
               .eq("direction", "outgoing")
               .eq("recipient_phone", from)
               .is("replied_at", null)
               .order("created_at", { ascending: false })
-              .limit(1);
+              .limit(1)).catch((e: Error) => console.error("replied_at update failed:", e?.message));
+            // @ts-ignore EdgeRuntime is provided by the Supabase runtime
+            if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(repliedWork); else await repliedWork;
           }
 
           // ── 🏪 WhatsApp store-creation agent (shared number only) ──
@@ -359,11 +362,23 @@ Deno.serve(async (req) => {
           let codHandled = false;
           if (!alreadyProcessed && !isOptOut && !onboardingHandled && finalBody) {
             try {
-              const { data: cronRow } = await adminClient
-                .from("cron_auth").select("secret").eq("id", true).maybeSingle();
-              const cronSecret = (cronRow as any)?.secret || Deno.env.get("CRON_SECRET") || "";
-              if (cronSecret) {
-                codHandled = await handleCodReply(adminClient, cronSecret, {
+              const direct = isPlatformDelivery && platformPhoneId && platformToken;
+              let cronSecret = Deno.env.get("CRON_SECRET") || "";
+              if (!direct) {
+                const { data: cronRow } = await adminClient
+                  .from("cron_auth").select("secret").eq("id", true).maybeSingle();
+                cronSecret = (cronRow as any)?.secret || cronSecret;
+              }
+              if (direct || cronSecret) {
+                codHandled = await handleCodReply(adminClient, {
+                  cronSecret,
+                  phoneNumberId: direct ? platformPhoneId : null,
+                  token: direct ? platformToken : null,
+                  background: (p) => {
+                    // @ts-ignore EdgeRuntime is provided by the Supabase runtime
+                    if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(p);
+                  },
+                }, {
                   phone: from,
                   text: finalBody,
                   contextId: msg?.context?.id || null,

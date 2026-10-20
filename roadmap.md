@@ -8,3 +8,4 @@
 - [x] COD photo version (v3) approved by Meta and turned on; falls back to text version when an order has no photo.
 - [ ] Dashboard orders: show COD order confirmed / not confirmed and address confirmed / not confirmed.
 - [ ] Make WhatsApp replies after Confirm My Order / Confirm Address taps instant.
+- [ ] Connect Telegram in the newest workspace (verify bot, redeploy telegram-order-notify, no history replay).
