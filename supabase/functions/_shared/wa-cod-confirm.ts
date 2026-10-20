@@ -1,9 +1,13 @@
 // COD order-confirmation reply handling.
 //
-// Customers receive `cod_order_confirm_v1` (and, after 4h of silence,
-// `cod_confirm_followup_v1`) with two quick-reply buttons:
-//   ✅ Confirm Order   → order is tagged verified and released for dispatch
-//   ✏️ Edit Address    → we ask for the corrected address in the 24h session
+// Customers receive `cod_order_confirm_v2` (JD-style "Order Confirmation
+// Request", falling back to v1) with two quick-reply buttons:
+//   Confirm My Order   → step 2: address confirmation with Confirm Address /
+//                        I Want To Change Address buttons
+//   Cancel My Order    → cancellation request passed to the store
+// Step 2 (status "address_pending"):
+//   Confirm Address         → order verified, released for packing
+//   I Want To Change Address → we ask for the corrected address in the session
 //
 // This module is imported by whatsapp-webhook (inbound) only.
 
@@ -60,6 +64,36 @@ async function sendSessionText(
   }
 }
 
+async function sendSessionButtons(
+  admin: any,
+  cronSecret: string,
+  storeId: string | null,
+  phone: string,
+  bodyText: string,
+  buttons: string[],
+) {
+  try {
+    await fetch(`${SUPABASE_URL}/functions/v1/wa-platform-send`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-cron-secret": cronSecret,
+        Authorization: `Bearer ${SERVICE_KEY}`,
+        apikey: SERVICE_KEY,
+      },
+      body: JSON.stringify({
+        mode: "interactive",
+        store_id: storeId,
+        recipient_phone: phone,
+        message_type: "cod_confirm_reply",
+        interactive: { body_text: bodyText, buttons },
+      }),
+    });
+  } catch (e) {
+    console.error("cod session buttons failed:", (e as Error).message);
+  }
+}
+
 /**
  * Resolve which order an inbound reply belongs to.
  * 1) Meta reply context → the exact template message we sent.
@@ -77,7 +111,7 @@ async function resolveOrder(admin: any, phone: string, contextId: string | null)
     if (oid) {
       const { data: o } = await admin
         .from("orders")
-        .select("id, store_id, order_number, cod_confirm_status, status")
+        .select("id, store_id, order_number, cod_confirm_status, status, customer_name, street_address, city, state, pincode, stores:store_id(name)")
         .eq("id", oid)
         .maybeSingle();
       if (o) return o as any;
@@ -89,9 +123,9 @@ async function resolveOrder(admin: any, phone: string, contextId: string | null)
   const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
   const { data: rows } = await admin
     .from("orders")
-    .select("id, store_id, order_number, cod_confirm_status, status")
+    .select("id, store_id, order_number, cod_confirm_status, status, customer_name, street_address, city, state, pincode, stores:store_id(name)")
     .ilike("customer_phone", `%${last10}`)
-    .in("cod_confirm_status", ["awaiting", "edit_requested"])
+    .in("cod_confirm_status", ["awaiting", "address_pending", "edit_requested"])
     .gte("created_at", since)
     .order("created_at", { ascending: false })
     .limit(1);
@@ -147,15 +181,37 @@ export async function handleCodReply(
   }
 
   if (intent === "confirm") {
+    const orderNum = order.order_number || "";
+    const firstName = String(order.customer_name || "there").trim().split(/\s+/)[0] || "there";
+    const storeName = (order.stores as any)?.name || "our store";
 
+    // Step 2: order already confirmed — this tap confirms the delivery address.
+    if (order.cod_confirm_status === "address_pending") {
+      await admin.from("orders").update({
+        cod_confirm_status: "confirmed",
+        cod_confirmed_at: new Date().toISOString(),
+        cod_confirm_reply: opts.text.slice(0, 500),
+      } as any).eq("id", order.id);
+      await sendSessionText(
+        admin, cronSecret, order.store_id, opts.phone,
+        `Thanks ${firstName}\nYour shipping address has been confirmed successfully! ✅\n\nYour order (ID: ${orderNum}) is now moving to the packing stage.\nWe'll update you once it is shipped!`,
+      );
+      return true;
+    }
+
+    // Step 1 → 2: order confirmed, now ask to verify the delivery address.
     await admin.from("orders").update({
-      cod_confirm_status: "confirmed",
-      cod_confirmed_at: new Date().toISOString(),
+      cod_confirm_status: "address_pending",
       cod_confirm_reply: opts.text.slice(0, 500),
     } as any).eq("id", order.id);
-    await sendSessionText(
+    const address = [order.street_address, order.city, order.state, order.pincode]
+      .map((p: any) => String(p || "").trim())
+      .filter(Boolean)
+      .join(", ") || "As provided at checkout";
+    await sendSessionButtons(
       admin, cronSecret, order.store_id, opts.phone,
-      `✅ Thank you! Your order ${order.order_number || ""} is confirmed and moves to packing today. We'll share tracking as soon as it ships.`.replace("  ", " "),
+      `Hello ${firstName},\n\nYour order (ID: ${orderNum}) with ${storeName} has been confirmed. ✅\n\nBefore dispatch, please review your delivery address to avoid delays.\n\n*Delivery Address:*\n${address}\n\nPlease confirm if the above address is correct.`,
+      ["Confirm Address", "I Want To Change Address"],
     );
     return true;
   }

@@ -70,7 +70,7 @@ export default function StoreWhatsAppSimple() {
   const master = toggles.master;
   const automations: { key: ToggleKey; icon: any; label: string; desc: string }[] = [
     { key: "order_confirmation", icon: CheckCircle2, label: "Order confirmation", desc: "Instant WhatsApp confirmation the moment an order is placed." },
-    { key: "cod_confirmation", icon: ShieldCheck, label: "COD order confirmation", desc: "Full Cash-on-Delivery orders get a WhatsApp with ✅ Confirm Order / ✏️ Edit Address buttons, plus one reminder after 4 hours. Partly-prepaid orders are never messaged." },
+    { key: "cod_confirmation", icon: ShieldCheck, label: "COD order confirmation", desc: "Full Cash-on-Delivery orders get an Order Confirmation Request with Confirm My Order / Cancel My Order buttons, then a delivery-address confirmation step. One reminder after 4 hours of silence. Partly-prepaid orders are never messaged." },
     { key: "order_shipped", icon: Truck, label: "Shipping update", desc: "Tracking link goes out automatically when you mark the order shipped with a tracking number." },
     { key: "abandoned_cart", icon: ShoppingCart, label: "Abandoned cart recovery", desc: "Customers who left items in their cart get one friendly reminder." },
   ];
