@@ -12,6 +12,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { kalingaCouponPrice, usePendingCoupon, KALINGA_PREVIEW_CODE } from "@/lib/kalingaCouponPreview";
 
 export interface WaCouponPreview {
   /** true only for WA arrivals with a valid, applicable exclusive coupon */
@@ -41,6 +42,7 @@ export function useIsWaSource(): boolean {
 
 export function useWaCouponPreview(storeId?: string, basePrice?: number): WaCouponPreview {
   const isWaSource = useIsWaSource();
+  const pendingCoupon = usePendingCoupon();
 
   const { data: waCoupon } = useQuery({
     queryKey: ["store-wa-coupon", storeId],
@@ -53,6 +55,11 @@ export function useWaCouponPreview(storeId?: string, basePrice?: number): WaCoup
   });
 
   const price = Number(basePrice || 0);
+  // Kalinga recovery links carry SAVE100 — show the ₹100-off price everywhere.
+  const kalingaPrice = kalingaCouponPrice(storeId, pendingCoupon, price);
+  if (kalingaPrice != null) {
+    return { active: true, discount: price - kalingaPrice, finalPrice: kalingaPrice, code: KALINGA_PREVIEW_CODE };
+  }
   if (!isWaSource || !waCoupon || !price || price <= 0) {
     return { active: false, discount: 0, finalPrice: price };
   }
