@@ -181,15 +181,37 @@ export async function handleCodReply(
   }
 
   if (intent === "confirm") {
+    const orderNum = order.order_number || "";
+    const firstName = String(order.customer_name || "there").trim().split(/\s+/)[0] || "there";
+    const storeName = (order.stores as any)?.name || "our store";
 
+    // Step 2: order already confirmed — this tap confirms the delivery address.
+    if (order.cod_confirm_status === "address_pending") {
+      await admin.from("orders").update({
+        cod_confirm_status: "confirmed",
+        cod_confirmed_at: new Date().toISOString(),
+        cod_confirm_reply: opts.text.slice(0, 500),
+      } as any).eq("id", order.id);
+      await sendSessionText(
+        admin, cronSecret, order.store_id, opts.phone,
+        `Thanks ${firstName}\nYour shipping address has been confirmed successfully! ✅\n\nYour order (ID: ${orderNum}) is now moving to the packing stage.\nWe'll update you once it is shipped!`,
+      );
+      return true;
+    }
+
+    // Step 1 → 2: order confirmed, now ask to verify the delivery address.
     await admin.from("orders").update({
-      cod_confirm_status: "confirmed",
-      cod_confirmed_at: new Date().toISOString(),
+      cod_confirm_status: "address_pending",
       cod_confirm_reply: opts.text.slice(0, 500),
     } as any).eq("id", order.id);
-    await sendSessionText(
+    const address = [order.street_address, order.city, order.state, order.pincode]
+      .map((p: any) => String(p || "").trim())
+      .filter(Boolean)
+      .join(", ") || "As provided at checkout";
+    await sendSessionButtons(
       admin, cronSecret, order.store_id, opts.phone,
-      `✅ Thank you! Your order ${order.order_number || ""} is confirmed and moves to packing today. We'll share tracking as soon as it ships.`.replace("  ", " "),
+      `Hello ${firstName},\n\nYour order (ID: ${orderNum}) with ${storeName} has been confirmed. ✅\n\nBefore dispatch, please review your delivery address to avoid delays.\n\n*Delivery Address:*\n${address}\n\nPlease confirm if the above address is correct.`,
+      ["Confirm Address", "I Want To Change Address"],
     );
     return true;
   }
