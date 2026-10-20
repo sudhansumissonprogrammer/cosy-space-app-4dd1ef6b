@@ -147,17 +147,29 @@ export async function handleCodReply(
   const intent = classifyCodReply(opts.text);
 
   // Free-text sent right after "Edit Address" = the corrected address.
+  // Save it onto the order itself (so the dashboard shows the corrected
+  // address), then re-ask the customer to confirm the new address.
   if (!intent) {
     if (order.cod_confirm_status !== "edit_requested") return false;
     const addr = String(opts.text || "").trim().slice(0, 500);
     if (addr.length < 6) return false;
+    // Pull a 6-digit Indian pincode out of the message when present.
+    const pinMatch = addr.match(/(?<!\d)([1-9]\d{5})(?!\d)/);
+    const pincode = pinMatch ? pinMatch[1] : null;
+    const street = pincode ? addr.replace(pinMatch![0], "").replace(/\s{2,}/g, " ").replace(/[\s,;-]+$/, "").trim() : addr;
     await admin.from("orders").update({
+      street_address: street || addr,
+      ...(pincode ? { pincode } : {}),
+      cod_confirm_status: "address_pending",
       cod_confirm_reply: addr,
     } as any).eq("id", order.id);
     await notifyStore(admin, order, "Address correction received", `Customer sent a corrected address for order ${order.order_number || order.id}: ${addr}`);
-    await sendSessionText(
+    const orderNum = order.order_number || "";
+    const firstName = String(order.customer_name || "there").trim().split(/\s+/)[0] || "there";
+    await sendSessionButtons(
       admin, cronSecret, order.store_id, opts.phone,
-      "Thank you 🙏 We have noted the corrected address and our team will verify it before dispatch.",
+      `Thanks ${firstName} 🙏\n\nWe have updated your delivery address for order (ID: ${orderNum}):\n\n*New Delivery Address:*\n${addr}\n\nPlease confirm if this address is now correct.`,
+      ["Confirm Address", "I Want To Change Address"],
     );
     return true;
   }
