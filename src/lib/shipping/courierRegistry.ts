@@ -87,7 +87,7 @@ export function officialTrackingUrl(slug: string | null | undefined, awb: string
   switch (slug) {
     case "valmo": return customerTrackingUrl(slug, awb);
     case "shiprocket": return `https://shiprocket.co/tracking/${a}`;
-    case "delhivery": return `https://www.delhivery.com/track-v2/package/${a}`;
+    case "delhivery": return customerTrackingUrl(slug, awb);
     case "ekart": return `https://ekartlogistics.com/shipmenttrack/${a}`;
     case "bluedart": return `https://www.bluedart.com/web/guest/trackdartresult?trackFor=0&trackNo=${a}`;
     case "xpressbees": return `https://www.xpressbees.com/shipment/tracking?awbNo=${a}`;

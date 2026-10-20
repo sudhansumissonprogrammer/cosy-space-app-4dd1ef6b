@@ -12,6 +12,11 @@ describe("manual shipment tracking", () => {
     expect(url.hostname).toBe("speedposttrack.io");
     expect(JSON.parse(atob(url.searchParams.get("d") ?? ""))).toEqual({ t: "EE123456789IN", c: "speedpost" });
   });
+  it("opens Delhivery numbers as Delhivery, not India Post", () => {
+    const url = new URL(customerTrackingUrl("delhivery", "1490811234567"));
+    expect(JSON.parse(atob(url.searchParams.get("d") ?? ""))).toEqual({ t: "1490811234567", c: "delhivery" });
+    expect(JSON.parse(atob(new URL(officialTrackingUrl("delhivery", "1490811234567")!).searchParams.get("d") ?? "")).c).toBe("delhivery");
+  });
   it("offers Valmo without claiming automatic tracking sync", () => {
     expect(COURIERS.find((courier) => courier.slug === "valmo")).toMatchObject({ name: "Valmo", api: false });
   });
