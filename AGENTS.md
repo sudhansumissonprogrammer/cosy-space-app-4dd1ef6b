@@ -14,7 +14,7 @@
 - JD Store Spy calls the platform API from store-page content scripts, never background, because Origin identifies the tenant.
 - Store-gated similar rails use lazy components, bounded cached queries and local image visibility so navigation never blocks the main photo.
 - Imitation World uses store-gated compact gallery sizing and hides only the underneath thumbnail strip, because existing swipe, video, and zoom behavior must remain intact without changing other stores.
-- Informational slides use shared presentation-only ordering and deferred URLs; preserve product data and opening-photo priority.
+- All PDP themes pass category/slug eligibility to shared informational-slide ordering; defer URLs and preserve product data and main-photo priority.
 - PDP galleries: stable refs/passive readiness; key by product+media and never clear loaded state on Embla init; prepare adjacent slides at low priority after main readiness; retry an exact source once then offer manual recovery, because cached-readiness effects don't repeat and blank/looping galleries must not occur.
 - Storefront cards share sticky intersection activation; category grids arm a bounded next-row buffer after opening photos decode or scrolling starts and gate eager low-priority card images through CardImageReadiness, because zero-margin/native-lazy double gating creates blank rows while opening downloads must remain bounded. Activated cards retain paint; PDP intent warmers and transition previews use the canonical 1200px photo.
 - Bootstrap photo hints are route-scoped: one PDP main photo, two known category card variants, no arbitrary homepage or saved catalog photo hints; category collages activate at visibility, because early hints must match actual displayed sources.

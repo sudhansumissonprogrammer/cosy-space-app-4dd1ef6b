@@ -845,6 +845,7 @@ export default function ProductDetail() {
           showWarrantyBadge={!!(mainThemeConfig as any)?.show_warranty_badge}
           storeId={store.id}
           compactGallery={isKalingaStore(store)}
+          galleryProduct={product}
           onShare={async () => {
             const storeHost = (store as any).custom_domain
               ? `https://${(store as any).custom_domain}`
@@ -1725,6 +1726,7 @@ function ImageGallery({
   showWarrantyBadge,
   storeId,
   compactGallery = false,
+  galleryProduct,
 }: {
   images: string[];
   video?: { url: string; poster: string } | null;
@@ -1735,6 +1737,7 @@ function ImageGallery({
   showWarrantyBadge?: boolean;
   storeId?: string;
   compactGallery?: boolean;
+  galleryProduct?: { slug?: string | null; category?: string | null };
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -1773,8 +1776,8 @@ function ImageGallery({
     if (out.length === 1 && out[0].kind === "image") {
       out.push({ kind: "image", url: out[0].url });
     }
-    return withImitationWorldCareGuide(out, compactGallery);
-  }, [images, video?.url, video?.poster, compactGallery]);
+    return withImitationWorldCareGuide(out, compactGallery, galleryProduct);
+  }, [images, video?.url, video?.poster, compactGallery, galleryProduct?.slug, galleryProduct?.category]);
 
   const len = slides.length;
   const [activatedSlides, setActivatedSlides] = useGalleryPreparation(activeIndex, len, !!imageLoaded[0]);
