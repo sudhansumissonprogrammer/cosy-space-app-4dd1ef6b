@@ -1,0 +1,1 @@
+update public.stores_wa_settings set send_cod_confirmation = false, updated_at = now() where send_cod_confirmation = true;
