@@ -52,6 +52,7 @@ import { waPhoneNumber } from "@/lib/phoneUtils";
 import { aggregatorTrackingUrl } from "@/lib/shipping/courierRegistry";
 import OrderCsvExportDialog from "@/components/dashboard/OrderCsvExportDialog";
 import { togglePageSelection } from "@/lib/orderCsvExport";
+import CodConfirmBadges from "@/components/dashboard/CodConfirmBadges";
 const STATUS_OPTIONS = ORDER_STATUS_OPTIONS.map(o => o.value);
 const BULK_STATUS_OPTIONS = STATUS_OPTIONS.filter((status) => status !== "rto");
 const statusColor = (status: string) => orderStatusBadgeClass(status);
@@ -140,7 +141,7 @@ export default function StoreOrders() {
         .select(
           // Slim list payload: only product names are shown in the list; full
           // line-items are fetched on demand when a detail/invoice view opens.
-          "id, order_number, created_at, status, total, currency, customer_name, customer_phone, payment_method, tracking_number, tracking_url, street_address, city, state, pincode, notes, storefront_customer_id, payment_type, advance_paid, balance_due, payment_verified, coupon_discount, order_items(product_name, quantity)",
+          "id, order_number, created_at, status, total, currency, customer_name, customer_phone, payment_method, tracking_number, tracking_url, street_address, city, state, pincode, notes, storefront_customer_id, payment_type, advance_paid, balance_due, payment_verified, coupon_discount, cod_confirm_status, order_items(product_name, quantity)",
           { count: "estimated" }
 
         )
@@ -773,6 +774,7 @@ export default function StoreOrders() {
                                 {order.order_items.map((i: any) => i.product_name).join(", ")}
                               </p>
                             )}
+                            <CodConfirmBadges status={order.cod_confirm_status} className="mt-1.5" />
                             </button>
                           </div>
                         </SwipeableOrderRow>
@@ -853,7 +855,10 @@ export default function StoreOrders() {
                                   </div>
                                 )}
                               </TableCell>
-                              <TableCell className="text-xs uppercase">{order.payment_method || "cod"}</TableCell>
+                              <TableCell className="text-xs">
+                                <span className="uppercase">{order.payment_method || "cod"}</span>
+                                <CodConfirmBadges status={order.cod_confirm_status} className="mt-1 flex-col items-start" />
+                              </TableCell>
                               <DataTableActionCell>
                                 <Select value={order.status} onValueChange={(v) => handleStatusChange(order, v)} disabled={order.status === "cancelled"}>
                                   <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
@@ -1158,6 +1163,15 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
               <CreditCard className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-foreground capitalize">{order.payment_method || "COD"}</span>
             </div>
+            {order.cod_confirm_status && (
+              <div className="flex items-start gap-2.5">
+                <MessageCircle className="h-4 w-4 text-muted-foreground mt-0.5" />
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground mb-1">WhatsApp COD confirmation</p>
+                  <CodConfirmBadges status={order.cod_confirm_status} />
+                </div>
+              </div>
+            )}
             {order.tracking_number && (
               <div className="flex items-center gap-2.5">
                 <Truck className="h-4 w-4 text-muted-foreground" />
