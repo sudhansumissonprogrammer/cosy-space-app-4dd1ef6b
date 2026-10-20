@@ -194,6 +194,9 @@ Deno.serve(async (req) => {
   const itemCountNum = lineItems.reduce((n, it) => n + Number(it.quantity || 1), 0) || lineItems.length || 1;
   const firstName = lineItems[0]?.product_name || "your item";
   const productName = lineItems.length > 1 ? `${firstName} +${lineItems.length - 1} more` : firstName;
+  // COD confirmation shows the title in a tight bullet list — drop marketing
+  // suffixes ("| Men & Women | Daily Wear …") and cap the length.
+  const shortProductName = shortProductTitle(productName);
 
   // Meta IMAGE headers reject webp/avif and anything without a clean
   // content-type, so route product photos through the wsrv.nl JPG proxy
@@ -234,16 +237,21 @@ Deno.serve(async (req) => {
   const ctaToken = body.event === "order_shipped" ? `t-${o.id}` : `o-${o.id}`;
 
   // 🧾 COD confirmation must never go out on an unapproved template — quick-reply
-  // buttons only exist once Meta approves cod_order_confirm_v1.
+  // buttons only exist once Meta approves the template. Prefer the JD-style v2
+  // copy once approved; fall back to v1 while v2 is still in review.
+  let codTemplateName = TEMPLATE_BY_EVENT.cod_confirmation;
   if (body.event === "cod_confirmation") {
-    const { data: codTpl } = await admin
+    const { data: codTpls } = await admin
       .from("platform_wa_templates")
-      .select("is_active, paused, meta_status")
-      .eq("name", TEMPLATE_BY_EVENT.cod_confirmation)
-      .maybeSingle();
-    const ok = codTpl && (codTpl as any).is_active && !(codTpl as any).paused &&
-      String((codTpl as any).meta_status || "").toUpperCase() === "APPROVED";
-    if (!ok) return json({ skipped: true, reason: "no_approved_cod_template" });
+      .select("name, is_active, paused, meta_status")
+      .in("name", ["cod_order_confirm_v2", "cod_order_confirm_v1"]);
+    const usable = (name: string) =>
+      (codTpls || []).some((t: any) =>
+        t.name === name && t.is_active && !t.paused &&
+        String(t.meta_status || "").toUpperCase() === "APPROVED");
+    if (usable("cod_order_confirm_v2")) codTemplateName = "cod_order_confirm_v2";
+    else if (usable("cod_order_confirm_v1")) codTemplateName = "cod_order_confirm_v1";
+    else return json({ skipped: true, reason: "no_approved_cod_template" });
   }
 
   let parcelPhotoUrl = "";
@@ -278,7 +286,7 @@ Deno.serve(async (req) => {
 
   // Prefer the approved image-header shipment template only when the scan,
   // order, operator, AWB, expiry and private object all still agree.
-  let templateName = TEMPLATE_BY_EVENT[body.event];
+  let templateName = body.event === "cod_confirmation" ? codTemplateName : TEMPLATE_BY_EVENT[body.event];
   if (body.event === "order_shipped") {
     const { data: tpls } = await admin
       .from("platform_wa_templates")
@@ -312,7 +320,7 @@ Deno.serve(async (req) => {
 
       customer_name: customerName,
       store_name: storeName,
-      product_name: productName,
+      product_name: body.event === "cod_confirmation" ? shortProductName : productName,
       order_number: orderNum,
       order_total: orderTotal,
       item_count: String(itemCountNum),
@@ -386,4 +394,11 @@ Deno.serve(async (req) => {
 
 function json(b: unknown, s = 200) {
   return new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+}
+
+/** Strip "| …" marketing suffixes and cap length for the COD summary bullet. */
+function shortProductTitle(name: string, max = 60): string {
+  let t = String(name || "").split("|")[0].trim();
+  if (t.length > max) t = `${t.slice(0, max - 1).replace(/\s+\S*$/, "")}…`;
+  return t || "your item";
 }

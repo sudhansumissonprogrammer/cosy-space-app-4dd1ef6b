@@ -7,7 +7,7 @@ import { corsHeaders, normalizePhone, loadPlatformConfig, platformConfigUsable, 
 import { loadStore, loadTemplate, resolveTemplateParams, pickLocaleVariant, sanitizeWaParam } from "../_shared/wa-branding.ts";
 
 type Body = {
-  mode?: "automation" | "test" | "text";
+  mode?: "automation" | "test" | "text" | "interactive";
   store_id?: string | null;
   recipient_phone: string;
   recipient_name?: string | null;
@@ -20,6 +20,8 @@ type Body = {
   abandoned_cart_id?: string | null;
   // Session-window text reply (admin inbox). Only allowed within 24h of last inbound.
   message_body?: string;
+  // Session-window interactive reply (quick-reply buttons, e.g. COD address confirm).
+  interactive?: { body_text: string; buttons: string[] };
 };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -52,7 +54,9 @@ Deno.serve(async (req) => {
   const phone = normalizePhone(body.recipient_phone);
   if (!phone) return json({ error: "invalid phone", error_class: "permanent" }, 400);
   const isTextReply = body.mode === "text";
-  if (!isTextReply && !body.template_name) return json({ error: "template_name required", error_class: "permanent" }, 400);
+  const isInteractiveReply = body.mode === "interactive";
+  const isSessionReply = isTextReply || isInteractiveReply;
+  if (!isSessionReply && !body.template_name) return json({ error: "template_name required", error_class: "permanent" }, 400);
 
   if (!isInternal) {
     if (!authHeader.startsWith("Bearer ")) return json({ error: "unauthorized", error_class: "permanent" }, 401);
@@ -63,10 +67,10 @@ Deno.serve(async (req) => {
     if (!user) return json({ error: "unauthorized", error_class: "permanent" }, 401);
     const { data: isAdmin } = await admin.rpc("has_role", { _user_id: user.id, _role: "admin" });
     if (!isAdmin) {
-      // Store owners may only send 24h session text replies for their own store.
+      // Store owners may only send 24h session replies for their own store.
       // Automation/templates remain admin/internal-only so merchants cannot bypass
       // platform campaign controls or broadcast limits.
-      if (!isTextReply || !body.store_id) return json({ error: "forbidden", error_class: "permanent" }, 403);
+      if (!isSessionReply || !body.store_id) return json({ error: "forbidden", error_class: "permanent" }, 403);
       const { data: storeRow } = await admin
         .from("stores")
         .select("owner_id")
@@ -185,8 +189,8 @@ Deno.serve(async (req) => {
 
 
   let metaPayload: any;
-  if (isTextReply) {
-    // 24h session window check — Meta only accepts free-form text within 24h of last user message.
+  if (isSessionReply) {
+    // 24h session window check — Meta only accepts free-form text/interactive within 24h of last user message.
     const windowStart = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     // NOTE: Meta scopes the session window to the PHONE NUMBER pair, not to a
     // store. Filtering on store_id/inferred_store_id here wrongly rejected
@@ -209,13 +213,36 @@ Deno.serve(async (req) => {
       }, 400);
     }
 
-    if (!body.message_body) return json({ error: "message_body required", error_class: "permanent" }, 400);
-    metaPayload = {
-      messaging_product: "whatsapp",
-      to: phone,
-      type: "text",
-      text: { body: body.message_body.slice(0, 4096) },
-    };
+    if (isInteractiveReply) {
+      const iv = body.interactive;
+      const btns = (iv?.buttons || []).map((t) => String(t || "").trim()).filter(Boolean).slice(0, 3);
+      if (!iv?.body_text || btns.length === 0) {
+        return json({ error: "interactive.body_text + buttons required", error_class: "permanent" }, 400);
+      }
+      metaPayload = {
+        messaging_product: "whatsapp",
+        to: phone,
+        type: "interactive",
+        interactive: {
+          type: "button",
+          body: { text: iv.body_text.slice(0, 1024) },
+          action: {
+            buttons: btns.map((t, i) => ({
+              type: "reply",
+              reply: { id: `btn_${i}`, title: t.slice(0, 20) },
+            })),
+          },
+        },
+      };
+    } else {
+      if (!body.message_body) return json({ error: "message_body required", error_class: "permanent" }, 400);
+      metaPayload = {
+        messaging_product: "whatsapp",
+        to: phone,
+        type: "text",
+        text: { body: body.message_body.slice(0, 4096) },
+      };
+    }
   } else {
     // Resolve template + branding. Also enforce that template is APPROVED at Meta
     // (once template-sync has populated meta_status). Pre-sync (meta_status NULL) is allowed.
@@ -324,7 +351,7 @@ Deno.serve(async (req) => {
   // We count attempts, not only deliveries: repeatedly retrying Meta 131049 was
   // the source of the red-X flood and itself damages account quality. Utility
   // messages and free-form support replies never enter this ledger.
-  if (!isTransactional && !isTextReply) {
+  if (!isTransactional && !isSessionReply) {
     const { data: weeklyClaim, error: weeklyClaimError } = await admin.rpc("claim_wa_marketing_attempt", {
       _recipient_phone: phone,
       _message_type: body.message_type || "platform",
@@ -382,11 +409,13 @@ Deno.serve(async (req) => {
   // allowed only one recovery row per cart), so surface the error loudly.
   const { error: logErr } = await admin.from("whatsapp_messages").insert({
     store_id: body.store_id ?? null,
-    message_type: body.message_type || (isTextReply ? "text_reply" : "platform"),
+    message_type: body.message_type || (isSessionReply ? "text_reply" : "platform"),
     recipient_phone: phone,
     recipient_name: body.recipient_name ?? null,
-    message_body: isTextReply ? (body.message_body || "").slice(0, 4096) : `[template:${body.template_name}]`,
-    template_name: isTextReply ? null : body.template_name,
+    message_body: isSessionReply
+      ? (isInteractiveReply ? (body.interactive?.body_text || "") : (body.message_body || "")).slice(0, 4096)
+      : `[template:${body.template_name}]`,
+    template_name: isSessionReply ? null : body.template_name,
     meta_message_id: metaId,
     status,
     error_message: errMsg,
