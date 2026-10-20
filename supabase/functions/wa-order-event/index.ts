@@ -194,6 +194,9 @@ Deno.serve(async (req) => {
   const itemCountNum = lineItems.reduce((n, it) => n + Number(it.quantity || 1), 0) || lineItems.length || 1;
   const firstName = lineItems[0]?.product_name || "your item";
   const productName = lineItems.length > 1 ? `${firstName} +${lineItems.length - 1} more` : firstName;
+  // COD confirmation shows the title in a tight bullet list — drop marketing
+  // suffixes ("| Men & Women | Daily Wear …") and cap the length.
+  const shortProductName = shortProductTitle(productName);
 
   // Meta IMAGE headers reject webp/avif and anything without a clean
   // content-type, so route product photos through the wsrv.nl JPG proxy
@@ -283,7 +286,7 @@ Deno.serve(async (req) => {
 
   // Prefer the approved image-header shipment template only when the scan,
   // order, operator, AWB, expiry and private object all still agree.
-  let templateName = TEMPLATE_BY_EVENT[body.event];
+  let templateName = body.event === "cod_confirmation" ? codTemplateName : TEMPLATE_BY_EVENT[body.event];
   if (body.event === "order_shipped") {
     const { data: tpls } = await admin
       .from("platform_wa_templates")
@@ -317,7 +320,7 @@ Deno.serve(async (req) => {
 
       customer_name: customerName,
       store_name: storeName,
-      product_name: productName,
+      product_name: body.event === "cod_confirmation" ? shortProductName : productName,
       order_number: orderNum,
       order_total: orderTotal,
       item_count: String(itemCountNum),
@@ -391,4 +394,11 @@ Deno.serve(async (req) => {
 
 function json(b: unknown, s = 200) {
   return new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+}
+
+/** Strip "| …" marketing suffixes and cap length for the COD summary bullet. */
+function shortProductTitle(name: string, max = 60): string {
+  let t = String(name || "").split("|")[0].trim();
+  if (t.length > max) t = `${t.slice(0, max - 1).replace(/\s+\S*$/, "")}…`;
+  return t || "your item";
 }
