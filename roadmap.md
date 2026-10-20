@@ -14,3 +14,6 @@
 - [x] Turned off COD order/address confirmation everywhere (stores_wa_settings.send_cod_confirmation=false); only plain order confirmation sends now
 - [x] Reconnected Telegram (std_01m48vsybpez6aqdah0c0gzhpc, @Shopbanaobot verified, telegram-order-notify redeployed)
 - [x] Reconnected Telegram in newest workspace (std_01m4b55yqqfepvsddr49egwv7r, @Shopbanaobot verified, telegram-order-notify redeployed, no history replay)
+
+- [ ] Add lossless third-slide chain poster with 18 exclusions; retain care last.
+- [ ] Reconnect Telegram in the new workspace; verify bot and refresh order notifications, without replay.
