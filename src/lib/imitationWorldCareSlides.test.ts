@@ -14,10 +14,10 @@ describe("Imitation World care guide", () => {
   it("handles the existing duplicated-single gallery", () => {
     expect(withImitationWorldCareGuide([photo("one"), photo("one")], true)).toHaveLength(4);
   });
-  it("preserves remaining photos and video after the poster and guide", () => {
+  it("keeps remaining photos and video before the guide, which stays last", () => {
     const video: CareGallerySlide = { kind: "video", url: "video", poster: "one" };
     expect(withImitationWorldCareGuide([photo("one"), video, photo("two"), photo("three")], true))
-      .toEqual([photo("one"), photo("two"), photo(kalingaChainPosterUrl), photo(imitationWorldCareGuideUrl), video, photo("three")]);
+      .toEqual([photo("one"), photo("two"), photo(kalingaChainPosterUrl), video, photo("three"), photo(imitationWorldCareGuideUrl)]);
   });
   it("does not manufacture product photos for an empty gallery", () => {
     expect(withImitationWorldCareGuide([], true)).toEqual([]);
