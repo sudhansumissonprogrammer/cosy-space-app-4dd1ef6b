@@ -189,8 +189,8 @@ Deno.serve(async (req) => {
 
 
   let metaPayload: any;
-  if (isTextReply) {
-    // 24h session window check — Meta only accepts free-form text within 24h of last user message.
+  if (isSessionReply) {
+    // 24h session window check — Meta only accepts free-form text/interactive within 24h of last user message.
     const windowStart = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     // NOTE: Meta scopes the session window to the PHONE NUMBER pair, not to a
     // store. Filtering on store_id/inferred_store_id here wrongly rejected
@@ -213,13 +213,36 @@ Deno.serve(async (req) => {
       }, 400);
     }
 
-    if (!body.message_body) return json({ error: "message_body required", error_class: "permanent" }, 400);
-    metaPayload = {
-      messaging_product: "whatsapp",
-      to: phone,
-      type: "text",
-      text: { body: body.message_body.slice(0, 4096) },
-    };
+    if (isInteractiveReply) {
+      const iv = body.interactive;
+      const btns = (iv?.buttons || []).map((t) => String(t || "").trim()).filter(Boolean).slice(0, 3);
+      if (!iv?.body_text || btns.length === 0) {
+        return json({ error: "interactive.body_text + buttons required", error_class: "permanent" }, 400);
+      }
+      metaPayload = {
+        messaging_product: "whatsapp",
+        to: phone,
+        type: "interactive",
+        interactive: {
+          type: "button",
+          body: { text: iv.body_text.slice(0, 1024) },
+          action: {
+            buttons: btns.map((t, i) => ({
+              type: "reply",
+              reply: { id: `btn_${i}`, title: t.slice(0, 20) },
+            })),
+          },
+        },
+      };
+    } else {
+      if (!body.message_body) return json({ error: "message_body required", error_class: "permanent" }, 400);
+      metaPayload = {
+        messaging_product: "whatsapp",
+        to: phone,
+        type: "text",
+        text: { body: body.message_body.slice(0, 4096) },
+      };
+    }
   } else {
     // Resolve template + branding. Also enforce that template is APPROVED at Meta
     // (once template-sync has populated meta_status). Pre-sync (meta_status NULL) is allowed.
