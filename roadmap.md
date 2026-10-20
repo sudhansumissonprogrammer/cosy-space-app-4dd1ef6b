@@ -15,7 +15,7 @@
 - [x] Reconnected Telegram (std_01m48vsybpez6aqdah0c0gzhpc, @Shopbanaobot verified, telegram-order-notify redeployed)
 - [x] Reconnected Telegram in newest workspace (std_01m4b55yqqfepvsddr49egwv7r, @Shopbanaobot verified, telegram-order-notify redeployed, no history replay)
 
-- [ ] Add lossless third-slide chain poster with 18 exclusions; retain care last.
-- [ ] Reconnect Telegram in the new workspace; verify bot and refresh order notifications, without replay.
+- [x] Third-slide chain poster with 18 exclusions; care last. Kept original 411 KB because lossless re-encoding enlarged it.
+- [x] Telegram reconnected, bot verified and order notifications refreshed; no replay.
 
-- [ ] Reconnect Telegram after the latest workspace move at 15:54 UTC.
+- [x] Telegram reconnected after 15:54 UTC workspace move; bot verified and notifications refreshed.
