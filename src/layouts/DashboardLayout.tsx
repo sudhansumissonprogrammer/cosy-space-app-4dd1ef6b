@@ -204,7 +204,6 @@ export default function DashboardLayout() {
   const [cmdOpen, setCmdOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [isPurging, setIsPurging] = useState(false);
-  const [policyWarningOpen, setPolicyWarningOpen] = useState(true);
 
   const location = useLocation();
   const navigate = useNavigate();
