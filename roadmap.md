@@ -1,4 +1,4 @@
 # Roadmap
 
-- [ ] Finish JD-style COD confirmation WhatsApp flow (template v2 pending Meta approval; wa-cod-confirm 2-step; toggle UI text)
-- [ ] Reconnect Telegram after workspace move
+- [ ] COD confirmation v2: template cod_order_confirm_v2 PENDING Meta approval; once APPROVED it auto-activates. Flow code deployed. Toggle OFF for all stores incl. Kalinga — enable only when user asks.
+- [x] Telegram reconnected (@Shopbanaobot verified, telegram-order-notify redeployed).
