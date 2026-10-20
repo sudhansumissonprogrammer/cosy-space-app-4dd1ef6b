@@ -64,6 +64,36 @@ async function sendSessionText(
   }
 }
 
+async function sendSessionButtons(
+  admin: any,
+  cronSecret: string,
+  storeId: string | null,
+  phone: string,
+  bodyText: string,
+  buttons: string[],
+) {
+  try {
+    await fetch(`${SUPABASE_URL}/functions/v1/wa-platform-send`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-cron-secret": cronSecret,
+        Authorization: `Bearer ${SERVICE_KEY}`,
+        apikey: SERVICE_KEY,
+      },
+      body: JSON.stringify({
+        mode: "interactive",
+        store_id: storeId,
+        recipient_phone: phone,
+        message_type: "cod_confirm_reply",
+        interactive: { body_text: bodyText, buttons },
+      }),
+    });
+  } catch (e) {
+    console.error("cod session buttons failed:", (e as Error).message);
+  }
+}
+
 /**
  * Resolve which order an inbound reply belongs to.
  * 1) Meta reply context → the exact template message we sent.
@@ -93,9 +123,9 @@ async function resolveOrder(admin: any, phone: string, contextId: string | null)
   const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
   const { data: rows } = await admin
     .from("orders")
-    .select("id, store_id, order_number, cod_confirm_status, status")
+    .select("id, store_id, order_number, cod_confirm_status, status, customer_name, street_address, city, state, pincode, stores:store_id(name)")
     .ilike("customer_phone", `%${last10}`)
-    .in("cod_confirm_status", ["awaiting", "edit_requested"])
+    .in("cod_confirm_status", ["awaiting", "address_pending", "edit_requested"])
     .gte("created_at", since)
     .order("created_at", { ascending: false })
     .limit(1);
