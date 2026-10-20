@@ -249,7 +249,9 @@ Deno.serve(async (req) => {
       (codTpls || []).some((t: any) =>
         t.name === name && t.is_active && !t.paused &&
         String(t.meta_status || "").toUpperCase() === "APPROVED");
-    if (usable("cod_order_confirm_v3")) codTemplateName = "cod_order_confirm_v3";
+    // v3 has a product-photo header — only use it when the order has a photo,
+    // otherwise Meta rejects the send; the text-only v2 covers the rest.
+    if (headerImage && usable("cod_order_confirm_v3")) codTemplateName = "cod_order_confirm_v3";
     else if (usable("cod_order_confirm_v2")) codTemplateName = "cod_order_confirm_v2";
     else if (usable("cod_order_confirm_v1")) codTemplateName = "cod_order_confirm_v1";
     else return json({ skipped: true, reason: "no_approved_cod_template" });
