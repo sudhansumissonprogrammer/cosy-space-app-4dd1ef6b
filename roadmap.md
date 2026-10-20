@@ -9,5 +9,5 @@
 - [x] Dashboard orders: show COD order confirmed / not confirmed and address confirmed / not confirmed.
 - [x] Make WhatsApp replies after Confirm My Order / Confirm Address taps instant.
 - [x] Connect Telegram in the newest workspace (verify bot, redeploy telegram-order-notify, no history replay).
-- [ ] Fix Delhivery customer tracking link (use speedposttrack.io).
-- [ ] Connect Telegram again in the latest workspace.
+- [x] Fix Delhivery customer tracking link (use speedposttrack.io).
+- [x] Connect Telegram again in the latest workspace.
