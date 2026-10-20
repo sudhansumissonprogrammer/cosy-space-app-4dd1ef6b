@@ -1,0 +1,1 @@
+update public.platform_wa_templates set is_active = true, paused = false, updated_at = now() where name = 'cod_order_confirm_v2' and meta_status = 'APPROVED';
