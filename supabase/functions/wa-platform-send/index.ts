@@ -54,7 +54,9 @@ Deno.serve(async (req) => {
   const phone = normalizePhone(body.recipient_phone);
   if (!phone) return json({ error: "invalid phone", error_class: "permanent" }, 400);
   const isTextReply = body.mode === "text";
-  if (!isTextReply && !body.template_name) return json({ error: "template_name required", error_class: "permanent" }, 400);
+  const isInteractiveReply = body.mode === "interactive";
+  const isSessionReply = isTextReply || isInteractiveReply;
+  if (!isSessionReply && !body.template_name) return json({ error: "template_name required", error_class: "permanent" }, 400);
 
   if (!isInternal) {
     if (!authHeader.startsWith("Bearer ")) return json({ error: "unauthorized", error_class: "permanent" }, 401);
@@ -65,10 +67,10 @@ Deno.serve(async (req) => {
     if (!user) return json({ error: "unauthorized", error_class: "permanent" }, 401);
     const { data: isAdmin } = await admin.rpc("has_role", { _user_id: user.id, _role: "admin" });
     if (!isAdmin) {
-      // Store owners may only send 24h session text replies for their own store.
+      // Store owners may only send 24h session replies for their own store.
       // Automation/templates remain admin/internal-only so merchants cannot bypass
       // platform campaign controls or broadcast limits.
-      if (!isTextReply || !body.store_id) return json({ error: "forbidden", error_class: "permanent" }, 403);
+      if (!isSessionReply || !body.store_id) return json({ error: "forbidden", error_class: "permanent" }, 403);
       const { data: storeRow } = await admin
         .from("stores")
         .select("owner_id")
