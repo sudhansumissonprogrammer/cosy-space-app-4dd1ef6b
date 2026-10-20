@@ -11,3 +11,5 @@
 - [x] Connect Telegram in the newest workspace (verify bot, redeploy telegram-order-notify, no history replay).
 - [x] Fix Delhivery customer tracking link (use speedposttrack.io).
 - [x] Connect Telegram again in the latest workspace.
+- [ ] Turn off COD order/address confirmation flow; send only the old order confirmation message
+- [ ] Reconnect Telegram (workspace moved)
