@@ -194,7 +194,7 @@ Deno.serve(async (req) => {
   const tplByName = new Map<string, any>(((approvedTpls as any[]) || []).map((t: any) => [t.name, t]));
   // Store-specific variants (…_cod) must never become the global default just
   // because their name sorts highest — the default skips them.
-  const defaultTpl = ((approvedTpls as any[]) || []).find((t: any) => !/_(cod|adv)$/i.test(String(t?.name || "")))
+  const defaultTpl = ((approvedTpls as any[]) || []).find((t: any) => !/_(cod|adv|kalinga)$/i.test(String(t?.name || "")))
     || ((approvedTpls as any[]) || [])[0] || null;
   const pickRecoveryTemplate = (storeId: any): any => {
     const ov = storeId ? tplOverrideByStore.get(String(storeId)) : undefined;
