@@ -17,3 +17,5 @@
 
 - [ ] Add lossless third-slide chain poster with 18 exclusions; retain care last.
 - [ ] Reconnect Telegram in the new workspace; verify bot and refresh order notifications, without replay.
+
+- [ ] Reconnect Telegram after the latest workspace move at 15:54 UTC.
