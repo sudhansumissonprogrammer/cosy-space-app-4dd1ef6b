@@ -5,4 +5,4 @@
 - [x] COD change-address flow: corrected address now saved onto the order (street_address + pincode parsed), dashboard shows it, customer re-confirms via buttons; deployed (whatsapp-webhook).
 - [x] COD confirmation enabled for Kalinga Jewels only (all other stores OFF); address-step status allowed in database.
 - [x] Telegram connected in new workspace (@Shopbanaobot verified, telegram-order-notify redeployed, no history replay).
-- [ ] When Meta approves v3, refresh status + activate (same as v2 flow) — waiting on Meta.
+- [x] COD photo version (v3) approved by Meta and turned on; falls back to text version when an order has no photo.
