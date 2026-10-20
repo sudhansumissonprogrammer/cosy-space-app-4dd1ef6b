@@ -351,7 +351,7 @@ Deno.serve(async (req) => {
   // We count attempts, not only deliveries: repeatedly retrying Meta 131049 was
   // the source of the red-X flood and itself damages account quality. Utility
   // messages and free-form support replies never enter this ledger.
-  if (!isTransactional && !isTextReply) {
+  if (!isTransactional && !isSessionReply) {
     const { data: weeklyClaim, error: weeklyClaimError } = await admin.rpc("claim_wa_marketing_attempt", {
       _recipient_phone: phone,
       _message_type: body.message_type || "platform",
@@ -409,11 +409,13 @@ Deno.serve(async (req) => {
   // allowed only one recovery row per cart), so surface the error loudly.
   const { error: logErr } = await admin.from("whatsapp_messages").insert({
     store_id: body.store_id ?? null,
-    message_type: body.message_type || (isTextReply ? "text_reply" : "platform"),
+    message_type: body.message_type || (isSessionReply ? "text_reply" : "platform"),
     recipient_phone: phone,
     recipient_name: body.recipient_name ?? null,
-    message_body: isTextReply ? (body.message_body || "").slice(0, 4096) : `[template:${body.template_name}]`,
-    template_name: isTextReply ? null : body.template_name,
+    message_body: isSessionReply
+      ? (isInteractiveReply ? (body.interactive?.body_text || "") : (body.message_body || "")).slice(0, 4096)
+      : `[template:${body.template_name}]`,
+    template_name: isSessionReply ? null : body.template_name,
     meta_message_id: metaId,
     status,
     error_message: errMsg,
