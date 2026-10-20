@@ -1,9 +1,13 @@
 // COD order-confirmation reply handling.
 //
-// Customers receive `cod_order_confirm_v1` (and, after 4h of silence,
-// `cod_confirm_followup_v1`) with two quick-reply buttons:
-//   ✅ Confirm Order   → order is tagged verified and released for dispatch
-//   ✏️ Edit Address    → we ask for the corrected address in the 24h session
+// Customers receive `cod_order_confirm_v2` (JD-style "Order Confirmation
+// Request", falling back to v1) with two quick-reply buttons:
+//   Confirm My Order   → step 2: address confirmation with Confirm Address /
+//                        I Want To Change Address buttons
+//   Cancel My Order    → cancellation request passed to the store
+// Step 2 (status "address_pending"):
+//   Confirm Address         → order verified, released for packing
+//   I Want To Change Address → we ask for the corrected address in the session
 //
 // This module is imported by whatsapp-webhook (inbound) only.
 
@@ -77,7 +81,7 @@ async function resolveOrder(admin: any, phone: string, contextId: string | null)
     if (oid) {
       const { data: o } = await admin
         .from("orders")
-        .select("id, store_id, order_number, cod_confirm_status, status")
+        .select("id, store_id, order_number, cod_confirm_status, status, customer_name, street_address, city, state, pincode, stores:store_id(name)")
         .eq("id", oid)
         .maybeSingle();
       if (o) return o as any;
