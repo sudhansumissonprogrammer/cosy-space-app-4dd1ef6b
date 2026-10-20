@@ -56,7 +56,7 @@ import PdpUpsellSection from "@/components/storefront/apps/Upsell/PdpUpsellSecti
 import FestivalSaleBadge from "@/components/storefront/FestivalSaleBadge";
 import GalleryImage from "@/components/storefront/pdp/GalleryImage";
 import { useGalleryPreparation } from "@/hooks/useGalleryPreparation";
-import { withImitationWorldCareGuide } from "@/lib/imitationWorldCareSlides";
+import { withImitationWorldCareGuide, isKalingaInformationalSlide } from "@/lib/imitationWorldCareSlides";
 
 
 import DeliveryTimeline from "@/components/storefront/DeliveryTimeline";
@@ -718,6 +718,7 @@ export default function V22ProductDetail() {
           hasDiscount={hasDiscount}
           discountPct={discountPct}
           compactGallery={isKalingaStore(store)}
+          galleryProduct={product}
           onShare={async () => {
             const storeHost = (store as any).custom_domain
               ? `https://${(store as any).custom_domain}`
@@ -1483,6 +1484,7 @@ function ImageGallery({
   discountPct,
   onShare,
   compactGallery = false,
+  galleryProduct,
 }: {
   images: string[];
   video?: { url: string; poster: string } | null;
@@ -1491,6 +1493,7 @@ function ImageGallery({
   discountPct: number;
   onShare?: () => void;
   compactGallery?: boolean;
+  galleryProduct?: { slug?: string | null; category?: string | null };
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -1504,8 +1507,8 @@ function ImageGallery({
     if (images[0]) out.push({ kind: "image", url: images[0] });
     if (video?.url) out.push({ kind: "video", url: video.url, poster: video.poster || images[0] || "" });
     for (let i = 1; i < images.length; i++) out.push({ kind: "image", url: images[i] });
-    return withImitationWorldCareGuide(out, compactGallery);
-  }, [images, video?.url, video?.poster, compactGallery]);
+    return withImitationWorldCareGuide(out, compactGallery, galleryProduct);
+  }, [images, video?.url, video?.poster, compactGallery, galleryProduct?.slug, galleryProduct?.category]);
   const len = slides.length;
   const [activatedSlides, setActivatedSlides] = useGalleryPreparation(activeIndex, len, !!imageLoaded[0]);
   const canLoop = len > 1;
@@ -1642,7 +1645,7 @@ function ImageGallery({
                     <GalleryImage
                       src={activatedSlides.has(realIdx) ? optimizeImageUrl(slide.url, 1200) : undefined}
                       alt={productName}
-                      className={`h-full w-full object-cover bg-muted/30 transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
+                      className={`h-full w-full ${isKalingaInformationalSlide(slide.url) ? "object-contain" : "object-cover"} bg-muted/30 transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
                       decoding="async"
                       loading="eager"
                       fetchPriority={realIdx === 0 ? "high" : "low"}
