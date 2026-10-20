@@ -7,7 +7,7 @@ import { corsHeaders, normalizePhone, loadPlatformConfig, platformConfigUsable, 
 import { loadStore, loadTemplate, resolveTemplateParams, pickLocaleVariant, sanitizeWaParam } from "../_shared/wa-branding.ts";
 
 type Body = {
-  mode?: "automation" | "test" | "text";
+  mode?: "automation" | "test" | "text" | "interactive";
   store_id?: string | null;
   recipient_phone: string;
   recipient_name?: string | null;
@@ -20,6 +20,8 @@ type Body = {
   abandoned_cart_id?: string | null;
   // Session-window text reply (admin inbox). Only allowed within 24h of last inbound.
   message_body?: string;
+  // Session-window interactive reply (quick-reply buttons, e.g. COD address confirm).
+  interactive?: { body_text: string; buttons: string[] };
 };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
