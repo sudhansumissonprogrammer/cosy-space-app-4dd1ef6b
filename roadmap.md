@@ -6,3 +6,5 @@
 - [x] COD confirmation enabled for Kalinga Jewels only (all other stores OFF); address-step status allowed in database.
 - [x] Telegram connected in new workspace (@Shopbanaobot verified, telegram-order-notify redeployed, no history replay).
 - [x] COD photo version (v3) approved by Meta and turned on; falls back to text version when an order has no photo.
+- [ ] Dashboard orders: show COD order confirmed / not confirmed and address confirmed / not confirmed.
+- [ ] Make WhatsApp replies after Confirm My Order / Confirm Address taps instant.
