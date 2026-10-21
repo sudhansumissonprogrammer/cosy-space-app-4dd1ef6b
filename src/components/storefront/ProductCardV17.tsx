@@ -10,7 +10,6 @@ import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, getImageSrcSet, resolveProductImages } from "@/lib/imageOptimize";
 import { getProductRating } from "@/lib/productUtils";
 import { useProductCardActions } from "@/hooks/useProductCardActions";
-import FestivalSaleBadge from "./FestivalSaleBadge";
 
 /* V17 star colors — use CSS vars with fallbacks */
 const STAR_COLOR = "var(--v17-primary, #1B5E4B)";
@@ -63,7 +62,6 @@ export default function ProductCardV17({ product, slug, store, priority = false,
       <Link to={storefrontPath(slug, `product/${product.slug || product.id}`)} className="block">
         {/* Image container — 3:4 ratio, rounded 8px like systumm */}
         <div className="relative w-full overflow-hidden rounded-lg" style={{ aspectRatio: "3/4", backgroundColor: "var(--storefront-bg, #f5f5f0)" }}>
-          {hasSale && <FestivalSaleBadge placement="card" className="absolute left-1.5 top-1.5 z-[5] drop-shadow-md" />}
           {/* Wishlist button — circle, white, shadow, right-top */}
           <button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleToggleWishlist(e); }}
