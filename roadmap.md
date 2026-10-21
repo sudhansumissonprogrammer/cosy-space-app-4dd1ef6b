@@ -20,4 +20,4 @@
 
 - [x] Telegram reconnected after 15:54 UTC workspace move; bot verified and notifications refreshed.
 - [x] Telegram reconnected in newest workspace (std_01m42nekmzeg7sq6fs03z3vg2p, @Shopbanaobot verified, telegram-order-notify redeployed, no history replay)
-- [ ] Connect Telegram in newest workspace (19:04 UTC move)
+- [x] Telegram reconnected after 19:04 UTC move (std_01m46f8xw6em4t91b1652vw1yj)
