@@ -19,7 +19,7 @@ export function isKalingaInformationalSlide(url: string): boolean {
 export function withImitationWorldCareGuide<T extends CareGallerySlide>(
   slides: T[],
   enabled: boolean,
-  product?: { slug?: string | null; category?: string | null },
+  _product?: { slug?: string | null; category?: string | null },
 ): Array<T | { kind: "image"; url: string }> {
   if (!enabled) return slides;
   const cleanSlides = slides.filter(slide => !isKalingaInformationalSlide(slide.url));
