@@ -219,7 +219,7 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
         </p>
       )}
       {active && hasSale && (
-        <FestivalSaleBadge placement="card" className="absolute left-1.5 top-1.5 z-[5] drop-shadow-md" />
+        <FestivalSaleBadge placement="card" className="absolute left-1.5 top-1.5 z-[5]" />
       )}
       {active && showCardVideo && cardVideoUrl && (
         <ProductCardVideo hostRef={hostRef} enabled videoUrl={cardVideoUrl} />

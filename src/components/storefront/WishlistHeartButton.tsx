@@ -51,7 +51,7 @@ export default function WishlistHeartButton({
             strokeWidth: 2.2,
             opacity: wishlisted ? 0 : 1,
             transform: wishlisted ? "scale(0.25)" : "scale(1)",
-            filter: wishlisted ? "blur(4px)" : "drop-shadow(0 1px 2px rgba(0,0,0,0.45))",
+            filter: wishlisted ? "none" : "drop-shadow(0 1px 2px rgba(0,0,0,0.45))",
             transition: `opacity 200ms ${EASE}, transform 200ms ${EASE}, filter 200ms ${EASE}`,
           }}
         />
@@ -64,7 +64,7 @@ export default function WishlistHeartButton({
             color: "#ef4444",
             opacity: wishlisted ? 1 : 0,
             transform: wishlisted ? "scale(1)" : "scale(0.25)",
-            filter: wishlisted ? "drop-shadow(0 1px 2px rgba(0,0,0,0.45))" : "blur(4px)",
+            filter: wishlisted ? "drop-shadow(0 1px 2px rgba(0,0,0,0.45))" : "none",
             transition: `opacity 200ms ${EASE}, transform 200ms ${EASE}, filter 200ms ${EASE}`,
           }}
         />
