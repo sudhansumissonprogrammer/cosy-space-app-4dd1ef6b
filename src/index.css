@@ -948,22 +948,26 @@ body:has(.storefront-font) {
 @media (prefers-reduced-motion: no-preference) {
   .sale-badge-pulse { animation: sale-pulse 2.4s ease-in-out infinite; }
 
+  /* Compositor-only shimmer (transform/opacity): animating `left` forced
+     layout on every frame for every card and made category scrolling heavy. */
   .festival-sale-badge::after {
     content: "";
     position: absolute;
-    inset: -45% auto -45% -55%;
+    top: -45%; bottom: -45%; left: 0;
     width: 34%;
-    transform: skewX(-18deg);
+    pointer-events: none;
     background: linear-gradient(90deg, transparent, hsl(var(--background) / 0.72), transparent);
+    transform: translateX(-160%) skewX(-18deg);
+    opacity: 0;
     animation: festival-badge-shimmer 3.8s ease-in-out infinite;
   }
 }
 
 @keyframes festival-badge-shimmer {
-  0%, 58% { left: -55%; opacity: 0; }
+  0%, 58% { transform: translateX(-160%) skewX(-18deg); opacity: 0; }
   64% { opacity: 0.9; }
-  78% { left: 125%; opacity: 0; }
-  100% { left: 125%; opacity: 0; }
+  78% { transform: translateX(370%) skewX(-18deg); opacity: 0; }
+  100% { transform: translateX(370%) skewX(-18deg); opacity: 0; }
 }
 
 /* ============== Polish Pack v2 ============== */
