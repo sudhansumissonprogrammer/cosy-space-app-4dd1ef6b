@@ -1467,3 +1467,10 @@ body:has(.storefront-font) {
   content-visibility: visible !important;
   contain-intrinsic-size: auto !important;
 }
+
+/* Scroll smoothness: static shadow on the badge photo (not around the moving
+   shine), and no shine / refraction work while the finger is scrolling. */
+.festival-sale-badge > img { filter: drop-shadow(0 4px 3px rgb(0 0 0 / 0.07)) drop-shadow(0 2px 2px rgb(0 0 0 / 0.06)); }
+html.sf-scrolling .festival-sale-badge::after,
+html.sf-scrolling .animate-marquee { animation-play-state: paused !important; }
+html.sf-scrolling .sfg-refract { backdrop-filter: blur(6px) saturate(1.6) !important; -webkit-backdrop-filter: blur(6px) saturate(1.6) !important; }

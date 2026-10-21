@@ -31,6 +31,15 @@ export function initSfGlass() {
 
   const saveData = (navigator as any).connection?.saveData === true;
 
+  // While the page scrolls, pause decorative loops and swap SVG refraction for
+  // plain GPU blur: both otherwise repaint on every scroll frame on phones.
+  let idle: ReturnType<typeof setTimeout> | undefined;
+  window.addEventListener("scroll", () => {
+    if (!idle) root.classList.add("sf-scrolling");
+    else clearTimeout(idle);
+    idle = setTimeout(() => { idle = undefined; root.classList.remove("sf-scrolling"); }, 180);
+  }, { passive: true });
+
   if (unsupported || tooWeak || saveData) {
     root.classList.add("sfg-off");
   } else {
