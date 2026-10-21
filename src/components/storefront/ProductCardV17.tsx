@@ -55,7 +55,6 @@ export default function ProductCardV17({ product, slug, store, priority = false,
   const originalPrice = product.sale_price
     ? Number(product.price).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     : null;
-  const hasSale = Number(product.sale_price) > 0 && Number(product.sale_price) < Number(product.price);
 
   return (
     <div className="group overflow-hidden cursor-pointer" style={{ fontFamily: "var(--v17-body-font, 'Instrument Sans', sans-serif)" }}>
