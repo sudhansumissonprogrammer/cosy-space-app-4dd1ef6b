@@ -76,7 +76,6 @@ import { useVariantCount } from "@/hooks/useVariantCounts";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import WarrantyBadge from "./WarrantyBadge";
 import ProductCardVideo from "./ProductCardVideo";
-import FestivalSaleBadge from "./FestivalSaleBadge";
 import { useAppDisabled } from "@/hooks/useAppDisabled";
 
 
@@ -217,9 +216,6 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
         <p className="mt-1 px-1.5 text-xs font-extrabold text-destructive">
           ₹{couponPrice.toLocaleString("en-IN")} <span className="font-semibold">with SAVE100 (−₹100)</span>
         </p>
-      )}
-      {active && hasSale && (
-        <FestivalSaleBadge placement="card" className="absolute left-1.5 top-1.5 z-[5]" />
       )}
       {active && showCardVideo && cardVideoUrl && (
         <ProductCardVideo hostRef={hostRef} enabled videoUrl={cardVideoUrl} />

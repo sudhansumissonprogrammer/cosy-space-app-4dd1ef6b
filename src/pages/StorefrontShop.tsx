@@ -13,7 +13,6 @@ import { useInfiniteProducts, PAGE_SIZE } from "@/hooks/useInfiniteProducts";
 import ShopFilterBar, { applySort, type SortKey } from "@/components/storefront/ShopFilterBar";
 import CategoryQuickJump from "@/components/storefront/CategoryQuickJump";
 import ShopEmptyState from "@/components/storefront/ShopEmptyState";
-import BackToTop from "@/components/storefront/BackToTop";
 
 function ProductCardSkeleton() {
   return (
@@ -195,7 +194,6 @@ export default function StorefrontShop() {
         )}
       </div>
 
-      <BackToTop />
     </div>
   );
 }

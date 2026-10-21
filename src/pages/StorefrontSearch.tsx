@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useOutletContext, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Loader2, SearchX, SlidersHorizontal, X } from "lucide-react";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
-import BackToTop from "@/components/storefront/BackToTop";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useProductSearch, SEARCH_PAGE_SIZE, type SearchSort } from "@/hooks/useProductSearch";
@@ -321,7 +320,6 @@ export default function StorefrontSearch() {
         )}
       </div>
 
-      <BackToTop />
     </div>
   );
 }

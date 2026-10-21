@@ -16,7 +16,6 @@ import { useInfiniteProducts, PAGE_SIZE } from "@/hooks/useInfiniteProducts";
 import ShopFilterBar, { applySort, type SortKey } from "@/components/storefront/ShopFilterBar";
 import CategoryHeroBanner from "@/components/storefront/CategoryHeroBanner";
 import ShopEmptyState from "@/components/storefront/ShopEmptyState";
-import BackToTop from "@/components/storefront/BackToTop";
 import { fetchCategoryEdge, CATEGORY_PAGE_LIMIT } from "@/lib/storefrontEdgeApi";
 import { categoryPrefetchCache, categoryPrefetchResolved } from "@/lib/prefetchCategory";
 import CategoryQuickJump from "@/components/storefront/CategoryQuickJump";
@@ -495,7 +494,6 @@ export default function CategoryDetail() {
         )}
       </div>
 
-      <BackToTop />
     </div>
   );
 }

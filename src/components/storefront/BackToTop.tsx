@@ -33,7 +33,7 @@ export default function BackToTop() {
   return (
     <button
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-      className={`${visible ? "back-to-top-enter" : "back-to-top-exit"} sfg sfg-pill sfg-tap fixed bottom-[14rem] right-[1.75rem] z-40 flex h-11 w-11 items-center justify-center overflow-hidden rounded-full transition-[box-shadow,transform,background-color] duration-200 hover:-translate-y-0.5 active:scale-[0.96] sm:bottom-[5.5rem] sm:right-[1.75rem]`}
+      data-sfg-flat="" className={`${visible ? "back-to-top-enter" : "back-to-top-exit"} sfg sfg-pill sfg-tap fixed bottom-[14rem] right-[1.75rem] z-40 flex h-11 w-11 items-center justify-center overflow-hidden rounded-full transition-[box-shadow,transform,background-color] duration-200 hover:-translate-y-0.5 active:scale-[0.96] sm:bottom-[5.5rem] sm:right-[1.75rem]`}
       style={{
         color: "var(--storefront-text, hsl(var(--foreground)))",
       }}
