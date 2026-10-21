@@ -15,7 +15,7 @@
 
   /* Horizontal gutter between cards in the product grid: 6-8px → 2px.
      Row gap is untouched, so vertical rhythm stays identical. */
-  .sf-kalinga-mobile .grid.grid-cols-2:has(> .stagger-card) {
+  .sf-kalinga-mobile .grid.grid-cols-2.gap-2 {
     column-gap: 0.125rem;
   }
 

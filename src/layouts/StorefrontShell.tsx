@@ -148,6 +148,11 @@ export default function StorefrontShell({
   // Decide once whether this device can afford live backdrop-blur glass, then
   // upgrade those surfaces to real refraction (Chromium) once idle.
   useEffect(() => {
+    document.documentElement.classList.add("sf-storefront");
+    return () => document.documentElement.classList.remove("sf-storefront");
+  }, []);
+
+  useEffect(() => {
     initSfGlass();
     const run = () => import("@/lib/sfGlassRefraction").then((m) => m.initSfGlassRefraction());
     const ric = (window as any).requestIdleCallback;

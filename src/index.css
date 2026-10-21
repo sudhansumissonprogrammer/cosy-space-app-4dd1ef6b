@@ -722,11 +722,13 @@
 /* Storefront pages: prevent white overscroll strip under fixed mobile bottom nav.
    Paints html/body background with the storefront theme color so any rubber-band
    bounce reveals the theme bg instead of the default white app background. */
-html:has(.storefront-font),
-body:has(.storefront-font) {
+/* Class set by StorefrontShell — `:has()` on html/body made every small DOM
+   change (scroll progress bar, card photos) restyle the whole page. */
+html.sf-storefront,
+html.sf-storefront body {
   background-color: var(--storefront-bg, hsl(var(--background)));
 }
-body:has(.storefront-font) {
+html.sf-storefront body {
   overscroll-behavior-y: none;
 }
 
