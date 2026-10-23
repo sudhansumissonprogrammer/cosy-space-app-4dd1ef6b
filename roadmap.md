@@ -23,4 +23,4 @@
 - [x] Telegram reconnected after 19:04 UTC move (std_01m46f8xw6em4t91b1652vw1yj)
 - [x] Google Ads tracking for all stores: per-store AW-ID + purchase label + optional GTM in dashboard Tracking page, gtag purchase conversion with transaction_id dedup, gclid already on purchase events, existing CSV feed is Google Merchant compatible.
 - [x] Telegram reconnected (std_01m483fx66ebmvb70cwrmr7w34, @Shopbanaobot verified via getMe).
-- [ ] Reconnect Telegram after 04:59 UTC workspace move.
+- [x] Telegram reconnected after 04:59 UTC move (std_01m27s1bjdf32rgg6tbc20dnqg, @Shopbanaobot verified).
