@@ -160,6 +160,29 @@ export default function StoreTracking() {
         updatePayload.meta_access_token = trimmedToken || null;
       }
 
+      // Google Ads / GTM — merged into the features jsonb so other feature
+      // keys (GA4 id, hidden categories, etc.) are never wiped.
+      if (googleTouched) {
+        const trimmedAds = googleAdsId.trim().toUpperCase();
+        const trimmedLabel = googleAdsLabel.trim();
+        const trimmedGtm = gtmId.trim().toUpperCase();
+        if (trimmedAds && !/^AW-\d{6,15}$/.test(trimmedAds)) {
+          throw new Error("Google Ads Conversion ID must look like AW-123456789. Copy it from Google Ads → Goals → Conversions → your purchase action → Tag setup.");
+        }
+        if (trimmedAds && !trimmedLabel) {
+          throw new Error("Add the Purchase conversion label too — Google Ads shows it next to the Conversion ID in Tag setup.");
+        }
+        if (trimmedGtm && !/^GTM-[A-Z0-9]{5,10}$/.test(trimmedGtm)) {
+          throw new Error("Tag Manager ID must look like GTM-ABC1234. Copy it from Google Tag Manager.");
+        }
+        updatePayload.features = {
+          ...((store as any)?.features || {}),
+          google_ads_id: trimmedAds || null,
+          google_ads_purchase_label: trimmedLabel || null,
+          gtm_container_id: trimmedGtm || null,
+        };
+      }
+
       // SAVE-GUARD 1: an empty payload makes PostgREST reject the request with
       // a confusing "failed to update". Tell the merchant nothing changed
       // instead, and let onSuccess still refresh the storefront cache.
