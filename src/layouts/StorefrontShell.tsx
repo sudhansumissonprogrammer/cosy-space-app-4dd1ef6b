@@ -15,6 +15,7 @@ import { claimPageView, registerPageViewFired } from "@/lib/pixelPageView";
 
 import { ensureFbcPersisted, getOrCreateSfVid, seedCapiUserFromStorage } from "@/lib/metaEnrichment";
 import { useGA4 } from "@/hooks/useGA4";
+import { useGoogleAds } from "@/hooks/useGoogleAds";
 import { usePageviewBeacon } from "@/hooks/usePageviewBeacon";
 import { useLiveHeartbeat } from "@/hooks/useLiveHeartbeat";
 import { usePaymentResumeGuard } from "@/hooks/usePaymentResumeGuard";

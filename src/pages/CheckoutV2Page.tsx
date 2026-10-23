@@ -2148,6 +2148,18 @@ export default function CheckoutV2Page() {
       });
     } catch { /* noop */ }
 
+    // Google Ads Purchase conversion — once per order, transaction_id dedup.
+    try {
+      const gadsFeatures = (store as any)?.features || {};
+      fireGoogleAdsPurchase({
+        adsId: gadsFeatures.google_ads_id,
+        purchaseLabel: gadsFeatures.google_ads_purchase_label,
+        orderId: ordId,
+        value: purchaseValue,
+        currency,
+      });
+    } catch { /* noop */ }
+
     try {
       fireStorefrontEvent({
         storeId: store.id, eventName: "purchase",
