@@ -36,4 +36,4 @@
 
 - Order CSV uses store-scoped pages, saved order addresses and one row per item with shared supplier links; prepare before download for mobile support.
 
-- Mirror PDP photo srcset/sizes in app, index.html and Worker (post-800w-era only); the Worker preview hands off on sf:pdp-hero-painted after briefly holding code, so the photo paints first.
+- Mirror PDP photo srcset/sizes in app, index.html and Worker (post-800w-era only); the Worker preview hands off on sf:pdp-hero-painted after briefly holding code, so the photo paints first.- Google Ads tracking: per-store `features.google_ads_id` / `google_ads_purchase_label` / `gtm_container_id` (set in dashboard Tracking page); `trackGoogleAds.ts` reuses the GA4 gtag.js file and fires purchase once per order with transaction_id dedup; no enhanced conversions until a recorded advertising-consent flow exists.

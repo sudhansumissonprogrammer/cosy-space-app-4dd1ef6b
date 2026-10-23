@@ -21,5 +21,5 @@
 - [x] Telegram reconnected after 15:54 UTC workspace move; bot verified and notifications refreshed.
 - [x] Telegram reconnected in newest workspace (std_01m42nekmzeg7sq6fs03z3vg2p, @Shopbanaobot verified, telegram-order-notify redeployed, no history replay)
 - [x] Telegram reconnected after 19:04 UTC move (std_01m46f8xw6em4t91b1652vw1yj)
-- [ ] Google Ads tracking for ALL ShopBanao stores: per-store AW-ID + purchase label settings, gtag purchase/begin_checkout/add_to_cart events with transaction_id dedup + enhanced conversions, gclid saved on orders, google-product-feed edge function, optional GTM. Off by default per store.
-- [ ] Reconnect Telegram after latest workspace move (connect card opened).
+- [x] Google Ads tracking for all stores: per-store AW-ID + purchase label + optional GTM in dashboard Tracking page, gtag purchase conversion with transaction_id dedup, gclid already on purchase events, existing CSV feed is Google Merchant compatible.
+- [x] Telegram reconnected (std_01m483fx66ebmvb70cwrmr7w34, @Shopbanaobot verified via getMe).
