@@ -305,6 +305,12 @@ export default function StorefrontShell({
   const ga4Id = (store as any)?.features?.ga4_measurement_id || null;
   useGA4(ga4Id, pathname);
 
+  // Google Ads tag / GTM — per-store from store.features. Reuses the gtag.js
+  // file GA4 already loads, so enabling Ads costs zero extra script download.
+  const gadsId = (store as any)?.features?.google_ads_id || null;
+  const gtmId = (store as any)?.features?.gtm_container_id || null;
+  useGoogleAds(gadsId, gtmId);
+
   // v8.44.1: client-side pageview beacon → page_views.
   // The Worker can't see ~95% of visits (Cloudflare CDN serves cached
   // HTML directly), so analytics dashboard sessions/conversion would
