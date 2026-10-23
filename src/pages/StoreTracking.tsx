@@ -203,7 +203,7 @@ export default function StoreTracking() {
       // their ads run untracked. Now a silent no-write is impossible.
       const { data: verifyRow, error: verifyErr } = await (supabase as any)
         .from("stores")
-        .select("facebook_pixel_id")
+        .select("facebook_pixel_id, features")
         .eq("id", storeId!)
         .maybeSingle();
       if (verifyErr) throw verifyErr;
@@ -218,9 +218,18 @@ export default function StoreTracking() {
         tokenOk = ((savedToken as string) || "") === trimmedToken;
       }
 
-      if (!pixelOk || !tokenOk) {
+      let googleOk = true;
+      if ("features" in updatePayload) {
+        const savedFeatures = (verifyRow?.features as any) || {};
+        googleOk =
+          (savedFeatures.google_ads_id || "") === (updatePayload.features.google_ads_id || "") &&
+          (savedFeatures.google_ads_purchase_label || "") === (updatePayload.features.google_ads_purchase_label || "") &&
+          (savedFeatures.gtm_container_id || "") === (updatePayload.features.gtm_container_id || "");
+      }
+
+      if (!pixelOk || !tokenOk || !googleOk) {
         throw new Error(
-          `Save did not persist (${!pixelOk ? "Pixel ID" : "CAPI token"}). You may not have permission on this store — reload the page and try again, or contact support.`
+          `Save did not persist (${!pixelOk ? "Pixel ID" : !tokenOk ? "CAPI token" : "Google Ads settings"}). You may not have permission on this store — reload the page and try again, or contact support.`
         );
       }
 
