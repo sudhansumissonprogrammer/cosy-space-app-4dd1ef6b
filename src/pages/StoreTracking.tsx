@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, ArrowLeft, Copy, Facebook, Server, Rss, ExternalLink, CheckCircle2, AlertTriangle, Activity, ShieldOff } from "lucide-react";
+import { Loader2, ArrowLeft, Copy, Facebook, Server, Rss, ExternalLink, CheckCircle2, AlertTriangle, Activity, ShieldOff, Chrome } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import MetaCapiSetupWizard from "@/components/dashboard/MetaCapiSetupWizard";
 import MetaEventIssuesCard from "@/components/dashboard/MetaEventIssuesCard";
@@ -498,6 +498,84 @@ export default function StoreTracking() {
         )}
 
 
+
+        {/* Google Ads */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Chrome className="h-5 w-5 text-blue-500" />
+              Google Ads
+            </CardTitle>
+            <CardDescription>
+              Track purchases from your Google Ads campaigns. Find these in Google Ads → Goals → Conversions → your Purchase action → Tag setup.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="gads-id">Conversion ID</Label>
+              <Input
+                id="gads-id"
+                name="gads-conversion-id-field"
+                placeholder="e.g. AW-123456789"
+                value={googleAdsId}
+                onChange={(e) => {
+                  setGoogleTouched(true);
+                  setGoogleAdsId(e.target.value.replace(/\s/g, ""));
+                }}
+                autoComplete="off"
+                data-lpignore="true"
+                data-1p-ignore
+                data-form-type="other"
+                spellCheck={false}
+                maxLength={20}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="gads-label">Purchase conversion label</Label>
+              <Input
+                id="gads-label"
+                name="gads-conversion-label-field"
+                placeholder="e.g. abcDEF123ghiJKL"
+                value={googleAdsLabel}
+                onChange={(e) => {
+                  setGoogleTouched(true);
+                  setGoogleAdsLabel(e.target.value.replace(/\s/g, ""));
+                }}
+                autoComplete="off"
+                data-lpignore="true"
+                data-1p-ignore
+                data-form-type="other"
+                spellCheck={false}
+                maxLength={40}
+              />
+              <p className="text-xs text-muted-foreground">
+                Purchase fires once per order with the order ID, so page reloads never double-count. Leave both fields empty to turn Google Ads tracking off.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="gtm-id">Google Tag Manager ID (optional)</Label>
+              <Input
+                id="gtm-id"
+                name="gtm-container-id-field"
+                placeholder="e.g. GTM-ABC1234"
+                value={gtmId}
+                onChange={(e) => {
+                  setGoogleTouched(true);
+                  setGtmId(e.target.value.replace(/\s/g, ""));
+                }}
+                autoComplete="off"
+                data-lpignore="true"
+                data-1p-ignore
+                data-form-type="other"
+                spellCheck={false}
+                maxLength={15}
+              />
+              <p className="text-xs text-muted-foreground">
+                Only needed if you manage tags inside Tag Manager. It loads after your page content so it never slows your store.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Product Feed */}
         {store?.slug && (
