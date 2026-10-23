@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, ArrowLeft, Copy, Facebook, Server, Rss, ExternalLink, CheckCircle2, AlertTriangle, Activity, ShieldOff } from "lucide-react";
+import { Loader2, ArrowLeft, Copy, Facebook, Server, Rss, ExternalLink, CheckCircle2, AlertTriangle, Activity, ShieldOff, Chrome } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import MetaCapiSetupWizard from "@/components/dashboard/MetaCapiSetupWizard";
 import MetaEventIssuesCard from "@/components/dashboard/MetaEventIssuesCard";
@@ -27,6 +27,10 @@ export default function StoreTracking() {
   const [facebookPixelIdTouched, setFacebookPixelIdTouched] = useState(false);
   const [metaAccessToken, setMetaAccessToken] = useState("");
   const [metaAccessTokenTouched, setMetaAccessTokenTouched] = useState(false);
+  const [googleAdsId, setGoogleAdsId] = useState("");
+  const [googleAdsLabel, setGoogleAdsLabel] = useState("");
+  const [gtmId, setGtmId] = useState("");
+  const [googleTouched, setGoogleTouched] = useState(false);
 
   const { data: store, isLoading } = useStoreData(storeId);
 
@@ -112,6 +116,16 @@ export default function StoreTracking() {
     }
   }, [metaTokenFromDb, metaAccessTokenTouched]);
 
+  // Google Ads / GTM live in stores.features jsonb — hydrate once per store load.
+  const savedFeatures = (store as any)?.features || {};
+  useEffect(() => {
+    if (googleTouched) return;
+    setGoogleAdsId(savedFeatures.google_ads_id || "");
+    setGoogleAdsLabel(savedFeatures.google_ads_purchase_label || "");
+    setGtmId(savedFeatures.gtm_container_id || "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store?.id, savedFeatures.google_ads_id, savedFeatures.google_ads_purchase_label, savedFeatures.gtm_container_id, googleTouched]);
+
   const handleMetaAccessTokenChange = (value: string) => {
     setMetaAccessTokenTouched(true);
     setMetaAccessToken(value);
@@ -146,6 +160,29 @@ export default function StoreTracking() {
         updatePayload.meta_access_token = trimmedToken || null;
       }
 
+      // Google Ads / GTM — merged into the features jsonb so other feature
+      // keys (GA4 id, hidden categories, etc.) are never wiped.
+      if (googleTouched) {
+        const trimmedAds = googleAdsId.trim().toUpperCase();
+        const trimmedLabel = googleAdsLabel.trim();
+        const trimmedGtm = gtmId.trim().toUpperCase();
+        if (trimmedAds && !/^AW-\d{6,15}$/.test(trimmedAds)) {
+          throw new Error("Google Ads Conversion ID must look like AW-123456789. Copy it from Google Ads → Goals → Conversions → your purchase action → Tag setup.");
+        }
+        if (trimmedAds && !trimmedLabel) {
+          throw new Error("Add the Purchase conversion label too — Google Ads shows it next to the Conversion ID in Tag setup.");
+        }
+        if (trimmedGtm && !/^GTM-[A-Z0-9]{5,10}$/.test(trimmedGtm)) {
+          throw new Error("Tag Manager ID must look like GTM-ABC1234. Copy it from Google Tag Manager.");
+        }
+        updatePayload.features = {
+          ...((store as any)?.features || {}),
+          google_ads_id: trimmedAds || null,
+          google_ads_purchase_label: trimmedLabel || null,
+          gtm_container_id: trimmedGtm || null,
+        };
+      }
+
       // SAVE-GUARD 1: an empty payload makes PostgREST reject the request with
       // a confusing "failed to update". Tell the merchant nothing changed
       // instead, and let onSuccess still refresh the storefront cache.
@@ -166,7 +203,7 @@ export default function StoreTracking() {
       // their ads run untracked. Now a silent no-write is impossible.
       const { data: verifyRow, error: verifyErr } = await (supabase as any)
         .from("stores")
-        .select("facebook_pixel_id")
+        .select("facebook_pixel_id, features")
         .eq("id", storeId!)
         .maybeSingle();
       if (verifyErr) throw verifyErr;
@@ -181,9 +218,18 @@ export default function StoreTracking() {
         tokenOk = ((savedToken as string) || "") === trimmedToken;
       }
 
-      if (!pixelOk || !tokenOk) {
+      let googleOk = true;
+      if ("features" in updatePayload) {
+        const savedFeatures = (verifyRow?.features as any) || {};
+        googleOk =
+          (savedFeatures.google_ads_id || "") === (updatePayload.features.google_ads_id || "") &&
+          (savedFeatures.google_ads_purchase_label || "") === (updatePayload.features.google_ads_purchase_label || "") &&
+          (savedFeatures.gtm_container_id || "") === (updatePayload.features.gtm_container_id || "");
+      }
+
+      if (!pixelOk || !tokenOk || !googleOk) {
         throw new Error(
-          `Save did not persist (${!pixelOk ? "Pixel ID" : "CAPI token"}). You may not have permission on this store — reload the page and try again, or contact support.`
+          `Save did not persist (${!pixelOk ? "Pixel ID" : !tokenOk ? "CAPI token" : "Google Ads settings"}). You may not have permission on this store — reload the page and try again, or contact support.`
         );
       }
 
@@ -452,6 +498,84 @@ export default function StoreTracking() {
         )}
 
 
+
+        {/* Google Ads */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Chrome className="h-5 w-5 text-blue-500" />
+              Google Ads
+            </CardTitle>
+            <CardDescription>
+              Track purchases from your Google Ads campaigns. Find these in Google Ads → Goals → Conversions → your Purchase action → Tag setup.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="gads-id">Conversion ID</Label>
+              <Input
+                id="gads-id"
+                name="gads-conversion-id-field"
+                placeholder="e.g. AW-123456789"
+                value={googleAdsId}
+                onChange={(e) => {
+                  setGoogleTouched(true);
+                  setGoogleAdsId(e.target.value.replace(/\s/g, ""));
+                }}
+                autoComplete="off"
+                data-lpignore="true"
+                data-1p-ignore
+                data-form-type="other"
+                spellCheck={false}
+                maxLength={20}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="gads-label">Purchase conversion label</Label>
+              <Input
+                id="gads-label"
+                name="gads-conversion-label-field"
+                placeholder="e.g. abcDEF123ghiJKL"
+                value={googleAdsLabel}
+                onChange={(e) => {
+                  setGoogleTouched(true);
+                  setGoogleAdsLabel(e.target.value.replace(/\s/g, ""));
+                }}
+                autoComplete="off"
+                data-lpignore="true"
+                data-1p-ignore
+                data-form-type="other"
+                spellCheck={false}
+                maxLength={40}
+              />
+              <p className="text-xs text-muted-foreground">
+                Purchase fires once per order with the order ID, so page reloads never double-count. Leave both fields empty to turn Google Ads tracking off.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="gtm-id">Google Tag Manager ID (optional)</Label>
+              <Input
+                id="gtm-id"
+                name="gtm-container-id-field"
+                placeholder="e.g. GTM-ABC1234"
+                value={gtmId}
+                onChange={(e) => {
+                  setGoogleTouched(true);
+                  setGtmId(e.target.value.replace(/\s/g, ""));
+                }}
+                autoComplete="off"
+                data-lpignore="true"
+                data-1p-ignore
+                data-form-type="other"
+                spellCheck={false}
+                maxLength={15}
+              />
+              <p className="text-xs text-muted-foreground">
+                Only needed if you manage tags inside Tag Manager. It loads after your page content so it never slows your store.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Product Feed */}
         {store?.slug && (

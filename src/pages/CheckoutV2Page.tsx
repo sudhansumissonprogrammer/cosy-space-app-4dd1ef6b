@@ -40,6 +40,7 @@ import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 import { loadCashfree } from "@/lib/loadCashfree";
 import { getOrCreateCheckoutToken, writeCheckoutTokenCookie, clearCheckoutTokenCookie, mintCheckoutToken } from "@/lib/checkoutTokenStore";
 import { purchaseEventIdFor, firePixelPurchase, stagePendingPurchase, clearPendingPurchase } from "@/lib/pixelOutbox";
+import { fireGoogleAdsPurchase } from "@/lib/trackGoogleAds";
 import { loadPayuBolt } from "@/lib/loadPayuBolt";
 import { createPortal } from "react-dom";
 
@@ -2145,6 +2146,18 @@ export default function CheckoutV2Page() {
         items: checkoutItems.map((i) => ({
           item_id: i.productId, item_name: i.name, item_variant: i.variantId, price: i.price, quantity: i.quantity,
         })),
+      });
+    } catch { /* noop */ }
+
+    // Google Ads Purchase conversion — once per order, transaction_id dedup.
+    try {
+      const gadsFeatures = (store as any)?.features || {};
+      fireGoogleAdsPurchase({
+        adsId: gadsFeatures.google_ads_id,
+        purchaseLabel: gadsFeatures.google_ads_purchase_label,
+        orderId: ordId,
+        value: purchaseValue,
+        currency,
       });
     } catch { /* noop */ }
 
