@@ -27,6 +27,10 @@ export default function StoreTracking() {
   const [facebookPixelIdTouched, setFacebookPixelIdTouched] = useState(false);
   const [metaAccessToken, setMetaAccessToken] = useState("");
   const [metaAccessTokenTouched, setMetaAccessTokenTouched] = useState(false);
+  const [googleAdsId, setGoogleAdsId] = useState("");
+  const [googleAdsLabel, setGoogleAdsLabel] = useState("");
+  const [gtmId, setGtmId] = useState("");
+  const [googleTouched, setGoogleTouched] = useState(false);
 
   const { data: store, isLoading } = useStoreData(storeId);
 
@@ -111,6 +115,16 @@ export default function StoreTracking() {
       setMetaAccessToken(metaTokenFromDb);
     }
   }, [metaTokenFromDb, metaAccessTokenTouched]);
+
+  // Google Ads / GTM live in stores.features jsonb — hydrate once per store load.
+  const savedFeatures = (store as any)?.features || {};
+  useEffect(() => {
+    if (googleTouched) return;
+    setGoogleAdsId(savedFeatures.google_ads_id || "");
+    setGoogleAdsLabel(savedFeatures.google_ads_purchase_label || "");
+    setGtmId(savedFeatures.gtm_container_id || "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store?.id, savedFeatures.google_ads_id, savedFeatures.google_ads_purchase_label, savedFeatures.gtm_container_id, googleTouched]);
 
   const handleMetaAccessTokenChange = (value: string) => {
     setMetaAccessTokenTouched(true);
