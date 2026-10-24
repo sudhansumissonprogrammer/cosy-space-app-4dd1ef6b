@@ -6477,7 +6477,7 @@ async function handleSeoFiles(url, slug, hostname) {
   // to ~1/day per host (a >95% reduction) saves Supabase invocations with
   // zero SEO impact (Googlebot honors `Cache-Control: public, max-age`).
   const SEO_FILE_TTL = 86400; // 24h
-  async function serveSeoFile(pathKey, type, contentType) {
+  async function serveSeoFile(pathKey, type, contentType, extra = {}) {
     const cacheKey = new Request(`https://seo-cache/${WORKER_VERSION}/${pathKey}/${encodeURIComponent(domain)}`, { method: "GET" });
     const cached = await cache.match(cacheKey);
     if (cached) {
@@ -6485,9 +6485,9 @@ async function handleSeoFiles(url, slug, hostname) {
       r.headers.set("X-Seo-Cache", "HIT");
       return r;
     }
-    const res = await callEdgeFunction("seo-page", { type, slug, domain });
+    const res = await callEdgeFunction("seo-page", { type, slug, domain, ...extra });
     if (res.status === 301 || res.status === 302) return res; // never cache redirects
-    if (!res.ok) return new Response("Search file temporarily unavailable", { status: 503, headers: { ...SECURITY_HEADERS, "Cache-Control": "no-store" } });
+    if (!res.ok) return new Response("Search file temporarily unavailable", { status: [400, 404].includes(res.status) ? res.status : 503, headers: { ...SECURITY_HEADERS, "Cache-Control": "no-store" } });
     const body = await res.text();
     const finalRes = new Response(body, {
       headers: {
@@ -6505,6 +6505,10 @@ async function handleSeoFiles(url, slug, hostname) {
 
   if (url.pathname === "/sitemap.xml") {
     return await serveSeoFile("sitemap", "sitemap", "application/xml");
+  }
+  const sitemapChild = url.pathname.match(/^\/sitemap-([1-9]\d{0,4})\.xml$/);
+  if (sitemapChild) {
+    return await serveSeoFile(`sitemap-${sitemapChild[1]}`, "sitemap", "application/xml", { part: sitemapChild[1] });
   }
   if (url.pathname === "/robots.txt") {
     return await serveSeoFile("robots", "robots", "text/plain");
