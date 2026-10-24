@@ -27,7 +27,6 @@ function openingSettled() {
 
 function flush() {
   scheduled = 0;
-  const stillPendingOpening = !openingSettled();
   for (const node of preparedAhead) {
     if (!node.isConnected || node.getBoundingClientRect().top < innerHeight) preparedAhead.delete(node);
   }
@@ -37,7 +36,7 @@ function flush() {
     return { item: node, top: box.top, bottom: box.bottom, left: box.left, right: box.right };
   }).filter(row => row.right > 0 && row.left < innerWidth);
   // Visible cards always get a source; only the upcoming row waits for readiness.
-  ready = !stillPendingOpening;
+  if (!ready && !scrolling) ready = openingSettled();
   const selected = ready || scrolling
     ? chooseMobileCardBuffer(rows, innerHeight)
     : rows.filter(row => row.bottom > 0 && row.top < innerHeight).map(row => row.item);
