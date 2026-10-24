@@ -4828,7 +4828,7 @@ async function serveStreamedHtml(
             `<div style="height:56px;display:flex;align-items:center;justify-content:center;font:700 15px/1 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid rgba(127,127,127,.15)">${_storeName}</div>` +
             `<div style="position:relative;width:100%;max-width:640px;margin:0 auto;height:${_h}">` +
             _tinyImg +
-            `<img class="sf-hero-img" src="${escapeHtml(_main)}"${_srcsetAttr} alt="${escapeHtml(_p.name || "Product")}" fetchpriority="high" decoding="async" ` +
+            `<img class="sf-hero-img" src="${escapeHtml(_main)}"${_srcsetAttr} alt="${escapeHtml(_pdpName || "Product")}" fetchpriority="high" decoding="async" ` +
             `onload="window.__sfPdpRelease&&window.__sfPdpRelease()" onerror="window.__sfPdpRelease&&window.__sfPdpRelease()" ` +
             `style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center" />` +
             `</div>` +

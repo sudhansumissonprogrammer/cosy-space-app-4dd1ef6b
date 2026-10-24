@@ -144,7 +144,7 @@ export default function CategoryDetail() {
       })).data;
 
       if (rpc?.category) {
-        if (Array.isArray(rpc.products)) {
+        if (Array.isArray(rpc.products) && !(Number(new URLSearchParams(window.location.search).get("page")) > 1)) {
           const qKey = ["cat-detail-v3", store.id, categorySlug || rpc.category.name, "default", PAGE_SIZE];
           queryClient.setQueryData(qKey, seedInfinitePages(rpc.products));
           // Note: this path is a FRESH Supabase RPC response — no need to
@@ -168,7 +168,7 @@ export default function CategoryDetail() {
       // category page paints with products on its very first render.
       const pre = categorySlug ? categoryPrefetchResolved.get(categorySlug) : null;
       if (pre?.category) {
-        if (Array.isArray(pre.products)) {
+        if (Array.isArray(pre.products) && !(Number(new URLSearchParams(window.location.search).get("page")) > 1)) {
           queryClient.setQueryData(
             ["cat-detail-v3", store.id, categorySlug || pre.category.name, "default", PAGE_SIZE],
             seedInfinitePages(pre.products)
@@ -178,7 +178,7 @@ export default function CategoryDetail() {
       }
       const inline = getInlineCategory();
       if (inline?.category) {
-        if (Array.isArray(inline.products)) {
+        if (Array.isArray(inline.products) && !(Number(new URLSearchParams(window.location.search).get("page")) > 1)) {
           const qKey = ["cat-detail-v3", store.id, categorySlug || inline.category.name, "default", PAGE_SIZE];
           queryClient.setQueryData(qKey, seedInfinitePages(inline.products));
           // PERF: the inline HTML payload can be stale, so we still refresh from
@@ -243,7 +243,7 @@ export default function CategoryDetail() {
     ogImage: category?.image_url || store.logo_url || undefined,
     storeSlug: store.slug,
     customDomain: (store as any)?.custom_domain,
-    canonicalPath: categorySlug ? `category/${categorySlug}` : undefined,
+    canonicalPath: categorySlug ? `category/${categorySlug}${Number(new URLSearchParams(window.location.search).get("page")) > 1 ? `?page=${new URLSearchParams(window.location.search).get("page")}` : ""}` : undefined,
   });
 
   const rawProducts = data?.pages.flatMap((p) => p.products) || [];
