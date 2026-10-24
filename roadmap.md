@@ -1,5 +1,5 @@
 # Roadmap
-- [ ] Reconnect Telegram after the 17:08 UTC workspace move; verify current connection and refresh alerts without replay.
+- [x] Reconnect Telegram after the 17:08 UTC workspace move; current bot verified and alerts refreshed without replay.
 - [x] Reconnect Telegram after the latest workspace move; @Shopbanaobot verified and order-alert function refreshed without replay.
 - [x] Research universal organic search plan with Utkal Watches priority; evidence, replica eligibility limits and staged technical corrections prepared for approval.
 
