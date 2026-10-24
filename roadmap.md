@@ -2,7 +2,7 @@
 
 - [x] Reconnect Telegram after the latest workspace move; @Shopbanaobot verified and order alerts refreshed, no replay.
 
-- [ ] Extend bounded mobile product-card photo readiness across storefront pages/themes; preserve opening speed, desktop and PDP gallery; test scrolling and retained photos.
+- [x] Extend bounded mobile product-card photo readiness across shared storefront pages/themes; 12 tests passed; category/shop down-and-up checks had no blank cards, homepage carousel can still briefly outrun photo loading; desktop/PDP gallery unchanged.
 
 - [x] COD template cod_order_confirm_v2 APPROVED by Meta and activated.
 - [x] COD v3: cod_order_confirm_v3 with product-photo IMAGE header submitted to Meta (PENDING, meta_id 1761198401972969); wa-order-event prefers v3 → v2 → v1; deployed.
