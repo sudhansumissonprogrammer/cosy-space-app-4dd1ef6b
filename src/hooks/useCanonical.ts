@@ -22,7 +22,6 @@ export function useCanonical(url: string | null | undefined) {
       link.rel = "canonical";
       document.head.appendChild(link);
     }
-    const prev = link.href;
     link.href = href;
 
     // Mirror to og:url so social previews stay in sync with the canonical.
@@ -32,14 +31,8 @@ export function useCanonical(url: string | null | undefined) {
       og.setAttribute("property", "og:url");
       document.head.appendChild(og);
     }
-    const prevOg = og.content;
     og.content = href;
-
-    return () => {
-      // Restore previous value on unmount so the next route can take over
-      // cleanly without leaving a stale URL behind.
-      if (link && prev) link.href = prev;
-      if (og && prevOg) og.content = prevOg;
-    };
+    // Leave the tag in place until the next route writes its own value.
+    // Restoring a previous URL here races the next route's mount effects.
   }, [url]);
 }

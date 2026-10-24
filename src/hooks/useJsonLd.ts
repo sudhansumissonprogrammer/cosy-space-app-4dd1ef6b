@@ -48,6 +48,7 @@ interface ProductJsonLdOptions {
 
 export function useProductJsonLd({ product, storeSlug, storeName, customDomain, reviews }: ProductJsonLdOptions) {
   useEffect(() => {
+    if (!product.id) return;
     const baseUrl = getStoreBaseUrl(storeSlug, customDomain);
     const productUrl = `${baseUrl}/product/${product.slug || product.id}`;
     const price = product.sale_price && product.sale_price < product.price
@@ -64,10 +65,6 @@ export function useProductJsonLd({ product, storeSlug, storeName, customDomain, 
       name: product.name,
       url: productUrl,
       sku: product.sku || product.id,
-      brand: {
-        "@type": "Organization",
-        name: storeName,
-      },
       offers: {
         "@type": "Offer",
         price: Number(price).toFixed(2),
@@ -80,7 +77,6 @@ export function useProductJsonLd({ product, storeSlug, storeName, customDomain, 
           "@type": "Organization",
           name: storeName,
         },
-        priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
         itemCondition: "https://schema.org/NewCondition",
       },
     };
@@ -112,7 +108,8 @@ export function useProductJsonLd({ product, storeSlug, storeName, customDomain, 
         "@type": "ListItem",
         position: 2,
         name: product.category,
-        item: `${baseUrl}/category/${product.category}`,
+        // A label is not a URL slug. Shop is a valid fallback without lookup.
+        item: `${baseUrl}/shop`,
       });
       breadcrumbItems.push({
         "@type": "ListItem",
@@ -270,7 +267,6 @@ export function useProductListJsonLd({ products, storeSlug, listName, customDoma
         position: i + 1,
         url: `${baseUrl}/product/${p.slug || p.id}`,
         name: p.name,
-        image: p.image_url || undefined,
       })),
     };
     setJsonLd(data, ITEM_LIST_SCRIPT_ID);
