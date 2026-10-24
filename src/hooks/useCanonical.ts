@@ -12,10 +12,15 @@ import { useEffect } from "react";
 export function useCanonical(url: string | null | undefined) {
   useEffect(() => {
     if (!url) return;
-    const href = /^https?:\/\//i.test(url)
+    let href = /^https?:\/\//i.test(url)
       ? url
       : `${window.location.origin}${url.startsWith("/") ? "" : "/"}${url}`;
 
+    const target = new URL(href);
+    const rawPage = new URLSearchParams(window.location.search).get("page");
+    if (/\/(category\/[^/]+|shop|best-sellers)\/?$/.test(target.pathname) && rawPage && /^[1-9]\d*$/.test(rawPage) && Number(rawPage) > 1) {
+      target.searchParams.set("page", rawPage); href = target.href;
+    }
     let link = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
     if (!link) {
       link = document.createElement("link");

@@ -243,7 +243,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "9.1.0-instant-splash";
+const WORKER_VERSION = "9.2.0-search-discovery";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -4201,9 +4201,9 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
       "@type": "Product",
       name: p.name,
       description: p.description || desc,
-      image: images.length ? images : heroImg ? [heroImg] : undefined,
+      image: [...new Set([p.image_url, ...images].filter(Boolean))],
       sku: p.sku || undefined,
-      brand: { "@type": "Brand", name: store.name },
+
       offers: {
         "@type": "Offer",
         url,
@@ -4224,7 +4224,7 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
                 "@type": "ListItem",
                 position: 2,
                 name: p.category,
-                item: `${canonicalBase}/category/${encodeURIComponent(String(p.category).toLowerCase().replace(/\s+/g, "-"))}`,
+                item: `${canonicalBase}/shop`,
               },
             ]
           : []),
@@ -4828,7 +4828,7 @@ async function serveStreamedHtml(
             `<div style="height:56px;display:flex;align-items:center;justify-content:center;font:700 15px/1 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid rgba(127,127,127,.15)">${_storeName}</div>` +
             `<div style="position:relative;width:100%;max-width:640px;margin:0 auto;height:${_h}">` +
             _tinyImg +
-            `<img class="sf-hero-img" src="${escapeHtml(_main)}"${_srcsetAttr} alt="" fetchpriority="high" decoding="async" ` +
+            `<img class="sf-hero-img" src="${escapeHtml(_main)}"${_srcsetAttr} alt="${escapeHtml(_pdpName || "Product")}" fetchpriority="high" decoding="async" ` +
             `onload="window.__sfPdpRelease&&window.__sfPdpRelease()" onerror="window.__sfPdpRelease&&window.__sfPdpRelease()" ` +
             `style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center" />` +
             `</div>` +
@@ -6476,7 +6476,7 @@ async function handleSeoFiles(url, slug, hostname) {
   // zero SEO impact (Googlebot honors `Cache-Control: public, max-age`).
   const SEO_FILE_TTL = 86400; // 24h
   async function serveSeoFile(pathKey, type, contentType) {
-    const cacheKey = new Request(`https://seo-cache/${pathKey}/${encodeURIComponent(domain)}`, { method: "GET" });
+    const cacheKey = new Request(`https://seo-cache/${WORKER_VERSION}/${pathKey}/${encodeURIComponent(domain)}`, { method: "GET" });
     const cached = await cache.match(cacheKey);
     if (cached) {
       const r = new Response(cached.body, cached);
@@ -6544,7 +6544,8 @@ async function handleBot(request, slug, url, isCustom) {
   const isSocialBot = SOCIAL_BOT_REGEX.test(ua) || INSTAGRAM_CRAWLER_REGEX.test(ua);
   const productSlug = getProductSlug(url.pathname);
   // v8.16 — Richer route kinds (category/page/shop/best-sellers/categories/about/contact/track-order).
-  const botRoute = getBotRoute(url.pathname) || { kind: "home" };
+  const botRoute = getBotRoute(url.pathname) || { kind: "unknown" };
+  const listingPage = /^(category|shop|best-sellers)$/.test(botRoute.kind) ? url.searchParams.get("page") || "1" : "1";
 
   // PHASE 1 FIX #3: Bot HTML cached aggressively at the edge.
   // Bots re-crawl periodically anyway. 24h cache + 7d SWR = ~95% fewer
@@ -6554,7 +6555,7 @@ async function handleBot(request, slug, url, isCustom) {
     // v8.67.0 BAN-FIX P0-1: Bot cache key now versioned by WORKER_VERSION so
     // every Worker deploy auto-invalidates the prior bot HTML. Was serving 17h
     // old doorway-redirect HTML to facebookexternalhit even after v8.61.0 fix.
-    const botCacheKey = new Request(`https://bot-cache/search/${WORKER_VERSION}/${encodeURIComponent(hostname)}${url.pathname}`, {
+    const botCacheKey = new Request(`https://bot-cache/search/${WORKER_VERSION}/${encodeURIComponent(hostname)}${url.pathname}?page=${encodeURIComponent(listingPage)}`, {
       method: "GET",
     });
     const botCached = await cache.match(botCacheKey);
@@ -6569,6 +6570,7 @@ async function handleBot(request, slug, url, isCustom) {
       domain: domain || "",
       kind: botRoute.kind,
       route_slug: botRoute.slug || "",
+      page: listingPage,
     });
     if (botRenderRes.ok) {
       const html = await botRenderRes.text();
@@ -6589,13 +6591,14 @@ async function handleBot(request, slug, url, isCustom) {
       } catch {}
       return finalRes;
     }
+    if ([400, 404, 503].includes(botRenderRes.status)) return new Response(await botRenderRes.text(), { status: botRenderRes.status, headers: { ...SECURITY_HEADERS, "X-Robots-Tag": "noindex", "Cache-Control": "no-store" } });
     return null;
   }
 
   if (isSocialBot) {
     const domain = isCustom ? hostname : null;
     // v8.67.0 BAN-FIX P0-1: Versioned by WORKER_VERSION — see search branch above.
-    const socialCacheKey = new Request(`https://bot-cache/social/${WORKER_VERSION}/${encodeURIComponent(hostname)}${url.pathname}`, {
+    const socialCacheKey = new Request(`https://bot-cache/social/${WORKER_VERSION}/${encodeURIComponent(hostname)}${url.pathname}?page=${encodeURIComponent(listingPage)}`, {
       method: "GET",
     });
     const socialCached = await cache.match(socialCacheKey);

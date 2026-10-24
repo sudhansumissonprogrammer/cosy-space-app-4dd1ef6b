@@ -1,3 +1,4 @@
+import { useSearchParams } from "react-router-dom";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -142,6 +143,9 @@ export function useInfiniteProducts(opts: {
   ready?: boolean;
 }) {
   const { storeId, category, categorySlug, sort, queryKeyPrefix, ready = true } = opts;
+  const [searchParams] = useSearchParams();
+  const rawPage = searchParams.get("page");
+  const startPage = rawPage && /^[1-9]\d*$/.test(rawPage) ? Math.min(Number(rawPage), 100000) - 1 : 0;
 
   return useInfiniteQuery({
     queryKey: [
@@ -150,10 +154,11 @@ export function useInfiniteProducts(opts: {
       categorySlug || category || "__all__",
       sort || "default",
       PAGE_SIZE,
+      ...(startPage > 0 ? [startPage] : []),
     ],
     queryFn: async ({ pageParam = 0 }) => {
       const products = await fetchPage({
-        storeId: storeId!,
+        storeId: storeId || "",
         category,
         categorySlug,
         page: pageParam,
@@ -162,7 +167,7 @@ export function useInfiniteProducts(opts: {
       return { products, page: pageParam };
     },
 
-    initialPageParam: 0,
+    initialPageParam: startPage,
     getNextPageParam: (lastPage) =>
       lastPage.products.length === PAGE_SIZE ? lastPage.page + 1 : undefined,
     enabled: !!storeId && ready,

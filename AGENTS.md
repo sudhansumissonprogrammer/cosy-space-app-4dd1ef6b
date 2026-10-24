@@ -1,4 +1,6 @@
 # Project architecture decisions
+- Public SEO discovery uses bounded, addressable catalogue pages and error-preserving paged sitemap queries; renderer/cache page identity and shopper pagination must agree without changing checkout pricing.
+- Store shell metadata only owns home; route metadata owns detail pages, and manufacturer identifiers are never derived from seller names or internal IDs, preventing canonical races and false product claims.
 
 - WhatsApp recipient tier checks use a service-role aggregate to avoid transferring 20,000 rows per send.
 - Saved addresses use `replace_customer_address` to respect the one-address unique index.
