@@ -27,6 +27,7 @@ function openingSettled() {
 
 function flush() {
   scheduled = 0;
+  const stillPendingOpening = !openingSettled();
   for (const node of preparedAhead) {
     if (!node.isConnected || node.getBoundingClientRect().top < innerHeight) preparedAhead.delete(node);
   }
@@ -36,12 +37,15 @@ function flush() {
     return { item: node, top: box.top, bottom: box.bottom, left: box.left, right: box.right };
   }).filter(row => row.right > 0 && row.left < innerWidth);
   // Visible cards always get a source; only the upcoming row waits for readiness.
-  if (!ready) ready = openingSettled();
+  ready = !stillPendingOpening;
   const selected = ready || scrolling
     ? chooseMobileCardBuffer(rows, innerHeight)
     : rows.filter(row => row.bottom > 0 && row.top < innerHeight).map(row => row.item);
   for (const node of selected) {
-    if (node.getBoundingClientRect().top >= innerHeight) {
+    const bounds = node.getBoundingClientRect();
+    // Clipped horizontal carousel slides are not upcoming vertical cards.
+    if (bounds.right <= 0 || bounds.left >= innerWidth) continue;
+    if (bounds.top >= innerHeight) {
       if (preparedAhead.size >= 2) continue;
       preparedAhead.add(node);
     }
@@ -80,7 +84,7 @@ export function subscribeMobileCard(node: HTMLElement, activate: () => void) {
   return () => {
     cards.delete(node);
     observer?.unobserve(node);
-    if (cards.size) return;
+    if (cards.size || preparedAhead.size) return;
     observer?.disconnect();
     observer = undefined;
     preparedAhead.clear();
