@@ -3,7 +3,7 @@ import { storefrontUtilityRoute } from "./storefrontSearchPolicy";
 
 describe("storefront utility search policy", () => {
   it("excludes utility pages and private order descendants", () => {
-    for (const path of ["cart", "checkout", "account", "search", "track-order", "wishlist", "auth", "order-confirmation"]) {
+    for (const path of ["cart", "checkout", "account", "search", "track-order", "wishlist", "auth", "login", "signup", "order-confirmation"]) {
       expect(storefrontUtilityRoute(`/${path}`, "utkalwatches")).toBe(path);
       expect(storefrontUtilityRoute(`/store/utkalwatches/${path}`, "utkalwatches")).toBe(path);
     }

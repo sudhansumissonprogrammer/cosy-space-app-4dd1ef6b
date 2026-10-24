@@ -1,4 +1,4 @@
-const UTILITY_ROUTES = new Set(["cart", "checkout", "account", "search", "track-order", "wishlist", "auth", "order-confirmation"]);
+const UTILITY_ROUTES = new Set(["cart", "checkout", "account", "search", "track-order", "wishlist", "auth", "login", "signup", "order-confirmation"]);
 
 /** Strip only the current store's preview prefix; never classify another tenant. */
 export function storefrontUtilityRoute(pathname: string, storeSlug: string): string | null {
