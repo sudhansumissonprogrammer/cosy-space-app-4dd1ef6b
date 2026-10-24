@@ -17,6 +17,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/contexts/CartContext";
 import { useMetaTags } from "@/hooks/useMetaTags";
+import { useProductJsonLd } from "@/hooks/useJsonLd";
+import { useProductCategory } from "@/hooks/useProductCategory";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, resolveProductImages } from "@/lib/imageOptimize";
 import { normalizeProductVideoUrl } from "@/lib/productVideoUrl";
@@ -187,6 +189,11 @@ export default function V19ProductDetail() {
   });
 
   const images = useMemo(() => (product ? resolveProductImages(product) : []), [product]);
+  const seoCategory = useProductCategory(store.id, product?.category);
+  useProductJsonLd({
+    product: product ? { ...product, extraImages: images } : { id: "", name: "", price: 0, currency: "INR" },
+    storeSlug: store.slug, storeName: store.name, customDomain: store.custom_domain, categoryLink: seoCategory,
+  });
   const gallerySlides = useMemo(() => {
     const slides: Array<{ kind: "image"; url: string } | { kind: "video"; url: string; poster: string }> = [];
     if (images[0]) slides.push({ kind: "image", url: images[0] });

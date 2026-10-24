@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { getStoreBaseUrl } from "@/lib/storeUrl";
 import { waPhoneNumber } from "@/lib/phoneUtils";
+import { productImageUrls } from "../../supabase/functions/_shared/seoDiscovery";
 
 const SCRIPT_ID = "json-ld-structured-data";
 const ORG_SCRIPT_ID = "json-ld-organization";
@@ -44,9 +45,10 @@ interface ProductJsonLdOptions {
   customDomain?: string | null;
   /** Real review data — omit aggregateRating if empty */
   reviews?: { rating: number }[];
+  categoryLink?: { name: string; slug: string } | null;
 }
 
-export function useProductJsonLd({ product, storeSlug, storeName, customDomain, reviews }: ProductJsonLdOptions) {
+export function useProductJsonLd({ product, storeSlug, storeName, customDomain, reviews, categoryLink }: ProductJsonLdOptions) {
   useEffect(() => {
     if (!product.id) return;
     const baseUrl = getStoreBaseUrl(storeSlug, customDomain);
@@ -55,16 +57,14 @@ export function useProductJsonLd({ product, storeSlug, storeName, customDomain, 
       ? product.sale_price
       : product.price;
 
-    const images: string[] = [];
-    if (product.image_url) images.push(product.image_url);
-    if (product.extraImages) images.push(...product.extraImages);
+    const images = productImageUrls(product.image_url, product.extraImages);
 
     const data: Record<string, any> = {
       "@context": "https://schema.org",
       "@type": "Product",
       name: product.name,
       url: productUrl,
-      sku: product.sku || product.id,
+      ...(product.sku ? { sku: product.sku } : {}),
       offers: {
         "@type": "Offer",
         price: Number(price).toFixed(2),
@@ -77,7 +77,6 @@ export function useProductJsonLd({ product, storeSlug, storeName, customDomain, 
           "@type": "Organization",
           name: storeName,
         },
-        itemCondition: "https://schema.org/NewCondition",
       },
     };
 
@@ -107,9 +106,8 @@ export function useProductJsonLd({ product, storeSlug, storeName, customDomain, 
       breadcrumbItems.push({
         "@type": "ListItem",
         position: 2,
-        name: product.category,
-        // A label is not a URL slug. Shop is a valid fallback without lookup.
-        item: `${baseUrl}/shop`,
+        name: categoryLink?.name || "Shop All",
+        item: categoryLink?.slug ? `${baseUrl}/category/${categoryLink.slug}` : `${baseUrl}/shop`,
       });
       breadcrumbItems.push({
         "@type": "ListItem",
@@ -136,7 +134,7 @@ export function useProductJsonLd({ product, storeSlug, storeName, customDomain, 
       removeJsonLd();
       removeJsonLd(BREADCRUMB_SCRIPT_ID);
     };
-  }, [product, storeSlug, storeName, customDomain, reviews]);
+  }, [product, storeSlug, storeName, customDomain, reviews, categoryLink]);
 }
 
 interface StoreJsonLdOptions {
