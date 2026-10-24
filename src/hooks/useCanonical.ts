@@ -1,4 +1,6 @@
 import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import { discoveryPage } from "@/lib/catalogueDiscovery";
 
 /**
  * Maintains a single <link rel="canonical"> tag in <head> for the current
@@ -10,6 +12,7 @@ import { useEffect } from "react";
  * path; relative paths are resolved against the current origin at write time.
  */
 export function useCanonical(url: string | null | undefined) {
+  const { search } = useLocation();
   useEffect(() => {
     if (!url) return;
     let href = /^https?:\/\//i.test(url)
@@ -17,9 +20,11 @@ export function useCanonical(url: string | null | undefined) {
       : `${window.location.origin}${url.startsWith("/") ? "" : "/"}${url}`;
 
     const target = new URL(href);
-    const rawPage = new URLSearchParams(window.location.search).get("page");
-    if (/\/(category\/[^/]+|shop|best-sellers)\/?$/.test(target.pathname) && rawPage && /^[1-9]\d*$/.test(rawPage) && Number(rawPage) > 1) {
-      target.searchParams.set("page", rawPage); href = target.href;
+    const page = discoveryPage(new URLSearchParams(search).get("page"));
+    if (/\/(category\/[^/]+|shop|best-sellers)\/?$/.test(target.pathname)) {
+      target.search = "";
+      if (page !== null && page > 1) target.searchParams.set("page", String(page));
+      href = target.href;
     }
     let link = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
     if (!link) {
@@ -39,5 +44,5 @@ export function useCanonical(url: string | null | undefined) {
     og.content = href;
     // Leave the tag in place until the next route writes its own value.
     // Restoring a previous URL here races the next route's mount effects.
-  }, [url]);
+  }, [url, search]);
 }

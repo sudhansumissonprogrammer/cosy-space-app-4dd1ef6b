@@ -28,3 +28,9 @@ export function productImageUrls(primary: string | null | undefined, gallery: st
   return [...new Set([...(primary || "").split(",").map(u => u.trim()), ...gallery])]
     .filter(u => /^https?:\/\//i.test(u)).slice(0, 10);
 }
+
+/** Only page-specific authoritative timestamps belong in lastmod. */
+export function sitemapLastmod(timestamp?: string | null): string {
+  if (!timestamp || !/^\d{4}-\d{2}-\d{2}(T|$)/.test(timestamp) || Number.isNaN(Date.parse(timestamp))) return "";
+  return `<lastmod>${timestamp.slice(0, 10)}</lastmod>`;
+}

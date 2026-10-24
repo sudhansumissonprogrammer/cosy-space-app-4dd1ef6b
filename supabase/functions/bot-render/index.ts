@@ -54,18 +54,19 @@ function buildProductHtml(
     product.sale_price && product.price > product.sale_price
       ? formatPrice(product.price, product.currency || store.currency || "INR")
       : null;
-  const heroImage = product.image_url || images?.[0]?.image_url || "";
   const allImages = productImageUrls(product.image_url, (images || []).map(i => i.image_url));
+  const heroImage = allImages[0] || "";
 
   const storeBaseForCrumb = canonical.split("/product/")[0];
-  const categoryName = product.category || "Products";
+  const categoryName = product.seo_category?.name || "Shop All";
+  const categoryUrl = product.seo_category?.slug ? `${storeBaseForCrumb}/category/${product.seo_category.slug}` : `${storeBaseForCrumb}/shop`;
   const productJsonLd = JSON.stringify({
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
     description: product.description || "",
     image: allImages,
-    sku: product.sku || product.id,
+    ...(product.sku ? { sku: product.sku } : {}),
     
     url: canonical,
     offers: {
@@ -76,7 +77,7 @@ function buildProductHtml(
         ? "https://schema.org/InStock"
         : "https://schema.org/OutOfStock",
       url: canonical,
-      itemCondition: "https://schema.org/NewCondition",
+
 
       seller: { "@type": "Organization", name: store.name },
     },
@@ -87,7 +88,7 @@ function buildProductHtml(
     "@type": "BreadcrumbList",
     itemListElement: [
       { "@type": "ListItem", position: 1, name: store.name, item: storeBaseForCrumb },
-      { "@type": "ListItem", position: 2, name: categoryName, item: `${storeBaseForCrumb}/shop` },
+      { "@type": "ListItem", position: 2, name: categoryName, item: categoryUrl },
       { "@type": "ListItem", position: 3, name: product.name, item: canonical },
     ],
   });
@@ -107,10 +108,7 @@ function buildProductHtml(
 <meta property="og:type" content="product">
 <meta property="og:site_name" content="${storeName}">
 ${heroImage ? `<meta property="og:image" content="${esc(heroImage)}">
-<meta property="og:image:alt" content="${esc(product.name)}">
-<meta property="og:image:type" content="image/jpeg">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="1200">` : ""}
+<meta property="og:image:alt" content="${esc(product.name)}">` : ""}
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${title}">
 <meta name="twitter:description" content="${desc}">
@@ -146,7 +144,7 @@ ${store.logo_url ? `<img src="${esc(store.logo_url)}" alt="${storeName} logo">` 
 </header>
 <main class="container">
 <nav class="breadcrumb">
-<a href="${esc(canonical.split("/product/")[0])}">${storeName}</a> &rsaquo; ${esc(product.category || "Products")} &rsaquo; ${esc(product.name)}
+<a href="${esc(canonical.split("/product/")[0])}">${storeName}</a> &rsaquo; <a href="${esc(categoryUrl)}">${esc(categoryName)}</a> &rsaquo; ${esc(product.name)}
 </nav>
 <article class="product" itemscope itemtype="https://schema.org/Product">
 <div class="gallery">
@@ -380,7 +378,7 @@ function renderPagination(base: string, page: number, hasNext: boolean): string 
 
 function buildCategoryHtml(
   store: any,
-  category: { name: string; slug: string; description?: string | null; meta_title?: string | null; meta_description?: string | null },
+  category: { name: string; slug: string; description?: string | null; meta_title?: string | null; meta_description?: string | null; image_url?: string | null; og_image_url?: string | null },
   products: any[],
   canonical: string,
   storeBase: string,
@@ -390,10 +388,8 @@ function buildCategoryHtml(
   const title = category.meta_title || `${category.name} — ${store.name}`;
   const desc =
     category.meta_description || category.description?.slice(0, 160) ||
-    `Shop ${category.name} at ${store.name}. ${products.length} products available.`;
-  // Store artwork first: using a product photo here tells Google this listing
-  // is the "home" of that photo, so Lens visits land on the category page.
-  const ogImage = store.og_image_url || store.banner_url || store.logo_url || products[0]?.image_url || "";
+    `Shop ${category.name} at ${store.name}.`;
+  const ogImage = category.og_image_url || category.image_url || store.logo_url || "";
 
   // Summary-page ItemList (url + name only), as Google recommends for category
   // pages. Full Product/Offer markup lives only on each product page.
@@ -444,7 +440,7 @@ function buildListingHtml(
   canonical: string,
   storeBase: string,
 ): string {
-  const ogImage = store.og_image_url || store.banner_url || store.logo_url || products[0]?.image_url || "";
+  const ogImage = store.logo_url || "";
   const breadcrumb = buildBreadcrumb([
     { name: store.name, url: storeBase },
     { name: opts.kind === "shop" ? "Shop" : "Best Sellers", url: canonical },
@@ -858,7 +854,7 @@ Deno.serve(async (req) => {
   if (effectiveKind === "category" && routeSlug) {
     const { data: cat } = await supabase
       .from("categories")
-      .select("id, name, slug, meta_description, meta_title, image_url")
+      .select("id, name, slug, meta_description, meta_title, image_url, og_image_url")
       .eq("store_id", store.id)
       .eq("slug", routeSlug)
       .eq("is_hidden", false)
@@ -910,13 +906,15 @@ Deno.serve(async (req) => {
       .eq("store_id", store.id)
       .eq("is_active", true)
       .eq("hidden_by_category", false);
-    const { data: listingProducts, error: listingError } = effectiveKind === "best-sellers"
-      ? await baseQuery.eq("is_best_selling", true).order("display_order").order("created_at", { ascending: false }).order("id").range((page - 1) * DISCOVERY_PAGE_SIZE, page * DISCOVERY_PAGE_SIZE)
-      : await baseQuery.order("display_order").order("created_at", { ascending: false }).order("id").range((page - 1) * DISCOVERY_PAGE_SIZE, page * DISCOVERY_PAGE_SIZE);
+    const showAll = ["theme-10", "theme-12"].includes(store.theme);
+    const query = effectiveKind === "best-sellers" && !showAll ? baseQuery.eq("is_best_selling", true) : baseQuery;
+    if (effectiveKind === "shop") query.order("display_order");
+    const { data: listingProducts, error: listingError } = await query.order("created_at", { ascending: false }).order("id")
+      .range((page - 1) * DISCOVERY_PAGE_SIZE, page * DISCOVERY_PAGE_SIZE);
     if (listingError) return new Response("Catalogue unavailable", { status: 503, headers: noIndexHeaders });
     if (page > 1 && !listingProducts?.length) return new Response("Page not found", { status: 404, headers: noIndexHeaders });
 
-    const opts = effectiveKind === "best-sellers"
+    const opts = effectiveKind === "best-sellers" && !showAll
       ? { kind: "best-sellers" as const, title: `Best sellers at ${store.name}`, desc: `Top-selling products at ${store.name}.` }
       : { kind: "shop" as const, title: `Shop all products — ${store.name}`, desc: `Browse the full product catalog at ${store.name}.` };
     const html = buildListingHtml(
@@ -945,6 +943,16 @@ Deno.serve(async (req) => {
   if (effectiveKind === "about" || effectiveKind === "contact" || effectiveKind === "track-order" || effectiveKind === "faq") {
     const html = buildStaticInfoHtml(store, effectiveKind as any, `${canonical}/${effectiveKind}`, canonical);
     return new Response(html, { headers: { ...corsHeaders, ...HTML_CACHE_HEADERS } });
+  }
+
+  const legalTypes: Record<string, string> = { "privacy-policy": "privacy", "return-policy": "return", "shipping-policy": "shipping", terms: "terms" };
+  if (legalTypes[effectiveKind]) {
+    const { data: legal, error } = await supabase.from("store_pages")
+      .select("title,content,custom_html,image_url,slug,is_active")
+      .eq("store_id", store.id).eq("page_type", legalTypes[effectiveKind]).eq("is_active", true).limit(1).maybeSingle();
+    if (error) return new Response("Page unavailable", { status: 503, headers: noIndexHeaders });
+    if (!legal) return new Response("Page not found", { status: 404, headers: noIndexHeaders });
+    return new Response(buildCustomPageHtml(store, legal, `${canonical}/${effectiveKind}`, canonical), { headers: { ...corsHeaders, ...HTML_CACHE_HEADERS } });
   }
 
   // Product page
@@ -980,6 +988,11 @@ Deno.serve(async (req) => {
       .order("display_order", { ascending: true })
       .limit(10);
 
+    if (product.category) {
+      const { data: category } = await supabase.from("categories").select("name,slug")
+        .eq("store_id", store.id).eq("name", product.category).eq("is_hidden", false).maybeSingle();
+      product.seo_category = category;
+    }
     const productCanonical = `${canonical}/product/${product.slug || product.id}`;
     const html = buildProductHtml(store, product, images || [], productCanonical);
     return new Response(html, { headers: { ...corsHeaders, ...HTML_CACHE_HEADERS } });
@@ -988,6 +1001,7 @@ Deno.serve(async (req) => {
   const { data: categories } = await supabase
     .from("categories")
     .select("name, slug")
+    .eq("is_hidden", false)
     .eq("store_id", store.id)
     .order("name");
 

@@ -1,6 +1,7 @@
 import { useSearchParams } from "react-router-dom";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { discoveryPage } from "@/lib/catalogueDiscovery";
 
 /**
  * Worker /api/products page size is 20 — must match PRODUCTS_PAGE_SIZE
@@ -37,7 +38,8 @@ async function fetchPageFromSupabase({ storeId, category, page, sort: _sort }: F
     .from("products")
     .select(PRODUCT_COLUMNS)
     .eq("store_id", storeId)
-    .eq("is_active", true);
+    .eq("is_active", true)
+    .eq("hidden_by_category", false);
 
   if (category) q = q.eq("category", category);
 
@@ -91,11 +93,9 @@ async function fetchCategoryPageRpc({ storeId, category, categorySlug, page }: F
 
 async function fetchPage({ storeId, category, categorySlug, page, sort }: FetchOpts): Promise<any[]> {
   if ((category || categorySlug) && storeId) {
-    try {
-      return await fetchCategoryPageRpc({ storeId, category, categorySlug, page });
-    } catch {
-      return await fetchPageFromSupabase({ storeId, category, page, sort });
-    }
+    // Preserve membership and errors: an unfiltered fallback can expose the
+    // entire store when the slug lookup fails.
+    return await fetchCategoryPageRpc({ storeId, category, categorySlug, page });
   }
 
   if (isProductionHost()) {
@@ -145,7 +145,8 @@ export function useInfiniteProducts(opts: {
   const { storeId, category, categorySlug, sort, queryKeyPrefix, ready = true } = opts;
   const [searchParams] = useSearchParams();
   const rawPage = searchParams.get("page");
-  const startPage = rawPage && /^[1-9]\d*$/.test(rawPage) ? Math.min(Number(rawPage), 100000) - 1 : 0;
+  const page = discoveryPage(rawPage);
+  const startPage = (page ?? 1) - 1;
 
   return useInfiniteQuery({
     queryKey: [
@@ -170,7 +171,7 @@ export function useInfiniteProducts(opts: {
     initialPageParam: startPage,
     getNextPageParam: (lastPage) =>
       lastPage.products.length === PAGE_SIZE ? lastPage.page + 1 : undefined,
-    enabled: !!storeId && ready,
+    enabled: !!storeId && ready && page !== null,
     staleTime: 30 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
   });

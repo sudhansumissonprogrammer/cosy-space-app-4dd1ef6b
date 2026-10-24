@@ -1,4 +1,4 @@
-import { useOutletContext, useParams, Link } from "react-router-dom";
+import { useOutletContext, useParams, Link, useSearchParams } from "react-router-dom";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,8 +9,11 @@ import BestSellerBadge from "@/components/storefront/BestSellerBadge";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCallback, useEffect, useRef } from "react";
-import { useCanonical } from "@/hooks/useCanonical";
-import { getStoreBaseUrl } from "@/lib/storeUrl";
+import { useMetaTags } from "@/hooks/useMetaTags";
+import { discoveryPage, discoveryUrl, bestSellersShowsAll } from "@/lib/catalogueDiscovery";
+import CataloguePagination from "@/components/storefront/CataloguePagination";
+import { Button } from "@/components/ui/button";
+
 
 const PAGE_SIZE = 20;
 // Lightweight card columns — drop heavy joins (product_images, product_variants)
@@ -43,21 +46,23 @@ export default function StorefrontBestSellers() {
   const { slug } = useParams<{ slug: string }>();
   const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || "style-1";
-  useCanonical(`${getStoreBaseUrl(slug || store.slug, (store as any)?.custom_domain)}/best-sellers`);
+  const [searchParams] = useSearchParams();
+  const page = discoveryPage(searchParams.get("page"));
+  const startPage = (page ?? 1) - 1;
 
   // Themes that use Best Sellers as the full catalog
-  const showAll = ["theme-10", "theme-12"].includes(store.theme);
+  const showAll = bestSellersShowsAll(store.theme);
 
   const {
     data,
-    isLoading,
+    isLoading, isError, refetch,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
     queryKey: showAll
-      ? ["best-sellers-all-v2", store.id]
-      : ["best-sellers-only-v2", store.id],
+      ? ["best-sellers-all-v3", store.id, startPage]
+      : ["best-sellers-only-v3", store.id, startPage],
     queryFn: async ({ pageParam = 0 }) => {
       const from = pageParam * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
@@ -65,7 +70,8 @@ export default function StorefrontBestSellers() {
         .from("products")
         .select(CARD_COLUMNS)
         .eq("store_id", store.id)
-        .eq("is_active", true);
+        .eq("is_active", true)
+        .eq("hidden_by_category", false);
       if (!showAll) q = q.eq("is_best_selling", true);
       const { data: prods, error } = await q
         .order("created_at", { ascending: false })
@@ -74,10 +80,10 @@ export default function StorefrontBestSellers() {
       if (error) throw error;
       return { products: prods ?? [], page: pageParam };
     },
-    initialPageParam: 0,
+    initialPageParam: startPage,
     getNextPageParam: (last) =>
       last.products.length === PAGE_SIZE ? last.page + 1 : undefined,
-    enabled: !!store.id,
+    enabled: !!store.id && page !== null,
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
   });
@@ -85,6 +91,14 @@ export default function StorefrontBestSellers() {
   const products = data?.pages.flatMap((p) => p.products) || [];
   const totalEstimate = hasNextPage ? `${products.length}+` : products.length;
   const pageTitle = showAll ? "Shop All" : "Best Sellers";
+
+  useMetaTags({
+    title: showAll ? `Shop all products — ${store.name}` : `Best sellers at ${store.name}`,
+    description: showAll ? `Browse the full product catalog at ${store.name}.` : `Top-selling products at ${store.name}.`,
+    ogImage: store.logo_url || undefined, storeSlug: store.slug, customDomain: store.custom_domain,
+    canonicalPath: discoveryUrl("best-sellers", page ?? 1),
+    noIndex: page === null || (!isLoading && !isError && page > 1 && products.length === 0),
+  });
 
   // Infinite scroll sentinel
   const sentinelElRef = useRef<HTMLDivElement | null>(null);
@@ -115,7 +129,7 @@ export default function StorefrontBestSellers() {
     <div className="mx-auto max-w-7xl px-4 lg:px-6 py-6">
       <div className="mb-5 flex items-center gap-3">
         <Link
-          to={storefrontPath(slug!, "")}
+          to={storefrontPath(slug || store.slug, "")}
           className="flex h-8 w-8 items-center justify-center rounded-full transition-colors"
           style={{
             backgroundColor: "var(--storefront-bg, hsl(var(--card)))",
@@ -136,7 +150,7 @@ export default function StorefrontBestSellers() {
         )}
       </div>
 
-      {isLoading ? (
+      {page === null ? <p className="py-8 text-muted-foreground">Page not found</p> : isError && products.length === 0 ? <div className="py-8 text-center"><p>Failed to load products</p><Button onClick={() => refetch()} variant="outline">Retry</Button></div> : isLoading ? (
         <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <ProductCardSkeleton key={i} />
@@ -149,7 +163,7 @@ export default function StorefrontBestSellers() {
               <UniversalProductCard
                 key={product.id}
                 product={product}
-                slug={slug!}
+                slug={slug || store.slug}
                 store={store}
                 priority={index < 4}
                 cardStyle={cardStyle}
@@ -178,6 +192,7 @@ export default function StorefrontBestSellers() {
           </p>
         </div>
       )}
+      <CataloguePagination firstPageHasNext={(data?.pages[0]?.products.length ?? 0) === PAGE_SIZE} />
     </div>
   );
 }

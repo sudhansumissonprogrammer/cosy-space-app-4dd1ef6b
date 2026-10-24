@@ -243,7 +243,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "9.2.0-search-discovery";
+const WORKER_VERSION = "9.2.1-search-audit";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -798,6 +798,8 @@ function getBotRoute(pathname) {
   if (/^\/about\/?$/i.test(pathname)) return { kind: "about" };
   if (/^\/contact\/?$/i.test(pathname)) return { kind: "contact" };
   if (/^\/track-order\/?$/i.test(pathname)) return { kind: "track-order" };
+  const publicInfo = pathname.replace(/^\/|\/$/g, "").toLowerCase();
+  if (["faq", "privacy-policy", "return-policy", "shipping-policy", "terms"].includes(publicInfo)) return { kind: publicInfo };
   return null; // unknown route — fall back to home/SPA
 }
 
@@ -4185,7 +4187,7 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
     if (!p) return "";
     const images = Array.isArray(parsed?.images) ? parsed.images.map((i) => i?.image_url).filter(Boolean) : [];
     const heroImg =
-      p.og_image_url || p.image_url || images[0] || store.og_image_url || store.banner_url || store.logo_url || "";
+      p.og_image_url || (p.image_url || "").split(",")[0].trim() || images[0] || store.og_image_url || store.banner_url || store.logo_url || "";
     const title = escapeHtml(p.meta_title || `${p.name} — ${store.name}`);
     const desc = escapeHtml(
       p.meta_description ||
@@ -4201,7 +4203,7 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
       "@type": "Product",
       name: p.name,
       description: p.description || desc,
-      image: [...new Set([p.image_url, ...images].filter(Boolean))],
+      image: [...new Set([...(p.image_url || "").split(",").map(u => u.trim()), ...images].filter(Boolean))],
       sku: p.sku || undefined,
 
       offers: {
@@ -4223,8 +4225,8 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
               {
                 "@type": "ListItem",
                 position: 2,
-                name: p.category,
-                item: `${canonicalBase}/shop`,
+                name: p.seo_category?.name || "Shop All",
+                item: p.seo_category?.slug ? `${canonicalBase}/category/${p.seo_category.slug}` : `${canonicalBase}/shop`,
               },
             ]
           : []),
@@ -4264,7 +4266,7 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
       html += `<meta property="og:price:currency" content="${escapeHtml(p.currency || store.currency || "INR")}">`;
     }
     html += `<meta property="product:availability" content="${inStock ? "in stock" : "out of stock"}">`;
-    html += `<meta property="product:condition" content="new">`;
+
     if (p.sku) html += `<meta property="product:retailer_item_id" content="${escapeHtml(p.sku)}">`;
     html += `<meta name="twitter:card" content="summary_large_image">`;
     html += `<meta name="twitter:title" content="${title}">`;
@@ -4284,11 +4286,11 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
     const c = parsed?.category;
     if (!c) return "";
     const products = Array.isArray(parsed?.products) ? parsed.products : [];
-    const heroImg = c.og_image_url || c.image_url || store.banner_url || store.logo_url || "";
-    const title = escapeHtml(c.meta_title || `${c.name} — ${store.name}${store.city ? ` | ${store.city}` : ""}`);
+    const heroImg = c.og_image_url || c.image_url || store.logo_url || "";
+    const title = escapeHtml(c.meta_title || `${c.name} — ${store.name}`);
     const desc = escapeHtml(
       c.meta_description ||
-        `Shop ${c.name.toLowerCase()} from ${store.name}. ${products.length} products available with fast shipping across India.`,
+        `Shop ${c.name} at ${store.name}.`,
     );
     const ogImg = typeof heroImg === "string" && /^https?:\/\//i.test(heroImg) ? escapeHtml(heroImg) : "";
     const collectionLd = {
@@ -6485,7 +6487,7 @@ async function handleSeoFiles(url, slug, hostname) {
     }
     const res = await callEdgeFunction("seo-page", { type, slug, domain });
     if (res.status === 301 || res.status === 302) return res; // never cache redirects
-    if (!res.ok) return null;
+    if (!res.ok) return new Response("Search file temporarily unavailable", { status: 503, headers: { ...SECURITY_HEADERS, "Cache-Control": "no-store" } });
     const body = await res.text();
     const finalRes = new Response(body, {
       headers: {
@@ -6572,6 +6574,9 @@ async function handleBot(request, slug, url, isCustom) {
       route_slug: botRoute.slug || "",
       page: listingPage,
     });
+    if (botRenderRes.ok && (/noindex/i.test(botRenderRes.headers.get("X-Robots-Tag") || "") || /no-store/i.test(botRenderRes.headers.get("Cache-Control") || ""))) {
+      return new Response(await botRenderRes.text(), { status: botRenderRes.status, headers: { ...SECURITY_HEADERS, "X-Robots-Tag": botRenderRes.headers.get("X-Robots-Tag") || "noindex", "Cache-Control": "no-store", "Content-Type": "text/html; charset=utf-8" } });
+    }
     if (botRenderRes.ok) {
       const html = await botRenderRes.text();
       const finalRes = new Response(html, {
@@ -6591,8 +6596,7 @@ async function handleBot(request, slug, url, isCustom) {
       } catch {}
       return finalRes;
     }
-    if ([400, 404, 503].includes(botRenderRes.status)) return new Response(await botRenderRes.text(), { status: botRenderRes.status, headers: { ...SECURITY_HEADERS, "X-Robots-Tag": "noindex", "Cache-Control": "no-store" } });
-    return null;
+    return new Response(await botRenderRes.text(), { status: [400, 404].includes(botRenderRes.status) ? botRenderRes.status : 503, headers: { ...SECURITY_HEADERS, "X-Robots-Tag": "noindex", "Cache-Control": "no-store" } });
   }
 
   if (isSocialBot) {
