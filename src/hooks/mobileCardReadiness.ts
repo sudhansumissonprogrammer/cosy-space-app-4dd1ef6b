@@ -28,7 +28,7 @@ function openingSettled() {
 function flush() {
   scheduled = 0;
   for (const node of preparedAhead) {
-    if (!node.isConnected || node.getBoundingClientRect().top < innerHeight) preparedAheadAheadDelete(node);
+    if (!node.isConnected || node.getBoundingClientRect().top < innerHeight) preparedAhead.delete(node);
   }
   const near = Array.from(cards).filter(([, card]) => card.near);
   const rows = near.map(([node]) => {
@@ -54,7 +54,6 @@ function schedule() {
   if (!scheduled) scheduled = requestAnimationFrame(flush);
 }
 
-function preparedAheadAheadDelete(node: HTMLElement) { preparedAhead.delete(node); }
 
 function onScroll() {
   scrolling = true;

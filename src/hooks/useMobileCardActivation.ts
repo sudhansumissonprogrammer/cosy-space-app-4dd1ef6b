@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useImageActivation } from "./useImageActivation";
 import { subscribeMobileCard } from "./mobileCardReadiness";
 
@@ -8,13 +8,12 @@ export function useMobileCardActivation(priority = false, desktopAhead = false, 
   const activation = useImageActivation(priority, !mobile && desktopAhead
     ? { rootMargin: "600px 0px", afterScroll: true, afterReady: true } : {});
   const { ref, active } = activation;
-  // useImageActivation owns sticky state; mobile preparation dispatches through
-  // its shared activation subscription rather than creating a second source gate.
+  const activateRef = useRef(activation.activate);
+  activateRef.current = activation.activate;
+  // Both observers earn the same sticky activation; no second image source gate.
   useEffect(() => {
     if (!enabled || !mobile || active || !ref.current || !("IntersectionObserver" in window)) return;
-    return subscribeMobileCard(ref.current, () => {
-      ref.current?.dispatchEvent(new Event("storefront:prepare-card"));
-    });
+    return subscribeMobileCard(ref.current, () => activateRef.current());
   }, [enabled, mobile, active, ref]);
   return { ...activation, mobile };
 }

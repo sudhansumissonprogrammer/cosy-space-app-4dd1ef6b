@@ -61,7 +61,6 @@ export function useImageActivation(priority = false, options: ActivationOptions 
     if (!node) return;
     if (!("IntersectionObserver" in window)) { setActive(true); return; }
     const activate = () => setActive(true);
-    node.addEventListener("storefront:prepare-card", activate);
     const stopVisible = subscribe(node, activate, {});
     const stopAhead = options.rootMargin && options.rootMargin !== "0px"
       ? subscribe(node, activate, options) : undefined;
@@ -81,7 +80,7 @@ export function useImageActivation(priority = false, options: ActivationOptions 
       }
     };
     if (options.afterReady) timer = setTimeout(checkReady, 250);
-    return () => { node.removeEventListener("storefront:prepare-card", activate); stopVisible(); stopAhead?.(); stopReady?.(); if (timer) clearTimeout(timer); };
+    return () => { stopVisible(); stopAhead?.(); stopReady?.(); if (timer) clearTimeout(timer); };
   }, [active, priority, options.rootMargin, options.afterScroll, options.afterReady]);
-  return { ref, active };
+  return { ref, active, activate: () => setActive(true) };
 }
