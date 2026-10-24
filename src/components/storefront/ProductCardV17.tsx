@@ -10,6 +10,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, getImageSrcSet, resolveProductImages } from "@/lib/imageOptimize";
 import { getProductRating } from "@/lib/productUtils";
 import { useProductCardActions } from "@/hooks/useProductCardActions";
+import { useMobileCardActivation } from "@/hooks/useMobileCardActivation";
 
 /* V17 star colors — use CSS vars with fallbacks */
 const STAR_COLOR = "var(--v17-primary, #1B5E4B)";
@@ -33,6 +34,9 @@ interface Props {
 }
 
 export default function ProductCardV17({ product, slug, store, priority = false, onVariantRequired }: Props) {
+  const { ref, active, mobile } = useMobileCardActivation(priority);
+  const photoReady = !mobile || active;
+  const [hovered, setHovered] = useState(false);
   const { wishlisted, handleAddToCart, handleToggleWishlist } = useProductCardActions(product);
   const [isAdding, setIsAdding] = useState(false);
 
@@ -57,7 +61,7 @@ export default function ProductCardV17({ product, slug, store, priority = false,
     : null;
 
   return (
-    <div className="group overflow-hidden cursor-pointer" style={{ fontFamily: "var(--v17-body-font, 'Instrument Sans', sans-serif)" }}>
+    <div ref={ref} onMouseEnter={() => setHovered(true)} className="group overflow-hidden cursor-pointer" style={{ fontFamily: "var(--v17-body-font, 'Instrument Sans', sans-serif)" }}>
       <Link to={storefrontPath(slug, `product/${product.slug || product.id}`)} className="block">
         {/* Image container — 3:4 ratio, rounded 8px like systumm */}
         <div className="relative w-full overflow-hidden rounded-lg" style={{ aspectRatio: "3/4", backgroundColor: "var(--storefront-bg, #f5f5f0)" }}>
@@ -100,18 +104,18 @@ export default function ProductCardV17({ product, slug, store, priority = false,
           ) : (
             <>
               <img
-                src={optimizeImageUrl(images[0], 400, 80)}
-                srcSet={getImageSrcSet(images[0], [400, 800], 80)}
+                src={photoReady ? optimizeImageUrl(images[0], 400, 80) : undefined}
+                srcSet={photoReady ? getImageSrcSet(images[0], [400, 800], 80) : undefined}
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 alt={product.name}
                 width={400}
                 height={533}
                 className={`h-full w-full object-cover transition-[transform,opacity,colors,box-shadow] duration-300 ease-out ${hasSecond ? "group-hover:opacity-0" : "group-hover:scale-[1.07]"}`}
-                loading={priority ? "eager" : "lazy"}
+                loading={priority || (mobile && active) ? "eager" : "lazy"}
                 decoding={priority ? "sync" : "async"}
                 fetchPriority={priority ? "high" : "auto"}
               />
-              {hasSecond && (
+              {hasSecond && (!mobile || hovered) && (
                 <img
                   src={optimizeImageUrl(images[1], 400, 80)}
                   srcSet={getImageSrcSet(images[1], [400, 800], 80)}

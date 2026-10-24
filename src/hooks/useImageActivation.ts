@@ -82,5 +82,5 @@ export function useImageActivation(priority = false, options: ActivationOptions 
     if (options.afterReady) timer = setTimeout(checkReady, 250);
     return () => { stopVisible(); stopAhead?.(); stopReady?.(); if (timer) clearTimeout(timer); };
   }, [active, priority, options.rootMargin, options.afterScroll, options.afterReady]);
-  return { ref, active };
+  return { ref, active, activate: () => setActive(true) };
 }

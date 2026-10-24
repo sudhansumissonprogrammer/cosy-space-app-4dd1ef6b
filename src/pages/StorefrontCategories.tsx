@@ -4,7 +4,7 @@ import { Tag } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { storefrontPath } from "@/lib/subdomain";
-import { optimizeImageUrl } from "@/lib/imageOptimize";
+import CategoryTilePhoto from "@/components/storefront/CategoryTilePhoto";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
@@ -53,14 +53,7 @@ export default function StorefrontCategories() {
                 style={{ aspectRatio: "1/1" }}
               >
                 {cat.image_url ? (
-                  <img
-                    src={optimizeImageUrl(cat.image_url, 400, 85)}
-                    alt={cat.name}
-                    className="h-full w-full object-cover transition-transform duration-300 hh:group-hover:scale-105"
-                    loading="lazy"
-                    width={300}
-                    height={300}
-                  />
+                  <CategoryTilePhoto src={cat.image_url} name={cat.name} />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center bg-accent">
                     <Tag className="h-10 w-10 text-muted-foreground" />

@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef, lazy, Suspense, memo } from "
 import { getCachedCardVideo, requestCardVideo } from "@/lib/cardVideoLookup";
 import ProductCardStyle1 from "./ProductCardStyle1";
 import ProductCardSkeleton from "./ProductCardSkeleton";
-import { useImageActivation } from "@/hooks/useImageActivation";
+import { useMobileCardActivation } from "@/hooks/useMobileCardActivation";
 import { CardImageReadiness } from "./CardImageReadiness";
 import { kalingaCouponPrice, usePendingCoupon } from "@/lib/kalingaCouponPreview";
 
@@ -88,15 +88,14 @@ interface Props {
   index?: number;
   /** Horizontal carousels must not skip paint — set false there. */
   deferOffscreen?: boolean;
-  /** Prepare two mobile grid rows after scrolling starts, not on cold entry. */
+  /** Legacy desktop/category lookahead; mobile uses the shared two-card buffer. */
   prepareAhead?: boolean;
 }
 
 function UniversalProductCardImpl({ product, slug, store, priority = false, cardStyle = "style-1", index = 0, deferOffscreen = true, prepareAhead = false }: Props) {
   preloadCardStyle(store?.theme === "theme-19" || store?.theme === "theme-20" ? store.theme : cardStyle);
   const [variantOpen, setVariantOpen] = useState(false);
-  const { ref: hostRef, active } = useImageActivation(priority, prepareAhead
-    ? { rootMargin: "600px 0px", afterScroll: true, afterReady: true } : {});
+  const { ref: hostRef, active } = useMobileCardActivation(priority, prepareAhead);
   // Tap-to-play video is available on every store/theme by default; the
   // App Store "Card Video (Mobile)" toggle is an explicit opt-out.
   const inlineVideoUrl = ((product as any)?.video_url as string | null) || null;
