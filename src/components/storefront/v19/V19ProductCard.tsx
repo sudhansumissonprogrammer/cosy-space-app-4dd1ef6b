@@ -1,4 +1,5 @@
 import { useCardImageReadiness } from "../CardImageReadiness";
+import { useMobileCardActivation } from "@/hooks/useMobileCardActivation";
 /**
  * V19 Product Card — Blinkit-style with delivery time pill, weight line, outlined ADD.
  * Adds: low-stock + out-of-stock badges, disabled ADD on OOS, desktop hover lift,
@@ -23,6 +24,8 @@ interface Props {
 
 export default function V19ProductCard({ product, slug, store, priority = false }: Props) {
   const imageReady = useCardImageReadiness();
+  const { ref, active, mobile } = useMobileCardActivation(priority || imageReady, false, !imageReady);
+  const photoReady = !mobile || active;
   const { items, addToCart, updateQuantity } = useCart();
   const cartItem = items.find((i) => i.productId === product.id && !i.variantId);
   const cartQty = cartItem?.quantity || 0;
@@ -64,7 +67,7 @@ export default function V19ProductCard({ product, slug, store, priority = false 
   const weightLine = (product as any).weight || (product as any).unit || "1 piece";
 
   return (
-    <div className="v19-card card-tilt relative h-full flex flex-col">
+    <div ref={ref} className="v19-card card-tilt relative h-full flex flex-col">
       <Link to={productPath} className="block">
         <div className="card-img-zoom relative w-full overflow-hidden rounded-lg bg-gray-50 aspect-square">
           {outOfStock ? (
@@ -74,10 +77,10 @@ export default function V19ProductCard({ product, slug, store, priority = false 
           ) : null}
           {img ? (
             <img
-              src={optimizeImageUrl(img, 280, 80)}
+              src={photoReady ? optimizeImageUrl(img, 280, 80) : undefined}
               alt={product.name}
               className={`h-full w-full object-cover ${outOfStock ? "opacity-50" : ""}`}
-              loading={priority || imageReady ? "eager" : "lazy"}
+              loading={priority || imageReady || (mobile && active) ? "eager" : "lazy"}
               decoding={priority ? "sync" : "async"}
               fetchPriority={priority ? "high" : "low"}
 

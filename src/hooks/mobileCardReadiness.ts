@@ -1,6 +1,7 @@
 /** One shared mobile scheduler, independent of store identity and card style. */
 type Card = { activate: () => void; near: boolean };
 const cards = new Map<HTMLElement, Card>();
+const preparedAhead = new Set<HTMLElement>();
 let observer: IntersectionObserver | undefined;
 let scheduled = 0;
 let scrolling = false;
@@ -26,6 +27,9 @@ function openingSettled() {
 
 function flush() {
   scheduled = 0;
+  for (const node of preparedAhead) {
+    if (!node.isConnected || node.getBoundingClientRect().top < innerHeight) preparedAheadAheadDelete(node);
+  }
   const near = Array.from(cards).filter(([, card]) => card.near);
   const rows = near.map(([node]) => {
     const box = node.getBoundingClientRect();
@@ -36,13 +40,21 @@ function flush() {
   const selected = ready || scrolling
     ? chooseMobileCardBuffer(rows, innerHeight)
     : rows.filter(row => row.bottom > 0 && row.top < innerHeight).map(row => row.item);
-  for (const node of selected) cards.get(node)?.activate();
+  for (const node of selected) {
+    if (node.getBoundingClientRect().top >= innerHeight) {
+      if (preparedAhead.size >= 2) continue;
+      preparedAhead.add(node);
+    }
+    cards.get(node)?.activate();
+  }
   if (!ready && !scrolling && !retry) retry = setTimeout(() => { retry = undefined; schedule(); }, 250);
 }
 
 function schedule() {
   if (!scheduled) scheduled = requestAnimationFrame(flush);
 }
+
+function preparedAheadAheadDelete(node: HTMLElement) { preparedAhead.delete(node); }
 
 function onScroll() {
   scrolling = true;
@@ -72,6 +84,7 @@ export function subscribeMobileCard(node: HTMLElement, activate: () => void) {
     if (cards.size) return;
     observer?.disconnect();
     observer = undefined;
+    preparedAhead.clear();
     window.removeEventListener("scroll", onScroll);
     document.removeEventListener("load", schedule, true);
     document.removeEventListener("error", schedule, true);
