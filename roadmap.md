@@ -2,12 +2,13 @@
 - [x] Reconnect Telegram after the 17:29 UTC workspace move; @Shopbanaobot verified and alerts refreshed without replay.
 - [x] Reconnect Telegram after the 17:31 UTC workspace move; @Shopbanaobot verified and alerts refreshed without replay.
 - [x] Reconnect Telegram after the 17:37 UTC workspace move; bot verified without replay.
-- [ ] Connect Telegram after the 17:46 UTC workspace move; verify bot and refresh alerts without replay.
-- [ ] Deep-audit the approved search plan with Utkal priority; implement remaining technical gaps and document verified versus blocked acceptance checks.
+- [x] Connect Telegram after the 17:46 UTC workspace move; @Shopbanaobot verified and order alerts refreshed without replay.
+- [x] Deep-audit the approved search plan with Utkal priority; technical gaps corrected and verified/blocked acceptance checks recorded in docs/search-readiness-audit.md.
 - [x] Connect Telegram after the 17:20 UTC workspace move; @Shopbanaobot verified and alerts refreshed without replay.
 - [x] Reconnect Telegram after the 17:15 UTC workspace move; bot verified and alerts refreshed without replay.
 - [x] Apply initial SEO metadata, bounded bot pagination, sitemap paging and factual-schema corrections; 16 tests passed, Utkal PDP and page-two search response verified.
-- [ ] Complete universal SEO rollout: owner must deploy Worker 9.2.0; verify live caches and remaining cross-theme/category pagination, real-category breadcrumbs, variant policy and multi-store checks before declaring full completion.
+- [ ] Complete universal SEO rollout: owner must deploy Worker 9.2.1-search-audit; live invalid/missing/utility route checks still fail on the current deployment. Complete remaining theme/category, checkout/performance and full image acceptance checks after deployment.
+- [ ] Evidence-led Utkal SEO/content: authorised Search Console data and merchant-approved product facts required; do not submit replica offers to Merchant Center.
 - [x] Reconnect Telegram after the 17:08 UTC workspace move; current bot verified and alerts refreshed without replay.
 - [x] Reconnect Telegram after the latest workspace move; @Shopbanaobot verified and order-alert function refreshed without replay.
 - [x] Research universal organic search plan with Utkal Watches priority; evidence, replica eligibility limits and staged technical corrections prepared for approval.

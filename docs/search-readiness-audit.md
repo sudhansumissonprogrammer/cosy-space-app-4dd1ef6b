@@ -1,0 +1,44 @@
+# Search readiness audit — 2026-10-24
+
+Reference: approved Universal Google Search readiness plan archived in `.lovable/plan/`.
+
+## Result
+
+Not fully rolled out. Shared technical corrections and deployed search functions are verified in the checks below; production Worker behavior still differs from those functions. Ranking, indexing and sales-source claims remain unverified.
+
+## Corrections
+
+- Addressable 20-product catalogue pages, strict page parsing, sequential links and query-aware canonical/OG URL updates.
+- Shop/category/best-seller metadata ownership; homepage shell cannot override product metadata.
+- Real category slug resolution with truthful Shop All fallback; independent of product-photo readiness.
+- Removal of invented manufacturer/internal-ID identifiers, condition and price-expiry claims.
+- Error-preserving paged sitemap/gallery reads and non-fabricated modification dates.
+- Hidden-category eligibility and no unfiltered fallback when category membership lookup fails.
+- Anonymous direct product queries rely on existing visibility RLS, not ungranted internal columns. Browser verification found and corrected a permission-denied regression without widening column grants.
+- Worker source preserves upstream failures/noindex/no-store and page identity; production deployment still required.
+
+## Verified
+
+- 15 tests pass across discovery, metadata and Google Ads tracking; Worker JavaScript syntax check passes. Latest preview build log reports OK.
+- Utkal loaded Shop page 1 and page 2 have distinct product sets and correct primary-domain canonicals. Clicking Next updates both URL and canonical; opening a real product retains its exact existing URL and resolves a real category breadcrumb. No browser page errors in that flow.
+- Invalid browser `?page=0` is noindex; empty best-seller page 2 is noindex.
+- Deployed Utkal sitemap contains **6,583 unique product URLs**, matching the eligible database count, and **10,115 image entries**. No foreign-domain URLs.
+- Deployed Hopknock sitemap contains **17,006 unique product URLs**, matching its eligible count, and **32,824 image entries**. No foreign-domain URLs.
+- Deployed search renderer: both stores have 20 links on pages 1 and 2, no overlap between those pages and no cross-store domain links.
+- Two sampled Utkal image requests return 206 image/webp. This is a sample, not a full image availability audit.
+- Deployed search renderer rejects invalid page input with 400 and returns noindex/no-store on track-order.
+- Telegram current-workspace connection verified as @Shopbanaobot and order-notify function redeployed; no history replay or test order send.
+
+## Outstanding acceptance checks and blockers
+
+1. **Manual Cloudflare deployment:** deploy `docs/cloudflare-worker-current.js`, version `9.2.1-search-audit`. Live Googlebot requests still receive 200/cacheable responses for `/shop?page=0` and a deliberately missing product; `/track-order` lacks the expected noindex/no-store headers. These are observed production failures, not a completed fix. Repeat after deploying and refreshing relevant caches.
+2. **Images:** two sampled Hopknock image requests return 403 text/html. No URLs were rewritten or assets regenerated. Investigate source availability; full image accessibility is not verified for either store.
+3. **Pilot breadth:** live data has no theme-19/theme-20 stores for those requested checks. Alternative-theme rendering, third-store pilot, category membership/order parity through the final page and utility-route browser metadata still need acceptance checks. Source changes and shared-hook tests do not establish all-theme end-to-end success.
+4. **Shopper/performance acceptance:** complete cold mobile timing/bytes/layout-shift comparison and product→cart→checkout acceptance without charging a payment. Existing purchase-tracking tests pass but do not replace that flow.
+5. **Sitemap scaling:** the verified catalogues are below the sitemap URL limit; larger catalogue/index-child scaling is not exercised here.
+6. **Search evidence/content:** authorised Search Console inspection/query data, Rich Results validation and merchant-approved facts are unavailable in this audit. No new bulk public copy, ranking claim, indexing guarantee, sales attribution or account submission was made.
+7. **Variant/merchant eligibility:** variant feed entries remain disabled pending truthful selected-variant landing behavior. Utkal branded watches are owner-confirmed replicas; no Merchant Center submission or authenticity workaround is authorised.
+
+## Unchanged
+
+Product prices, original image URLs, existing ad/PDP URLs, merchant identity and public product claims were not rewritten by this audit. No production payments or marketing sends were created.
