@@ -1,8 +1,5 @@
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { discoveryPage, discoveryUrl, DISCOVERY_PAGE_SIZE, productImageUrls } from "../_shared/seoDiscovery.ts";
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -44,9 +41,9 @@ function buildProductHtml(
   canonical: string
 ): string {
   const storeName = esc(store.name);
-  const title = esc(`${product.name} — ${store.name}`);
+  const title = esc(product.meta_title || `${product.name} — ${store.name}`);
   const desc = esc(
-    product.description?.slice(0, 160) ||
+    product.meta_description || product.description?.slice(0, 160) ||
       `Buy ${product.name} at ${store.name}. Fast delivery & easy returns.`
   );
   const price = formatPrice(
@@ -58,10 +55,7 @@ function buildProductHtml(
       ? formatPrice(product.price, product.currency || store.currency || "INR")
       : null;
   const heroImage = product.image_url || images?.[0]?.image_url || "";
-  const allImages = [
-    ...(product.image_url ? [product.image_url] : []),
-    ...(images || []).map((i: any) => i.image_url).filter(Boolean),
-  ].filter((v, i, a) => a.indexOf(v) === i); // dedupe
+  const allImages = productImageUrls(product.image_url, (images || []).map(i => i.image_url));
 
   const storeBaseForCrumb = canonical.split("/product/")[0];
   const categoryName = product.category || "Products";
@@ -72,7 +66,7 @@ function buildProductHtml(
     description: product.description || "",
     image: allImages,
     sku: product.sku || product.id,
-    mpn: product.sku || product.id,
+    
     url: canonical,
     offers: {
       "@type": "Offer",
@@ -83,10 +77,10 @@ function buildProductHtml(
         : "https://schema.org/OutOfStock",
       url: canonical,
       itemCondition: "https://schema.org/NewCondition",
-      priceValidUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+
       seller: { "@type": "Organization", name: store.name },
     },
-    brand: { "@type": "Brand", name: store.name },
+
   });
   const breadcrumbJsonLd = JSON.stringify({
     "@context": "https://schema.org",
@@ -380,17 +374,22 @@ function buildShellFooter(store: any, canonical: string): string {
   return `<footer class="footer">&copy; ${new Date().getFullYear()} ${esc(store.name)}. All rights reserved.</footer>`;
 }
 
+function renderPagination(base: string, page: number, hasNext: boolean): string {
+  return `<nav aria-label="Product pages">${page > 1 ? `<a href="${esc(discoveryUrl(base, page - 1))}">Previous page</a>` : ""} ${hasNext ? `<a href="${esc(discoveryUrl(base, page + 1))}">Next page</a>` : ""}</nav>`;
+}
+
 function buildCategoryHtml(
   store: any,
-  category: { name: string; slug: string; description?: string | null },
+  category: { name: string; slug: string; description?: string | null; meta_title?: string | null; meta_description?: string | null },
   products: any[],
   canonical: string,
   storeBase: string,
+  page = 1, hasNext = false,
 ): string {
   const storeName = esc(store.name);
-  const title = `${category.name} — ${store.name}`;
+  const title = category.meta_title || `${category.name} — ${store.name}`;
   const desc =
-    category.description?.slice(0, 160) ||
+    category.meta_description || category.description?.slice(0, 160) ||
     `Shop ${category.name} at ${store.name}. ${products.length} products available.`;
   // Store artwork first: using a product photo here tells Google this listing
   // is the "home" of that photo, so Lens visits land on the category page.
@@ -403,7 +402,7 @@ function buildCategoryHtml(
     "@type": "ItemList",
     name: `${category.name} — ${store.name}`,
     numberOfItems: products.length,
-    itemListElement: products.slice(0, 30).map((p, i) => ({
+    itemListElement: products.slice(0, DISCOVERY_PAGE_SIZE).map((p, i) => ({
       "@type": "ListItem",
       position: i + 1,
       url: `${storeBase}/product/${p.slug || p.id}`,
@@ -417,7 +416,7 @@ function buildCategoryHtml(
     { name: category.name, url: canonical },
   ]);
 
-  const cards = products.slice(0, 30).map((p) => renderProductCard(store, p, storeBase)).join("\n");
+  const cards = products.slice(0, DISCOVERY_PAGE_SIZE).map((p) => renderProductCard(store, p, storeBase)).join("\n");
 
   return `<!DOCTYPE html><html lang="en">${buildShellHead({
     title,
@@ -432,7 +431,7 @@ ${buildShellHeader(store)}
 <nav class="breadcrumb"><a href="${esc(storeBase)}">${storeName}</a> &rsaquo; <a href="${esc(storeBase)}/categories">Categories</a> &rsaquo; ${esc(category.name)}</nav>
 <section class="hero"><h1>${esc(category.name)}</h1>${category.description ? `<p>${esc(category.description)}</p>` : ""}</section>
 <section class="grid">${cards || `<p>No products in this category yet.</p>`}</section>
-${products.length > 30 ? `<p style="text-align:center;color:#666;margin-top:24px">Showing 30 of ${products.length} products</p>` : ""}
+${renderPagination(`${storeBase}/category/${category.slug}`, page, hasNext)}
 </main>
 ${buildShellFooter(store, canonical)}
 </body></html>`;
@@ -441,7 +440,7 @@ ${buildShellFooter(store, canonical)}
 function buildListingHtml(
   store: any,
   products: any[],
-  opts: { kind: "shop" | "best-sellers"; title: string; desc: string },
+  opts: { kind: "shop" | "best-sellers"; title: string; desc: string; page: number; hasNext: boolean },
   canonical: string,
   storeBase: string,
 ): string {
@@ -450,7 +449,7 @@ function buildListingHtml(
     { name: store.name, url: storeBase },
     { name: opts.kind === "shop" ? "Shop" : "Best Sellers", url: canonical },
   ]);
-  const cards = products.slice(0, 30).map((p) => renderProductCard(store, p, storeBase)).join("\n");
+  const cards = products.slice(0, DISCOVERY_PAGE_SIZE).map((p) => renderProductCard(store, p, storeBase)).join("\n");
   return `<!DOCTYPE html><html lang="en">${buildShellHead({
     title: opts.title,
     desc: opts.desc,
@@ -464,6 +463,7 @@ ${buildShellHeader(store)}
 <nav class="breadcrumb"><a href="${esc(storeBase)}">${esc(store.name)}</a> &rsaquo; ${opts.kind === "shop" ? "Shop" : "Best Sellers"}</nav>
 <section class="hero"><h1>${esc(opts.title)}</h1><p>${esc(opts.desc)}</p></section>
 <section class="grid">${cards || `<p>No products yet.</p>`}</section>
+${renderPagination(`${storeBase}/${opts.kind}`, opts.page, opts.hasNext)}
 </main>
 ${buildShellFooter(store, canonical)}
 </body></html>`;
@@ -762,6 +762,12 @@ Deno.serve(async (req) => {
   // v2: richer route kinds. Falls back to product/home for backwards compat.
   const kindParam = (url.searchParams.get("kind") || "").toLowerCase();
   const routeSlug = url.searchParams.get("route_slug") || "";
+  const page = discoveryPage(url.searchParams.get("page"));
+  if (page === null) return new Response("Invalid page", { status: 400, headers: corsHeaders });
+  const noIndexHeaders = { ...corsHeaders, "X-Robots-Tag": "noindex", "Cache-Control": "no-store" };
+  if (["unknown", "cart", "checkout", "account", "search", "track-order", "wishlist", "auth"].includes(kindParam)) {
+    return new Response("This page is not available for indexing", { status: kindParam === "unknown" ? 404 : 200, headers: noIndexHeaders });
+  }
 
   if (!slug) {
     return new Response(JSON.stringify({ error: "Missing slug" }), {
@@ -782,7 +788,7 @@ Deno.serve(async (req) => {
     .eq("slug", slug)
     .single();
 
-  if (storeErr || !store) {
+  if (storeErr || !store || store.is_suspended) {
     return new Response("Store not found", {
       status: 404,
       headers: corsHeaders,
@@ -791,7 +797,7 @@ Deno.serve(async (req) => {
 
   // Build canonical URL
   // Sanitize domain to prevent injection
-  const safeDomain = domain ? domain.replace(/[^a-zA-Z0-9.\-]/g, "") : null;
+  const safeDomain = store.custom_domain ? store.custom_domain.replace(/[^a-zA-Z0-9.\-]/g, "") : null;
   const canonical = safeDomain
     ? `https://${safeDomain}`
     : `https://${slug}.${ROOT_DOMAIN}`;
@@ -806,7 +812,8 @@ Deno.serve(async (req) => {
         .eq("store_id", store.id)
         .eq("slug", productSlug)
         .eq("is_active", true)
-        .single();
+        .eq("hidden_by_category", false)
+        .maybeSingle();
       product = bySlug;
       if (!product) {
         const { data: byId } = await supabase
@@ -853,25 +860,24 @@ Deno.serve(async (req) => {
       .select("id, name, slug, meta_description, meta_title, image_url")
       .eq("store_id", store.id)
       .eq("slug", routeSlug)
+      .eq("is_hidden", false)
       .maybeSingle();
-    if (!cat) return new Response("Category not found", { status: 404, headers: corsHeaders });
+    if (!cat) return new Response("Category not found", { status: 404, headers: noIndexHeaders });
 
-    const { data: catProducts } = await supabase
-      .from("products")
-      .select("id, name, slug, price, sale_price, currency, image_url, stock_quantity, category")
-      .eq("store_id", store.id)
-      .eq("is_active", true)
-      .eq("category", cat.name)
-      .order("is_best_selling", { ascending: false })
-      .order("created_at", { ascending: false })
-      .limit(50);
+    const { data: rows, error: catError } = await supabase.rpc("get_category_products_page_by_slug", {
+      _store_id: store.id, _category_slug: cat.slug,
+      _offset: (page - 1) * DISCOVERY_PAGE_SIZE, _limit: DISCOVERY_PAGE_SIZE + 1,
+    });
+    if (catError) return new Response("Catalogue unavailable", { status: 503, headers: noIndexHeaders });
+    const catProducts = Array.isArray(rows) ? rows : [];
+    if (page > 1 && catProducts.length === 0) return new Response("Page not found", { status: 404, headers: noIndexHeaders });
 
     const html = buildCategoryHtml(
       store,
       cat as any,
-      catProducts || [],
-      `${canonical}/category/${cat.slug}`,
-      canonical,
+      catProducts.slice(0, DISCOVERY_PAGE_SIZE),
+      discoveryUrl(`${canonical}/category/${cat.slug}`, page),
+      canonical, page, catProducts.length > DISCOVERY_PAGE_SIZE,
     );
     return new Response(html, { headers: { ...corsHeaders, ...HTML_CACHE_HEADERS } });
   }
@@ -885,7 +891,7 @@ Deno.serve(async (req) => {
       .eq("slug", routeSlug)
       .eq("is_active", true)
       .maybeSingle();
-    if (!page) return new Response("Page not found", { status: 404, headers: corsHeaders });
+    if (!page) return new Response("Page not found", { status: 404, headers: noIndexHeaders });
     const html = buildCustomPageHtml(
       store,
       page as any,
@@ -901,19 +907,22 @@ Deno.serve(async (req) => {
       .from("products")
       .select("id, name, slug, price, sale_price, currency, image_url, stock_quantity, category")
       .eq("store_id", store.id)
-      .eq("is_active", true);
-    const { data: listingProducts } = effectiveKind === "best-sellers"
-      ? await baseQuery.eq("is_best_selling", true).order("created_at", { ascending: false }).limit(50)
-      : await baseQuery.order("is_best_selling", { ascending: false }).order("created_at", { ascending: false }).limit(50);
+      .eq("is_active", true)
+      .eq("hidden_by_category", false);
+    const { data: listingProducts, error: listingError } = effectiveKind === "best-sellers"
+      ? await baseQuery.eq("is_best_selling", true).order("display_order").order("created_at", { ascending: false }).order("id").range((page - 1) * DISCOVERY_PAGE_SIZE, page * DISCOVERY_PAGE_SIZE)
+      : await baseQuery.order("display_order").order("created_at", { ascending: false }).order("id").range((page - 1) * DISCOVERY_PAGE_SIZE, page * DISCOVERY_PAGE_SIZE);
+    if (listingError) return new Response("Catalogue unavailable", { status: 503, headers: noIndexHeaders });
+    if (page > 1 && !listingProducts?.length) return new Response("Page not found", { status: 404, headers: noIndexHeaders });
 
     const opts = effectiveKind === "best-sellers"
       ? { kind: "best-sellers" as const, title: `Best sellers at ${store.name}`, desc: `Top-selling products at ${store.name}.` }
       : { kind: "shop" as const, title: `Shop all products — ${store.name}`, desc: `Browse the full product catalog at ${store.name}.` };
     const html = buildListingHtml(
       store,
-      listingProducts || [],
-      opts,
-      `${canonical}/${effectiveKind}`,
+      (listingProducts || []).slice(0, DISCOVERY_PAGE_SIZE),
+      { ...opts, page, hasNext: (listingProducts || []).length > DISCOVERY_PAGE_SIZE },
+      discoveryUrl(`${canonical}/${effectiveKind}`, page),
       canonical,
     );
     return new Response(html, { headers: { ...corsHeaders, ...HTML_CACHE_HEADERS } });
@@ -924,6 +933,7 @@ Deno.serve(async (req) => {
     const { data: cats } = await supabase
       .from("categories")
       .select("name, slug")
+      .eq("is_hidden", false)
       .eq("store_id", store.id)
       .order("name");
     const html = buildCategoriesIndexHtml(store, cats || [], `${canonical}/categories`, canonical);
@@ -941,31 +951,33 @@ Deno.serve(async (req) => {
     let product: any = null;
     const { data: bySlug } = await supabase
       .from("products")
-      .select("id, name, slug, description, price, sale_price, currency, image_url, stock_quantity, category, is_active")
+      .select("id, name, slug, description, price, sale_price, currency, image_url, stock_quantity, category, is_active, sku, meta_title, meta_description")
       .eq("store_id", store.id)
       .eq("slug", productSlug)
       .eq("is_active", true)
-      .single();
+      .eq("hidden_by_category", false)
+      .maybeSingle();
     product = bySlug;
     if (!product) {
       const { data: byId } = await supabase
         .from("products")
-        .select("id, name, slug, description, price, sale_price, currency, image_url, stock_quantity, category, is_active")
+        .select("id, name, slug, description, price, sale_price, currency, image_url, stock_quantity, category, is_active, sku, meta_title, meta_description")
         .eq("store_id", store.id)
         .eq("id", productSlug)
         .eq("is_active", true)
-        .single();
+        .eq("hidden_by_category", false)
+        .maybeSingle();
       product = byId;
     }
     if (!product) {
-      return new Response("Product not found", { status: 404, headers: corsHeaders });
+      return new Response("Product not found", { status: 404, headers: noIndexHeaders });
     }
     const { data: images } = await supabase
       .from("product_images")
       .select("image_url, display_order")
       .eq("product_id", product.id)
       .order("display_order", { ascending: true })
-      .limit(6);
+      .limit(10);
 
     const productCanonical = `${canonical}/product/${product.slug || product.id}`;
     const html = buildProductHtml(store, product, images || [], productCanonical);
