@@ -479,8 +479,10 @@ export default function ProductDetail() {
   });
 
   useMetaTags({
-    title: product ? `${product.name} — ${store.name}` : undefined,
-    description: product?.description || undefined,
+    enabled: !!product,
+    ogType: "product",
+    title: product?.meta_title || (product ? `${product.name} — ${store.name}` : undefined),
+    description: product?.meta_description || product?.description || undefined,
     ogImage: product?.image_url || undefined,
     storeSlug: store.slug,
     customDomain: (store as any)?.custom_domain,

@@ -10,6 +10,7 @@ import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from "react";
 import { useProductListJsonLd } from "@/hooks/useJsonLd";
+import { useMetaTags } from "@/hooks/useMetaTags";
 import { useCanonical } from "@/hooks/useCanonical";
 import { getStoreBaseUrl } from "@/lib/storeUrl";
 import { useInfiniteProducts, PAGE_SIZE } from "@/hooks/useInfiniteProducts";
@@ -150,7 +151,7 @@ export default function CategoryDetail() {
           // invalidate. (The stale-pin invalidation only matters for the
           // inline HTML payload, see initialData below.)
         }
-        return rpc.category as { id: string; name: string; slug: string; image_url: string | null };
+        return rpc.category as { id: string; name: string; slug: string; image_url: string | null; meta_title?: string | null; meta_description?: string | null };
       }
       // Fallback: legacy direct lookup
       const { data, error } = await (supabase as any)
@@ -160,7 +161,7 @@ export default function CategoryDetail() {
         .eq("slug", categorySlug)
         .maybeSingle();
       if (error) throw error;
-      return data as { id: string; name: string; slug: string; image_url: string | null } | null;
+      return data as { id: string; name: string; slug: string; image_url: string | null; meta_title?: string | null; meta_description?: string | null } | null;
     },
     initialData: () => {
       // Hover/touch prefetch already resolved → hydrate synchronously, the
@@ -234,6 +235,16 @@ export default function CategoryDetail() {
     ready: true,
   });
 
+
+  useMetaTags({
+    enabled: !!category,
+    title: category?.meta_title || (category ? `${category.name} — ${store.name}` : undefined),
+    description: category?.meta_description || (category ? `Shop ${category.name} at ${store.name}.` : undefined),
+    ogImage: category?.image_url || store.logo_url || undefined,
+    storeSlug: store.slug,
+    customDomain: (store as any)?.custom_domain,
+    canonicalPath: categorySlug ? `category/${categorySlug}` : undefined,
+  });
 
   const rawProducts = data?.pages.flatMap((p) => p.products) || [];
   const products = useMemo(() => applySort(rawProducts, sort), [rawProducts, sort]);

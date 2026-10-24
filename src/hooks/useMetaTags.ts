@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { getStoreBaseUrl } from "@/lib/storeUrl";
 
 interface MetaTagsOptions {
+  enabled?: boolean;
   title?: string;
   description?: string;
   ogImage?: string;
@@ -32,8 +33,9 @@ function setLink(rel: string, href: string) {
   el.setAttribute("href", href);
 }
 
-export function useMetaTags({ title, description, ogImage, ogType = "website", canonicalPath, storeSlug, customDomain }: MetaTagsOptions) {
+export function useMetaTags({ enabled = true, title, description, ogImage, ogType = "website", canonicalPath, storeSlug, customDomain }: MetaTagsOptions) {
   useEffect(() => {
+    if (!enabled) return;
     const prevTitle = document.title;
     if (title) document.title = title;
     if (description) setMeta("description", description);
@@ -60,9 +62,8 @@ export function useMetaTags({ title, description, ogImage, ogType = "website", c
     }
 
     return () => {
-      document.title = prevTitle;
-      const canonicalEl = document.querySelector('link[rel="canonical"]');
-      if (canonicalEl) canonicalEl.remove();
+      // A departing route must not remove a newer route's canonical.
+      if (title && document.title === title) document.title = prevTitle;
     };
-  }, [title, description, ogImage, ogType, canonicalPath, storeSlug, customDomain]);
+  }, [enabled, title, description, ogImage, ogType, canonicalPath, storeSlug, customDomain]);
 }

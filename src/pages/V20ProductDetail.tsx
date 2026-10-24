@@ -164,8 +164,11 @@ export default function V20ProductDetail() {
     ? reviews.reduce((s, r: any) => s + (r.rating || 0), 0) / reviews.length
     : 0;
   useMetaTags({
-    title: product ? `${product.name} — ${store?.name}` : undefined,
-    description: product?.description || undefined,
+    enabled: !!product,
+    canonicalPath: product ? `product/${product.slug || product.id}` : undefined,
+    ogType: "product",
+    title: product?.meta_title || (product ? `${product.name} — ${store?.name}` : undefined),
+    description: product?.meta_description || product?.description || undefined,
     ogImage: product?.image_url || undefined,
     storeSlug: store?.slug,
     customDomain: (store as any)?.custom_domain,
