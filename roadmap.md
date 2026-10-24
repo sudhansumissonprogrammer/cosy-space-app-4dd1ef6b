@@ -1,5 +1,5 @@
 # Roadmap
-- [ ] Connect Telegram after the 17:20 UTC workspace move; verify current bot and refresh alerts without replay.
+- [x] Connect Telegram after the 17:20 UTC workspace move; @Shopbanaobot verified and alerts refreshed without replay.
 - [x] Reconnect Telegram after the 17:15 UTC workspace move; bot verified and alerts refreshed without replay.
 - [ ] Implement approved universal SEO technical corrections; verify metadata, discovery and image/data consistency; Worker rollout waits on manual deployment.
 - [x] Reconnect Telegram after the 17:08 UTC workspace move; current bot verified and alerts refreshed without replay.

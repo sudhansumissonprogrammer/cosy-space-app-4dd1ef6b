@@ -822,7 +822,8 @@ Deno.serve(async (req) => {
           .eq("store_id", store.id)
           .eq("id", productSlug)
           .eq("is_active", true)
-          .single();
+          .eq("hidden_by_category", false)
+          .maybeSingle();
         product = byId;
       }
       if (product) {
