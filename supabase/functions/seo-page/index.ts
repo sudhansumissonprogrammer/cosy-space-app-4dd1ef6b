@@ -1,10 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { readAllRows, productImageUrls } from "../_shared/seoDiscovery.ts";
 
 const ROOT_DOMAIN = "shopbanao.in";
 
@@ -290,20 +287,22 @@ async function handleSitemap(url: URL) {
   const redirect = buildPrimaryDomainRedirect(store, domain, "/sitemap.xml");
   if (redirect) return redirect;
 
-  const storeHost = domain || store.custom_domain || `${slug}.${ROOT_DOMAIN}`;
+  const storeHost = store.custom_domain || `${slug}.${ROOT_DOMAIN}`;
   const baseUrl = `https://${storeHost}`;
 
   const [productsResult, categoriesResult, pagesResult] = await Promise.all([
-    supabase
+    readAllRows<any>((from, to) => supabase
       .from("products")
       .select("slug, id, updated_at, image_url, name, price, sale_price")
       .eq("store_id", store.id)
       .eq("is_active", true)
-      .order("created_at", { ascending: false })
-      .limit(1000),
+      .eq("hidden_by_category", false)
+      .order("id")
+      .range(from, to)),
     supabase
       .from("categories")
       .select("slug, name, created_at")
+      .eq("is_hidden", false)
       .eq("store_id", store.id),
 
     supabase
@@ -313,7 +312,8 @@ async function handleSitemap(url: URL) {
       .eq("is_active", true),
   ]);
 
-  const products = productsResult.data;
+  if (categoriesResult.error || pagesResult.error) throw new Error("Sitemap retrieval failed");
+  const products = productsResult;
 
   // Gallery photos belong to their product page in the image sitemap so
   // Google Images / Lens associate every photo with the product, not with a
@@ -322,12 +322,12 @@ async function handleSitemap(url: URL) {
   const galleryByProduct = new Map<string, string[]>();
   const sitemapIds = (products || []).map((p: any) => p.id);
   for (let i = 0; i < sitemapIds.length; i += 150) {
-    const { data: imgs } = await supabase
+    const imgs = await readAllRows<any>((from, to) => supabase
       .from("product_images")
       .select("product_id, image_url, display_order")
       .in("product_id", sitemapIds.slice(i, i + 150))
-      .order("display_order", { ascending: true })
-      .limit(1000);
+      .order("display_order", { ascending: true }).order("id")
+      .range(from, to));
     for (const img of imgs || []) {
       if (!img.image_url) continue;
       const list = galleryByProduct.get(img.product_id) || [];
@@ -403,7 +403,7 @@ async function handleSitemap(url: URL) {
   if (products) {
     for (const p of products) {
       const productSlug = p.slug || p.id;
-      const lastmod = p.updated_at?.split("T")[0] || now;
+      const lastmod = p.updated_at?.split("T")[0] || storeUpdated;
       xml += `  <url>
     <loc>${baseUrl}/product/${escapeXml(productSlug)}</loc>
     <lastmod>${lastmod}</lastmod>
@@ -420,7 +420,6 @@ async function handleSitemap(url: URL) {
           xml += `
     <image:image>
       <image:loc>${escapeXml(img)}</image:loc>
-      <image:title>${escapeXml(p.name)}</image:title>
     </image:image>`;
         }
       }
@@ -665,7 +664,7 @@ async function handleLlms(url: URL) {
   const redirect = buildPrimaryDomainRedirect(store, domain, "/llms.txt");
   if (redirect) return redirect;
 
-  const storeHost = domain || store.custom_domain || `${slug}.${ROOT_DOMAIN}`;
+  const storeHost = store.custom_domain || `${slug}.${ROOT_DOMAIN}`;
   const baseUrl = `https://${storeHost}`;
   const about = store.seo_about_paragraph || store.meta_description || store.description
     || `${store.name} — online store powered by ShopBanao.`;
@@ -762,37 +761,24 @@ async function handleProductFeed(url: URL) {
     return new Response("Store not found", { status: 404, headers: corsHeaders });
   }
 
-  const { data: products, error: prodErr } = await supabase
+  const products = await readAllRows<any>((from, to) => supabase
     .from("products")
     .select("id, name, description, price, sale_price, image_url, category, slug, stock_quantity, sku, is_active, updated_at, created_at")
-    .eq("store_id", store.id)
-    .eq("is_active", true)
-    .order("created_at", { ascending: false })
-    .limit(1000);
-
-  if (prodErr) {
-    return new Response("Error fetching products", { status: 500, headers: corsHeaders });
+    .eq("store_id", store.id).eq("is_active", true).eq("hidden_by_category", false)
+    .order("id").range(from, to));
+  const productIds = products.map(p => p.id);
+  const imageRows: any[] = [];
+  const variantRows: any[] = [];
+  for (let i = 0; i < productIds.length; i += 100) {
+    const ids = productIds.slice(i, i + 100);
+    const [images, variants] = await Promise.all([
+      readAllRows<any>((from, to) => supabase.from("product_images").select("id, product_id, image_url, display_order").in("product_id", ids).order("display_order").order("id").range(from, to)),
+      includeVariants ? readAllRows<any>((from, to) => supabase.from("product_variants").select("id, product_id, name, price, stock_quantity, sku, is_active").in("product_id", ids).eq("is_active", true).order("id").range(from, to)) : Promise.resolve([]),
+    ]);
+    imageRows.push(...images); variantRows.push(...variants);
   }
-
-  const productIds = (products || []).map((p) => p.id);
-
-  const [imagesResult, variantsResult] = await Promise.all([
-    productIds.length > 0
-      ? supabase
-          .from("product_images")
-          .select("product_id, image_url, display_order")
-          .in("product_id", productIds)
-          .order("display_order", { ascending: true })
-      : Promise.resolve({ data: [] }),
-    includeVariants && productIds.length > 0
-      ? supabase
-          .from("product_variants")
-          .select("product_id, id, name, price, stock_quantity, sku, is_active")
-          .in("product_id", productIds)
-          .eq("is_active", true)
-          .order("display_order", { ascending: true })
-      : Promise.resolve({ data: [] }),
-  ]);
+  const imagesResult = { data: imageRows };
+  const variantsResult = { data: variantRows };
 
   const imagesByProduct = new Map<string, string[]>();
   for (const img of imagesResult.data || []) {
@@ -859,7 +845,7 @@ async function handleProductFeed(url: URL) {
           link,
           image_link: imageLink,
           additional_images: additionalImages,
-          brand: store.name,
+          brand: "",
           category: p.category || "",
           sku: v.sku || p.sku || "",
           updated_at: p.updated_at || p.created_at || now,
@@ -878,7 +864,7 @@ async function handleProductFeed(url: URL) {
         link,
         image_link: imageLink,
         additional_images: additionalImages,
-        brand: store.name,
+        brand: "",
         category: p.category || "",
         sku: p.sku || "",
         updated_at: p.updated_at || p.created_at || now,
@@ -887,7 +873,7 @@ async function handleProductFeed(url: URL) {
   }
 
   if (format === "csv") {
-    const header = "id,item_group_id,title,description,availability,condition,price,sale_price,link,image_link,additional_image_link,brand,google_product_category,mpn";
+    const header = "id,item_group_id,title,description,availability,condition,price,sale_price,link,image_link,additional_image_link,brand,product_type";
     const rows = feedItems.map((item) => {
       return [
         escapeCsv(item.id),
@@ -903,7 +889,6 @@ async function handleProductFeed(url: URL) {
         escapeCsv(item.additional_images.join(",")),
         escapeCsv(item.brand),
         escapeCsv(item.category),
-        escapeCsv(item.sku),
       ].join(",");
     });
 
@@ -935,9 +920,9 @@ ${additionalImagesXml}
       <g:price>${item.price}</g:price>
 ${item.sale_price ? `      <g:sale_price>${item.sale_price}</g:sale_price>` : ""}
       <g:condition>new</g:condition>
-      <g:brand>${escapeXml(item.brand)}</g:brand>
+${item.brand ? `      <g:brand>${escapeXml(item.brand)}</g:brand>` : ""}
 ${item.category ? `      <g:product_type>${escapeXml(item.category)}</g:product_type>` : ""}
-${item.sku ? `      <g:mpn>${escapeXml(item.sku)}</g:mpn>` : ""}
+
     </item>`;
   });
 
