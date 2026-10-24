@@ -743,7 +743,8 @@ async function handleLlms(url: URL) {
 async function handleProductFeed(url: URL) {
   const slug = url.searchParams.get("slug");
   const format = url.searchParams.get("format") || "xml";
-  const includeVariants = url.searchParams.get("variants") !== "false";
+  // Parent offers only until all PDPs support truthful variant landing selection.
+  const includeVariants = false;
 
   if (!slug) {
     return new Response("Missing ?slug= parameter", { status: 400, headers: corsHeaders });
@@ -823,8 +824,9 @@ async function handleProductFeed(url: URL) {
   for (const p of products || []) {
     const desc = stripHtml(p.description || p.name);
     const link = `${baseUrl}/product/${p.slug || p.id}`;
-    const imageLink = p.image_url || "";
-    const additionalImages = (imagesByProduct.get(p.id) || []).slice(0, 10);
+    const realImages = productImageUrls(p.image_url, imagesByProduct.get(p.id) || []);
+    const imageLink = realImages[0] || "";
+    const additionalImages = realImages.slice(1);
     const variants = variantsByProduct.get(p.id) || [];
 
     if (includeVariants && variants.length > 0) {
