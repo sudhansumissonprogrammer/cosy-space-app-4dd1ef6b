@@ -1,7 +1,7 @@
 # Roadmap
-- [ ] Connect Telegram after the 18:05 UTC workspace move; verify current bot and refresh alerts without replay.
-- [ ] Connect Telegram after the 18:00 UTC workspace move; verify bot and refresh alerts without replay.
-- [ ] Resume approved SEO plan at 17:53 UTC: deeply recheck code and live acceptance, correct remaining verified gaps and report completion by phase.
+- [x] Connect Telegram after the 18:05 UTC workspace move; @Shopbanaobot verified and alerts refreshed without replay.
+- [x] Connect Telegram after the 18:00 UTC workspace move; bot verified and alerts refreshed without replay.
+- [x] Resume approved SEO plan at 17:53 UTC: audited code/live acceptance, corrected category seed/utility metadata/feed truth/sitemap capacity, 20 tests pass; remaining rollout/evidence gates recorded below and in docs/search-readiness-audit.md.
 - [x] Reconnect Telegram after the 17:29 UTC workspace move; @Shopbanaobot verified and alerts refreshed without replay.
 - [x] Reconnect Telegram after the 17:31 UTC workspace move; @Shopbanaobot verified and alerts refreshed without replay.
 - [x] Reconnect Telegram after the 17:37 UTC workspace move; bot verified without replay.
@@ -10,7 +10,7 @@
 - [x] Connect Telegram after the 17:20 UTC workspace move; @Shopbanaobot verified and alerts refreshed without replay.
 - [x] Reconnect Telegram after the 17:15 UTC workspace move; bot verified and alerts refreshed without replay.
 - [x] Apply initial SEO metadata, bounded bot pagination, sitemap paging and factual-schema corrections; 16 tests passed, Utkal PDP and page-two search response verified.
-- [ ] Complete universal SEO rollout: owner must deploy Worker 9.2.1-search-audit; live invalid/missing/utility route checks still fail on the current deployment. Complete remaining theme/category, checkout/performance and full image acceptance checks after deployment.
+- [ ] Complete universal SEO rollout: owner must deploy Worker 9.2.2-search-completeness and publish frontend edits; live pagination/invalid/missing/utility checks still fail on the current deployment. Recheck cache behavior, remaining theme/category/performance and image acceptance after deployment; product→cart→checkout entry passes locally.
 - [ ] Evidence-led Utkal SEO/content: authorised Search Console data and merchant-approved product facts required; do not submit replica offers to Merchant Center.
 - [x] Reconnect Telegram after the 17:08 UTC workspace move; current bot verified and alerts refreshed without replay.
 - [x] Reconnect Telegram after the latest workspace move; @Shopbanaobot verified and order-alert function refreshed without replay.
