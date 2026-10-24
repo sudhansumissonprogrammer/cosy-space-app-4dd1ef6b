@@ -7,8 +7,6 @@ import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useProductSearch, SEARCH_PAGE_SIZE, type SearchSort } from "@/hooks/useProductSearch";
 import { didYouMean, pushRecentSearch } from "@/lib/searchSynonyms";
 import { storefrontPath } from "@/lib/subdomain";
-import { useCanonical } from "@/hooks/useCanonical";
-import { getStoreBaseUrl } from "@/lib/storeUrl";
 import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
@@ -101,9 +99,7 @@ export default function StorefrontSearch() {
 
   const suggestion = useMemo(() => didYouMean(query), [query]);
 
-  useCanonical(
-    `${getStoreBaseUrl(slug || store.slug, (store as any)?.custom_domain)}/search?q=${encodeURIComponent(query)}`
-  );
+  // The shell owns this noindex utility route's query-free canonical.
 
   // Remember + report the search once results settle
   const reported = useRef<string>("");
