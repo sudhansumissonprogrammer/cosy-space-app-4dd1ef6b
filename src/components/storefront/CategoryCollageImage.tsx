@@ -1,6 +1,6 @@
 import { Tag } from "lucide-react";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
-import { useImageActivation } from "@/hooks/useImageActivation";
+import { useMobileCardActivation } from "@/hooks/useMobileCardActivation";
 
 export interface StorefrontCategoryImage {
   id: string;
@@ -17,7 +17,7 @@ interface Props {
 }
 
 export default function CategoryCollageImage({ category, size = 300, className = "h-full w-full object-cover" }: Props) {
-  const { ref, active } = useImageActivation();
+  const { ref, active, mobile } = useMobileCardActivation();
   const collage = Array.isArray(category.collage_image_urls)
     ? Array.from(new Set(category.collage_image_urls.filter((url): url is string => typeof url === "string" && url.trim().length > 0))).slice(0, 4)
     : [];
@@ -31,7 +31,8 @@ export default function CategoryCollageImage({ category, size = 300, className =
             src={active ? optimizeImageUrl(url, Math.max(96, Math.ceil(size / 2)), 78) : undefined}
             alt=""
             className={className}
-            loading="lazy"
+            loading={mobile && active ? "eager" : "lazy"}
+            fetchPriority="low"
             decoding="async"
             width={Math.ceil(size / 2)}
             height={Math.ceil(size / 2)}
@@ -43,7 +44,7 @@ export default function CategoryCollageImage({ category, size = 300, className =
 
   const fallbackImage = category.image_url || collage[0];
   if (fallbackImage) {
-    return <div ref={ref} className="h-full w-full"><img src={active ? optimizeImageUrl(fallbackImage, size, 82) : undefined} alt={category.name} className={className} loading="lazy" decoding="async" width={size} height={size} /></div>;
+    return <div ref={ref} className="h-full w-full"><img src={active ? optimizeImageUrl(fallbackImage, size, 82) : undefined} alt={category.name} className={className} loading={mobile && active ? "eager" : "lazy"} fetchPriority="low" decoding="async" width={size} height={size} /></div>;
   }
 
   return (

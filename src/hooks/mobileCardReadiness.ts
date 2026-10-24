@@ -33,8 +33,8 @@ function flush() {
   const near = Array.from(cards).filter(([, card]) => card.near);
   const rows = near.map(([node]) => {
     const box = node.getBoundingClientRect();
-    return { item: node, top: box.top, bottom: box.bottom };
-  });
+    return { item: node, top: box.top, bottom: box.bottom, left: box.left, right: box.right };
+  }).filter(row => row.right > 0 && row.left < innerWidth);
   // Visible cards always get a source; only the upcoming row waits for readiness.
   if (!ready) ready = openingSettled();
   const selected = ready || scrolling
