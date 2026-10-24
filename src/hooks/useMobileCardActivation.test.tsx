@@ -16,7 +16,7 @@ describe("shared mobile card preparation", () => {
       observe() {} unobserve() {} disconnect() {}
     });
     const opening = document.createElement("img");
-    opening.loading = "eager";
+    opening.setAttribute("loading", "eager");
     opening.getBoundingClientRect = () => ({ top: 0, bottom: 340, width: 190 } as DOMRect);
     Object.defineProperty(opening, "complete", { value: false, configurable: true });
     document.body.append(opening);
@@ -30,7 +30,7 @@ describe("shared mobile card preparation", () => {
       const value = useMobileCardActivation(); value.ref.current = node; return value;
     }));
     const buffer = callbacks.find(o => o.margin.includes("400px"));
-    act(() => { buffer?.cb(nodes.map(target => ({ target, isIntersecting: true } as IntersectionObserverEntry)), {} as IntersectionObserver); vi.advanceTimersByTime(300); });
+    act(() => { buffer?.cb(nodes.map(target => ({ target, isIntersecting: true } as unknown as IntersectionObserverEntry)), {} as IntersectionObserver); vi.advanceTimersByTime(300); });
     expect(hooks.map(h => h.result.current.active)).toEqual([false, false, false, false, false, false]);
     Object.defineProperty(opening, "complete", { value: true });
     act(() => { document.dispatchEvent(new Event("load")); vi.advanceTimersByTime(300); });
