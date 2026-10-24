@@ -7,13 +7,13 @@ export function useMobileCardActivation(priority = false, desktopAhead = false, 
   const mobile = typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
   const activation = useImageActivation(priority, !mobile && desktopAhead
     ? { rootMargin: "600px 0px", afterScroll: true, afterReady: true } : {});
-  const { ref, active } = activation;
+  const { ref } = activation;
   const activateRef = useRef(activation.activate);
   activateRef.current = activation.activate;
   // Both observers earn the same sticky activation; no second image source gate.
   useEffect(() => {
-    if (!enabled || !mobile || active || !ref.current || !("IntersectionObserver" in window)) return;
+    if (!enabled || !mobile || priority || !ref.current || !("IntersectionObserver" in window)) return;
     return subscribeMobileCard(ref.current, () => activateRef.current());
-  }, [enabled, mobile, active, ref]);
+  }, [enabled, mobile, priority, ref]);
   return { ...activation, mobile };
 }

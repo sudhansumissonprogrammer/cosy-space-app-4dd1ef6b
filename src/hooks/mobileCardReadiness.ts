@@ -1,5 +1,5 @@
 /** One shared mobile scheduler, independent of store identity and card style. */
-type Card = { activate: () => void; near: boolean };
+type Card = { activate: () => void; near: boolean; prepared: boolean };
 const cards = new Map<HTMLElement, Card>();
 const preparedAhead = new Set<HTMLElement>();
 let observer: IntersectionObserver | undefined;
@@ -31,7 +31,7 @@ function flush() {
   for (const node of preparedAhead) {
     if (!node.isConnected || node.getBoundingClientRect().top < innerHeight) preparedAhead.delete(node);
   }
-  const near = Array.from(cards).filter(([, card]) => card.near);
+  const near = Array.from(cards).filter(([, card]) => card.near && !card.prepared);
   const rows = near.map(([node]) => {
     const box = node.getBoundingClientRect();
     return { item: node, top: box.top, bottom: box.bottom, left: box.left, right: box.right };
@@ -49,7 +49,8 @@ function flush() {
       if (preparedAhead.size >= 2) continue;
       preparedAhead.add(node);
     }
-    cards.get(node)?.activate();
+    const card = cards.get(node);
+    if (card) { card.prepared = true; card.activate(); }
   }
   if (!ready && !scrolling && !retry) retry = setTimeout(() => { retry = undefined; schedule(); }, 250);
 }
@@ -79,12 +80,13 @@ export function subscribeMobileCard(node: HTMLElement, activate: () => void) {
     document.addEventListener("load", schedule, true);
     document.addEventListener("error", schedule, true);
   }
-  cards.set(node, { activate, near: false });
+  cards.set(node, { activate, near: false, prepared: false });
   observer.observe(node);
   return () => {
     cards.delete(node);
+    preparedAhead.delete(node);
     observer?.unobserve(node);
-    if (cards.size || preparedAhead.size) return;
+    if (cards.size) return;
     observer?.disconnect();
     observer = undefined;
     preparedAhead.clear();
