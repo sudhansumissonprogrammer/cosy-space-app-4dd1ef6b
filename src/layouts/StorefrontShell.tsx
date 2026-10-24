@@ -10,6 +10,7 @@ const AutoFreeGift = lazy(() => import("@/components/storefront/AutoFreeGift"));
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useThemePreview } from "@/hooks/useThemePreview";
 import { useMetaTags } from "@/hooks/useMetaTags";
+import { storefrontUtilityRoute } from "@/lib/storefrontSearchPolicy";
 import { generateEventId, useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { claimPageView, registerPageViewFired } from "@/lib/pixelPageView";
 
@@ -131,6 +132,15 @@ export default function StorefrontShell({
   useFacebookPixel((store as any)?.facebook_pixel_id, store?.id);
 
   const seoLocation = useLocation();
+  const utilityRoute = store ? storefrontUtilityRoute(seoLocation.pathname, store.slug) : null;
+  useMetaTags({
+    enabled: !!utilityRoute,
+    title: store ? `${store.name} — ${utilityRoute === "track-order" ? "Track order" : utilityRoute === "search" ? "Search" : "Customer services"}` : undefined,
+    storeSlug: store?.slug,
+    customDomain: store?.custom_domain,
+    canonicalPath: utilityRoute || undefined,
+    noIndex: true,
+  });
   const isSeoHome = seoLocation.pathname === "/" || seoLocation.pathname.replace(/\/$/, "") === `/store/${store?.slug}`;
   useMetaTags({
     enabled: isSeoHome,

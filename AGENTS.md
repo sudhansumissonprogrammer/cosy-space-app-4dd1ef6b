@@ -4,6 +4,7 @@
 - Catalogue routes share strict page parsing and sequential links; failed category membership queries never fall back to an unfiltered catalogue, preventing hidden or unrelated product leakage.
 - Anonymous direct product reads rely on the existing public visibility RLS instead of querying ungranted internal columns; never broaden product SELECT grants to repair a storefront filter.
 - Product category metadata resolves independently of photo readiness; use real public category slugs or a truthful Shop All fallback, never guessed slugs.
+- The storefront shell owns utility-page noindex metadata across themes, with query-free generic canonicals so private order/search parameters never become search identity.
 
 - WhatsApp recipient tier checks use a service-role aggregate to avoid transferring 20,000 rows per send.
 - Saved addresses use `replace_customer_address` to respect the one-address unique index.
