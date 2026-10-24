@@ -3,7 +3,7 @@
 ## Goal and boundaries
 Improve discovery, accurate search presentation and qualified organic sales for every current and future ShopBanao storefront. Cover homepages, categories, product pages and images; prioritise Utkal Watches for the first technical pilot.
 
-No implementation can guarantee indexing of every product, first position, a specific Lens destination, or organic sales. Keep existing product URLs, prices, visibility, checkout and ad tracking unchanged. This approval covers technical work and readiness checks, not bulk product-copy edits, account submissions or paid services.
+No guarantee of every product indexing, first position, Lens destination or sales. Preserve URLs, prices, visibility, checkout and ad tracking. Approval covers technical work, not bulk copy edits, account submissions or paid services.
 
 **Utkal eligibility:** the owner confirmed its branded watches are replicas. General crawlability and website-quality work can proceed, but the plan will not conceal product identity, imply genuine-brand status or promote counterfeit offers through Merchant Center. Google prohibits counterfeit goods in free product listings; calling them “master quality” or “inspired” does not change that. No automatic public relabelling is included either. Genuine/unbranded merchandise in other stores can proceed to listing setup after eligibility review.
 
@@ -19,7 +19,7 @@ Source: Semrush point-in-time estimates, not actual visits.
 
 Semrush also estimates 90,500 searches for “hublot watches”; its difficulty was not supplied in this result. Demand does not establish eligibility or that Utkal can win those searches.
 
-The “watches for men” results include Titan, Helios, Myntra, Casio and Amazon. Broad terms face established retailers; useful category pages and precise, truthful product attributes are a better starting point than trying to rank every item for “Rolex watches”. The competitor sample for Utkal had mostly one shared keyword, so it is too sparse for confident competitor-gap recommendations.
+“Watches for men” results include Titan, Helios, Myntra, Casio and Amazon. Start with useful categories and precise truthful attributes, not every item targeting “Rolex watches”. Utkal's competitor sample was too sparse for reliable gap recommendations.
 
 Semrush returned no data for the supplied Hublot PDP or Men's Watch category. This means **unknown**, not unranked. Search Console is not available through this workspace, so the actual converting queries, Google-selected canonical URLs and indexing history remain unknown. Earlier suggestions that the Hublot page was definitely ranking or that category markup caused the Lens result were hypotheses, not proven causes.
 
@@ -106,7 +106,7 @@ Technical foundations help discovery; quality content and trust help shoppers ch
 3. Traffic: Search Console impressions/clicks for product/category pages and Image search where reported. Do not invent a separate Lens traffic metric.
 4. Business: measured organic orders/revenue, cancellations and returns—not average position alone.
 
-Early technical fixes can ship in stages; ranking changes may take weeks or months and remain Google's decision. Search Console access, merchant facts and any eligible listing-account setup are later dependencies, not reasons to delay technical corrections.
+Ship technical fixes in stages; ranking changes can take weeks/months and remain Google's decision. Search Console access and merchant facts are later dependencies.
 
 ## Primary references
 - [Google ecommerce site structure](https://developers.google.com/search/docs/specialty/ecommerce/help-google-understand-your-ecommerce-site-structure)
@@ -117,5 +117,3 @@ Early technical fixes can ship in stages; ranking changes may take weeks or mont
 - [Image sitemaps](https://developers.google.com/search/docs/crawling-indexing/sitemaps/image-sitemaps)
 - [Free listing eligibility](https://support.google.com/merchants/answer/13889434)
 - [Counterfeit goods policy](https://support.google.com/merchants/answer/12079201)
-- [Misrepresentation policy](https://support.google.com/merchants/answer/12079606)
-- [Helpful content](https://developers.google.com/search/docs/fundamentals/creating-helpful-content)
