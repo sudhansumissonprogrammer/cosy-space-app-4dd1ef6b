@@ -1,7 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-import { readAllRows, productImageUrls } from "../_shared/seoDiscovery.ts";
+import { readAllRows, productImageUrls, sitemapLastmod } from "../_shared/seoDiscovery.ts";
 
 const ROOT_DOMAIN = "shopbanao.in";
 
@@ -166,7 +166,7 @@ async function handleSharePage(url: URL) {
   const supabase = getSupabase();
   const { data: store, error } = await supabase
     .from("stores")
-    .select("id, name, description, meta_title, meta_description, og_image_url, logo_url, banner_url, slug, currency")
+    .select("id, name, description, meta_title, meta_description, og_image_url, logo_url, banner_url, slug, currency, custom_domain")
     .eq("slug", slug)
     .single();
 
@@ -174,7 +174,7 @@ async function handleSharePage(url: URL) {
     return new Response("Store not found", { status: 404 });
   }
 
-  const baseStoreUrl = `https://${slug}.${ROOT_DOMAIN}`;
+  const baseStoreUrl = `https://${store.custom_domain || `${slug}.${ROOT_DOMAIN}`}`;
   const storeUrl = appendVersionParam(baseStoreUrl, versionToken);
 
   if (productSlug) {
@@ -184,6 +184,7 @@ async function handleSharePage(url: URL) {
       .eq("store_id", store.id)
       .eq("slug", productSlug)
       .eq("is_active", true)
+      .eq("hidden_by_category", false)
       .maybeSingle();
 
     if (!product) {
@@ -193,6 +194,7 @@ async function handleSharePage(url: URL) {
         .eq("store_id", store.id)
         .eq("id", productSlug)
         .eq("is_active", true)
+        .eq("hidden_by_category", false)
         .maybeSingle();
       product = byId;
     }
@@ -210,7 +212,7 @@ async function handleSharePage(url: URL) {
       const productPath = product.slug || product.id;
       const productUrl = appendVersionParam(`${baseStoreUrl}/product/${productPath}`, versionToken);
 
-      const html = buildShareHtml(productTitle, productDesc, productImage, productUrl, productUrl, escapeHtml(store.name));
+      const html = buildShareHtml(productTitle, productDesc, productImage, `${baseStoreUrl}/product/${productPath}`, productUrl, escapeHtml(store.name));
       return new Response(html, {
         headers: {
           "Content-Type": "text/html; charset=utf-8",
@@ -225,7 +227,7 @@ async function handleSharePage(url: URL) {
   const rawStoreImage = store.og_image_url || store.banner_url || store.logo_url || "";
   const image = normalizeOgImageUrl(rawStoreImage);
 
-  const html = buildShareHtml(title, description, image, storeUrl, storeUrl, escapeHtml(store.name));
+  const html = buildShareHtml(title, description, image, baseStoreUrl, storeUrl, escapeHtml(store.name));
   return new Response(html, {
     headers: {
       "Content-Type": "text/html; charset=utf-8",
@@ -299,20 +301,14 @@ async function handleSitemap(url: URL) {
       .eq("hidden_by_category", false)
       .order("id")
       .range(from, to)),
-    supabase
-      .from("categories")
-      .select("slug, name, created_at")
-      .eq("is_hidden", false)
-      .eq("store_id", store.id),
-
-    supabase
-      .from("store_pages")
-      .select("slug, page_type, updated_at, is_active")
-      .eq("store_id", store.id)
-      .eq("is_active", true),
+    readAllRows<any>((from, to) => supabase
+      .from("categories").select("id, slug, name, created_at")
+      .eq("is_hidden", false).eq("store_id", store.id).order("id").range(from, to)),
+    readAllRows<any>((from, to) => supabase
+      .from("store_pages").select("id, slug, page_type, updated_at, is_active")
+      .eq("store_id", store.id).eq("is_active", true).order("id").range(from, to)),
   ]);
 
-  if (categoriesResult.error || pagesResult.error) throw new Error("Sitemap retrieval failed");
   const products = productsResult;
 
   // Gallery photos belong to their product page in the image sitemap so
@@ -335,10 +331,9 @@ async function handleSitemap(url: URL) {
       galleryByProduct.set(img.product_id, list);
     }
   }
-  const categories = categoriesResult.data;
-  const customPages = pagesResult.data || [];
-  const now = new Date().toISOString().split("T")[0];
-  const storeUpdated = store.updated_at?.split("T")[0] || now;
+  const categories = categoriesResult;
+  const customPages = pagesResult;
+
 
   // Build a set of page_types the merchant has actually published so we only
   // emit legacy legal/about routes that resolve, never sitemap'd 404s.
@@ -356,31 +351,26 @@ async function handleSitemap(url: URL) {
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>${baseUrl}</loc>
-    <lastmod>${storeUpdated}</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>${baseUrl}/shop</loc>
-    <lastmod>${storeUpdated}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>${baseUrl}/best-sellers</loc>
-    <lastmod>${storeUpdated}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>${baseUrl}/categories</loc>
-    <lastmod>${storeUpdated}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>${baseUrl}/contact</loc>
-    <lastmod>${storeUpdated}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -389,10 +379,9 @@ async function handleSitemap(url: URL) {
   if (categories) {
     for (const cat of categories) {
       if (!cat.slug) continue;
-      const catLastmod = (cat as any).created_at?.split("T")[0] || storeUpdated;
+      const catLastmod = ""; // Creation time is not a significant-change timestamp.
       xml += `  <url>
     <loc>${baseUrl}/category/${escapeXml(cat.slug)}</loc>
-    <lastmod>${catLastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -403,10 +392,10 @@ async function handleSitemap(url: URL) {
   if (products) {
     for (const p of products) {
       const productSlug = p.slug || p.id;
-      const lastmod = p.updated_at?.split("T")[0] || storeUpdated;
+      const lastmod = sitemapLastmod(p.updated_at);
       xml += `  <url>
     <loc>${baseUrl}/product/${escapeXml(productSlug)}</loc>
-    <lastmod>${lastmod}</lastmod>
+    ${lastmod}
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>`;
       {
@@ -440,10 +429,10 @@ async function handleSitemap(url: URL) {
   ];
   for (const { path, type } of legacyMap) {
     if (!publishedTypes.has(type)) continue;
-    const lm = pageTypeUpdated.get(type) || storeUpdated;
+    const lm = sitemapLastmod(pageTypeUpdated.get(type));
     xml += `  <url>
     <loc>${baseUrl}/${path}</loc>
-    <lastmod>${lm}</lastmod>
+    ${lm}
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -453,10 +442,10 @@ async function handleSitemap(url: URL) {
   // Merchant-authored custom pages → /page/{slug}
   for (const page of customPages) {
     if (!page.slug) continue;
-    const lm = page.updated_at?.split("T")[0] || storeUpdated;
+    const lm = sitemapLastmod(page.updated_at);
     xml += `  <url>
     <loc>${baseUrl}/page/${escapeXml(page.slug)}</loc>
-    <lastmod>${lm}</lastmod>
+    ${lm}
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -983,7 +972,7 @@ Deno.serve(async (req) => {
     console.error(`[seo-page] Error (type=${type}):`, err);
     return new Response(
       JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" } }
     );
   }
 });
