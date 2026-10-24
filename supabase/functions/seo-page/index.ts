@@ -2,6 +2,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { readAllRows, productImageUrls, sitemapLastmod } from "../_shared/seoDiscovery.ts";
+import { partitionSitemap, sitemapIndex } from "../_shared/sitemapDocuments.ts";
 
 const ROOT_DOMAIN = "shopbanao.in";
 
@@ -286,7 +287,12 @@ async function handleSitemap(url: URL) {
 
   // Primary-domain rule: subdomain sitemap 301s to custom domain so Google
   // sees a single canonical sitemap per store (Shopify behaviour).
-  const redirect = buildPrimaryDomainRedirect(store, domain, "/sitemap.xml");
+  const childRaw = url.searchParams.get("part");
+  if (childRaw !== null && !/^[1-9]\d{0,4}$/.test(childRaw)) {
+    return new Response("Invalid sitemap part", { status: 400, headers: { ...corsHeaders, "Cache-Control": "no-store" } });
+  }
+  const sitemapPath = childRaw ? `/sitemap-${childRaw}.xml` : "/sitemap.xml";
+  const redirect = buildPrimaryDomainRedirect(store, domain, sitemapPath);
   if (redirect) return redirect;
 
   const storeHost = store.custom_domain || `${slug}.${ROOT_DOMAIN}`;
@@ -454,7 +460,10 @@ async function handleSitemap(url: URL) {
 
   xml += `</urlset>`;
 
-  return new Response(xml, {
+  const documents = partitionSitemap(xml);
+  const selected = childRaw ? documents[Number(childRaw) - 1] : documents.length > 1 ? sitemapIndex(baseUrl, documents.length) : documents[0];
+  if (selected === undefined) return new Response("Sitemap part not found", { status: 404, headers: { ...corsHeaders, "Cache-Control": "no-store" } });
+  return new Response(selected, {
     headers: {
       ...corsHeaders,
       "Content-Type": "application/xml; charset=utf-8",
@@ -864,7 +873,7 @@ async function handleProductFeed(url: URL) {
   }
 
   if (format === "csv") {
-    const header = "id,item_group_id,title,description,availability,condition,price,sale_price,link,image_link,additional_image_link,brand,product_type";
+    const header = "id,item_group_id,title,description,availability,price,sale_price,link,image_link,additional_image_link,brand,product_type";
     const rows = feedItems.map((item) => {
       return [
         escapeCsv(item.id),
@@ -872,7 +881,6 @@ async function handleProductFeed(url: URL) {
         escapeCsv(item.title),
         escapeCsv(item.description),
         item.availability,
-        "new",
         item.price,
         item.sale_price,
         escapeCsv(item.link),
@@ -910,7 +918,6 @@ ${additionalImagesXml}
       <g:availability>${item.availability}</g:availability>
       <g:price>${item.price}</g:price>
 ${item.sale_price ? `      <g:sale_price>${item.sale_price}</g:sale_price>` : ""}
-      <g:condition>new</g:condition>
 ${item.brand ? `      <g:brand>${escapeXml(item.brand)}</g:brand>` : ""}
 ${item.category ? `      <g:product_type>${escapeXml(item.category)}</g:product_type>` : ""}
 
