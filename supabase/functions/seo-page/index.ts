@@ -314,6 +314,27 @@ async function handleSitemap(url: URL) {
   ]);
 
   const products = productsResult.data;
+
+  // Gallery photos belong to their product page in the image sitemap so
+  // Google Images / Lens associate every photo with the product, not with a
+  // category listing that merely shows the first photo. Chunked to keep
+  // request URLs short and stay under the default row cap.
+  const galleryByProduct = new Map<string, string[]>();
+  const sitemapIds = (products || []).map((p: any) => p.id);
+  for (let i = 0; i < sitemapIds.length; i += 150) {
+    const { data: imgs } = await supabase
+      .from("product_images")
+      .select("product_id, image_url, display_order")
+      .in("product_id", sitemapIds.slice(i, i + 150))
+      .order("display_order", { ascending: true })
+      .limit(1000);
+    for (const img of imgs || []) {
+      if (!img.image_url) continue;
+      const list = galleryByProduct.get(img.product_id) || [];
+      list.push(img.image_url);
+      galleryByProduct.set(img.product_id, list);
+    }
+  }
   const categories = categoriesResult.data;
   const customPages = pagesResult.data || [];
   const now = new Date().toISOString().split("T")[0];
@@ -388,8 +409,13 @@ async function handleSitemap(url: URL) {
     <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>`;
-      if (p.image_url) {
-        const images = p.image_url.split(",").map((u: string) => u.trim()).filter(Boolean);
+      {
+        const primary = p.image_url
+          ? p.image_url.split(",").map((u: string) => u.trim()).filter(Boolean)
+          : [];
+        const images = [...primary, ...(galleryByProduct.get(p.id) || [])]
+          .filter((v, idx, arr) => arr.indexOf(v) === idx)
+          .slice(0, 10);
         for (const img of images) {
           xml += `
     <image:image>
