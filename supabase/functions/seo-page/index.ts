@@ -2,6 +2,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { readAllRows, productImageUrls, sitemapLastmod } from "../_shared/seoDiscovery.ts";
+import { partitionSitemap, sitemapIndex } from "../_shared/sitemapDocuments.ts";
 
 const ROOT_DOMAIN = "shopbanao.in";
 
