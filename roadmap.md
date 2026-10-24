@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Connect Telegram after the 18:00 UTC workspace move; verify bot and refresh alerts without replay.
 - [ ] Resume approved SEO plan at 17:53 UTC: deeply recheck code and live acceptance, correct remaining verified gaps and report completion by phase.
 - [x] Reconnect Telegram after the 17:29 UTC workspace move; @Shopbanaobot verified and alerts refreshed without replay.
 - [x] Reconnect Telegram after the 17:31 UTC workspace move; @Shopbanaobot verified and alerts refreshed without replay.
