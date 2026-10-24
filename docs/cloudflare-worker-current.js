@@ -243,7 +243,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "9.2.1-search-audit";
+const WORKER_VERSION = "9.2.2-search-completeness";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -7806,6 +7806,7 @@ async function _handleFetch(request, env, ctx) {
       !url.pathname.startsWith("/api") &&
       !url.pathname.startsWith("/rest") &&
       url.pathname !== "/sitemap.xml" &&
+      !/^\/sitemap-[1-9]\d{0,4}\.xml$/.test(url.pathname) &&
       url.pathname !== "/robots.txt" &&
       url.pathname !== "/llms.txt");
 
@@ -7862,6 +7863,7 @@ async function _handleFetch(request, env, ctx) {
     !url.pathname.startsWith("/dashboard") &&
     url.pathname !== "/cf-img" &&
     url.pathname !== "/sitemap.xml" &&
+    !/^\/sitemap-[1-9]\d{0,4}\.xml$/.test(url.pathname) &&
     url.pathname !== "/robots.txt" &&
     url.pathname !== "/llms.txt" &&
     url.pathname !== "/__health" &&
