@@ -1,4 +1,4 @@
-import { useOutletContext, useParams, useNavigate, Link } from "react-router-dom";
+import { useOutletContext, useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,8 +11,9 @@ import { storefrontPath } from "@/lib/subdomain";
 import { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from "react";
 import { useProductListJsonLd } from "@/hooks/useJsonLd";
 import { useMetaTags } from "@/hooks/useMetaTags";
-import { useCanonical } from "@/hooks/useCanonical";
-import { getStoreBaseUrl } from "@/lib/storeUrl";
+import { discoveryPage, discoveryUrl } from "@/lib/catalogueDiscovery";
+import CataloguePagination from "@/components/storefront/CataloguePagination";
+
 import { useInfiniteProducts, PAGE_SIZE } from "@/hooks/useInfiniteProducts";
 import ShopFilterBar, { applySort, type SortKey } from "@/components/storefront/ShopFilterBar";
 import CategoryHeroBanner from "@/components/storefront/CategoryHeroBanner";
@@ -69,6 +70,8 @@ export default function CategoryDetail() {
   const store = useOutletContext<StoreData>();
   const { slug, categorySlug } = useParams<{ slug: string; categorySlug: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const page = discoveryPage(searchParams.get("page"));
   const queryClient = useQueryClient();
   const themeConfig = useStorefrontThemeConfig(store.id);
   const storeTheme = (store as any)?.theme || "starter";
@@ -84,7 +87,7 @@ export default function CategoryDetail() {
   );
   const cardStyle = themeConfig?.product_card_style || (storeTheme === "theme-13" ? "style-4" : "style-1");
   const isMenuStyle = cardStyle === "style-4";
-  useCanonical(categorySlug ? `${getStoreBaseUrl(slug || store.slug, (store as any)?.custom_domain)}/category/${categorySlug}` : null);
+
 
   // Utkal Watches / Hopknock: no category strip, no sort-filter bar.
   const hideFilters = hidesCategoryFilters({ id: store.id, slug: store.slug });
@@ -144,14 +147,14 @@ export default function CategoryDetail() {
       })).data;
 
       if (rpc?.category) {
-        if (Array.isArray(rpc.products) && !(Number(new URLSearchParams(window.location.search).get("page")) > 1)) {
+        if (Array.isArray(rpc.products) && discoveryPage(new URLSearchParams(window.location.search).get("page")) === 1) {
           const qKey = ["cat-detail-v3", store.id, categorySlug || rpc.category.name, "default", PAGE_SIZE];
           queryClient.setQueryData(qKey, seedInfinitePages(rpc.products));
           // Note: this path is a FRESH Supabase RPC response — no need to
           // invalidate. (The stale-pin invalidation only matters for the
           // inline HTML payload, see initialData below.)
         }
-        return rpc.category as { id: string; name: string; slug: string; image_url: string | null; meta_title?: string | null; meta_description?: string | null };
+        return rpc.category as { id: string; name: string; slug: string; image_url: string | null; meta_title?: string | null; meta_description?: string | null; og_image_url?: string | null };
       }
       // Fallback: legacy direct lookup
       const { data, error } = await (supabase as any)
@@ -159,16 +162,17 @@ export default function CategoryDetail() {
         .select("*")
         .eq("store_id", store.id)
         .eq("slug", categorySlug)
+        .eq("is_hidden", false)
         .maybeSingle();
       if (error) throw error;
-      return data as { id: string; name: string; slug: string; image_url: string | null; meta_title?: string | null; meta_description?: string | null } | null;
+      return data as { id: string; name: string; slug: string; image_url: string | null; meta_title?: string | null; meta_description?: string | null; og_image_url?: string | null } | null;
     },
     initialData: () => {
       // Hover/touch prefetch already resolved → hydrate synchronously, the
       // category page paints with products on its very first render.
       const pre = categorySlug ? categoryPrefetchResolved.get(categorySlug) : null;
       if (pre?.category) {
-        if (Array.isArray(pre.products) && !(Number(new URLSearchParams(window.location.search).get("page")) > 1)) {
+        if (Array.isArray(pre.products) && discoveryPage(new URLSearchParams(window.location.search).get("page")) === 1) {
           queryClient.setQueryData(
             ["cat-detail-v3", store.id, categorySlug || pre.category.name, "default", PAGE_SIZE],
             seedInfinitePages(pre.products)
@@ -178,7 +182,7 @@ export default function CategoryDetail() {
       }
       const inline = getInlineCategory();
       if (inline?.category) {
-        if (Array.isArray(inline.products) && !(Number(new URLSearchParams(window.location.search).get("page")) > 1)) {
+        if (Array.isArray(inline.products) && discoveryPage(new URLSearchParams(window.location.search).get("page")) === 1) {
           const qKey = ["cat-detail-v3", store.id, categorySlug || inline.category.name, "default", PAGE_SIZE];
           queryClient.setQueryData(qKey, seedInfinitePages(inline.products));
           // PERF: the inline HTML payload can be stale, so we still refresh from
@@ -240,10 +244,11 @@ export default function CategoryDetail() {
     enabled: !!category,
     title: category?.meta_title || (category ? `${category.name} — ${store.name}` : undefined),
     description: category?.meta_description || (category ? `Shop ${category.name} at ${store.name}.` : undefined),
-    ogImage: category?.image_url || store.logo_url || undefined,
+    ogImage: category?.og_image_url || category?.image_url || store.logo_url || undefined,
     storeSlug: store.slug,
     customDomain: (store as any)?.custom_domain,
-    canonicalPath: categorySlug ? `category/${categorySlug}${Number(new URLSearchParams(window.location.search).get("page")) > 1 ? `?page=${new URLSearchParams(window.location.search).get("page")}` : ""}` : undefined,
+    canonicalPath: categorySlug ? discoveryUrl(`category/${categorySlug}`, page ?? 1) : undefined,
+    noIndex: page === null || (!productsLoading && !productsError && page > 1 && (data?.pages[0]?.products.length ?? 0) === 0),
   });
 
   const rawProducts = data?.pages.flatMap((p) => p.products) || [];
@@ -259,25 +264,6 @@ export default function CategoryDetail() {
       window.dispatchEvent(new Event("storefront:content-ready"));
     });
   }, [categoryLoading, productsLoading, categorySlug]);
-
-  useEffect(() => {
-    if (!category || !store) return;
-    const prevTitle = document.title;
-    const count = rawProducts.length;
-    document.title = `${category.name} — ${store.name} | Shop Online`;
-    let metaDesc = document.querySelector('meta[name="description"]');
-    const prevDesc = metaDesc?.getAttribute("content") || "";
-    if (!metaDesc) {
-      metaDesc = document.createElement("meta");
-      metaDesc.setAttribute("name", "description");
-      document.head.appendChild(metaDesc);
-    }
-    metaDesc.setAttribute("content", `Browse ${count > 0 ? count + " " : ""}products in ${category.name} at ${store.name}. Fast delivery & easy returns.`);
-    return () => {
-      document.title = prevTitle;
-      metaDesc?.setAttribute("content", prevDesc);
-    };
-  }, [category, store, rawProducts.length]);
 
   useProductListJsonLd({
     products: rawProducts,
@@ -427,7 +413,7 @@ export default function CategoryDetail() {
       {/* Reserve the product area so the footer does not jump up the page
           while the app boots (carousel rails are far taller than a grid page). */}
       <div style={{ minHeight: useBrandCarousels ? 2200 : 600 }} className={hideFilters ? "mt-1" : "mt-3"}>
-        {!comboShortcutsReady || categoryLoading || productsLoading ? (
+        {page === null ? <p className="py-8 text-muted-foreground">Page not found</p> : !comboShortcutsReady || categoryLoading || productsLoading ? (
           <div className={gridClass}>
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="overflow-hidden rounded-2xl border border-border bg-card">
@@ -504,7 +490,7 @@ export default function CategoryDetail() {
           />
         )}
       </div>
-
+      <CataloguePagination firstPageHasNext={(data?.pages[0]?.products.length ?? 0) === PAGE_SIZE} />
     </div>
   );
 }

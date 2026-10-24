@@ -7,8 +7,10 @@ import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useProductListJsonLd } from "@/hooks/useJsonLd";
-import { useCanonical } from "@/hooks/useCanonical";
-import { getStoreBaseUrl } from "@/lib/storeUrl";
+import { useMetaTags } from "@/hooks/useMetaTags";
+import { discoveryPage, discoveryUrl } from "@/lib/catalogueDiscovery";
+import CataloguePagination from "@/components/storefront/CataloguePagination";
+
 import { useInfiniteProducts, PAGE_SIZE } from "@/hooks/useInfiniteProducts";
 import ShopFilterBar, { applySort, type SortKey } from "@/components/storefront/ShopFilterBar";
 import CategoryQuickJump from "@/components/storefront/CategoryQuickJump";
@@ -33,10 +35,12 @@ export default function StorefrontShop() {
   const [searchParams] = useSearchParams();
   const categoryParam = searchParams.get("category") || undefined;
 
+  const discovery = discoveryPage(searchParams.get("page"));
+
   // Canonical category URL is /category/{slug}. Redirect any legacy
   // ?category= links so SEO / sharing / analytics all consolidate there.
   if (categoryParam) {
-    return <Navigate to={storefrontPath(slug!, `category/${categoryParam}`)} replace />;
+    return <Navigate to={storefrontPath(slug || store.slug, `category/${categoryParam}`)} replace />;
   }
   const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || "style-1";
@@ -86,7 +90,14 @@ export default function StorefrontShop() {
     listName: heading,
     customDomain: (store as any)?.custom_domain,
   });
-  useCanonical(`${getStoreBaseUrl(slug || store.slug, (store as any)?.custom_domain)}/shop${categoryParam ? `?category=${categoryParam}` : ""}`);
+  useMetaTags({
+    title: `Shop all products — ${store.name}`,
+    description: `Browse the full product catalog at ${store.name}.`,
+    ogImage: store.logo_url || undefined,
+    storeSlug: store.slug, customDomain: store.custom_domain,
+    canonicalPath: discoveryUrl("shop", discovery ?? 1),
+    noIndex: discovery === null || (!isLoading && !isError && discovery > 1 && rawProducts.length === 0),
+  });
 
   const sentinelElRef = useRef<HTMLDivElement | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -109,11 +120,11 @@ export default function StorefrontShop() {
   return (
     <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 py-5">
       <nav className="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground" aria-label="Breadcrumb">
-        <Link to={storefrontPath(slug!, "")} className="hover:text-foreground transition-colors">Home</Link>
+        <Link to={storefrontPath(slug || store.slug, "")} className="hover:text-foreground transition-colors">Home</Link>
         <span>/</span>
         {categoryParam ? (
           <>
-            <Link to={storefrontPath(slug!, "shop")} className="hover:text-foreground transition-colors">Shop All</Link>
+            <Link to={storefrontPath(slug || store.slug, "shop")} className="hover:text-foreground transition-colors">Shop All</Link>
             <span>/</span>
             <span className="text-foreground font-medium capitalize">{heading}</span>
           </>
@@ -124,7 +135,7 @@ export default function StorefrontShop() {
 
       <div className="mb-4 flex items-center gap-3">
         <Link
-          to={categoryParam ? storefrontPath(slug!, "shop") : storefrontPath(slug!, "")}
+          to={categoryParam ? storefrontPath(slug || store.slug, "shop") : storefrontPath(slug || store.slug, "")}
           className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card hover:bg-accent transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -133,7 +144,7 @@ export default function StorefrontShop() {
       </div>
 
       {/* Category quick-jump strip */}
-      <CategoryQuickJump storeId={store.id} slug={slug!} activeCategory={categoryParam} />
+      <CategoryQuickJump storeId={store.id} slug={slug || store.slug} activeCategory={categoryParam} />
 
       {/* Sticky filter/sort bar */}
       <ShopFilterBar
@@ -144,7 +155,7 @@ export default function StorefrontShop() {
       />
 
       <div style={{ minHeight: 600 }} className="mt-3">
-        {isLoading ? (
+        {discovery === null ? <p className="py-8 text-muted-foreground">Page not found</p> : isLoading ? (
           <div className={gridClass}>
             {Array.from({ length: 8 }).map((_, i) => (
               <ProductCardSkeleton key={i} />
@@ -167,7 +178,7 @@ export default function StorefrontShop() {
                 <UniversalProductCard
                   key={product.id}
                   product={product}
-                  slug={slug!}
+                  slug={slug || store.slug}
                   store={store}
                   priority={index < 4}
                   cardStyle={cardStyle}
@@ -187,13 +198,13 @@ export default function StorefrontShop() {
           </>
         ) : (
           <ShopEmptyState
-            slug={slug!}
+            slug={slug || store.slug}
             title={sort === "in-stock" ? "Nothing in stock matches" : "No products yet"}
             message={sort === "in-stock" ? "Try removing the In Stock filter or browse all categories." : "Browse our categories to discover something special."}
           />
         )}
       </div>
-
+      <CataloguePagination firstPageHasNext={(data?.pages[0]?.products.length ?? 0) === PAGE_SIZE} />
     </div>
   );
 }
