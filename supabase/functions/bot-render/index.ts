@@ -157,7 +157,7 @@ ${store.logo_url ? `<img src="${esc(store.logo_url)}" alt="${storeName} logo">` 
 <article class="product" itemscope itemtype="https://schema.org/Product">
 <div class="gallery">
 ${heroImage ? `<img src="${esc(heroImage)}" alt="${esc(product.name)}" itemprop="image" width="500" height="500" loading="eager">` : ""}
-${allImages.length > 1 ? `<div class="thumbs">${allImages.slice(0, 6).map((img: string    ) => `<img src="${esc(img)}" alt="${esc(product.name)}" width="80" height="80" loading="lazy">`).join("")}</div>` : ""}
+${allImages.filter((img) => img !== heroImage).slice(0, 9).map((img: string, i: number) => `<img src="${esc(img)}" alt="${esc(`${product.name} - photo ${i + 2}`)}" itemprop="image" width="500" height="500" loading="lazy">`).join("\n")}
 </div>
 <div class="info">
 <h1 itemprop="name">${esc(product.name)}</h1>
