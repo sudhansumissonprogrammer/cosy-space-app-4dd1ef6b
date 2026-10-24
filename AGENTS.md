@@ -2,6 +2,7 @@
 - Public SEO discovery uses bounded, addressable catalogue pages and error-preserving paged sitemap queries; renderer/cache page identity and shopper pagination must agree without changing checkout pricing.
 - Store shell metadata only owns home; route metadata owns detail pages, and manufacturer identifiers are never derived from seller names or internal IDs, preventing canonical races and false product claims.
 - Catalogue routes share strict page parsing and sequential links; failed category membership queries never fall back to an unfiltered catalogue, preventing hidden or unrelated product leakage.
+- Anonymous direct product reads rely on the existing public visibility RLS instead of querying ungranted internal columns; never broaden product SELECT grants to repair a storefront filter.
 - Product category metadata resolves independently of photo readiness; use real public category slugs or a truthful Shop All fallback, never guessed slugs.
 
 - WhatsApp recipient tier checks use a service-role aggregate to avoid transferring 20,000 rows per send.

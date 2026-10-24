@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { discoveryPage, discoveryUrl, productImageUrls, readAllRows } from "../../supabase/functions/_shared/seoDiscovery";
+import { discoveryPage, discoveryUrl, productImageUrls, readAllRows, sitemapLastmod } from "../../supabase/functions/_shared/seoDiscovery";
 
 describe("bounded catalogue discovery", () => {
+  it("does not fabricate sitemap dates for undated pages", () => {
+    expect(sitemapLastmod(null)).toBe("");
+    expect(sitemapLastmod("not-a-date")).toBe("");
+    expect(sitemapLastmod("2026-10-24T10:15:00Z")).toBe("<lastmod>2026-10-24</lastmod>");
+  });
   it("has distinct addresses for page one and two", () => {
     expect(discoveryUrl("https://utkalwatch.in/category/men-s-watch", 1)).toBe("https://utkalwatch.in/category/men-s-watch");
     expect(discoveryUrl("https://utkalwatch.in/category/men-s-watch", 2)).toBe("https://utkalwatch.in/category/men-s-watch?page=2");
