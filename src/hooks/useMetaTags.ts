@@ -11,6 +11,7 @@ interface MetaTagsOptions {
   storeSlug?: string;
   /** Custom domain if configured — used to build correct canonical URL */
   customDomain?: string | null;
+  noIndex?: boolean;
 }
 
 function setMeta(name: string, content: string, attr = "name") {
@@ -33,24 +34,21 @@ function setLink(rel: string, href: string) {
   el.setAttribute("href", href);
 }
 
-export function useMetaTags({ enabled = true, title, description, ogImage, ogType = "website", canonicalPath, storeSlug, customDomain }: MetaTagsOptions) {
+export function useMetaTags({ enabled = true, title, description, ogImage, ogType = "website", canonicalPath, storeSlug, customDomain, noIndex = false }: MetaTagsOptions) {
   useEffect(() => {
     if (!enabled) return;
     const prevTitle = document.title;
     if (title) document.title = title;
-    if (description) setMeta("description", description);
+    setMeta("description", description || "");
     if (title) {
       setMeta("og:title", title, "property");
       setMeta("twitter:title", title, "name");
     }
-    if (description) {
-      setMeta("og:description", description, "property");
-      setMeta("twitter:description", description, "name");
-    }
-    if (ogImage) {
-      setMeta("og:image", ogImage, "property");
-      setMeta("twitter:image", ogImage, "name");
-    }
+    setMeta("og:description", description || "", "property");
+    setMeta("twitter:description", description || "", "name");
+    setMeta("og:image", ogImage || "", "property");
+    setMeta("twitter:image", ogImage || "", "name");
+    setMeta("robots", noIndex ? "noindex,follow" : "index,follow,max-image-preview:large");
     setMeta("og:type", ogType, "property");
 
     // Canonical URL — prefer custom domain, then subdomain
@@ -65,5 +63,5 @@ export function useMetaTags({ enabled = true, title, description, ogImage, ogTyp
       // A departing route must not remove a newer route's canonical.
       if (title && document.title === title) document.title = prevTitle;
     };
-  }, [enabled, title, description, ogImage, ogType, canonicalPath, storeSlug, customDomain]);
+  }, [enabled, title, description, ogImage, ogType, canonicalPath, storeSlug, customDomain, noIndex]);
 }
