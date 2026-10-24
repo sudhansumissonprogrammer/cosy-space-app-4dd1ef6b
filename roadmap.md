@@ -1,7 +1,8 @@
 # Roadmap
 - [x] Reconnect Telegram after the 17:29 UTC workspace move; @Shopbanaobot verified and alerts refreshed without replay.
 - [x] Reconnect Telegram after the 17:31 UTC workspace move; @Shopbanaobot verified and alerts refreshed without replay.
-- [ ] Reconnect Telegram after the 17:37 UTC workspace move; verify bot and refresh alerts without replay.
+- [x] Reconnect Telegram after the 17:37 UTC workspace move; bot verified without replay.
+- [ ] Connect Telegram after the 17:46 UTC workspace move; verify bot and refresh alerts without replay.
 - [ ] Deep-audit the approved search plan with Utkal priority; implement remaining technical gaps and document verified versus blocked acceptance checks.
 - [x] Connect Telegram after the 17:20 UTC workspace move; @Shopbanaobot verified and alerts refreshed without replay.
 - [x] Reconnect Telegram after the 17:15 UTC workspace move; bot verified and alerts refreshed without replay.
