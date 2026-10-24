@@ -130,7 +130,10 @@ export default function StorefrontShell({
   // Analytics hooks — safe to call even when store is null
   useFacebookPixel((store as any)?.facebook_pixel_id, store?.id);
 
+  const seoLocation = useLocation();
+  const isSeoHome = seoLocation.pathname === "/" || seoLocation.pathname.replace(/\/$/, "") === `/store/${store?.slug}`;
   useMetaTags({
+    enabled: isSeoHome,
     title: (store as any)?.meta_title || (store ? `${store.name} — ${notFoundLabel}` : undefined),
     description: (store as any)?.meta_description || store?.description || undefined,
     ogImage: (store as any)?.og_image_url || (store as any)?.banner_url || store?.logo_url || undefined,
