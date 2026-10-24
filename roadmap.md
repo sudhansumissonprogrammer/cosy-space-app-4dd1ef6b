@@ -29,4 +29,5 @@
 - [x] Telegram reconnected (std_01m483fx66ebmvb70cwrmr7w34, @Shopbanaobot verified via getMe).
 - [x] Telegram reconnected after 04:59 UTC move (std_01m27s1bjdf32rgg6tbc20dnqg, @Shopbanaobot verified).
 - [ ] Arriving Today WhatsApp message (order_arriving_today_v1, Meta id 1817336819287205): PENDING Meta approval; then send to the order numbers the user provides.
-- [ ] Connect Telegram in newest workspace (15:46 UTC move).
+- [x] Connect Telegram in newest workspace (15:46 UTC move); bot verified.
+- [x] Lens/Images: category pages no longer claim product photos; PDP owns all photos; sitemap lists every product photo.
