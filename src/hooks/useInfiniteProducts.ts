@@ -38,8 +38,9 @@ async function fetchPageFromSupabase({ storeId, category, page, sort: _sort }: F
     .from("products")
     .select(PRODUCT_COLUMNS)
     .eq("store_id", storeId)
-    .eq("is_active", true)
-    .eq("hidden_by_category", false);
+    // Public RLS enforces hidden_by_category; that internal column is not
+    // granted to anon and filtering it directly breaks public card reads.
+    .eq("is_active", true);
 
   if (category) q = q.eq("category", category);
 

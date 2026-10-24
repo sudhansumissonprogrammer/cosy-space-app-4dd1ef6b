@@ -70,8 +70,9 @@ export default function StorefrontBestSellers() {
         .from("products")
         .select(CARD_COLUMNS)
         .eq("store_id", store.id)
-        .eq("is_active", true)
-        .eq("hidden_by_category", false);
+        // Public RLS already excludes hidden products; do not select/filter
+        // the ungranted internal visibility column as an anonymous shopper.
+        .eq("is_active", true);
       if (!showAll) q = q.eq("is_best_selling", true);
       const { data: prods, error } = await q
         .order("created_at", { ascending: false })
