@@ -299,10 +299,13 @@ function renderProductCard(
     p.currency || store.currency || "INR",
   );
   const pSlug = p.slug || p.id;
-  return `<div class="card" itemscope itemtype="https://schema.org/Product">
+  // Listing cards intentionally carry NO Product microdata: the product page
+  // is the only page that declares a product, so Google Images / Lens send
+  // visitors from a product photo to that product page, not to this listing.
+  return `<div class="card">
 <a href="${esc(canonicalBase)}/product/${esc(pSlug)}">
-${p.image_url ? `<img src="${esc(p.image_url)}" alt="${esc(p.name)}" width="280" height="280" loading="lazy" itemprop="image">` : `<div style="width:280px;height:280px;background:#f0f0f0"></div>`}
-<h3 itemprop="name">${esc(p.name)}</h3>
+${p.image_url ? `<img src="${esc(p.image_url)}" alt="${esc(p.name)}" width="280" height="280" loading="lazy">` : `<div style="width:280px;height:280px;background:#f0f0f0"></div>`}
+<h3>${esc(p.name)}</h3>
 <p class="card-price">${pPrice}</p>
 </a>
 </div>`;
@@ -389,9 +392,12 @@ function buildCategoryHtml(
   const desc =
     category.description?.slice(0, 160) ||
     `Shop ${category.name} at ${store.name}. ${products.length} products available.`;
-  const ogImage = products[0]?.image_url || store.og_image_url || store.banner_url || store.logo_url || "";
+  // Store artwork first: using a product photo here tells Google this listing
+  // is the "home" of that photo, so Lens visits land on the category page.
+  const ogImage = store.og_image_url || store.banner_url || store.logo_url || products[0]?.image_url || "";
 
-  const currency = store.currency || "INR";
+  // Summary-page ItemList (url + name only), as Google recommends for category
+  // pages. Full Product/Offer markup lives only on each product page.
   const itemList = JSON.stringify({
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -401,22 +407,7 @@ function buildCategoryHtml(
       "@type": "ListItem",
       position: i + 1,
       url: `${storeBase}/product/${p.slug || p.id}`,
-      item: {
-        "@type": "Product",
-        name: p.name,
-        url: `${storeBase}/product/${p.slug || p.id}`,
-        image: p.image_url || undefined,
-        sku: p.sku || p.id,
-        offers: {
-          "@type": "Offer",
-          price: p.sale_price || p.price,
-          priceCurrency: p.currency || currency,
-          availability: (p.stock_quantity ?? 1) > 0
-            ? "https://schema.org/InStock"
-            : "https://schema.org/OutOfStock",
-          url: `${storeBase}/product/${p.slug || p.id}`,
-        },
-      },
+      name: p.name,
     })),
   });
 
@@ -454,7 +445,7 @@ function buildListingHtml(
   canonical: string,
   storeBase: string,
 ): string {
-  const ogImage = products[0]?.image_url || store.og_image_url || store.banner_url || store.logo_url || "";
+  const ogImage = store.og_image_url || store.banner_url || store.logo_url || products[0]?.image_url || "";
   const breadcrumb = buildBreadcrumb([
     { name: store.name, url: storeBase },
     { name: opts.kind === "shop" ? "Shop" : "Best Sellers", url: canonical },
