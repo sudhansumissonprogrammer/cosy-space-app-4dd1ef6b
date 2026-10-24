@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Reconnect Telegram after the latest workspace move; verify bot and refresh order alerts, no replay.
+- [x] Reconnect Telegram after the latest workspace move; @Shopbanaobot verified and order alerts refreshed, no replay.
 
 - [ ] Extend bounded mobile product-card photo readiness across storefront pages/themes; preserve opening speed, desktop and PDP gallery; test scrolling and retained photos.
 
