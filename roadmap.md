@@ -1,4 +1,6 @@
 # Roadmap
+- [ ] Reconnect Telegram after the latest workspace move; verify bot and refresh order alerts without replay.
+- [ ] Research universal organic search plan with Utkal Watches priority; provide evidence and limitations before implementation.
 
 - [x] Reconnect Telegram after the latest workspace move; @Shopbanaobot verified and order alerts refreshed, no replay.
 
