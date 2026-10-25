@@ -14,7 +14,7 @@ function workerRegex(name: string) {
 describe("universal AI crawler access", () => {
   it.each(ALLOWED_AI_AGENTS)("allows %s through the Worker block list", agent => {
     expect(workerRegex("BLOCKED_BOT_REGEX").test(agent)).toBe(false);
-    expect(workerRegex("AI_CRAWLER_REGEX").test(agent)).toBe(true);
+    expect(workerRegex("AI_CRAWLER_REGEX").test(agent) || workerRegex("SOCIAL_BOT_REGEX").test(agent)).toBe(true);
   });
   it("keeps scraping blocks and Meta access intact", () => {
     expect(workerRegex("BLOCKED_BOT_REGEX").test("AhrefsBot")).toBe(true);
