@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Audit AI crawler access across storefronts with Utkal priority; align robots/Worker, verify and document deployment requirements.
 - [x] Recheck and connect Telegram after the 03:02 UTC Oct 25 workspace move; @Shopbanaobot verified and alerts redeployed without replay.
 - [x] Audit shared headings, accessible labels and metadata: fixed theme 2/18 home identity, theme 2/11 controls, theme 19/20 cart/error headings and category error heading; inherited home headings verified, 16 SEO tests passed, real Utkal home/shop/categories/PDP checked. Future routes must follow AGENTS.md heading ownership.
 - [x] Connect Telegram after the 02:58 UTC Oct 25 workspace move; bot verified and notifications refreshed without history replay.
