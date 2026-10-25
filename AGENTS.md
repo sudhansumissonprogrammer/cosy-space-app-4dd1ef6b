@@ -1,4 +1,5 @@
 # Project architecture decisions
+- Rounded Classic navigation reuses the Classic component through a presentation-only flag, preserving icons, cart actions, route visibility and scroll behavior without duplicated navigation logic.
 - Static platform robots and generated storefront robots use the shared crawler policy; AI crawler rendering must agree with those permissions, while authentication and utility noindex remain independent.
 - Public search/AI GET and HEAD requests dispatch to tenant SEO rendering before human HTML caches and cold/streaming shell exits; AI budgets remain host-scoped and bounded because user-agent names are not authentication.
 - Storefront Markdown is negotiated from the same successful public HTML renderer with a pinned converter; Worker caches separate format and page identity and vary by Accept, preventing cross-format leaks without changing browser or private pages.
