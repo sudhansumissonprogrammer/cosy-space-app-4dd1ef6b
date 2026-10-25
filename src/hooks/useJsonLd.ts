@@ -1,3 +1,4 @@
+import { productSearchPrice } from "../../supabase/functions/_shared/productSeo";
 import { useEffect } from "react";
 import { getStoreBaseUrl } from "@/lib/storeUrl";
 import { waPhoneNumber } from "@/lib/phoneUtils";
@@ -54,9 +55,7 @@ export function useProductJsonLd({ product, storeSlug, storeName, customDomain, 
     if (!product.id) return;
     const baseUrl = getStoreBaseUrl(storeSlug, customDomain);
     const productUrl = `${baseUrl}/product/${product.slug || product.id}`;
-    const price = product.sale_price && product.sale_price < product.price
-      ? product.sale_price
-      : product.price;
+    const price = productSearchPrice(product);
 
     const images = productImageUrls(product.image_url, product.extraImages);
 
@@ -93,7 +92,7 @@ export function useProductJsonLd({ product, storeSlug, storeName, customDomain, 
       };
     }
 
-    if (product.description) data.description = product.description;
+    if (product.description?.trim()) data.description = product.description;
     if (images.length > 0) data.image = images.length === 1 ? images[0] : images;
     if (product.category) data.category = product.category;
 
