@@ -1,0 +1,19 @@
+# Agent readiness — 2026-10-25
+
+## Findings and implementation
+
+- Screenshot is for the platform domain: robots, sitemap and Markdown already pass there; Content Signals is the missing check. Live checks confirmed platform Markdown but Utkal returned HTML for the same `Accept: text/markdown` request.
+- Shared robots now declares `Content-Signal: search=yes, ai-input=yes, ai-train=yes` within the public agent group, reflecting the owner's existing allow-all-public-content preference. The pasted `no` values were examples, not adopted. Private path disallows and separate scraper blocks remain. Signals express permission, not authentication or guaranteed compliance.
+- Existing sitemap mechanisms retained: static platform sitemap and dynamic per-store sitemaps. Removed login/signup/partner signup from the platform discovery file. Dynamic product dates use product `updated_at`, published page dates use page `updated_at`, and undated homepage/category routes omit lastmod. Existing static dates have no identified source; preserved rather than guessing from matching values. No build/current-date fallback was introduced.
+- Pinned Turndown converts the successful public HTML renderer to Markdown, removing layout headers/footers, styles, scripts and trackers while preserving actual descriptions, headings, photos, prices and links. No new product facts or brand claims. Negotiation respects quality weights, rejects q=0, and defaults to HTML. No inaccurate model-specific token count is advertised.
+- Worker **9.2.5-agent-content** admits explicit Markdown public GET/HEAD requests even without a bot UA; dispatches before shopper caches/cold exits; separates cache identity by host/path/page/format; emits `Vary: Accept`. Private routes and writes do not receive public Markdown dispatch. Robots/sitemap files retain their native formats.
+- Deployed `seo-page` and `bot-render`. Verified deployed robots returns 200 text/plain and all three signals for Utkal and Kalinga. Verified real Utkal homepage, a sitemap-derived product and `rado-watch-men` category return 200 Markdown with headings/links; category includes 20 bounded product links. Nonexistent guessed category correctly returned 404, not a homepage fallback.
+- 92 tests pass across crawler routing, negotiation, robots, discovery and sitemap partitioning. Worker syntax and preview build checks pass. Cloud hosting returns rendered HTML as text/plain on direct function calls; Worker explicitly sets the public HTML media type, while negotiated Markdown was observed as text/markdown.
+
+## Public validation and remaining rollout
+
+Requested isitagentready API scan accepted requests for both shopbanao.in and utkalwatch.in; both reported valid robots and sitemap (`pass`). Its evidence still contains old public robots without the new signals, consistent with cached/live old versions. A format-valid robots pass does not establish that real provider requests are unblocked.
+
+Owner must deploy **docs/cloudflare-worker-current.js v9.2.5-agent-content** and publish the updated platform static robots/sitemap. The earlier live Worker version was v9.2.2 and blocked ChatGPT; changing backend renderer alone cannot remove that earlier block. After rollout recheck actual site URLs for signals, AI access, Markdown content type, HTML default and private-page exclusions. No Cloudflare zone/WAF/account settings were changed, and no paid Markdown product was enabled.
+
+Allowing AI input enables generative retrieval/grounding; `search=yes` alone does not express permission for generated answers. Neither signals, Markdown nor the readiness score guarantees indexing, citations, recommendations or product ranking.
