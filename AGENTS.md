@@ -1,6 +1,7 @@
 # Project architecture decisions
 - Static platform robots and generated storefront robots use the shared crawler policy; AI crawler rendering must agree with those permissions, while authentication and utility noindex remain independent.
 - Public search/AI GET and HEAD requests dispatch to tenant SEO rendering before human HTML caches and cold/streaming shell exits; AI budgets remain host-scoped and bounded because user-agent names are not authentication.
+- Storefront Markdown is negotiated from the same successful public HTML renderer with a pinned converter; Worker caches separate format and page identity and vary by Accept, preventing cross-format leaks without changing browser or private pages.
 - Every storefront route owns its primary heading; home themes use the shared store-heading builder independently of optional banners and carousel slides, preventing missing or changing page identity in existing and future stores.
 - Public SEO discovery uses bounded, addressable catalogue pages and error-preserving paged sitemap queries; renderer/cache page identity and shopper pagination must agree without changing checkout pricing.
 - Existing dynamic storefront sitemaps split into indexed deterministic children at conservative URL/UTF-8 byte bounds; unknown children fail without caching and feeds omit condition unless merchant-sourced.

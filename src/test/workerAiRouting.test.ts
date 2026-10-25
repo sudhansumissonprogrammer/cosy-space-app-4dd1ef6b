@@ -28,11 +28,28 @@ function harness(warm = false) {
     publicRead: (r: Request, url: URL) => boolean;
     limited: (key: string, limit: number) => boolean;
   };
-  const request = (host: string, path: string, ua = "ChatGPT-User", method = "GET") => new Request(`https://${host}${path}`, { method, headers: {"User-Agent": ua, "cf-connecting-ip": "192.0.2.1"} });
+  const request = (host: string, path: string, ua = "ChatGPT-User", method = "GET", accept = "text/html") => new Request(`https://${host}${path}`, { method, headers: {"User-Agent": ua, "cf-connecting-ip": "192.0.2.1", Accept: accept} });
   return { api, request, cacheCalls, rendererCalls, ctx: { waitUntil: () => {} } };
 }
 
 describe("Worker public AI routing", () => {
+  it("negotiates Markdown for ordinary agents and separates representation cache keys", async () => {
+    const h = harness();
+    const r = h.request("utkalwatch.in", "/product/watch", "Mozilla/5.0", "GET", "text/markdown");
+    const response = await h.api.run(r, {}, h.ctx);
+    expect(response.headers.get("Content-Type")).toBe("text/markdown; charset=utf-8");
+    expect(response.headers.get("Vary")).toBe("Accept");
+    expect(h.rendererCalls[0].format).toBe("markdown");
+    expect(h.cacheCalls[0]).toContain("format=markdown");
+    const html = await h.api.run(h.request("utkalwatch.in", "/product/watch"), {}, h.ctx);
+    expect(html.headers.get("Content-Type")).toBe("text/html; charset=utf-8");
+    expect(h.cacheCalls.at(-1)).toContain("format=html");
+  });
+  it("does not negotiate private pages for a Markdown request", () => {
+    const h = harness();
+    const r = h.request("utkalwatch.in", "/account", "Mozilla/5.0", "GET", "text/markdown");
+    expect(h.api.publicRead(r, new URL(r.url))).toBe(false);
+  });
   it.each(["utkalwatch.in", "utkalwatches.shopbanao.in"])("dispatches cold public reads before shopper shell work on %s", async host => {
     for (const path of ["/", "/category/fossil", "/product/watch", "/shop?page=2", "/robots.txt", "/sitemap.xml", "/llms.txt"]) {
       const h = harness();

@@ -29,7 +29,7 @@ export function buildRobotsTxt(baseUrl: string): string {
   return `# ${new URL(base).hostname} - public search and AI crawler access\n` +
     "# AI search, user retrieval and named AI training crawlers are allowed.\n" +
     "# Robots rules are not authentication or an indexing guarantee.\n\n" +
-    publicAgents.map(agent => `User-agent: ${agent}`).join("\n") + "\nAllow: /\n" +
+    publicAgents.map(agent => `User-agent: ${agent}`).join("\n") + "\nContent-Signal: search=yes, ai-input=yes, ai-train=yes\nAllow: /\n" +
     PRIVATE_CRAWL_PATHS.map(path => `Disallow: ${path}`).join("\n") + "\n\n" +
     BLOCKED_SCRAPERS.map(agent => `User-agent: ${agent}\nDisallow: /`).join("\n\n") +
     `\n\nSitemap: ${base}/sitemap.xml\n`;

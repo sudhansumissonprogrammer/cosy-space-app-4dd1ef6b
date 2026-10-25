@@ -34,6 +34,12 @@ describe("universal AI crawler access", () => {
     expect(robots).toContain("Sitemap: https://utkalwatch.in/sitemap.xml");
     expect(robots).not.toContain("https://shopbanao.in");
   });
+  it("permits search, AI input and training within the public agent group", () => {
+    const robots = buildRobotsTxt("https://utkalwatch.in");
+    const publicGroup = robots.split(/\n\n/).find(group => group.includes("User-agent: *"));
+    expect(publicGroup).toContain("Content-Signal: search=yes, ai-input=yes, ai-train=yes");
+    expect(publicGroup).toContain("Disallow: /account");
+  });
   it("keeps the platform static policy in sync", () => {
     expect(readFileSync("public/robots.txt", "utf8")).toBe(buildRobotsTxt("https://shopbanao.in"));
   });
