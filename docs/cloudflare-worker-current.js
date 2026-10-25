@@ -243,7 +243,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "9.2.2-search-completeness";
+const WORKER_VERSION = "9.2.3-ai-crawler-access";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -513,6 +513,10 @@ const SUPABASE_ANON_KEY =
 
 const SEARCH_BOT_REGEX = /Googlebot|Bingbot|DuckDuckBot|YandexBot|Baiduspider|Applebot|Sogou|Exabot|ia_archiver/i;
 
+// AI search, user retrieval and named training agents may read public content.
+// Keep generic bot rate limits: a user-agent string is not verified identity.
+const AI_CRAWLER_REGEX = /OAI-SearchBot|ChatGPT-User|GPTBot|PerplexityBot|Perplexity-User|Claude-SearchBot|Claude-User|ClaudeBot|Claude-Web|anthropic-ai|Google-Extended|GoogleOther|Applebot-Extended|Amazonbot|DuckAssistBot|Bytespider|cohere-ai|cohere-training-data-crawler|CCBot/i;
+
 // v6.9.4: Expanded bot block list. These crawlers generate massive request
 // volume with zero business value. Blocked at the edge with 403 + 1-day cache
 // so Cloudflare returns the cached 403 without hitting the Worker again.
@@ -520,12 +524,12 @@ const SEARCH_BOT_REGEX = /Googlebot|Bingbot|DuckDuckBot|YandexBot|Baiduspider|Ap
 // These are Meta's ad-policy crawlers that verify every ad URL pre-approval and
 // during the campaign. Returning 403 → cached 24h → Meta marks every storefront
 // as `unverifiable_url` → ad account banned without warning. NEVER re-add these
-// three UAs. ChatGPT/Claude/etc remain blocked — they have zero ad-policy impact.
+// three UAs. AI crawlers are allowed separately below.
 // BAN-FIX A7: dropped python-requests/Go-http-client/node-fetch/axios/ from
 // this list — they're used by Meta's ad-review sandboxes and legitimate
 // integration tests. Blocking them at the edge was a hidden ban vector.
 const BLOCKED_BOT_REGEX =
-  /AhrefsBot|SemrushBot|MJ12bot|DotBot|PetalBot|BLEXBot|DataForSeoBot|SeznamBot|GPTBot|ClaudeBot|anthropic-ai|CCBot|Bytespider|ZoominfoBot|MegaIndex|serpstatbot|SurdotlyBot|barkrowler|Mail\.RU_Bot|YisouSpider|Amazonbot|PerplexityBot|OAI-SearchBot|DuckAssistBot|Google-Extended|GoogleOther|FriendlyCrawler|ImagesiftBot|Diffbot|magpie-crawler|TurnitinBot|grapeshot|linkfluence|proximic|trendictionbot|TweetmemeBot|Buck|webmeup-crawler|SiteAuditBot|VelenPublicWebCrawler|sentibot|EzoicBot|netEstate|coccocbot|YaK|Neevabot|admantx|cohere-ai|Bravebot|Timpibot|ChatGPT-User|cohere-training-data-crawler|ICC-Crawler|Webzio|YouBot|ISSCyberRiskCrawler|Sidetrade|news-please|Scrapy/i;
+  /AhrefsBot|SemrushBot|MJ12bot|DotBot|PetalBot|BLEXBot|DataForSeoBot|SeznamBot|ZoominfoBot|MegaIndex|serpstatbot|SurdotlyBot|barkrowler|Mail\.RU_Bot|YisouSpider|FriendlyCrawler|ImagesiftBot|Diffbot|magpie-crawler|TurnitinBot|grapeshot|linkfluence|proximic|trendictionbot|TweetmemeBot|Buck|webmeup-crawler|SiteAuditBot|VelenPublicWebCrawler|sentibot|EzoicBot|netEstate|coccocbot|YaK|Neevabot|admantx|Bravebot|Timpibot|ICC-Crawler|Webzio|YouBot|ISSCyberRiskCrawler|Sidetrade|news-please|Scrapy/i;
 
 // Common attack/probe paths — return 410 Gone with long cache so CF serves cached.
 const ATTACK_PATH_REGEX =
@@ -6522,7 +6526,7 @@ async function handleSeoFiles(url, slug, hostname) {
 async function handleBot(request, slug, url, isCustom) {
   const ua = request.headers.get("User-Agent") || "";
   if (isSocialInAppBrowser(ua)) return null;
-  if (!BOT_UA_REGEX.test(ua)) return null;
+  if (!BOT_UA_REGEX.test(ua) && !AI_CRAWLER_REGEX.test(ua)) return null;
 
   const botIp = request.headers.get("cf-connecting-ip") || "unknown";
   // BAN-FIX A3: skip the coarse `bot:` bucket for verified Meta & Googlebot
@@ -6546,7 +6550,7 @@ async function handleBot(request, slug, url, isCustom) {
   }
 
   const hostname = request.headers.get("host") || url.hostname;
-  const isSearchBot = SEARCH_BOT_REGEX.test(ua);
+  const isSearchBot = SEARCH_BOT_REGEX.test(ua) || AI_CRAWLER_REGEX.test(ua);
   const isSocialBot = SOCIAL_BOT_REGEX.test(ua) || INSTAGRAM_CRAWLER_REGEX.test(ua);
   const productSlug = getProductSlug(url.pathname);
   // v8.16 — Richer route kinds (category/page/shop/best-sellers/categories/about/contact/track-order).
@@ -7627,7 +7631,7 @@ async function _handleFetch(request, env, ctx) {
   // Bots don't benefit from KV warming for human visitors and they generate
   // huge tail-traffic. Previously only storefront HTML routes set the flag —
   // now all bot traffic skips the warm/lock/KV cascade.
-  const earlyIsBot = BOT_UA_REGEX.test(earlyUA);
+  const earlyIsBot = BOT_UA_REGEX.test(earlyUA) || AI_CRAWLER_REGEX.test(earlyUA);
   if (earlyIsBot) {
     ctx.__skipKvWarm = true;
     const earlyIsStorefrontHtml =
