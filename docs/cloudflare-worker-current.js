@@ -523,7 +523,7 @@ function isPublicCrawlerRead(request, url) {
   if (!AI_CRAWLER_REGEX.test(ua) && !SEARCH_BOT_REGEX.test(ua)) return false;
   if (["/robots.txt", "/sitemap.xml", "/llms.txt"].includes(url.pathname) || /^\/sitemap-[1-9]\d{0,4}\.xml$/.test(url.pathname)) return true;
   const route = getBotRoute(url.pathname);
-  return !!route && /^(home|product|category|shop|best-sellers|categories|about|contact|page)$/.test(route.kind);
+  return !!route && /^(home|product|category|shop|best-sellers|categories|about|contact|page|faq|privacy-policy|return-policy|shipping-policy|terms)$/.test(route.kind);
 }
 
 // v6.9.4: Expanded bot block list. These crawlers generate massive request

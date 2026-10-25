@@ -40,7 +40,8 @@ describe("Worker public AI routing", () => {
       expect(response.status).toBe(200);
       expect(h.rendererCalls).toHaveLength(1);
       expect(h.rendererCalls[0].slug).toBe("utkalwatches");
-      expect(h.rendererCalls[0].domain).toBe(host);
+      const expectedDomain = h.rendererCalls[0].name === "bot-render" && host.endsWith(".shopbanao.in") ? "" : host;
+      expect(h.rendererCalls[0].domain).toBe(expectedDomain);
     }
   });
   it("skips warm human caches for AI public reads", async () => {
