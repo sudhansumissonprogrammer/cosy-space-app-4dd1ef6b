@@ -1,4 +1,5 @@
 # Project architecture decisions
+- Every storefront route owns its primary heading; home themes use the shared store-heading builder independently of optional banners and carousel slides, preventing missing or changing page identity in existing and future stores.
 - Public SEO discovery uses bounded, addressable catalogue pages and error-preserving paged sitemap queries; renderer/cache page identity and shopper pagination must agree without changing checkout pricing.
 - Existing dynamic storefront sitemaps split into indexed deterministic children at conservative URL/UTF-8 byte bounds; unknown children fail without caching and feeds omit condition unless merchant-sourced.
 - Store shell metadata only owns home; route metadata owns detail pages, and manufacturer identifiers are never derived from seller names or internal IDs, preventing canonical races and false product claims.

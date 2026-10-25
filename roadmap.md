@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Recheck and connect Telegram after the 03:02 UTC Oct 25 workspace move without replay.
 - [ ] Audit and fix shared headings, accessible labels and metadata across current/future storefront pages.
 - [ ] Connect Telegram after the 02:58 UTC Oct 25 workspace move; verify bot and refresh notifications without history replay.
 - [x] Remove visible Previous/Next page buttons from shop/category/best-seller pages (endless scroll kept).

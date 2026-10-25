@@ -19,6 +19,7 @@ import LazyRender from "@/components/storefront/LazyRender";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { storefrontPath } from "@/lib/subdomain";
 import ProductCardSkeleton from "@/components/storefront/ProductCardSkeleton";
+import { buildStorefrontH1 } from "@/lib/storefrontSeoH1";
 
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
 import { HomeShopByVideoSection } from "@/components/storefront/HomeSharedSections";
@@ -119,6 +120,7 @@ export default function StorefrontHomeV18() {
 
   return (
     <VariantCountProvider products={allProducts}>
+      <h1 className="sr-only">{buildStorefrontH1(store)}</h1>
       {/* ─── Hero Banner ─── */}
       <section className="relative v18-hero-pull">
         {hasBanner && (
@@ -162,9 +164,9 @@ export default function StorefrontHomeV18() {
         )}
         {!hasBanner && !hasMobileHero && (
           <div className="w-full aspect-[16/9] md:aspect-[21/9] flex flex-col items-center justify-center gap-6" style={{ backgroundColor: V18_BG }}>
-            <h1 className="text-4xl md:text-7xl font-black tracking-tighter uppercase" style={{ color: V18_TEXT }}>
+            <h2 className="text-4xl md:text-7xl font-black tracking-tighter uppercase" style={{ color: V18_TEXT }}>
               {store.name}
-            </h1>
+            </h2>
             <Link
               to={storefrontPath(slug, "/categories")}
               className="inline-flex items-center gap-2 px-8 py-3 text-sm font-bold tracking-[0.2em] uppercase border-2 transition-[transform,opacity,colors,box-shadow] hover:bg-white hover:!text-black [&:hover_svg]:!stroke-black"

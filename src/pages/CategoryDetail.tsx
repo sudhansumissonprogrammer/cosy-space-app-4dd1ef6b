@@ -355,7 +355,7 @@ export default function CategoryDetail() {
           <ArrowLeft className="mr-1.5 h-3.5 w-3.5" /> Back
         </Button>
         <div className="flex min-h-[200px] items-center justify-center rounded-lg border bg-card">
-          <p className="text-muted-foreground">Category not found</p>
+          <h1 className="text-muted-foreground">Category not found</h1>
         </div>
       </div>
     );
