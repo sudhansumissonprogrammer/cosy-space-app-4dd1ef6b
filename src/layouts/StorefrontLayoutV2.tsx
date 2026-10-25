@@ -82,8 +82,8 @@ function TransparentNav({ store, scrolled }: { store: StoreData; scrolled: boole
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4">
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetTrigger asChild>
-            <button className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full transition-colors hover:bg-accent">
-              <Menu className="h-6 w-6 sm:h-7 sm:w-7" />
+            <button aria-label={menuOpen ? "Close menu" : "Open menu"} className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full transition-colors hover:bg-accent">
+              <Menu aria-hidden="true" className="h-6 w-6 sm:h-7 sm:w-7" />
             </button>
           </SheetTrigger>
           <SheetContent side="left" className="storefront-font w-[280px] p-0">
