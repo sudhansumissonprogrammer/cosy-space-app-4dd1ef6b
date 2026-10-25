@@ -316,7 +316,7 @@ export default function V19ProductDetail() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
         <Package className="h-12 w-12 text-gray-300 mb-3" />
-        <h2 className="text-lg font-bold text-gray-900">Product not found</h2>
+        <h1 className="text-lg font-bold text-gray-900">Product not found</h1>
         <p className="text-sm text-gray-500 mt-1">This item may have been removed.</p>
         <Link
           to={storefrontPath(slug, "shop")}

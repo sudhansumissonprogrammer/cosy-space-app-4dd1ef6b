@@ -19,6 +19,7 @@ const StorefrontInstagramSection = lazy(() => import("@/components/storefront/St
 const StorefrontTrustStrip = lazy(() => import("@/components/storefront/StorefrontTrustStrip"));
 import { HomeShopByVideoSection } from "@/components/storefront/HomeSharedSections";
 import { useStorefrontCategories } from "@/hooks/useStorefrontCategories";
+import { buildStorefrontH1 } from "@/lib/storefrontSeoH1";
 
 /* ── Hero Carousel ── */
 function HeroCarousel({ store }: { store: StoreData }) {
@@ -116,12 +117,12 @@ function HeroSlides({ slides, store }: { slides: { image: string; title: string;
       {/* Content */}
       <div className="absolute inset-0 flex items-end">
         <div className="w-full px-4 pb-14 sm:px-12 sm:pb-24 max-w-6xl mx-auto">
-          <h1
+          <h2
             className="text-2xl font-bold text-white sm:text-5xl lg:text-6xl leading-tight drop-shadow-lg"
             style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}
           >
             {slide.title}
-          </h1>
+          </h2>
           <p className="mt-2 text-sm text-white/80 sm:text-lg max-w-md">{slide.subtitle}</p>
           {slide.link ? (
             <Link
@@ -261,6 +262,7 @@ export default function StorefrontHomeV2() {
 
   return (
     <>
+      <h1 className="sr-only">{buildStorefrontH1(store)}</h1>
       {/* Hero Carousel */}
       <HeroCarousel store={store} />
 
@@ -276,6 +278,7 @@ export default function StorefrontHomeV2() {
             <span>Search products...</span>
           </button>
           <button
+            aria-label="Open filters"
             onClick={() => { setSearchOpen(true); setOpenFilters(true); }}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors"
             style={{ backgroundColor: "var(--storefront-primary, hsl(var(--foreground)))", color: "var(--storefront-btn-text, hsl(var(--background)))" }}

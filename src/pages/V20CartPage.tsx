@@ -129,7 +129,7 @@ export default function V20CartPage() {
             <ArrowLeft className="h-5 w-5 text-gray-900" />
           </button>
           <div className="flex flex-col leading-tight">
-            <div className="font-extrabold text-[15px] text-gray-900">My Cart</div>
+            <h1 className="font-extrabold text-[15px] text-gray-900">My Cart</h1>
             <div className="text-[11px] text-gray-500 font-semibold">{cartCount} {cartCount === 1 ? "item" : "items"}</div>
           </div>
         </div>
