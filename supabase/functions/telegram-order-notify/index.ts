@@ -8,7 +8,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const GATEWAY_URL = "https://connector-gateway.lovable.dev/telegram";
+// Direct Telegram Bot API — no connector. The bot token lives in the
+// TELEGRAM_BOT_TOKEN secret, so workspace moves never break order alerts.
+const TELEGRAM_API_BASE = "https://api.telegram.org";
 
 function esc(s: unknown): string {
   return String(s ?? "")
@@ -84,9 +86,8 @@ Deno.serve(async (req) => {
     ];
     if (!cfg?.is_active || chatIds.length === 0) return json({ skipped: "not_configured" });
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    const TELEGRAM_API_KEY = Deno.env.get("TELEGRAM_API_KEY");
-    if (!LOVABLE_API_KEY || !TELEGRAM_API_KEY) return json({ error: "telegram_not_connected" }, 500);
+    const BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
+    if (!BOT_TOKEN) return json({ error: "telegram_not_connected" }, 500);
 
     const [{ data: items }, { data: store }] = await Promise.all([
       admin
@@ -154,13 +155,9 @@ Deno.serve(async (req) => {
 
 
     const call = async (method: string, payload: Record<string, unknown>, chatId: string) => {
-      const res = await fetch(`${GATEWAY_URL}/${method}`, {
+      const res = await fetch(`${TELEGRAM_API_BASE}/bot${BOT_TOKEN}/${method}`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "X-Connection-Api-Key": TELEGRAM_API_KEY,
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ chat_id: chatId, ...payload }),
       });
       const bodyText = await res.text();
