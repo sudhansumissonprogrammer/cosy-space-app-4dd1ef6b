@@ -17,7 +17,16 @@
 
 ## Deployment needed
 
-Owner must manually deploy `docs/cloudflare-worker-current.js` to Cloudflare. Its version changes invalidate the existing version-keyed robots/search cache; until deployment, Utkal's observed ChatGPT/Perplexity 403 remains unresolved in production. Publish the app for the platform static robots update. Recheck home, category, real PDP, sitemap and utility responses using AI user agents after deployment. No claim of actual AI indexing or citations is established by this audit.
+Owner must manually deploy `docs/cloudflare-worker-current.js` version **9.2.4-ai-public-routing** to Cloudflare. Its version changes invalidate the existing version-keyed robots/search cache; until deployment, the observed ChatGPT 403 remains unresolved in production. Publish the app for the platform static robots update. Recheck home, category, real PDP, sitemap and utility responses using AI user agents after deployment. No claim of actual AI indexing or citations is established by this audit.
+
+## Follow-up Worker audit — 04:08 UTC
+
+- Live `/__health` reports **9.2.2-search-completeness**, not the corrected AI Worker. All four managed sample hosts returned `403` with `x-blocked-by: shopbanao-bot-policy` for ChatGPT-User on both `/` and `/robots.txt`. This identifies the active Worker policy, not a robots disallow or a demonstrated Cloudflare managed challenge. Earlier 200 results for OAI-SearchBot/PerplexityBot were cached shopper shells, not proof of complete crawlable content.
+- v9.2.4 removes additional discovery agents (YouBot, Bravebot, Timpibot, Diffbot) from the block list and aligns shared/static robots, including AI2Bot and Google retrieval identifiers. Unnamed browsers used by AI services remain ordinary public visitors; this is not a claim to enumerate every future agent.
+- Public search/AI GET and HEAD requests bypass human mirror caches and dispatch before both tenant types' cold/streaming exits. Public policy/FAQ pages are included; authenticated utility pages, APIs and writes are not granted any crawler exception. Host resolution and subdomain custom-domain redirects are retained.
+- AI public HTML requests use one host-scoped **300/minute/IP** budget instead of two conflicting 60/minute buckets. Numeric limits now work as numbers (the old `120` argument was interpreted as `true`, yielding 60). Limits remain to contain spoofed UAs and protect customer browsing; API limits and private access controls are unchanged.
+- 69 executable tests passed across robots-policy and Worker routing suites: allowed agents, cold custom/subdomain dispatch, warm-cache bypass, HEAD, numeric limits, private/write exclusions, 301-independent tenant identity and bounded per-host budgets. Worker syntax and preview build checks pass. Worker tests stub backend data; they do not claim a successful live corrected request before owner deployment.
+- Redeployed the shared `seo-page` function. Static robots publication and Worker deployment remain owner actions; old Workers block ChatGPT before it reaches this function.
 
 ## Further improvements, in priority order
 
