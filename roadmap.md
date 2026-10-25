@@ -1,10 +1,11 @@
 # Roadmap
-- [ ] Audit uploaded SEO/GEO preservation checklist: inventory existing systems, verify public production samples, repair confirmed low-risk defects, run regression checks and record before/after matrix; original separate 20-phase specification not supplied.
+- [x] Audit uploaded SEO/GEO preservation checklist: source inventory, public production samples, safe schema/utility corrections, 105 regression checks and before/after matrix in docs/SEO-GEO-PRESERVATION-AUDIT-2026-10-25.md; original separate 20-phase specification not supplied; unverified areas explicitly retained.
+- [ ] Deploy Worker 9.2.6-seo-preservation and publish frontend corrections; then confirm live utility noindex/no-store, corrected search action and platform schemas. Owner deployment/publication required.
 - [x] Add Classic Rounded to all themes offering navigation choices; verified four curved corners, Shop/Categories links, original Classic and desktop hiding on Utkal preview; existing store selections unchanged.
 - [x] Add public allow-all Content Signals; audit retained sitemaps and remove platform auth entries; deploy negotiated public Markdown; real Utkal home/category/PDP verified; 92 tests pass (docs/agent-readiness-2026-10-25.md).
 - [x] Deep-audit and correct Worker AI blocks/cache shortcuts across all stores; v9.2.4 public tenant dispatch, bounded budgets and expanded agents; 69 tests pass; live old Worker blocks confirmed on four hosts.
 - [x] Audit AI crawler access with Utkal priority; shared robots deployed, Worker source corrected, 39 tests pass; findings in docs/ai-crawler-access-audit-2026-10-25.md.
-- [ ] AI crawler rollout: owner deploys Worker v9.2.5-agent-content and publishes static robots/sitemap; recheck live AI access, Content Signals and Markdown afterward (last observed /__health v9.2.2 blocks ChatGPT).
+- [x] AI crawler rollout sampled live Oct 25 06:57 UTC: Utkal, Kalinga and Hopknock report 9.2.5-agent-content; robots signals/private exclusions verified; Utkal real home/category/PDP serve Googlebot HTML and ChatGPT-User Markdown. Provider-verified crawler traffic remains unverified.
 - [x] Recheck and connect Telegram after the 03:02 UTC Oct 25 workspace move; @Shopbanaobot verified and alerts redeployed without replay.
 - [x] Audit shared headings, accessible labels and metadata: fixed theme 2/18 home identity, theme 2/11 controls, theme 19/20 cart/error headings and category error heading; inherited home headings verified, 16 SEO tests passed, real Utkal home/shop/categories/PDP checked. Future routes must follow AGENTS.md heading ownership.
 - [x] Connect Telegram after the 02:58 UTC Oct 25 workspace move; bot verified and notifications refreshed without history replay.
