@@ -415,6 +415,13 @@ async function finalizeResponse(request, response) {
     // Fail open — never break a response over fingerprint scrubbing
   }
   // L6/L7: apply security headers as the final step on every response.
+  if (/text\/html|text\/markdown/i.test(response.headers.get("Content-Type") || "")) {
+    const headers = new Headers(response.headers);
+    const vary = (headers.get("Vary") || "").split(",").map(v => v.trim()).filter(Boolean);
+    if (!vary.some(v => v.toLowerCase() === "accept" || v === "*")) vary.push("Accept");
+    headers.set("Vary", vary.join(", "));
+    response = new Response(response.body, { status: response.status, headers });
+  }
   return _applySecurityHeaders(response);
 }
 
