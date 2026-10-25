@@ -155,13 +155,9 @@ Deno.serve(async (req) => {
 
 
     const call = async (method: string, payload: Record<string, unknown>, chatId: string) => {
-      const res = await fetch(`${GATEWAY_URL}/${method}`, {
+      const res = await fetch(`${TELEGRAM_API_BASE}/bot${BOT_TOKEN}/${method}`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "X-Connection-Api-Key": TELEGRAM_API_KEY,
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ chat_id: chatId, ...payload }),
       });
       const bodyText = await res.text();
