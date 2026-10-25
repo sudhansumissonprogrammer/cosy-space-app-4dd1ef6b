@@ -243,7 +243,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "9.2.4-ai-public-routing";
+const WORKER_VERSION = "9.2.5-agent-content";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -517,10 +517,24 @@ const SEARCH_BOT_REGEX = /Googlebot|Google-InspectionTool|AdsBot-Google|Mediapar
 // Keep generic bot rate limits: a user-agent string is not verified identity.
 const AI_CRAWLER_REGEX = /OAI-SearchBot|ChatGPT-User|GPTBot|PerplexityBot|Perplexity-User|Claude-SearchBot|Claude-User|ClaudeBot|Claude-Web|anthropic-ai|Google-Extended|GoogleOther|Google-CloudVertexBot|Gemini-Deep-Research|Applebot-Extended|Amazonbot|DuckAssistBot|Bytespider|cohere-ai|cohere-training-data-crawler|CCBot|YouBot|Bravebot|Timpibot|AI2Bot|Diffbot|Omgilibot|Omgili/i;
 
+// Kept behaviorally aligned with _shared/agentContent.ts by tests.
+function prefersMarkdown(accept) {
+  const ranges = (accept || "").toLowerCase().split(",").map(value => {
+    const [type, ...params] = value.trim().split(";");
+    const raw = params.map(p => p.trim()).find(p => p.startsWith("q="))?.slice(2);
+    const q = raw === undefined ? 1 : Number(raw);
+    return { type, q: Number.isFinite(q) && q >= 0 && q <= 1 ? q : 0 };
+  });
+  const markdown = ranges.find(r => r.type === "text/markdown");
+  if (!markdown || markdown.q === 0) return false;
+  const html = ranges.find(r => r.type === "text/html") || ranges.find(r => r.type === "text/*") || ranges.find(r => r.type === "*/*");
+  return markdown.q >= (html?.q || 0);
+}
+
 function isPublicCrawlerRead(request, url) {
   if (request.method !== "GET" && request.method !== "HEAD") return false;
   const ua = request.headers.get("User-Agent") || "";
-  if (!AI_CRAWLER_REGEX.test(ua) && !SEARCH_BOT_REGEX.test(ua)) return false;
+  if (!AI_CRAWLER_REGEX.test(ua) && !SEARCH_BOT_REGEX.test(ua) && !prefersMarkdown(request.headers.get("Accept"))) return false;
   if (["/robots.txt", "/sitemap.xml", "/llms.txt"].includes(url.pathname) || /^\/sitemap-[1-9]\d{0,4}\.xml$/.test(url.pathname)) return true;
   const route = getBotRoute(url.pathname);
   return !!route && /^(home|product|category|shop|best-sellers|categories|about|contact|page|faq|privacy-policy|return-policy|shipping-policy|terms)$/.test(route.kind);
@@ -6534,8 +6548,9 @@ async function handleSeoFiles(url, slug, hostname) {
 
 async function handleBot(request, slug, url, isCustom) {
   const ua = request.headers.get("User-Agent") || "";
-  if (isSocialInAppBrowser(ua)) return null;
-  if (!BOT_UA_REGEX.test(ua) && !AI_CRAWLER_REGEX.test(ua)) return null;
+  const wantsMarkdown = prefersMarkdown(request.headers.get("Accept")) && isPublicCrawlerRead(request, url);
+  if (!wantsMarkdown && isSocialInAppBrowser(ua)) return null;
+  if (!wantsMarkdown && !BOT_UA_REGEX.test(ua) && !AI_CRAWLER_REGEX.test(ua) && !SEARCH_BOT_REGEX.test(ua)) return null;
 
   const botIp = request.headers.get("cf-connecting-ip") || "unknown";
   // BAN-FIX A3: skip the coarse `bot:` bucket for verified Meta & Googlebot
@@ -6545,7 +6560,7 @@ async function handleBot(request, slug, url, isCustom) {
   const isMetaOrSearchUA = SOCIAL_BOT_REGEX.test(ua) || SEARCH_BOT_REGEX.test(ua);
   // Named AI agents get a public-read budget, not an authentication bypass.
   // Scope by tenant so one store cannot consume another store's crawl budget.
-  const publicAiRead = AI_CRAWLER_REGEX.test(ua) && isPublicCrawlerRead(request, url);
+  const publicAiRead = (wantsMarkdown || AI_CRAWLER_REGEX.test(ua)) && isPublicCrawlerRead(request, url);
   const crawlerLimit = publicAiRead ? RATE_LIMIT_MAX_HTML : RATE_LIMIT_MAX_API;
   if (!isMetaOrSearchUA && isRateLimited(`crawler:${url.hostname}:${botIp}`, crawlerLimit)) {
     return new Response("Rate limited", {
@@ -6555,7 +6570,7 @@ async function handleBot(request, slug, url, isCustom) {
   }
 
   const hostname = request.headers.get("host") || url.hostname;
-  const isSearchBot = SEARCH_BOT_REGEX.test(ua) || AI_CRAWLER_REGEX.test(ua);
+  const isSearchBot = wantsMarkdown || SEARCH_BOT_REGEX.test(ua) || AI_CRAWLER_REGEX.test(ua);
   const isSocialBot = SOCIAL_BOT_REGEX.test(ua) || INSTAGRAM_CRAWLER_REGEX.test(ua);
   const productSlug = getProductSlug(url.pathname);
   // v8.16 — Richer route kinds (category/page/shop/best-sellers/categories/about/contact/track-order).
@@ -6570,7 +6585,8 @@ async function handleBot(request, slug, url, isCustom) {
     // v8.67.0 BAN-FIX P0-1: Bot cache key now versioned by WORKER_VERSION so
     // every Worker deploy auto-invalidates the prior bot HTML. Was serving 17h
     // old doorway-redirect HTML to facebookexternalhit even after v8.61.0 fix.
-    const botCacheKey = new Request(`https://bot-cache/search/${WORKER_VERSION}/${encodeURIComponent(hostname)}${url.pathname}?page=${encodeURIComponent(listingPage)}`, {
+    const format = wantsMarkdown ? "markdown" : "html";
+    const botCacheKey = new Request(`https://bot-cache/search/${WORKER_VERSION}/${encodeURIComponent(hostname)}${url.pathname}?page=${encodeURIComponent(listingPage)}&format=${format}`, {
       method: "GET",
     });
     const botCached = await cache.match(botCacheKey);
@@ -6586,6 +6602,7 @@ async function handleBot(request, slug, url, isCustom) {
       kind: botRoute.kind,
       route_slug: botRoute.slug || "",
       page: listingPage,
+      format,
     });
     if (botRenderRes.ok && (/noindex/i.test(botRenderRes.headers.get("X-Robots-Tag") || "") || /no-store/i.test(botRenderRes.headers.get("Cache-Control") || ""))) {
       return new Response(await botRenderRes.text(), { status: botRenderRes.status, headers: { ...SECURITY_HEADERS, "X-Robots-Tag": botRenderRes.headers.get("X-Robots-Tag") || "noindex", "Cache-Control": "no-store", "Content-Type": "text/html; charset=utf-8" } });
@@ -6594,7 +6611,9 @@ async function handleBot(request, slug, url, isCustom) {
       const html = await botRenderRes.text();
       const finalRes = new Response(html, {
         headers: {
-          "Content-Type": "text/html; charset=utf-8",
+          "Content-Type": wantsMarkdown ? "text/markdown; charset=utf-8" : "text/html; charset=utf-8",
+          "Vary": "Accept",
+          "Content-Signal": "search=yes, ai-input=yes, ai-train=yes",
           // v8.67.0 BAN-FIX P0-1: SWR slashed 604800→3600 so stale bot HTML
           // can't survive >1h after a fix deploys. Was masking the v8.61.0
           // doorway-redirect fix for up to 7 days = active cloaking signal.
