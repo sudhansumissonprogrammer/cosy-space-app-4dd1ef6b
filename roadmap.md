@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Audit uploaded enterprise multi-tenant shopping discovery brief: classify existing features, research official onboarding, sample 20 live products across tenants, repair confirmed safe gaps, and document external blockers without altering merchant data/payments.
 - [x] Reaudit Utkal product SEO: full eligible aggregate (6,583 search descriptions; 3,197 missing product descriptions; 2 missing primary images), bounded live samples, shared metadata/canonical/price/headline corrections, deployed edge functions and real preview PDP; 125 tests pass. Details: docs/UTKAL-PRODUCT-SEO-RECHECK-2026-10-25.md.
 - [ ] Utkal remaining external/content gates: Cloudflare GPTBot 403 investigation, Search Console access, merchant-supplied missing facts/photos and cold-mobile/cache acceptance; no ranking guarantee.
 - [x] Audit uploaded SEO/GEO preservation checklist: source inventory, public production samples, safe schema/utility corrections, 105 regression checks and before/after matrix in docs/SEO-GEO-PRESERVATION-AUDIT-2026-10-25.md; original separate 20-phase specification not supplied; unverified areas explicitly retained.
