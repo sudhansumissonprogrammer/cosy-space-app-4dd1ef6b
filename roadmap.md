@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Reaudit Utkal product SEO against the preservation checklist: live deployment/product samples, shared metadata/schema gaps, fresh foundations scan and remaining ranking evidence; repair confirmed safe gaps only.
 - [x] Audit uploaded SEO/GEO preservation checklist: source inventory, public production samples, safe schema/utility corrections, 105 regression checks and before/after matrix in docs/SEO-GEO-PRESERVATION-AUDIT-2026-10-25.md; original separate 20-phase specification not supplied; unverified areas explicitly retained.
 - [ ] Deploy Worker 9.2.6-seo-preservation and publish frontend corrections; then confirm live utility noindex/no-store, corrected search action and platform schemas. Owner deployment/publication required.
 - [x] Add Classic Rounded to all themes offering navigation choices; verified four curved corners, Shop/Categories links, original Classic and desktop hiding on Utkal preview; existing store selections unchanged.
