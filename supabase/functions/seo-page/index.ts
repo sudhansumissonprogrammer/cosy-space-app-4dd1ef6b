@@ -5,6 +5,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { readAllRows, productImageUrls, sitemapLastmod } from "../_shared/seoDiscovery.ts";
 import { partitionSitemap, sitemapIndex } from "../_shared/sitemapDocuments.ts";
 import { buildRobotsTxt } from "../_shared/robotsPolicy.ts";
+import { discoveryAvailability, discoverySalePrice, hasRequiredFeedFacts } from "../_shared/productDiscoveryFacts.ts";
 
 const ROOT_DOMAIN = "shopbanao.in";
 
@@ -628,6 +629,7 @@ async function handleLlms(url: URL) {
 async function handleProductFeed(url: URL) {
   const slug = url.searchParams.get("slug");
   const format = url.searchParams.get("format") || "xml";
+  if (!["xml", "csv"].includes(format)) return new Response("Unsupported feed format", { status: 400, headers: { ...corsHeaders, "Cache-Control": "no-store" } });
   // Parent offers only until all PDPs support truthful variant landing selection.
   const includeVariants = false;
 
@@ -712,6 +714,7 @@ async function handleProductFeed(url: URL) {
     const realImages = productImageUrls(p.image_url, imagesByProduct.get(p.id) || []);
     const imageLink = realImages[0] || "";
     const additionalImages = realImages.slice(1);
+    if (!hasRequiredFeedFacts(p, realImages)) continue;
     const variants = variantsByProduct.get(p.id) || [];
 
     if (includeVariants && variants.length > 0) {
@@ -744,9 +747,9 @@ async function handleProductFeed(url: URL) {
         item_group_id: null,
         title: p.name,
         description: desc,
-        availability: p.stock_quantity > 0 ? "in stock" : "out of stock",
+        availability: discoveryAvailability(p.stock_quantity) || "",
         price: `${Number(p.price).toFixed(2)} ${currency}`,
-        sale_price: p.sale_price && p.sale_price < p.price
+        sale_price: discoverySalePrice(p.price, p.sale_price) !== undefined
           ? `${Number(p.sale_price).toFixed(2)} ${currency}` : "",
         link,
         image_link: imageLink,
@@ -784,7 +787,7 @@ async function handleProductFeed(url: URL) {
         ...corsHeaders,
         "Content-Type": "text/csv; charset=utf-8",
         "Content-Disposition": `attachment; filename="${store.slug}-product-feed.csv"`,
-        "Cache-Control": "public, max-age=3600",
+        "Cache-Control": "public, max-age=60, s-maxage=60",
       },
     });
   }
@@ -826,8 +829,8 @@ ${items.join("\n")}
     headers: {
       ...corsHeaders,
       "Content-Type": "application/xml; charset=utf-8",
-      "Cache-Control": "public, max-age=1800, s-maxage=3600",
-      "CDN-Cache-Control": "public, max-age=3600",
+      "Cache-Control": "public, max-age=60, s-maxage=60",
+      "CDN-Cache-Control": "public, max-age=60",
     },
   });
 }

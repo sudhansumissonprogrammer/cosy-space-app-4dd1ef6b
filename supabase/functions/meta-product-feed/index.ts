@@ -13,11 +13,9 @@
 // everywhere on the storefront, so the feed uses products.id too.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { readAllRows, productImageUrls } from "../_shared/seoDiscovery.ts";
+import { discoveryAvailability, discoverySalePrice, hasRequiredFeedFacts } from "../_shared/productDiscoveryFacts.ts";
 
 // CSV escape — wrap in quotes, double internal quotes
 const csvEscape = (v: string | number | null | undefined): string => {
@@ -139,11 +137,14 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+  if (req.method !== "GET" && req.method !== "HEAD") {
+    return new Response("Method not allowed", { status: 405, headers: { ...corsHeaders, Allow: "GET, HEAD, OPTIONS", "Cache-Control": "no-store" } });
+  }
 
   try {
     const url = new URL(req.url);
     const slug = url.searchParams.get("slug");
-    if (!slug) {
+    if (!slug || !/^[a-z0-9][a-z0-9-]{0,99}$/.test(slug)) {
       return new Response("slug query param required", {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "text/plain" },
@@ -155,12 +156,13 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const { data: store } = await supabase
+    const { data: store, error: storeError } = await supabase
       .from("stores")
       .select("id, name, currency, custom_domain, slug")
       .eq("slug", slug)
       .eq("is_suspended", false)
       .maybeSingle();
+    if (storeError) throw new Error("Store retrieval failed");
 
     if (!store) {
       return new Response("store not found", {
@@ -169,27 +171,26 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data: products } = await supabase
+    const list = await readAllRows<any>((from, to) => supabase
       .from("products")
       .select("id, name, description, price, sale_price, image_url, stock_quantity, is_active, slug, category")
       .eq("store_id", store.id)
       .eq("is_active", true)
-      .limit(5000);
-
-    const list = products || [];
+      .eq("hidden_by_category", false)
+      .order("id").range(from, to));
 
     // Gallery images → additional_image_link (Meta allows up to 20, comma-sep).
     const galleryByProduct = new Map<string, string[]>();
-    if (list.length) {
-      const { data: imgs } = await supabase
+    for (let i = 0; i < list.length; i += 100) {
+      const imgs = await readAllRows<any>((from, to) => supabase
         .from("product_images")
-        .select("product_id, image_url, display_order")
-        .in("product_id", list.map((p) => p.id))
-        .order("display_order", { ascending: true });
+        .select("id, product_id, image_url, display_order")
+        .in("product_id", list.slice(i, i + 100).map((p) => p.id))
+        .order("display_order", { ascending: true }).order("id").range(from, to));
       for (const img of imgs || []) {
         if (!img.image_url) continue;
         const arr = galleryByProduct.get(img.product_id) || [];
-        if (arr.length < 20) arr.push(img.image_url);
+        if (arr.length < 9) arr.push(img.image_url);
         galleryByProduct.set(img.product_id, arr);
       }
     }
@@ -252,14 +253,15 @@ Deno.serve(async (req) => {
       // Meta requires a title, a link and an image — skip incomplete rows so
       // the whole feed doesn't get flagged with errors.
       const title = cleanText(p.name, 200);
-      if (!title || !p.image_url) continue;
+      const realImages = productImageUrls(p.image_url, galleryByProduct.get(p.id) || []).filter(u => /^https:\/\//i.test(u));
+      if (!title || !hasRequiredFeedFacts(p, realImages)) continue;
 
       // Use real column (stock_quantity). NULL = untracked → treat as in stock.
       // Numeric 0 (or negative) = out of stock. Anything > 0 = in stock.
       const qty = p.stock_quantity;
       const untracked = qty === null || qty === undefined;
-      const qtyNum = untracked ? 50 : Math.min(9999, Math.max(0, Number(qty) || 0));
-      const availability = untracked || qtyNum > 0 ? "in stock" : "out of stock";
+      const qtyNum = untracked || Number(qty) >= 999999 ? "" : Math.min(9999, Math.max(0, Number(qty)));
+      const availability = discoveryAvailability(qty);
 
       const regN = Number(p.price || 0);
       const saleN = Number(p.sale_price || 0);
@@ -270,35 +272,28 @@ Deno.serve(async (req) => {
       // Meta Commerce catalog auto-flags >70% manufactured discounts as
       // deceptive pricing → suspends the entire catalog + pixel. This usually
       // happens from paise/rupee data-entry mistakes (e.g. ₹1,90,000 → ₹1,800).
-      const validSale = saleN > 0 && saleN < regN && saleN / regN >= 0.05;
+      const validSale = discoverySalePrice(regN, saleN) !== undefined;
       const salePrice = validSale ? `${saleN.toFixed(2)} ${currency}` : "";
 
       const gcat = googleCategoryFor(p.category, p.name || "") || fallbackCat;
-      const gallery = (galleryByProduct.get(p.id) || []).filter((u) => u !== p.image_url);
+      const gallery = realImages.slice(1);
       const productType = cleanText(p.category, 750);
       const probe = `${p.name || ""} ${p.category || ""} ${p.description || ""}`;
 
       // Meta flags one-word / duplicate-of-title descriptions as low quality.
       let description = cleanText(p.description, 9999);
-      if (description.length < 40 || description.toLowerCase() === title.toLowerCase()) {
-        const bits = [
-          `${title} from ${brand}.`,
-          productType ? `Handpicked ${productType.toLowerCase()} crafted for everyday and festive wear.` : "Crafted for everyday and festive wear.",
-          "Lightweight, skin-friendly finish with secure fastening. Cash on delivery available across India.",
-        ];
-        description = bits.join(" ").slice(0, 9999);
-      }
+      if (!description) description = `View ${title} at ${store.name}.`;
 
       rows.push([
         csvEscape(p.id),
         csvEscape(title),
         csvEscape(description),
         csvEscape(availability),
-        csvEscape("new"),
+        csvEscape(""),
         csvEscape(regularPrice),
         csvEscape(`${baseUrl}/product/${p.slug || p.id}`),
-        csvEscape(p.image_url),
-        csvEscape(brand),
+        csvEscape(realImages[0]),
+        csvEscape(""),
         csvEscape(gcat),
         csvEscape(fbCategoryFor(gcat)),
         csvEscape(qtyNum),
@@ -309,29 +304,29 @@ Deno.serve(async (req) => {
         csvEscape(p.id),
         csvEscape(gallery.join(",")),
         csvEscape(productType),
-        csvEscape("adult"),
-        csvEscape(detectGender(probe)),
-        csvEscape(detectColor(probe)),
-        csvEscape(detectMaterial(probe)),
+        csvEscape(""),
+        csvEscape(""),
+        csvEscape(""),
+        csvEscape(""),
       ].join(","));
     }
 
 
-    return new Response(rows.join("\n"), {
+    return new Response(req.method === "HEAD" ? null : rows.join("\n"), {
       status: 200,
       headers: {
         ...corsHeaders,
         "Content-Type": "text/csv; charset=utf-8",
         "Content-Disposition": `inline; filename="${slug}-products.csv"`,
         // 1 hour edge cache — Meta refetches every few hours anyway
-        "Cache-Control": "public, max-age=3600, s-maxage=3600",
+        "Cache-Control": "public, max-age=60, s-maxage=60",
       },
     });
   } catch (err) {
     console.error("meta-product-feed error:", err);
     return new Response(
-      JSON.stringify({ error: err instanceof Error ? err.message : "unknown" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      JSON.stringify({ error: "Product feed temporarily unavailable" }),
+      { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" } },
     );
   }
 });

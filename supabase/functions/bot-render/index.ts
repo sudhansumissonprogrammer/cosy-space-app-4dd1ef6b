@@ -1,4 +1,5 @@
 import { productSearchDescription, productSearchPrice } from "../_shared/productSeo.ts";
+import { discoveryAvailability } from "../_shared/productDiscoveryFacts.ts";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { discoveryPage, discoveryUrl, DISCOVERY_PAGE_SIZE, productImageUrls } from "../_shared/seoDiscovery.ts";
 
@@ -58,6 +59,7 @@ function buildProductHtml(
       : null;
   const allImages = productImageUrls(product.image_url, (images || []).map(i => i.image_url));
   const heroImage = allImages[0] || "";
+  const availability = discoveryAvailability(product.stock_quantity);
 
   const storeBaseForCrumb = canonical.split("/product/")[0];
   const categoryName = product.seo_category?.name || "Shop All";
@@ -75,9 +77,7 @@ function buildProductHtml(
       "@type": "Offer",
       price: productSearchPrice(product),
       priceCurrency: product.currency || store.currency || "INR",
-      availability: product.stock_quantity > 0
-        ? "https://schema.org/InStock"
-        : "https://schema.org/OutOfStock",
+      ...(availability ? { availability: availability === "in stock" ? "https://schema.org/InStock" : "https://schema.org/OutOfStock" } : {}),
       url: canonical,
 
 
@@ -159,9 +159,9 @@ ${allImages.filter((img) => img !== heroImage).slice(0, 9).map((img: string, i: 
 <span itemprop="price" content="${productSearchPrice(product)}">${price}</span>
 <meta itemprop="priceCurrency" content="${product.currency || store.currency || "INR"}">
 ${originalPrice ? `<span class="original">${originalPrice}</span>` : ""}
-<link itemprop="availability" href="${product.stock_quantity > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"}">
+${availability ? `<link itemprop="availability" href="${availability === "in stock" ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"}">` : ""}
 </div>
-<p class="stock">${product.stock_quantity > 0 ? `In Stock (${product.stock_quantity} available)` : "Out of Stock"}</p>
+${availability ? `<p class="stock">${availability === "in stock" ? "In Stock" : "Out of Stock"}</p>` : ""}
 ${product.description ? `<div class="description" itemprop="description">${esc(product.description)}</div>` : ""}
 </div>
 </article>
@@ -835,7 +835,7 @@ async function renderRequest(req: Request): Promise<Response> {
           name: product.name,
           productDescription: product.description?.trim() || undefined,
           price, currency,
-          availability: product.stock_quantity > 0 ? "in stock" : "out of stock",
+          availability: discoveryAvailability(product.stock_quantity),
           canonical: `${canonical}/product/${encodeURIComponent(product.slug || product.id)}`,
           image: product.image_url || store.og_image_url || store.banner_url || store.logo_url || "",
         }), {

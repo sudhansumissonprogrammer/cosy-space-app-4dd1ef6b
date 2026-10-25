@@ -1,4 +1,5 @@
 import { productSearchPrice } from "../../supabase/functions/_shared/productSeo";
+import { discoveryAvailability } from "../../supabase/functions/_shared/productDiscoveryFacts";
 import { useEffect } from "react";
 import { getStoreBaseUrl } from "@/lib/storeUrl";
 import { waPhoneNumber } from "@/lib/phoneUtils";
@@ -38,7 +39,7 @@ interface ProductJsonLdOptions {
     slug?: string | null;
     id: string;
     category?: string | null;
-    stock_quantity?: number;
+    stock_quantity?: number | null;
     sku?: string | null;
     extraImages?: string[];
   };
@@ -56,6 +57,7 @@ export function useProductJsonLd({ product, storeSlug, storeName, customDomain, 
     const baseUrl = getStoreBaseUrl(storeSlug, customDomain);
     const productUrl = `${baseUrl}/product/${product.slug || product.id}`;
     const price = productSearchPrice(product);
+    const availability = discoveryAvailability(product.stock_quantity);
 
     const images = productImageUrls(product.image_url, product.extraImages);
 
@@ -69,9 +71,7 @@ export function useProductJsonLd({ product, storeSlug, storeName, customDomain, 
         "@type": "Offer",
         price: Number(price).toFixed(2),
         priceCurrency: product.currency || "INR",
-        availability: (product.stock_quantity ?? 0) > 0
-          ? "https://schema.org/InStock"
-          : "https://schema.org/OutOfStock",
+        ...(availability ? { availability: availability === "in stock" ? "https://schema.org/InStock" : "https://schema.org/OutOfStock" } : {}),
         url: productUrl,
         seller: {
           "@type": "Organization",

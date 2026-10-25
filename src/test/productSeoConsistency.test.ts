@@ -16,6 +16,13 @@ function schemas(html: string) {
 const store = { name: "Utkal Watches", custom_domain: "utkalwatch.in", currency: "INR" };
 
 describe("product search representation consistency", () => {
+  it.each([null, undefined, "", "invalid"])("omits Worker stock claims for unknown quantity %s", stock_quantity => {
+    const product = { id: "id", name: "Watch", price: 100, stock_quantity };
+    const html = renderer().head(store, "utkalwatches", "utkalwatch.in", "/product/id", { kind: "product", json: JSON.stringify({ product }) });
+    expect(schemas(html)[0].offers.availability).toBeUndefined();
+    expect(html).not.toContain('property="product:availability"');
+    expect(html).not.toContain('name="twitter:data2"');
+  });
   it.each([null, 80, 100, 120, 0])("matches the existing PDP price for sale %s", sale_price => {
     const product = { id: "id", slug: "watch", name: "Watch", price: 100, sale_price, stock_quantity: 1 };
     const html = renderer().head(store, "utkalwatches", "utkalwatch.in", "/product/watch", { kind: "product", json: JSON.stringify({ product }) });
