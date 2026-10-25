@@ -1,4 +1,5 @@
 # Project architecture decisions
+- Product search metadata uses the shared neutral description/parent-price helper across app and edge renderers; Worker mirrors that contract, resolves PDP identities from the product and omits missing facts, because search/share representations must not contradict shopper data or invent commercial claims.
 - Static platform JSON-LD in index.html is authoritative for the landing page; do not mount duplicate client schemas or unsupported ratings/search actions. Store and Product hooks use distinct script identities so lifecycle cleanup cannot remove another entity.
 - The visible FAQ owns its matching FAQPage schema; marked platform schemas are removed before storefront app boot, and Worker utility HTML receives query-free identity with noindex/no-store at the response boundary to cover every shell exit without changing app data.
 - Rounded Classic navigation reuses the Classic component through a presentation-only flag, preserving icons, cart actions, route visibility and scroll behavior without duplicated navigation logic.
