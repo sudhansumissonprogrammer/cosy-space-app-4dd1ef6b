@@ -7635,6 +7635,7 @@ async function _handleFetch(request, env, ctx) {
   if (earlyIsBot) {
     ctx.__skipKvWarm = true;
     const earlyIsStorefrontHtml =
+      !AI_CRAWLER_REGEX.test(earlyUA) &&
       earlyMethod === "GET" &&
       (earlyPath === "/" || /^\/[a-zA-Z0-9_-]+\/?$/.test(earlyPath)) &&
       !earlyPath.startsWith("/api/") &&
