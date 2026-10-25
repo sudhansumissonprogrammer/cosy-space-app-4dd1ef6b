@@ -1,6 +1,6 @@
 # Roadmap
-- [ ] Remove visible Previous/Next page buttons from shop/category/best-seller pages (keep endless scroll).
-- [ ] Connect Telegram after the 02:48 UTC workspace move.
+- [x] Remove visible Previous/Next page buttons from shop/category/best-seller pages (endless scroll kept).
+- [x] Connect Telegram after the 02:48 UTC workspace move; @Shopbanaobot verified, alerts refreshed, no replay.
 - [x] Connect Telegram after the 02:37 UTC Oct 25 workspace move; @Shopbanaobot verified, order alerts refreshed, no replay.
 - [x] Utkal keyword SEO (generic terms only): homepage + Men's/Women's/Luxury/Sale/Trending search titles and descriptions live for Google.
 - [ ] Utkal brand categories/product pages: declined brand-name keyword copy because owner confirmed replicas; needs genuine/authorised stock or owner's own brand.
