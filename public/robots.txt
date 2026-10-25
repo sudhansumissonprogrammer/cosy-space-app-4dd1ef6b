@@ -47,6 +47,7 @@ User-agent: FacebookBot
 User-agent: LinkedInBot
 User-agent: WhatsApp
 User-agent: *
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
 Allow: /
 Disallow: /dashboard
 Disallow: /admin
