@@ -6,7 +6,7 @@ import { buildStorefrontH1 } from "../lib/storefrontSeoH1";
 
 const worker = readFileSync("docs/cloudflare-worker-current.js", "utf8").replace("export default {", "const workerExport = {");
 function renderer() {
-  const context = vm.createContext({ Request, Response, Headers, URL, URLSearchParams, TextEncoder, TextDecoder, console, setTimeout, clearTimeout });
+  const context = vm.createContext({ Request, Response, Headers, URL, URLSearchParams, TextEncoder, TextDecoder, console, setTimeout, clearTimeout, caches: { default: {} } });
   vm.runInContext(worker + "\nglobalThis.renderers = { head: _buildPdpCategorySeoHead, social: buildOgHtml, home: _buildSeoBodyBlock };", context);
   return context.renderers as { head: (...args: any[]) => string; social: (...args: any[]) => string; home: (...args: any[]) => string };
 }
