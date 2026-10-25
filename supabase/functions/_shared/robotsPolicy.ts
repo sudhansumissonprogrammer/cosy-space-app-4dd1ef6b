@@ -4,12 +4,13 @@ export const ALLOWED_AI_AGENTS = [
   "Claude-SearchBot", "Claude-User", "ClaudeBot", "Claude-Web", "anthropic-ai",
   "Google-Extended", "GoogleOther", "Applebot-Extended", "Amazonbot", "DuckAssistBot",
   "Meta-ExternalAgent", "Meta-ExternalFetcher", "Bytespider", "cohere-ai",
-  "cohere-training-data-crawler", "CCBot",
+  "cohere-training-data-crawler", "CCBot", "YouBot", "Bravebot", "Timpibot",
+  "AI2Bot", "Diffbot", "Omgilibot", "Omgili", "Google-CloudVertexBot", "Gemini-Deep-Research",
 ] as const;
 
 export const BLOCKED_SCRAPERS = [
   "AhrefsBot", "SemrushBot", "MJ12bot", "DotBot", "PetalBot", "BLEXBot",
-  "DataForSeoBot", "SeznamBot", "Diffbot", "ImagesiftBot", "Omgilibot", "Omgili",
+  "DataForSeoBot", "SeznamBot", "ImagesiftBot",
 ] as const;
 
 export const PRIVATE_CRAWL_PATHS = [
@@ -22,7 +23,7 @@ export const PRIVATE_CRAWL_PATHS = [
 export function buildRobotsTxt(baseUrl: string): string {
   const base = new URL(baseUrl).origin;
   // Consecutive agents share one group: explicit agents inherit these restrictions.
-  const publicAgents = [...ALLOWED_AI_AGENTS, "Googlebot", "Bingbot", "DuckDuckBot",
+  const publicAgents = [...ALLOWED_AI_AGENTS, "Googlebot", "Google-InspectionTool", "AdsBot-Google", "Mediapartners-Google", "Bingbot", "DuckDuckBot",
     "Slurp", "YandexBot", "Applebot", "Twitterbot", "facebookexternalhit",
     "FacebookBot", "LinkedInBot", "WhatsApp", "*"];
   return `# ${new URL(base).hostname} - public search and AI crawler access\n` +

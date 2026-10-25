@@ -243,7 +243,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "9.2.3-ai-crawler-access";
+const WORKER_VERSION = "9.2.4-ai-public-routing";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -511,11 +511,20 @@ const SUPABASE_ANON_KEY =
    BOT DETECTION
    ============================================================ */
 
-const SEARCH_BOT_REGEX = /Googlebot|Bingbot|DuckDuckBot|YandexBot|Baiduspider|Applebot|Sogou|Exabot|ia_archiver/i;
+const SEARCH_BOT_REGEX = /Googlebot|Google-InspectionTool|AdsBot-Google|Mediapartners-Google|Bingbot|DuckDuckBot|YandexBot|Baiduspider|Applebot|Sogou|Exabot|ia_archiver/i;
 
 // AI search, user retrieval and named training agents may read public content.
 // Keep generic bot rate limits: a user-agent string is not verified identity.
-const AI_CRAWLER_REGEX = /OAI-SearchBot|ChatGPT-User|GPTBot|PerplexityBot|Perplexity-User|Claude-SearchBot|Claude-User|ClaudeBot|Claude-Web|anthropic-ai|Google-Extended|GoogleOther|Applebot-Extended|Amazonbot|DuckAssistBot|Bytespider|cohere-ai|cohere-training-data-crawler|CCBot/i;
+const AI_CRAWLER_REGEX = /OAI-SearchBot|ChatGPT-User|GPTBot|PerplexityBot|Perplexity-User|Claude-SearchBot|Claude-User|ClaudeBot|Claude-Web|anthropic-ai|Google-Extended|GoogleOther|Google-CloudVertexBot|Gemini-Deep-Research|Applebot-Extended|Amazonbot|DuckAssistBot|Bytespider|cohere-ai|cohere-training-data-crawler|CCBot|YouBot|Bravebot|Timpibot|AI2Bot|Diffbot|Omgilibot|Omgili/i;
+
+function isPublicCrawlerRead(request, url) {
+  if (request.method !== "GET" && request.method !== "HEAD") return false;
+  const ua = request.headers.get("User-Agent") || "";
+  if (!AI_CRAWLER_REGEX.test(ua) && !SEARCH_BOT_REGEX.test(ua)) return false;
+  if (["/robots.txt", "/sitemap.xml", "/llms.txt"].includes(url.pathname) || /^\/sitemap-[1-9]\d{0,4}\.xml$/.test(url.pathname)) return true;
+  const route = getBotRoute(url.pathname);
+  return !!route && /^(home|product|category|shop|best-sellers|categories|about|contact|page)$/.test(route.kind);
+}
 
 // v6.9.4: Expanded bot block list. These crawlers generate massive request
 // volume with zero business value. Blocked at the edge with 403 + 1-day cache
@@ -529,7 +538,7 @@ const AI_CRAWLER_REGEX = /OAI-SearchBot|ChatGPT-User|GPTBot|PerplexityBot|Perple
 // this list — they're used by Meta's ad-review sandboxes and legitimate
 // integration tests. Blocking them at the edge was a hidden ban vector.
 const BLOCKED_BOT_REGEX =
-  /AhrefsBot|SemrushBot|MJ12bot|DotBot|PetalBot|BLEXBot|DataForSeoBot|SeznamBot|ZoominfoBot|MegaIndex|serpstatbot|SurdotlyBot|barkrowler|Mail\.RU_Bot|YisouSpider|FriendlyCrawler|ImagesiftBot|Diffbot|magpie-crawler|TurnitinBot|grapeshot|linkfluence|proximic|trendictionbot|TweetmemeBot|Buck|webmeup-crawler|SiteAuditBot|VelenPublicWebCrawler|sentibot|EzoicBot|netEstate|coccocbot|YaK|Neevabot|admantx|Bravebot|Timpibot|ICC-Crawler|Webzio|YouBot|ISSCyberRiskCrawler|Sidetrade|news-please|Scrapy/i;
+  /AhrefsBot|SemrushBot|MJ12bot|DotBot|PetalBot|BLEXBot|DataForSeoBot|SeznamBot|ZoominfoBot|MegaIndex|serpstatbot|SurdotlyBot|barkrowler|Mail\.RU_Bot|YisouSpider|FriendlyCrawler|ImagesiftBot|magpie-crawler|TurnitinBot|grapeshot|linkfluence|proximic|trendictionbot|TweetmemeBot|Buck|webmeup-crawler|SiteAuditBot|VelenPublicWebCrawler|sentibot|EzoicBot|netEstate|coccocbot|YaK|Neevabot|admantx|ICC-Crawler|Webzio|ISSCyberRiskCrawler|Sidetrade|news-please|Scrapy/i;
 
 // Common attack/probe paths — return 410 Gone with long cache so CF serves cached.
 const ATTACK_PATH_REGEX =
@@ -707,7 +716,7 @@ const RATE_LIMIT_MAP_MAX = 10_000;
 
 function isRateLimited(ip, isApi = false) {
   if (!ip) return false;
-  const limit = isApi ? RATE_LIMIT_MAX_API : RATE_LIMIT_MAX_HTML;
+  const limit = typeof isApi === "number" ? isApi : isApi ? RATE_LIMIT_MAX_API : RATE_LIMIT_MAX_HTML;
   const now = Date.now();
   const entry = rateLimitMap.get(ip);
   if (!entry || now > entry.resetAt) {
@@ -6534,15 +6543,11 @@ async function handleBot(request, slug, url, isCustom) {
   // `unverifiable_url` account bans. Anonymous scrapers still hit the 60/min
   // cap via BLOCKED_BOT_REGEX or fall into the `anybot:` cap below.
   const isMetaOrSearchUA = SOCIAL_BOT_REGEX.test(ua) || SEARCH_BOT_REGEX.test(ua);
-  if (!isMetaOrSearchUA && isRateLimited(`bot:${botIp}`, true)) {
-    return new Response("Too Many Requests", { status: 429, headers: { "Retry-After": "60" } });
-  }
-
-  // BAN-FIX A3: `anybot:` bucket raised 30 → 120 req/min AND completely
-  // exempted for Meta / Googlebot UAs. Meta re-crawls product URLs from
-  // multiple datacenters in bursts during ad review; 30/min was tripping
-  // every large campaign audit. Non-verified bots still hit the cap.
-  if (!isMetaOrSearchUA && isRateLimited(`anybot:${botIp}`, 120)) {
+  // Named AI agents get a public-read budget, not an authentication bypass.
+  // Scope by tenant so one store cannot consume another store's crawl budget.
+  const publicAiRead = AI_CRAWLER_REGEX.test(ua) && isPublicCrawlerRead(request, url);
+  const crawlerLimit = publicAiRead ? RATE_LIMIT_MAX_HTML : RATE_LIMIT_MAX_API;
+  if (!isMetaOrSearchUA && isRateLimited(`crawler:${url.hostname}:${botIp}`, crawlerLimit)) {
     return new Response("Rate limited", {
       status: 429,
       headers: { "Retry-After": "60", "Cache-Control": "no-store" },
@@ -7495,7 +7500,7 @@ async function _handleFetch(request, env, ctx) {
       const isHtmlNav = isHtmlNavigationPath(earlyPath);
       // For HTML nav: allow lookup ONLY if anonymous + non-private.
       // For non-HTML (assets, robots, etc.): always allow.
-      const shouldCheckMirror = !isHtmlNav || (!isAuthed && !isPrivatePath);
+      const shouldCheckMirror = !isPublicCrawlerRead(request, earlyUrl) && (!isHtmlNav || (!isAuthed && !isPrivatePath));
       let cached = null;
       let hitKey = null;
       let slugForKey = null;
@@ -7635,7 +7640,7 @@ async function _handleFetch(request, env, ctx) {
   if (earlyIsBot) {
     ctx.__skipKvWarm = true;
     const earlyIsStorefrontHtml =
-      !AI_CRAWLER_REGEX.test(earlyUA) &&
+      !isPublicCrawlerRead(request, earlyUrl) &&
       earlyMethod === "GET" &&
       (earlyPath === "/" || /^\/[a-zA-Z0-9_-]+\/?$/.test(earlyPath)) &&
       !earlyPath.startsWith("/api/") &&
@@ -7875,7 +7880,7 @@ async function _handleFetch(request, env, ctx) {
     !request.headers.get("cookie")?.includes("auth");
 
   const ua = request.headers.get("User-Agent") || "";
-  const isBot = BOT_UA_REGEX.test(ua);
+  const isBot = BOT_UA_REGEX.test(ua) || AI_CRAWLER_REGEX.test(ua) || SEARCH_BOT_REGEX.test(ua);
 
   if (isCacheableRequest && !isBot && request.headers.get("x-sf-allow-html-cache") === "1") {
     const earlyKey = getEarlyCacheKey(hostname, url.pathname);
@@ -8324,6 +8329,25 @@ async function _handleFetch(request, env, ctx) {
     } catch {
       clearTimeout(timeout);
       return new Response("Gateway Timeout", { status: 504 });
+    }
+  }
+
+  // Public search/AI requests must reach the renderer BEFORE human shell
+  // warming and cold/streaming exits, on both tenant host types.
+  if (hostname !== ROOT_DOMAIN && hostname !== `www.${ROOT_DOMAIN}` && isPublicCrawlerRead(request, url)) {
+    if (hostname.startsWith("www.")) return Response.redirect(`https://${hostname.slice(4)}${url.pathname}${url.search}`, 301);
+    const isSubdomain = hostname.endsWith(`.${ROOT_DOMAIN}`);
+    const crawlSlug = isSubdomain ? hostname.slice(0, -ROOT_DOMAIN.length - 1) : await resolveDomain(hostname, env);
+    if (crawlSlug && !crawlSlug.includes(".")) {
+      if (isSubdomain) {
+        const customDomain = await getCustomDomainForSlug(crawlSlug);
+        if (customDomain) return Response.redirect(`https://${customDomain}${url.pathname}${url.search}`, 301);
+      }
+      const crawlResponse = await handleSeoFiles(url, crawlSlug, hostname) || await handleBot(request, crawlSlug, url, !isSubdomain);
+      if (crawlResponse) {
+        crawlResponse.headers.set("X-Worker-Version", WORKER_VERSION);
+        return request.method === "HEAD" ? new Response(null, { status: crawlResponse.status, headers: crawlResponse.headers }) : crawlResponse;
+      }
     }
   }
 

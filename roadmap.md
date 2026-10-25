@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Deep-audit and correct remaining Worker AI blocks/cache shortcuts across all stores; validate with executable crawler tests and live probes.
 - [x] Audit AI crawler access with Utkal priority; shared robots deployed, Worker source corrected, 39 tests pass; findings in docs/ai-crawler-access-audit-2026-10-25.md.
 - [ ] AI crawler rollout: owner deploys Worker v9.2.3-ai-crawler-access and publishes static robots; recheck live Utkal ChatGPT/Perplexity access afterward.
 - [x] Recheck and connect Telegram after the 03:02 UTC Oct 25 workspace move; @Shopbanaobot verified and alerts redeployed without replay.
