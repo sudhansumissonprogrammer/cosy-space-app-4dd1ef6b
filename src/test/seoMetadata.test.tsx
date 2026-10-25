@@ -1,12 +1,57 @@
 import { render, cleanup } from "@testing-library/react";
 import { afterEach, expect, it } from "vitest";
 import { useMetaTags } from "@/hooks/useMetaTags";
-import { useProductJsonLd } from "@/hooks/useJsonLd";
+import { useProductJsonLd, useProductListJsonLd, useStoreJsonLd } from "@/hooks/useJsonLd";
 import { MemoryRouter, Link } from "react-router-dom";
 import { fireEvent } from "@testing-library/react";
 import { useCanonical } from "@/hooks/useCanonical";
 
 afterEach(() => { cleanup(); document.head.querySelectorAll('link[rel="canonical"],script[type="application/ld+json"]').forEach(e => e.remove()); });
+
+it("keeps product data intact when the store entity unmounts", () => {
+  function Store() {
+    useStoreJsonLd({ storeName: "Utkal Watches", storeSlug: "utkalwatches", customDomain: "utkalwatch.in" });
+    return null;
+  }
+  function Product() {
+    useProductJsonLd({ product: { id: "watch", name: "Watch", price: 1149, currency: "INR", stock_quantity: 1 }, storeSlug: "utkalwatches", storeName: "Utkal Watches", customDomain: "utkalwatch.in" });
+    return null;
+  }
+  const page = render(<><Product /><Store /></>);
+  const store = JSON.parse(document.getElementById("json-ld-store")?.textContent || "{}");
+  expect(store["@type"]).toBe("Store");
+  expect(JSON.parse(document.getElementById("json-ld-website")?.textContent || "{}").potentialAction.target).toBe("https://utkalwatch.in/search?q={search_term_string}");
+  expect(JSON.parse(document.getElementById("json-ld-structured-data")?.textContent || "{}")["@type"]).toBe("Product");
+  page.rerender(<><Product /></>);
+  expect(JSON.parse(document.getElementById("json-ld-structured-data")?.textContent || "{}").offers.price).toBe("1149.00");
+});
+
+it("updates offer price and stock from changed product data without altering images", () => {
+  const image = "https://cdn.shopbanao.in/original.webp";
+  function Product({ price, stock }: { price: number; stock: number }) {
+    useProductJsonLd({ product: { id: "watch", name: "Watch", price: 1999, sale_price: price, currency: "INR", stock_quantity: stock, image_url: image }, storeSlug: "utkalwatches", storeName: "Utkal Watches", customDomain: "utkalwatch.in" });
+    return null;
+  }
+  const page = render(<Product price={1149} stock={1} />);
+  expect(JSON.parse(document.getElementById("json-ld-structured-data")?.textContent || "{}").offers.price).toBe("1149.00");
+  page.rerender(<Product price={1299} stock={0} />);
+  const data = JSON.parse(document.getElementById("json-ld-structured-data")?.textContent || "{}");
+  expect(data.offers.price).toBe("1299.00");
+  expect(data.offers.availability).toBe("https://schema.org/OutOfStock");
+  expect(data.image).toBe(image);
+});
+
+it("reports only the actual bounded list entries in ItemList", () => {
+  function Page() {
+    useProductListJsonLd({ products: Array.from({ length: 35 }, (_, id) => ({ id: String(id), name: `Watch ${id}`, price: 1149 })), storeSlug: "utkalwatches", customDomain: "utkalwatch.in" });
+    return null;
+  }
+  render(<Page />);
+  const data = JSON.parse(document.getElementById("json-ld-item-list")?.textContent || "{}");
+  expect(data.numberOfItems).toBe(30);
+  expect(data.itemListElement).toHaveLength(30);
+  expect(data.itemListElement[29].url).toBe("https://utkalwatch.in/product/29");
+});
 
 it("keeps PDP canonical when an inactive shell updates", () => {
   function Page({ name }: { name: string }) {
