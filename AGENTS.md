@@ -1,4 +1,5 @@
 # Project architecture decisions
+- Static platform JSON-LD in index.html is authoritative for the landing page; do not mount duplicate client schemas or unsupported ratings/search actions. Store and Product hooks use distinct script identities so lifecycle cleanup cannot remove another entity.
 - Rounded Classic navigation reuses the Classic component through a presentation-only flag, preserving icons, cart actions, route visibility and scroll behavior without duplicated navigation logic.
 - Static platform robots and generated storefront robots use the shared crawler policy; AI crawler rendering must agree with those permissions, while authentication and utility noindex remain independent.
 - Public search/AI GET and HEAD requests dispatch to tenant SEO rendering before human HTML caches and cold/streaming shell exits; AI budgets remain host-scoped and bounded because user-agent names are not authentication.
