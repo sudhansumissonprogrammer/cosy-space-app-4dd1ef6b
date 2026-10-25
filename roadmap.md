@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Add allow-all public Content Signals; audit existing sitemaps; implement negotiated storefront Markdown without changing browser pages or private access.
 - [x] Deep-audit and correct Worker AI blocks/cache shortcuts across all stores; v9.2.4 public tenant dispatch, bounded budgets and expanded agents; 69 tests pass; live old Worker blocks confirmed on four hosts.
 - [x] Audit AI crawler access with Utkal priority; shared robots deployed, Worker source corrected, 39 tests pass; findings in docs/ai-crawler-access-audit-2026-10-25.md.
 - [ ] AI crawler rollout: owner deploys Worker v9.2.4-ai-public-routing and publishes static robots; recheck live Utkal ChatGPT/Perplexity access afterward (live /__health still v9.2.2, all four sampled stores block ChatGPT).
