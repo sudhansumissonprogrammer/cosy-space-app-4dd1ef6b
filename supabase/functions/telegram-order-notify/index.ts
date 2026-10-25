@@ -8,7 +8,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const GATEWAY_URL = "https://connector-gateway.lovable.dev/telegram";
+// Direct Telegram Bot API — no connector. The bot token lives in the
+// TELEGRAM_BOT_TOKEN secret, so workspace moves never break order alerts.
+const TELEGRAM_API_BASE = "https://api.telegram.org";
 
 function esc(s: unknown): string {
   return String(s ?? "")
