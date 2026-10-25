@@ -1,7 +1,7 @@
 # Roadmap
-- [ ] Recheck and connect Telegram after the 03:02 UTC Oct 25 workspace move without replay.
-- [ ] Audit and fix shared headings, accessible labels and metadata across current/future storefront pages.
-- [ ] Connect Telegram after the 02:58 UTC Oct 25 workspace move; verify bot and refresh notifications without history replay.
+- [x] Recheck and connect Telegram after the 03:02 UTC Oct 25 workspace move; @Shopbanaobot verified and alerts redeployed without replay.
+- [x] Audit shared headings, accessible labels and metadata: fixed theme 2/18 home identity, theme 2/11 controls, theme 19/20 cart/error headings and category error heading; inherited home headings verified, 16 SEO tests passed, real Utkal home/shop/categories/PDP checked. Future routes must follow AGENTS.md heading ownership.
+- [x] Connect Telegram after the 02:58 UTC Oct 25 workspace move; bot verified and notifications refreshed without history replay.
 - [x] Remove visible Previous/Next page buttons from shop/category/best-seller pages (endless scroll kept).
 - [x] Connect Telegram after the 02:48 UTC workspace move; @Shopbanaobot verified, alerts refreshed, no replay.
 - [x] Connect Telegram after the 02:37 UTC Oct 25 workspace move; @Shopbanaobot verified, order alerts refreshed, no replay.
@@ -18,7 +18,7 @@
 - [x] Connect Telegram after the 17:20 UTC workspace move; @Shopbanaobot verified and alerts refreshed without replay.
 - [x] Reconnect Telegram after the 17:15 UTC workspace move; bot verified and alerts refreshed without replay.
 - [x] Apply initial SEO metadata, bounded bot pagination, sitemap paging and factual-schema corrections; 16 tests passed, Utkal PDP and page-two search response verified.
-- [ ] Complete universal SEO rollout: owner must deploy Worker 9.2.2-search-completeness and publish frontend edits; live pagination/invalid/missing/utility checks still fail on the current deployment. Recheck cache behavior, remaining theme/category/performance and image acceptance after deployment; product→cart→checkout entry passes locally.
+- [ ] Complete universal SEO rollout: Worker deployment verified live Oct 25 (audit documents acceptance); frontend publish and remaining theme/performance/image acceptance still pending.
 - [ ] Evidence-led Utkal SEO/content: authorised Search Console data and merchant-approved product facts required; do not submit replica offers to Merchant Center.
 - [x] Reconnect Telegram after the 17:08 UTC workspace move; current bot verified and alerts refreshed without replay.
 - [x] Reconnect Telegram after the latest workspace move; @Shopbanaobot verified and order-alert function refreshed without replay.

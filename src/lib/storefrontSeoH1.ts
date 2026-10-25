@@ -12,16 +12,21 @@
  *   1. store.seo_h1_suffix   (merchant-provided override)
  *   2. store.tagline         (merchant tagline, if filled)
  *   3. truncated description (first sentence / 80 chars)
- *   4. generic India-friendly fallback (COD + UPI + delivery)
+ *   4. neutral online-store fallback (no unverified payment/delivery claims)
  */
 export function buildStorefrontH1(store: any): string {
   const name = (store?.name || "Online Store").trim();
 
   const pick = (v: any) => (typeof v === "string" && v.trim().length > 0 ? v.trim() : "");
   const truncate = (s: string, n = 90) => (s.length > n ? s.slice(0, n - 1).replace(/[\s,;:.!?-]+$/, "") + "…" : s);
+  const withStoreName = (text: string) => {
+    // Merchant text can already include the store name; don't repeat it.
+    const alreadyNamed = text.toLocaleLowerCase().startsWith(name.toLocaleLowerCase());
+    return alreadyNamed ? truncate(text, name.length + 93) : `${name} — ${truncate(text)}`;
+  };
 
   const explicit = pick(store?.seo_h1_suffix) || pick(store?.tagline);
-  if (explicit) return `${name} — ${truncate(explicit)}`;
+  if (explicit) return withStoreName(explicit);
 
   const desc = pick(store?.description) || pick(store?.meta_description) || pick(store?.seo_about_paragraph);
   if (desc) {
@@ -30,8 +35,8 @@ export function buildStorefrontH1(store: any): string {
     // "Invalid regular expression: invalid group specifier name" and blank the page.
     const match = desc.match(/[.!?]\s/);
     const firstSentence = match?.index != null ? desc.slice(0, match.index + 1) : desc;
-    return `${name} — ${truncate(firstSentence)}`;
+    return withStoreName(firstSentence);
   }
 
-  return `${name} — Shop Online with COD, UPI Payments & Fast Delivery Across India`;
+  return `${name} — Online Store`;
 }

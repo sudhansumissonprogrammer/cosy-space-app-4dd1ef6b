@@ -154,10 +154,10 @@ function HeroSlides({ slides, store }: { slides: { image: string; title: string;
       {/* Arrows */}
       {slideCount > 1 && (
         <>
-          <button onClick={prev} className="absolute left-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-md transition hover:bg-white/30">
+          <button aria-label="Previous slide" onClick={prev} className="absolute left-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-md transition hover:bg-white/30">
             <ChevronLeft className="h-5 w-5" />
           </button>
-          <button onClick={next} className="absolute right-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-md transition hover:bg-white/30">
+          <button aria-label="Next slide" onClick={next} className="absolute right-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-md transition hover:bg-white/30">
             <ChevronRight className="h-5 w-5" />
           </button>
         </>
@@ -169,6 +169,8 @@ function HeroSlides({ slides, store }: { slides: { image: string; title: string;
           {slides.map((_, i) => (
             <button
               key={i}
+              aria-label={`Show slide ${i + 1}`}
+              aria-current={i === current ? "true" : undefined}
               onClick={() => setCurrent(i)}
               className="h-2 rounded-full transition-[transform,opacity,colors,box-shadow] duration-300"
               style={{
