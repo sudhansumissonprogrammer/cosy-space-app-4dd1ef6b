@@ -21,6 +21,13 @@ if (typeof window !== "undefined" && typeof (window as any).cancelIdleCallback !
 
 installChunkLoadRecovery();
 
+// Worker strips these on production storefronts; also isolate path-based
+// previews and direct origins before merchant schemas mount.
+if (window.location.pathname.startsWith("/store/") || isSubdomainHost() || isCustomDomainHost()) {
+  document.querySelectorAll('script[type="application/ld+json"][data-platform-seo="1"]')
+    .forEach((script) => script.remove());
+}
+
 // 🔗 WhatsApp branded redirector (/r/<token>, /cart/<token>, /order/<token>)
 // is now handled entirely at the Cloudflare Worker edge — it fetches wa-r
 // and returns the 302 directly, with zero HTML/JS. This saves the 2-4s
@@ -172,7 +179,8 @@ if ("requestIdleCallback" in window) {
   }, 2000);
 }
 
-const rootElement = document.getElementById("root")!;
+const rootElement = document.getElementById("root");
+if (!rootElement) throw new Error("Application root is missing");
 
 /**
  * Two-tier entry point:

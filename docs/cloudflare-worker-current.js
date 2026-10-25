@@ -243,7 +243,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "9.2.5-agent-content";
+const WORKER_VERSION = "9.2.6-seo-preservation";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -536,6 +536,37 @@ function prefersMarkdown(accept) {
   if (!markdown || markdown.q === 0) return false;
   const html = ranges.find(r => r.type === "text/html") || ranges.find(r => r.type === "text/*") || ranges.find(r => r.type === "*/*");
   return markdown.q >= (html?.q || 0);
+}
+
+function isUtilitySearchPath(pathname) {
+  return /^\/(?:store\/[^/]+\/)?(?:cart|checkout|account|search|track-order|wishlist|auth|login|signup|order-confirmation)(?:\/|$)/.test(pathname);
+}
+
+// Utility HTML can arrive through many shell/cache exits. Apply the policy at
+// the response boundary without touching app scripts, request queries or data.
+async function protectUtilitySearchResponse(request, response) {
+  const url = new URL(request.url);
+  if (!isUtilitySearchPath(url.pathname) || !["GET", "HEAD"].includes(request.method)) return response;
+  const headers = new Headers(response.headers);
+  headers.set("X-Robots-Tag", "noindex, follow");
+  headers.set("Cache-Control", "no-store");
+  headers.delete("CDN-Cache-Control");
+  headers.delete("Cloudflare-CDN-Cache-Control");
+  headers.delete("Content-Length");
+  if (request.method === "HEAD") return new Response(null, { status: response.status, headers });
+  if (!/text\/html/i.test(headers.get("Content-Type") || "")) return new Response(response.body, { status: response.status, headers });
+  const canonical = escapeHtml(url.origin + url.pathname.replace(/\/$/, ""));
+  let html = await response.text();
+  const end = html.indexOf("</head>");
+  if (end >= 0) {
+    const head = html.slice(0, end)
+      .replace(/<meta[^>]+name=["']robots["'][^>]*>\s*/gi, "")
+      .replace(/<link[^>]+rel=["']canonical["'][^>]*>\s*/gi, "")
+      .replace(/<meta[^>]+property=["']og:url["'][^>]*>\s*/gi, "")
+      .replace(/<script[^>]+type=["']application\/ld\+json["'][^>]*>[\s\S]*?<\/script>\s*/gi, "");
+    html = head + `<meta name="robots" content="noindex,follow"><link rel="canonical" href="${canonical}"><meta property="og:url" content="${canonical}">` + html.slice(end);
+  }
+  return new Response(html, { status: response.status, headers });
 }
 
 function isPublicCrawlerRead(request, url) {
@@ -7408,7 +7439,7 @@ export default {
     _envRef = env;
     _ctxRef = ctx;
     const _res = await _handleFetch(request, env, ctx);
-    return finalizeResponse(request, _res);
+    return finalizeResponse(request, await protectUtilitySearchResponse(request, _res));
   },
   async scheduled(event, env, ctx) {
     return _handleScheduled(event, env, ctx);
@@ -7519,14 +7550,14 @@ async function _handleFetch(request, env, ctx) {
       const cookie = request.headers.get("cookie") || "";
       const isAuthed = /(?:^|;\s*)(?:sb-|.*auth)/i.test(cookie);
       const isPrivatePath =
-        earlyPath.startsWith("/checkout") ||
+        isUtilitySearchPath(earlyPath) ||
         earlyPath.startsWith("/dashboard") ||
         earlyPath.startsWith("/admin") ||
         earlyPath.startsWith("/api/");
       const isHtmlNav = isHtmlNavigationPath(earlyPath);
       // For HTML nav: allow lookup ONLY if anonymous + non-private.
       // For non-HTML (assets, robots, etc.): always allow.
-      const shouldCheckMirror = !isPublicCrawlerRead(request, earlyUrl) && (!isHtmlNav || (!isAuthed && !isPrivatePath));
+      const shouldCheckMirror = !isPrivatePath && !isPublicCrawlerRead(request, earlyUrl) && (!isHtmlNav || !isAuthed);
       let cached = null;
       let hitKey = null;
       let slugForKey = null;

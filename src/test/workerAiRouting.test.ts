@@ -20,19 +20,49 @@ function harness(warm = false) {
     resolveDomain = async () => "utkalwatches";
     getCustomDomainForSlug = async () => null;
     callEdgeFunction = async (name, params) => { rendererCalls.push({name, ...params}); return new Response("public result", {headers:{"Content-Type":"text/html"}}); };
-    globalThis.api = { run: _handleFetch, bot: handleBot, publicRead: isPublicCrawlerRead, limited: isRateLimited };
+    globalThis.api = { run: _handleFetch, bot: handleBot, publicRead: isPublicCrawlerRead, limited: isRateLimited, utility: protectUtilitySearchResponse, utilityPath: isUtilitySearchPath };
   `, context);
   const api = context.api as {
     run: (r: Request, e: object, c: object) => Promise<Response>;
     bot: (r: Request, slug: string, url: URL, custom: boolean) => Promise<Response>;
     publicRead: (r: Request, url: URL) => boolean;
     limited: (key: string, limit: number) => boolean;
+    utility: (r: Request, response: Response) => Promise<Response>;
+    utilityPath: (path: string) => boolean;
   };
   const request = (host: string, path: string, ua = "ChatGPT-User", method = "GET", accept = "text/html") => new Request(`https://${host}${path}`, { method, headers: {"User-Agent": ua, "cf-connecting-ip": "192.0.2.1", Accept: accept} });
   return { api, request, cacheCalls, rendererCalls, ctx: { waitUntil: () => {} } };
 }
 
 describe("Worker public AI routing", () => {
+  it.each(["Googlebot", "ChatGPT-User", "Mozilla/5.0"])("protects utility shell metadata for %s without altering application data", async agent => {
+    const h = harness(true);
+    for (const path of ["/track-order?phone=123", "/checkout?coupon=SAVE50", "/cart", "/account", "/search?q=watch", "/wishlist", "/store/utkalwatches/order-confirmation?order=123"]) {
+      const request = h.request("utkalwatch.in", path, agent);
+      const shell = new Response('<html><head><meta name="robots" content="index,follow"><link rel="canonical" href="https://utkalwatch.in/"><meta property="og:url" content="https://utkalwatch.in/"><script type="application/ld+json">{"@type":"Product"}</script></head><body><script id="app-data">{"cart":"keep"}</script><div id="root"></div></body></html>', { headers: { "Content-Type": "text/html", "Cache-Control": "public,max-age=14400" } });
+      const response = await h.api.utility(request, shell);
+      const html = await response.text();
+      expect(response.headers.get("X-Robots-Tag")).toBe("noindex, follow");
+      expect(response.headers.get("Cache-Control")).toBe("no-store");
+      expect(html).toContain(`href="https://utkalwatch.in${new URL(request.url).pathname}"`);
+      expect(html).not.toContain('content="index,follow"');
+      expect(html).not.toContain('application/ld+json');
+      expect(html).toContain('<script id="app-data">{"cart":"keep"}</script>');
+      expect(request.url).toBe(`https://utkalwatch.in${path}`);
+    }
+  });
+  it("keeps public product pages outside the utility response policy", async () => {
+    const h = harness();
+    const original = new Response("product", { headers: { "Cache-Control": "public,max-age=3600" } });
+    expect(await h.api.utility(h.request("utkalwatch.in", "/product/watch"), original)).toBe(original);
+    expect(h.api.utilityPath("/searchlight-watch")).toBe(false);
+  });
+  it("returns an empty noindex utility HEAD response", async () => {
+    const h = harness();
+    const response = await h.api.utility(h.request("utkalwatch.in", "/track-order?phone=123", "Googlebot", "HEAD"), new Response("shell"));
+    expect(await response.text()).toBe("");
+    expect(response.headers.get("X-Robots-Tag")).toBe("noindex, follow");
+  });
   it("negotiates Markdown for ordinary agents and separates representation cache keys", async () => {
     const h = harness();
     const r = h.request("utkalwatch.in", "/product/watch", "Mozilla/5.0", "GET", "text/markdown");
