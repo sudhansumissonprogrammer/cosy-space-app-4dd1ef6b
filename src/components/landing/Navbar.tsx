@@ -49,14 +49,21 @@ const Navbar = () => {
         </div>
 
         <div className="flex md:hidden items-center gap-2">
-          <button className="p-2 border-2 border-foreground" onClick={() => setMobileOpen(!mobileOpen)}>
-            {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          <button
+            className="p-2 border-2 border-foreground inline-flex items-center justify-center"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label={mobileOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileOpen}
+            aria-controls="landing-mobile-menu"
+          >
+            {mobileOpen ? <X className="h-6 w-6" aria-hidden="true" /> : <Menu className="h-6 w-6" aria-hidden="true" />}
           </button>
         </div>
       </div>
 
       {mobileOpen && (
-        <div className="md:hidden border-t-4 border-foreground bg-bauhaus-white px-4 py-6 space-y-4">
+        <div id="landing-mobile-menu" className="md:hidden border-t-4 border-foreground bg-bauhaus-white px-4 py-6 space-y-4">
+
           <a href="/#features" className="block font-bold uppercase tracking-wider text-foreground" onClick={() => setMobileOpen(false)}>Features</a>
           
           <a href="/#sellers" className="block font-bold uppercase tracking-wider text-foreground" onClick={() => setMobileOpen(false)}>For Sellers</a>
