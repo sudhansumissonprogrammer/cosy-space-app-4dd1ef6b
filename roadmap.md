@@ -1,4 +1,6 @@
 # Roadmap
+- [ ] Connect Telegram after the 02:37 UTC Oct 25 workspace move; verify bot, refresh alerts, no replay.
+- [ ] Utkal keyword SEO: meta title/description for all categories, homepage meta, and product page meta titles/descriptions using Semrush India keywords (no authenticity claims).
 - [x] Connect Telegram after the 18:05 UTC workspace move; @Shopbanaobot verified and alerts refreshed without replay.
 - [x] Connect Telegram after the 18:00 UTC workspace move; bot verified and alerts refreshed without replay.
 - [x] Resume approved SEO plan at 17:53 UTC: audited code/live acceptance, corrected category seed/utility metadata/feed truth/sitemap capacity, 20 tests pass; remaining rollout/evidence gates recorded below and in docs/search-readiness-audit.md.
