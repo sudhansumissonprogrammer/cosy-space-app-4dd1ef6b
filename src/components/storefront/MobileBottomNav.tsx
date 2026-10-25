@@ -20,9 +20,10 @@ interface MobileBottomNavProps {
   store: StoreData;
   /** Theme-16 only: show WhatsApp here instead of Cart (cart lives in the header). */
   swapCartWhatsApp?: boolean;
+  rounded?: boolean;
 }
 
-export default function MobileBottomNav({ store, swapCartWhatsApp = false }: MobileBottomNavProps) {
+export default function MobileBottomNav({ store, swapCartWhatsApp = false, rounded = false }: MobileBottomNavProps) {
   const location = useLocation();
   const { cartCount, openCart, cartBounce } = useCart();
   const getIcon = useNavIcons(store.id);
@@ -120,7 +121,8 @@ export default function MobileBottomNav({ store, swapCartWhatsApp = false }: Mob
 
   return (
     <nav
-      className="sfg sfg-bar-bottom fixed bottom-0 inset-x-0 z-40 sm:hidden safe-bottom"
+      aria-label="Store navigation"
+      className={`sfg sfg-bar-bottom fixed bottom-0 inset-x-0 z-40 sm:hidden ${rounded ? "sfg-classic-rounded" : "safe-bottom"}`}
       style={{
         backgroundColor: "color-mix(in srgb, var(--storefront-bg, hsl(var(--card))) 72%, transparent)",
       }}

@@ -31,6 +31,7 @@ const MobileBottomNavWave = lazy(() => import("./MobileBottomNavWave"));
 
 export type NavVariant =
   | "classic"
+  | "classic-rounded"
   | "modern"
   | "v15"
   | "v17"
@@ -76,7 +77,7 @@ export default function MobileBottomNavSwitcher({ store, variant, swapCartWhatsA
   return (
     <div className={`sf-smart-nav ${navVisible ? "" : "sf-smart-nav-hidden"}`}>
       <Suspense fallback={null}>
-        <Component store={store} {...({ swapCartWhatsApp } as any)} />
+        <Component store={store} {...({ swapCartWhatsApp, rounded: variant === "classic-rounded" } as any)} />
       </Suspense>
     </div>
   );

@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Add and verify separate Classic Rounded mobile navigation in theme settings; preserve Classic and existing store selections.
 - [x] Add public allow-all Content Signals; audit retained sitemaps and remove platform auth entries; deploy negotiated public Markdown; real Utkal home/category/PDP verified; 92 tests pass (docs/agent-readiness-2026-10-25.md).
 - [x] Deep-audit and correct Worker AI blocks/cache shortcuts across all stores; v9.2.4 public tenant dispatch, bounded budgets and expanded agents; 69 tests pass; live old Worker blocks confirmed on four hosts.
 - [x] Audit AI crawler access with Utkal priority; shared robots deployed, Worker source corrected, 39 tests pass; findings in docs/ai-crawler-access-audit-2026-10-25.md.

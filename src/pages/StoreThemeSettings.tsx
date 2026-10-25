@@ -29,9 +29,9 @@ import { getHeadingTuning, getBodyTuning, getPairingAdvice } from "@/lib/themeUt
 function NavStylePreview({ variant }: { variant: string }) {
   const dot = "h-1.5 w-1.5 rounded-full bg-muted-foreground/70";
   const dotActive = "h-1.5 w-1.5 rounded-full bg-primary";
-  if (variant === "classic") {
+  if (variant === "classic" || variant === "classic-rounded") {
     return (
-      <div className="w-full h-8 rounded-md border border-border bg-muted/30 flex items-center justify-around px-2">
+      <div className={`h-8 border border-border bg-muted/30 flex items-center justify-around px-2 ${variant === "classic-rounded" ? "w-[calc(100%-8px)] rounded-2xl" : "w-full rounded-md"}`}>
         <span className={dotActive} /><span className={dot} /><span className={dot} /><span className={dot} /><span className={dot} />
       </div>
     );
@@ -1896,6 +1896,7 @@ export default function StoreThemeSettings() {
             <div className="grid grid-cols-2 gap-3">
               {[
                 { value: "classic", label: "Classic", desc: "Standard icon + label bar" },
+                { value: "classic-rounded", label: "Classic Rounded", desc: "Classic bar with four rounded corners" },
                 { value: "modern", label: "Modern", desc: "Floating pill with cart" },
                 { value: "glass", label: "Glassmorphic", desc: "Frosted blur + glowing halo" },
                 { value: "notch", label: "Curved Notch", desc: "Center cart FAB in cutout" },
@@ -1910,10 +1911,12 @@ export default function StoreThemeSettings() {
               ].map((s) => {
                 const isActive = (config.mobile_nav_style || "classic") === s.value;
                 return (
-                  <button
+                  <Button
                     key={s.value}
+                    variant="outline"
+                    aria-pressed={isActive}
                     onClick={() => updateField("mobile_nav_style", s.value)}
-                    className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-[transform,opacity,colors,box-shadow] ${
+                    className={`relative h-auto whitespace-normal flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-[transform,opacity,colors,box-shadow] ${
                       isActive ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/30"
                     }`}
                   >
@@ -1925,7 +1928,7 @@ export default function StoreThemeSettings() {
                     <NavStylePreview variant={s.value} />
                     <span className="text-[11px] font-semibold">{s.label}</span>
                     <span className="text-[9px] text-muted-foreground text-center leading-tight">{s.desc}</span>
-                  </button>
+                  </Button>
                 );
               })}
             </div>
