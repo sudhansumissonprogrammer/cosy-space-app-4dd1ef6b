@@ -37,7 +37,7 @@ function ShoppingAppBottomNav({ store }: { store: StoreData }) {
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
-              <Link key={item.label} to={item.to} className="relative flex items-center justify-center rounded-full px-3 py-2.5 transition-[transform,opacity,colors,box-shadow] duration-500 ease-in-out active:scale-95">
+              <Link key={item.label} aria-label={item.label} aria-current={item.isActive ? "page" : undefined} to={item.to} className="relative flex items-center justify-center rounded-full px-3 py-2.5 transition-[transform,opacity,colors,box-shadow] duration-500 ease-in-out active:scale-95">
                 <div className="absolute inset-0 rounded-full transition-[transform,opacity,colors,box-shadow] duration-500 ease-in-out" style={{ backgroundColor: item.isActive ? "var(--storefront-text, hsl(var(--foreground)))" : "transparent", opacity: item.isActive ? 1 : 0 }} />
                 <Icon className="relative z-10 h-[22px] w-[22px] transition-colors duration-500 ease-in-out" style={{ color: item.isActive ? "var(--storefront-bg, hsl(var(--background)))" : "var(--storefront-text, hsl(var(--foreground)))45" }} strokeWidth={1.8} fill={item.isActive ? "var(--storefront-bg, hsl(var(--background)))" : "none"} />
                 <span className="relative z-10 text-xs font-semibold overflow-hidden transition-[transform,opacity,colors,box-shadow] duration-500 ease-in-out" style={{ color: item.isActive ? "var(--storefront-bg, hsl(var(--background)))" : "transparent", maxWidth: item.isActive ? "80px" : "0px", opacity: item.isActive ? 1 : 0, marginLeft: item.isActive ? "6px" : "0px" }}>{item.label}</span>
@@ -45,7 +45,7 @@ function ShoppingAppBottomNav({ store }: { store: StoreData }) {
             );
           })}
         </div>
-        <button onClick={openCart} className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-transform active:scale-95" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", boxShadow: "0 2px 20px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04)" }}>
+        <button onClick={openCart} aria-label={`Shopping cart${cartCount > 0 ? `, ${cartCount} items` : ""}`} className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-transform active:scale-95" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", boxShadow: "0 2px 20px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04)" }}>
           <ShoppingCart className="h-[22px] w-[22px]" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} strokeWidth={1.8} />
           {cartCount > 0 && <span className="absolute -right-0.5 top-0.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold" style={{ backgroundColor: "#EF4444", color: "#fff" }}>{cartCount > 9 ? "9+" : cartCount}</span>}
         </button>
