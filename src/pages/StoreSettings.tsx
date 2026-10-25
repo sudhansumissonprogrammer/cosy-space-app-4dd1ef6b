@@ -665,7 +665,7 @@ export default function StoreSettings() {
             </CardTitle>
             <CardDescription>
               Help ChatGPT, Perplexity, Gemini & Google answer questions about your store.
-              Filling all three sections boosts your AI-search score from ~70 to 90+.
+              Discovery and recommendations depend on each search provider; no score or placement is guaranteed.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">

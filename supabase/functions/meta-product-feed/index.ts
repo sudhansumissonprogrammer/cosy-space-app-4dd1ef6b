@@ -105,34 +105,6 @@ const fbCategoryFor = (googleCat: string): string => {
   return "";
 };
 
-// Optional but recommended attributes — Meta uses them for Advantage+ targeting.
-const COLORS = ["gold", "rose gold", "silver", "white", "black", "red", "green", "blue", "pink", "maroon", "multicolour", "multicolor"];
-const MATERIALS: [RegExp, string][] = [
-  [/kundan/i, "kundan"],
-  [/pearl|moti/i, "pearl"],
-  [/american\s*diamond|\bad\b|zircon|cz\b/i, "cubic zirconia"],
-  [/gold\s*plated|gold-plated/i, "gold plated brass"],
-  [/silver|oxidis|oxidiz/i, "silver"],
-  [/brass/i, "brass"],
-  [/cotton/i, "cotton"],
-  [/leather/i, "leather"],
-];
-const detectColor = (probe: string): string => {
-  const p = probe.toLowerCase();
-  for (const c of COLORS) if (p.includes(c)) return c === "multicolor" ? "multicolour" : c;
-  return "";
-};
-const detectMaterial = (probe: string): string => {
-  for (const [re, v] of MATERIALS) if (re.test(probe)) return v;
-  return "";
-};
-const detectGender = (probe: string): string => {
-  if (/\bmen\b|\bmens\b|\bmale\b|\bboy/i.test(probe)) return "male";
-  if (/\bwomen\b|\bwomens\b|\bladies\b|\bgirl|\bfemale\b/i.test(probe)) return "female";
-  return "unisex";
-};
-
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -200,12 +172,6 @@ Deno.serve(async (req) => {
       ? `https://${store.custom_domain}`
       : `https://${store.slug}.shopbanao.in`;
 
-    // Brand must be human-readable (slug fallbacks look spammy in ads).
-    const brandRaw = (store.name || store.slug || "").trim();
-    const brand = /^[a-z0-9-]+$/.test(brandRaw)
-      ? brandRaw.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
-      : brandRaw;
-
     // Store-level fallback taxonomy: use the dominant top-level category of the
     // products we *could* match, so odd/regional item names never ship blank.
     const catTally = new Map<string, number>();
@@ -256,8 +222,7 @@ Deno.serve(async (req) => {
       const realImages = productImageUrls(p.image_url, galleryByProduct.get(p.id) || []).filter(u => /^https:\/\//i.test(u));
       if (!title || !hasRequiredFeedFacts(p, realImages)) continue;
 
-      // Use real column (stock_quantity). NULL = untracked → treat as in stock.
-      // Numeric 0 (or negative) = out of stock. Anything > 0 = in stock.
+      // Unknown inventory was excluded above. Do not export the unlimited-stock sentinel as a quantity.
       const qty = p.stock_quantity;
       const untracked = qty === null || qty === undefined;
       const qtyNum = untracked || Number(qty) >= 999999 ? "" : Math.min(9999, Math.max(0, Number(qty)));
@@ -268,19 +233,14 @@ Deno.serve(async (req) => {
       if (!(regN > 0)) continue; // price is required and must be > 0
 
       const regularPrice = `${regN.toFixed(2)} ${currency}`;
-      // v8.67.0 BAN-FIX P1-2: Cap absurd discounts (sale_price < 5% of price).
-      // Meta Commerce catalog auto-flags >70% manufactured discounts as
-      // deceptive pricing → suspends the entire catalog + pixel. This usually
-      // happens from paise/rupee data-entry mistakes (e.g. ₹1,90,000 → ₹1,800).
+      // Discovery must match the actual valid parent sale price; never hide large discounts.
       const validSale = discoverySalePrice(regN, saleN) !== undefined;
       const salePrice = validSale ? `${saleN.toFixed(2)} ${currency}` : "";
 
       const gcat = googleCategoryFor(p.category, p.name || "") || fallbackCat;
       const gallery = realImages.slice(1);
       const productType = cleanText(p.category, 750);
-      const probe = `${p.name || ""} ${p.category || ""} ${p.description || ""}`;
-
-      // Meta flags one-word / duplicate-of-title descriptions as low quality.
+      // Preserve supplied facts; absent descriptions get neutral identity only.
       let description = cleanText(p.description, 9999);
       if (!description) description = `View ${title} at ${store.name}.`;
 
@@ -318,7 +278,7 @@ Deno.serve(async (req) => {
         ...corsHeaders,
         "Content-Type": "text/csv; charset=utf-8",
         "Content-Disposition": `inline; filename="${slug}-products.csv"`,
-        // 1 hour edge cache — Meta refetches every few hours anyway
+        // Bounded freshness; provider scheduling and acceptance are external.
         "Cache-Control": "public, max-age=60, s-maxage=60",
       },
     });
