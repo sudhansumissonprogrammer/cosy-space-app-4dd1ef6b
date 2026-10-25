@@ -86,9 +86,8 @@ Deno.serve(async (req) => {
     ];
     if (!cfg?.is_active || chatIds.length === 0) return json({ skipped: "not_configured" });
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    const TELEGRAM_API_KEY = Deno.env.get("TELEGRAM_API_KEY");
-    if (!LOVABLE_API_KEY || !TELEGRAM_API_KEY) return json({ error: "telegram_not_connected" }, 500);
+    const BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
+    if (!BOT_TOKEN) return json({ error: "telegram_not_connected" }, 500);
 
     const [{ data: items }, { data: store }] = await Promise.all([
       admin
