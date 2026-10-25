@@ -2,6 +2,8 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { discoveryPage, discoveryUrl, DISCOVERY_PAGE_SIZE, productImageUrls } from "../_shared/seoDiscovery.ts";
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import TurndownService from "npm:turndown@7.2.0";
+import { prefersMarkdown } from "../_shared/agentContent.ts";
 
 /** wa.me needs a country code — owners often save a bare 10-digit mobile. */
 function waPhone(raw: unknown): string {
@@ -743,9 +745,10 @@ ${buildShellFooter(store, canonical)}
 const HTML_CACHE_HEADERS = {
   "Content-Type": "text/html; charset=utf-8",
   "Cache-Control": "public, max-age=300, stale-while-revalidate=86400",
+  "Vary": "Accept",
 };
 
-Deno.serve(async (req) => {
+async function renderRequest(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -1007,4 +1010,25 @@ Deno.serve(async (req) => {
 
   const html = buildStoreHtml(store, categories || [], canonical);
   return new Response(html, { headers: { ...corsHeaders, ...HTML_CACHE_HEADERS } });
+}
+
+// Convert only the successful public renderer, never shopper/account HTML.
+Deno.serve(async (req) => {
+  const response = await renderRequest(req);
+  const headers = new Headers(response.headers);
+  headers.set("Vary", "Accept");
+  const markdown = new URL(req.url).searchParams.get("format") === "markdown" || prefersMarkdown(req.headers.get("Accept"));
+  if (!markdown || !response.ok || !/text\/html/i.test(headers.get("Content-Type") || "") || /noindex/i.test(headers.get("X-Robots-Tag") || "")) {
+    return new Response(response.body, { status: response.status, headers });
+  }
+  const html = await response.text();
+  const converter = new TurndownService({ headingStyle: "atx", bulletListMarker: "-", codeBlockStyle: "fenced" });
+  converter.remove(["script", "style", "noscript", "header", "footer"]);
+  const canonical = html.match(/<link rel="canonical" href="([^"]+)"/)?.[1] || "";
+  const main = html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1] || html;
+  const body = `${canonical ? `Source: ${canonical}\n\n` : ""}${converter.turndown(main)}\n`;
+  headers.set("Content-Type", "text/markdown; charset=utf-8");
+  headers.set("Content-Signal", "search=yes, ai-input=yes, ai-train=yes");
+  // Do not claim an exact model-specific token count; none is computed here.
+  return new Response(body, { status: response.status, headers });
 });
