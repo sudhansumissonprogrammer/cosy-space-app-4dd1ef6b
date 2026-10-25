@@ -243,7 +243,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "9.2.7-product-seo-consistency";
+const WORKER_VERSION = "9.2.8-discovery-facts";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -4263,7 +4263,8 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
     const desc = escapeHtml(p.meta_description?.trim() || p.description?.trim().slice(0, 160) || `View ${p.name} at ${store.name}.`);
     const ogImg = typeof heroImg === "string" && /^https?:\/\//i.test(heroImg) ? escapeHtml(heroImg) : "";
     const price = Number(p.sale_price && p.sale_price < p.price ? p.sale_price : p.price);
-    const inStock = Number(p.stock_quantity || 0) > 0;
+    const hasStock = p.stock_quantity !== null && p.stock_quantity !== undefined && p.stock_quantity !== "" && typeof p.stock_quantity !== "boolean" && Number.isFinite(Number(p.stock_quantity));
+    const inStock = hasStock && Number(p.stock_quantity) > 0;
     const productLd = {
       "@context": "https://schema.org",
       "@type": "Product",
@@ -4278,7 +4279,7 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
         url: productUrl,
         priceCurrency: p.currency || store.currency || "INR",
         price: price.toFixed(2),
-        availability: inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+        ...(hasStock ? { availability: inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock" } : {}),
         seller: { "@type": "Organization", name: store.name },
       },
     };
@@ -4332,7 +4333,7 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
       html += `<meta property="og:price:amount" content="${price.toFixed(2)}">`;
       html += `<meta property="og:price:currency" content="${escapeHtml(p.currency || store.currency || "INR")}">`;
     }
-    html += `<meta property="product:availability" content="${inStock ? "in stock" : "out of stock"}">`;
+    if (hasStock) html += `<meta property="product:availability" content="${inStock ? "in stock" : "out of stock"}">`;
 
     if (p.sku) html += `<meta property="product:retailer_item_id" content="${escapeHtml(p.sku)}">`;
     html += `<meta name="twitter:card" content="summary_large_image">`;
@@ -4341,8 +4342,10 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
     if (price > 0) {
       html += `<meta name="twitter:label1" content="Price">`;
       html += `<meta name="twitter:data1" content="${(p.currency || store.currency || "INR") === "INR" ? "₹" : ""}${price.toFixed(0)}">`;
-      html += `<meta name="twitter:label2" content="Availability">`;
-      html += `<meta name="twitter:data2" content="${inStock ? "In stock" : "Out of stock"}">`;
+      if (hasStock) {
+        html += `<meta name="twitter:label2" content="Availability">`;
+        html += `<meta name="twitter:data2" content="${inStock ? "In stock" : "Out of stock"}">`;
+      }
     }
     html += `<script type="application/ld+json">${safe(productLd)}</script>`;
     html += `<script type="application/ld+json">${safe(breadcrumbLd)}</script>`;
