@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Audit uploaded SEO/GEO preservation checklist: inventory existing systems, verify public production samples, repair confirmed low-risk defects, run regression checks and record before/after matrix; original separate 20-phase specification not supplied.
 - [x] Add Classic Rounded to all themes offering navigation choices; verified four curved corners, Shop/Categories links, original Classic and desktop hiding on Utkal preview; existing store selections unchanged.
 - [x] Add public allow-all Content Signals; audit retained sitemaps and remove platform auth entries; deploy negotiated public Markdown; real Utkal home/category/PDP verified; 92 tests pass (docs/agent-readiness-2026-10-25.md).
 - [x] Deep-audit and correct Worker AI blocks/cache shortcuts across all stores; v9.2.4 public tenant dispatch, bounded budgets and expanded agents; 69 tests pass; live old Worker blocks confirmed on four hosts.

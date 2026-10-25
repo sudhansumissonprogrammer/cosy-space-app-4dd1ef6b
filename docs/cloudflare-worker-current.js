@@ -4025,7 +4025,7 @@ function _buildHomepageJsonLd(store, canonicalBase, categories, products) {
     url: canonicalBase + "/",
     potentialAction: {
       "@type": "SearchAction",
-      target: `${canonicalBase}/shop?q={search_term_string}`,
+      target: `${canonicalBase}/search?q={search_term_string}`,
       "query-input": "required name=search_term_string",
     },
   };

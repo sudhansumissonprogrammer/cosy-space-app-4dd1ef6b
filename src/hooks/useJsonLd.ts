@@ -4,6 +4,7 @@ import { waPhoneNumber } from "@/lib/phoneUtils";
 import { productImageUrls } from "../../supabase/functions/_shared/seoDiscovery";
 
 const SCRIPT_ID = "json-ld-structured-data";
+const STORE_SCRIPT_ID = "json-ld-store";
 const ORG_SCRIPT_ID = "json-ld-organization";
 const WEBSITE_SCRIPT_ID = "json-ld-website";
 const BREADCRUMB_SCRIPT_ID = "json-ld-breadcrumb";
@@ -189,7 +190,7 @@ export function useStoreJsonLd({
     }
     setJsonLd(orgData, ORG_SCRIPT_ID);
 
-    // 2) WebSite + SearchAction — enables Google sitelinks search box.
+    // 2) WebSite + SearchAction — points to the actual storefront search.
     setJsonLd({
       "@context": "https://schema.org",
       "@type": "WebSite",
@@ -197,7 +198,7 @@ export function useStoreJsonLd({
       url: baseUrl,
       potentialAction: {
         "@type": "SearchAction",
-        target: `${baseUrl}/shop?q={search_term_string}`,
+        target: `${baseUrl}/search?q={search_term_string}`,
         "query-input": "required name=search_term_string",
       },
     }, WEBSITE_SCRIPT_ID);
@@ -230,10 +231,10 @@ export function useStoreJsonLd({
     if (sameAs.length) storeData.sameAs = sameAs;
     storeData.priceRange = "₹";
 
-    setJsonLd(storeData);
+    setJsonLd(storeData, STORE_SCRIPT_ID);
 
     return () => {
-      removeJsonLd();
+      removeJsonLd(STORE_SCRIPT_ID);
       removeJsonLd(ORG_SCRIPT_ID);
       removeJsonLd(WEBSITE_SCRIPT_ID);
     };
@@ -259,7 +260,7 @@ export function useProductListJsonLd({ products, storeSlug, listName, customDoma
       "@context": "https://schema.org",
       "@type": "ItemList",
       name: listName || "Products",
-      numberOfItems: products.length,
+      numberOfItems: Math.min(products.length, 30),
       itemListElement: products.slice(0, 30).map((p, i) => ({
         "@type": "ListItem",
         position: i + 1,

@@ -1,9 +1,7 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense } from "react";
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
 import LazyMount from "@/components/landing/LazyMount";
-
-const LandingJsonLd = lazy(() => import("@/components/landing/LandingJsonLd"));
 
 // V2 sections — complete commerce OS / flat-3%-on-every-sale positioning.
 const TrustLogos = lazy(() => import("@/components/landing/v2/TrustLogos"));
@@ -25,18 +23,6 @@ const LiveStorePreview = lazy(() => import("@/components/landing/LiveStorePrevie
 const StoreLookShowcase = lazy(() => import("@/components/landing/StoreLookShowcase"));
 
 const Index = () => {
-  const [seoReady, setSeoReady] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    const run = () => { if (!cancelled) setSeoReady(true); };
-    if ("requestIdleCallback" in window) {
-      const id = (window as any).requestIdleCallback(run, { timeout: 800 });
-      return () => { cancelled = true; (window as any).cancelIdleCallback?.(id); };
-    }
-    const t = setTimeout(run, 200);
-    return () => { cancelled = true; clearTimeout(t); };
-  }, []);
-
   return (
     <div className="min-h-screen bg-background font-outfit">
       <Navbar />
@@ -59,7 +45,6 @@ const Index = () => {
           <LazyMount minHeight={0}><LandingWhatsApp /></LazyMount>
           <LazyMount minHeight={0}><ExitIntentPopup /></LazyMount>
 
-          {seoReady && <LandingJsonLd />}
         </Suspense>
       </main>
       <Suspense fallback={null}>
