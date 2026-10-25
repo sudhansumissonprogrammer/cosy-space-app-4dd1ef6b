@@ -23,7 +23,19 @@ User-agent: Bytespider
 User-agent: cohere-ai
 User-agent: cohere-training-data-crawler
 User-agent: CCBot
+User-agent: YouBot
+User-agent: Bravebot
+User-agent: Timpibot
+User-agent: AI2Bot
+User-agent: Diffbot
+User-agent: Omgilibot
+User-agent: Omgili
+User-agent: Google-CloudVertexBot
+User-agent: Gemini-Deep-Research
 User-agent: Googlebot
+User-agent: Google-InspectionTool
+User-agent: AdsBot-Google
+User-agent: Mediapartners-Google
 User-agent: Bingbot
 User-agent: DuckDuckBot
 User-agent: Slurp
@@ -85,16 +97,7 @@ Disallow: /
 User-agent: SeznamBot
 Disallow: /
 
-User-agent: Diffbot
-Disallow: /
-
 User-agent: ImagesiftBot
-Disallow: /
-
-User-agent: Omgilibot
-Disallow: /
-
-User-agent: Omgili
 Disallow: /
 
 Sitemap: https://shopbanao.in/sitemap.xml
