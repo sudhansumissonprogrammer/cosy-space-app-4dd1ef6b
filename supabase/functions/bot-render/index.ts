@@ -1,3 +1,4 @@
+import { productSearchDescription, productSearchPrice } from "../_shared/productSeo.ts";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { discoveryPage, discoveryUrl, DISCOVERY_PAGE_SIZE, productImageUrls } from "../_shared/seoDiscovery.ts";
 
@@ -45,11 +46,10 @@ function buildProductHtml(
   const storeName = esc(store.name);
   const title = esc(product.meta_title || `${product.name} — ${store.name}`);
   const desc = esc(
-    product.meta_description || product.description?.slice(0, 160) ||
-      `Buy ${product.name} at ${store.name}. Fast delivery & easy returns.`
+    productSearchDescription(product, store.name)
   );
   const price = formatPrice(
-    product.sale_price || product.price,
+    productSearchPrice(product),
     product.currency || store.currency || "INR"
   );
   const originalPrice =
@@ -66,14 +66,14 @@ function buildProductHtml(
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
-    description: product.description || "",
+    ...(product.description?.trim() ? { description: product.description } : {}),
     image: allImages,
     ...(product.sku ? { sku: product.sku } : {}),
     
     url: canonical,
     offers: {
       "@type": "Offer",
-      price: product.sale_price || product.price,
+      price: productSearchPrice(product),
       priceCurrency: product.currency || store.currency || "INR",
       availability: product.stock_quantity > 0
         ? "https://schema.org/InStock"
@@ -156,7 +156,7 @@ ${allImages.filter((img) => img !== heroImage).slice(0, 9).map((img: string, i: 
 <div class="info">
 <h1 itemprop="name">${esc(product.name)}</h1>
 <div class="price" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
-<span itemprop="price" content="${product.sale_price || product.price}">${price}</span>
+<span itemprop="price" content="${productSearchPrice(product)}">${price}</span>
 <meta itemprop="priceCurrency" content="${product.currency || store.currency || "INR"}">
 ${originalPrice ? `<span class="original">${originalPrice}</span>` : ""}
 <link itemprop="availability" href="${product.stock_quantity > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"}">
@@ -807,7 +807,7 @@ async function renderRequest(req: Request): Promise<Response> {
       let product: any = null;
       const { data: bySlug } = await supabase
         .from("products")
-        .select("id, name, slug, description, price, sale_price, currency, image_url")
+        .select("id, name, slug, description, price, sale_price, currency, image_url, meta_title, meta_description, stock_quantity")
         .eq("store_id", store.id)
         .eq("slug", productSlug)
         .eq("is_active", true)
@@ -817,7 +817,7 @@ async function renderRequest(req: Request): Promise<Response> {
       if (!product) {
         const { data: byId } = await supabase
           .from("products")
-          .select("id, name, slug, description, price, sale_price, currency, image_url")
+          .select("id, name, slug, description, price, sale_price, currency, image_url, meta_title, meta_description, stock_quantity")
           .eq("store_id", store.id)
           .eq("id", productSlug)
           .eq("is_active", true)
@@ -826,12 +826,17 @@ async function renderRequest(req: Request): Promise<Response> {
         product = byId;
       }
       if (product) {
-        const price = product.sale_price || product.price;
+        const price = productSearchPrice(product);
         const currency = product.currency || store.currency || "INR";
         const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency + " ";
         return new Response(JSON.stringify({
-          title: `${product.name} — ${currencySymbol}${price}`,
-          description: product.description?.slice(0, 160) || `Buy ${product.name} at ${store.name}. Fast delivery & easy returns.`,
+          title: product.meta_title || `${product.name} — ${currencySymbol}${price}`,
+          description: productSearchDescription(product, store.name),
+          name: product.name,
+          productDescription: product.description?.trim() || undefined,
+          price, currency,
+          availability: product.stock_quantity > 0 ? "in stock" : "out of stock",
+          canonical: `${canonical}/product/${encodeURIComponent(product.slug || product.id)}`,
           image: product.image_url || store.og_image_url || store.banner_url || store.logo_url || "",
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "public, max-age=300" },

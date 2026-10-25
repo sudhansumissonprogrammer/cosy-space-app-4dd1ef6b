@@ -243,7 +243,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "9.2.6-seo-preservation";
+const WORKER_VERSION = "9.2.7-product-seo-consistency";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -4159,10 +4159,15 @@ function _buildSeoBodyBlock(store, categories, products) {
   // v8.65.0 — Descriptive H1 for AI search / "Understandable" audit. Was just
   // `<h1>{name}</h1>` which fails the "describe what the page is about" rule
   // (brand name alone doesn't count). Mirrors src/lib/storefrontSeoH1.ts.
-  const seoTail = escapeHtml(
-    (store.seo_h1_suffix || store.tagline || (store.description || "").split(/(?<=[.!?])\s/)[0] || "Shop Online with COD, UPI Payments & Fast Delivery Across India").slice(0, 90)
-  );
-  html += `<h1>${name}${seoTail ? ` — ${seoTail}` : ""}</h1>`;
+  const pick = v => typeof v === "string" ? v.trim() : "";
+  const storeName = pick(store.name) || "Online Store";
+  const truncate = (text, n = 90) => text.length > n ? text.slice(0, n - 1).replace(/[\s,;:.!?-]+$/, "") + "…" : text;
+  const explicit = pick(store.seo_h1_suffix) || pick(store.tagline);
+  const description = pick(store.description) || pick(store.meta_description) || pick(store.seo_about_paragraph);
+  const sentence = description.match(/[.!?]\s/);
+  const tail = explicit || (sentence?.index != null ? description.slice(0, sentence.index + 1) : description);
+  const heading = !tail ? `${storeName} — Online Store` : tail.toLocaleLowerCase().startsWith(storeName.toLocaleLowerCase()) ? truncate(tail, storeName.length + 93) : `${storeName} — ${truncate(tail)}`;
+  html += `<h1>${escapeHtml(heading)}</h1>`;
   if (about) html += `<p>${about}</p>`;
   if (loc || wa) {
     const bits = [];
@@ -4250,30 +4255,27 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
   if (pdpCategoryInline.kind === "product") {
     const p = parsed?.product;
     if (!p) return "";
+    const productUrl = `${canonicalBase}/product/${encodeURIComponent(p.slug || p.id)}`;
     const images = Array.isArray(parsed?.images) ? parsed.images.map((i) => i?.image_url).filter(Boolean) : [];
     const heroImg =
       p.og_image_url || (p.image_url || "").split(",")[0].trim() || images[0] || store.og_image_url || store.banner_url || store.logo_url || "";
     const title = escapeHtml(p.meta_title || `${p.name} — ${store.name}`);
-    const desc = escapeHtml(
-      p.meta_description ||
-        (p.description
-          ? String(p.description).slice(0, 160)
-          : `Buy ${p.name} from ${store.name}. Cash on delivery, fast shipping across India.`),
-    );
+    const desc = escapeHtml(p.meta_description?.trim() || p.description?.trim().slice(0, 160) || `View ${p.name} at ${store.name}.`);
     const ogImg = typeof heroImg === "string" && /^https?:\/\//i.test(heroImg) ? escapeHtml(heroImg) : "";
-    const price = Number(p.sale_price || p.price || 0);
+    const price = Number(p.sale_price && p.sale_price < p.price ? p.sale_price : p.price);
     const inStock = Number(p.stock_quantity || 0) > 0;
     const productLd = {
       "@context": "https://schema.org",
       "@type": "Product",
       name: p.name,
-      description: p.description || desc,
+      ...(p.description?.trim() ? { description: p.description } : {}),
+      url: productUrl,
       image: [...new Set([...(p.image_url || "").split(",").map(u => u.trim()), ...images].filter(Boolean))],
       sku: p.sku || undefined,
 
       offers: {
         "@type": "Offer",
-        url,
+        url: productUrl,
         priceCurrency: p.currency || store.currency || "INR",
         price: price.toFixed(2),
         availability: inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
@@ -4295,13 +4297,13 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
               },
             ]
           : []),
-        { "@type": "ListItem", position: p.category ? 3 : 2, name: p.name, item: url },
+        { "@type": "ListItem", position: p.category ? 3 : 2, name: p.name, item: productUrl },
       ],
     };
     let html = "";
     html += `<title>${title}</title>`;
     html += `<meta name="description" content="${desc}">`;
-    html += `<link rel="canonical" href="${escapeHtml(url)}">`;
+    html += `<link rel="canonical" href="${escapeHtml(productUrl)}">`;
     // v8.63.0: LCP image preload — starts hero image download at HTML parse time
     // (~50ms) instead of waiting for React hydration (~2000-2500ms). Saves 1.5-2.5s LCP.
     if (ogImg) {
@@ -4317,7 +4319,7 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
     html += `<meta property="og:type" content="product">`;
     html += `<meta property="og:title" content="${title}">`;
     html += `<meta property="og:description" content="${desc}">`;
-    html += `<meta property="og:url" content="${escapeHtml(url)}">`;
+    html += `<meta property="og:url" content="${escapeHtml(productUrl)}">`;
     html += `<meta property="og:site_name" content="${escapeHtml(store.name)}">`;
     if (ogImg) {
       html += `<meta property="og:image" content="${ogImg}">`;
@@ -6721,6 +6723,7 @@ async function handleBot(request, slug, url, isCustom) {
 // OG tags and stop; they never follow a redirect anyway. Human users never hit this
 // code path (BOT_UA_REGEX gate in handleBot()).
 function buildOgHtml(og, finalUrl) {
+  finalUrl = og.canonical || finalUrl;
   const title = escapeHtml(og.title || "");
   const desc = escapeHtml(og.description || "");
   const img = escapeHtml(og.image || "");
@@ -6736,17 +6739,14 @@ function buildOgHtml(og, finalUrl) {
       const ld = {
         "@context": "https://schema.org",
         "@type": "Product",
-        name: og.title || "",
-        description: og.description || "",
+        name: og.name || og.title || "",
+        ...(og.productDescription ? { description: og.productDescription } : {}),
         image: og.image || undefined,
         offers: {
           "@type": "Offer",
           price: String(og.price),
           priceCurrency: og.currency || "INR",
-          availability:
-            og.availability === "out of stock"
-              ? "https://schema.org/OutOfStock"
-              : "https://schema.org/InStock",
+          ...(og.availability === "out of stock" || og.availability === "in stock" ? { availability: og.availability === "out of stock" ? "https://schema.org/OutOfStock" : "https://schema.org/InStock" } : {}),
           url: finalUrl,
         },
       };

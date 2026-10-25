@@ -1,3 +1,4 @@
+import { productSearchDescription, productSearchPrice } from "../_shared/productSeo.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
@@ -182,7 +183,7 @@ async function handleSharePage(url: URL) {
   if (productSlug) {
     let { data: product } = await supabase
       .from("products")
-      .select("name, description, image_url, price, sale_price, slug, currency, id")
+      .select("name, description, image_url, price, sale_price, slug, currency, id, meta_title, meta_description")
       .eq("store_id", store.id)
       .eq("slug", productSlug)
       .eq("is_active", true)
@@ -192,7 +193,7 @@ async function handleSharePage(url: URL) {
     if (!product) {
       const { data: byId } = await supabase
         .from("products")
-        .select("name, description, image_url, price, sale_price, slug, currency, id")
+        .select("name, description, image_url, price, sale_price, slug, currency, id, meta_title, meta_description")
         .eq("store_id", store.id)
         .eq("id", productSlug)
         .eq("is_active", true)
@@ -202,13 +203,13 @@ async function handleSharePage(url: URL) {
     }
 
     if (product) {
-      const price = product.sale_price || product.price;
+      const price = productSearchPrice(product);
       const currency = product.currency || store.currency || "INR";
       const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
       const priceText = `${currencySymbol}${price}`;
 
-      const productTitle = escapeHtml(`${product.name} - ${priceText}`);
-      const productDesc = escapeHtml(product.description || `Shop ${product.name} at ${store.name}`);
+      const productTitle = escapeHtml(product.meta_title || `${product.name} - ${priceText}`);
+      const productDesc = escapeHtml(productSearchDescription(product, store.name));
       const rawProductImage = product.image_url || store.og_image_url || store.banner_url || "";
       const productImage = normalizeOgImageUrl(rawProductImage);
       const productPath = product.slug || product.id;

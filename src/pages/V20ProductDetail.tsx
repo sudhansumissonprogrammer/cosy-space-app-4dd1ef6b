@@ -13,6 +13,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/contexts/CartContext";
+import { productSearchDescription } from "../../supabase/functions/_shared/productSeo";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useProductJsonLd } from "@/hooks/useJsonLd";
 import { useProductCategory } from "@/hooks/useProductCategory";
@@ -170,7 +171,7 @@ export default function V20ProductDetail() {
     canonicalPath: product ? `product/${product.slug || product.id}` : undefined,
     ogType: "product",
     title: product?.meta_title || (product ? `${product.name} — ${store?.name}` : undefined),
-    description: product?.meta_description || product?.description || undefined,
+    description: product ? productSearchDescription(product, store.name) : undefined,
     ogImage: product?.image_url || undefined,
     storeSlug: store?.slug,
     customDomain: (store as any)?.custom_domain,

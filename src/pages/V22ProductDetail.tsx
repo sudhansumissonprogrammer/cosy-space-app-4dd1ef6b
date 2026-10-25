@@ -22,6 +22,7 @@ import {
   Lock, Timer, Zap, ShieldCheck, Maximize2, Play
 } from "lucide-react";
 import { toast } from "sonner";
+import { productSearchDescription } from "../../supabase/functions/_shared/productSeo";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useProductJsonLd } from "@/hooks/useJsonLd";
 import { useCanonical } from "@/hooks/useCanonical";
@@ -408,8 +409,10 @@ export default function V22ProductDetail() {
   });
 
   useMetaTags({
-    title: product ? `${product.name} — ${store.name}` : undefined,
-    description: product?.description || undefined,
+    enabled: !!product,
+    ogType: "product",
+    title: product?.meta_title || (product ? `${product.name} — ${store.name}` : undefined),
+    description: product ? productSearchDescription(product, store.name) : undefined,
     ogImage: product?.image_url || undefined,
     storeSlug: store.slug,
     customDomain: (store as any)?.custom_domain,
