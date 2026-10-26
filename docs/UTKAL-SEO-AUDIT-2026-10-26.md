@@ -58,7 +58,7 @@ Semrush returned zero for two replica purchase phrases; this does not prove abse
 - Ordinary browser shells were checked separately: missing raw headings on many routes must not be confused with a rendered-page defect. User-Agent labels do **not** authenticate Google/OpenAI traffic.
 - Preview mobile: home, men's category, shop page 2, PDP and About: one H1 each, no horizontal overflow, zero page errors. About metadata repaired and verified. Live homepage title remains intermittently stale.
 - Actual PDP → Add to Cart → cart → Proceed to Checkout checked: one matching product, ₹1,650 summary, phone step displayed. No phone submitted, no customer record created intentionally, no payment or order placed. Purchase event/payment completion therefore unverified.
-- Targeted regression suite: 153 tests passed before final assurance-isolation test; final command updates the count. Worker syntax passed. Harness preview build reported OK at 03:35:05 UTC; no manual build/typecheck run.
+- Targeted regression suite: **154 tests passed** including assurance isolation. Worker syntax passed. Harness preview build reported OK at 03:37:10 UTC; no manual build/typecheck run.
 - Local browser navigation metrics are not production mobile field CWV. Field LCP/INP/CLS, cold production measurements and exhaustive internal-link graph remain outstanding. A broken Festival badge image was observed during the PDP screenshot; unrelated media should be inspected separately rather than claiming all assets pass.
 - Existing schema uses Product/Offer on PDPs, ItemList on collections and breadcrumbs; no fake GTIN/MPN/brand or new ProductGroup added. JSON parsing is not Google's Rich Results validation.
 
