@@ -12,7 +12,7 @@ describe("Utkal category SEO", () => {
 
   it("intro only names attributes present in listed titles", () => {
     const intro = utkalCategoryIntro(guessMen, ["Guess Black Dial Leather Strap"])!;
-    expect(intro).toContain("Not genuine or affiliated with Guess");
+    expect(intro).not.toContain("Not genuine");
     expect(intro).toContain("black dials");
     expect(intro).toContain("leather straps");
     expect(intro).not.toContain("blue");
