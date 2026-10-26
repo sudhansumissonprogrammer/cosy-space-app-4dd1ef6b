@@ -484,10 +484,6 @@ Deno.serve(async (req) => {
       if (knownSlug.has(slug)) slug = `${slug}-${String(d.id).slice(-6).toLowerCase()}`;
       if (knownSlug.has(slug)) continue;
       knownSlug.add(slug);
-      // Never list the same product name more than 4 times.
-      const nk = norm(String(d.name || d.alternate_name || ""));
-      if ((nameCount.get(nk) || 0) >= 4) { skip.add(String(d.id)); continue; }
-      nameCount.set(nk, (nameCount.get(nk) || 0) + 1);
 
       const old = num(d.old_price);
       const fin = num(d.final_price);
