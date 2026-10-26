@@ -430,6 +430,29 @@ async function handleSitemap(url: URL) {
     }
   }
 
+  // Store directory + published city pages (/stores, /stores/{slug}).
+  // Only published locations are listed; drafts stay out of the sitemap.
+  const locations = locationsResult;
+  if (locations.length) {
+    xml += `  <url>
+    <loc>${baseUrl}/stores</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+`;
+    for (const loc of locations) {
+      if (!loc.slug) continue;
+      const lm = sitemapLastmod(loc.content_verified_at);
+      xml += `  <url>
+    <loc>${baseUrl}/stores/${escapeXml(loc.slug)}</loc>
+    ${lm}
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+`;
+    }
+  }
+
   // Legacy legal/about routes — only if the merchant published the matching
   // page_type. Prevents sitemap'd 404s for stores that haven't filled them in.
   const legacyMap: Array<{ path: string; type: string }> = [
@@ -575,6 +598,14 @@ async function handleLlms(url: URL) {
     for (const u of usp.slice(0, 10)) body += `- ${u}\n`;
     body += `\n`;
   }
+
+  // Store locations (published only) — lets AI systems cite local pages.
+  const { data: llmsLocations } = await supabase
+    .from("store_locations")
+    .select("city, slug, location_type")
+    .eq("store_id", store.id)
+    .eq("is_published", true)
+    .order("city");
 
   // Pages
   body += `## Pages\n`;
