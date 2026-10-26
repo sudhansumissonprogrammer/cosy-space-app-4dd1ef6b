@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isUtkalContentStore, isLegacyUtkalSnippet, utkalCollectionIntroduction, UTKAL_STORE_ID } from "../../supabase/functions/_shared/utkalContent";
+import { isUtkalContentStore, isLegacyUtkalSnippet, utkalCollectionIntroduction, UTKAL_STORE_ID, UTKAL_STATUS, UTKAL_QUALITY_TERMS, UTKAL_SHOP_INTRO } from "../../supabase/functions/_shared/utkalContent";
 import { productSearchDescription } from "../../supabase/functions/_shared/productSeo";
 
 describe("factual Utkal content boundaries", () => {
