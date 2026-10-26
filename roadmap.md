@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Execute the 11-phase Utkal SEO brief: fresh database/URL reconciliation, source/live intent and retrieval audit, confirmed safe repairs, regression/browser validation and 30/60/90-day handover; external evidence and unknown facts must remain explicit blockers.
 - [x] Research and apply accurate Utkal homepage/five generic category replica-watch search wording; all six Googlebot pages return new titles/descriptions with correct tenant canonicals. Loaded men's category confirmed; no product edits, 1:1-quality or lowest-price claims.
 - [ ] Utkal keyword homepage shopper cache: fresh browser still hydrates old homepage metadata/heading despite current Googlebot HTML; needs existing authenticated store/shell cache purge and recheck. No ranking outcome established.
 - [x] Audit enterprise shopping discovery brief; repaired deployed feeds (visibility, paging, facts, price, cache) and shared unknown-stock assertions; 20 live PDP/photos across three tenants, all six feed counts and real browser PDP checked; 145 tests pass. Matrix: docs/ENTERPRISE-DISCOVERY-AUDIT-2026-10-25.md.
