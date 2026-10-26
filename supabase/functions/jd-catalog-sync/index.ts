@@ -425,10 +425,18 @@ Deno.serve(async (req) => {
     }
 
     // ── Fetch details for genuinely new products ─────────────────────────
+    // Watches only: non-watch SKUs are remembered so they are never re-fetched.
+    const skip = new Set<string>(Array.isArray((stateRow?.extra_cursor as any)?.__skip) ? (stateRow!.extra_cursor as any).__skip : []);
+    for (let i = candidates.length - 1; i >= 0; i--) if (skip.has(candidates[i].id)) candidates.splice(i, 1);
     const detailResults = await mapLimit(candidates, CONCURRENCY, async (candidate) => ({
       candidate,
       detail: await fetchDetail(candidate.id),
     }));
+    const isWatch = (d: any) => /watch/i.test(subCats.get(Number(d.sub_category_id))?.name || "");
+    for (const r of detailResults) {
+      if (r.detail && !isWatch(r.detail)) { skip.add(String(r.detail.id)); r.detail = null; r.candidate.sourcePage = undefined; r.candidate.deepPage = undefined; }
+    }
+    (extraCursor as any).__skip = [...skip].slice(-20000);
     const details: any[] = [];
     for (const result of detailResults) {
       if (result.detail) {
@@ -539,6 +547,11 @@ Deno.serve(async (req) => {
     }
     for (let i = 0; i < imgRows.length; i += 200) {
       await admin.from("product_images").insert(imgRows.slice(i, i + 200));
+    }
+    // Supplier added-date order + brand categories by product name.
+    if (imported > 0 || linked.length > 0) {
+      const { error: orgErr } = await admin.rpc("jd_organize_watch_catalog", { _store_id: store.id });
+      if (orgErr) console.error("jd organize", orgErr.message);
     }
 
     // ── Advance cursor / phase ───────────────────────────────────────────
