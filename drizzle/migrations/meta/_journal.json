@@ -64,6 +64,13 @@
       "when": 1792992761603,
       "tag": "0008_create_store_locations",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793033495045,
+      "tag": "0009_jd_organize_watch_catalog",
+      "breakpoints": true
     }
   ]
 }
