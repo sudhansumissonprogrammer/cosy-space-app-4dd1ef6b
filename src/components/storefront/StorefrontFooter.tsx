@@ -40,11 +40,19 @@ function useFooterInfo(storeId?: string) {
     staleTime: 10 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
     queryFn: async () => {
-      const { data } = await (supabase as any).rpc("get_store_footer_info", { _store_id: storeId });
-      const payload = (Array.isArray(data) ? data[0] : data) || {};
+      const [footerRes, locationsRes] = await Promise.all([
+        (supabase as any).rpc("get_store_footer_info", { _store_id: storeId }),
+        supabase
+          .from("store_locations")
+          .select("id", { count: "exact", head: true })
+          .eq("store_id", storeId!)
+          .eq("is_published", true),
+      ]);
+      const payload = (Array.isArray(footerRes.data) ? footerRes.data[0] : footerRes.data) || {};
       return {
         publicEmail: ((payload.public_email as string) || "").trim(),
         paymentMethods: (payload.payment_methods || []) as string[],
+        locationCount: locationsRes.count ?? 0,
       };
     },
   });
@@ -155,6 +163,9 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
             <nav className="flex flex-col gap-2.5">
               {[
                 { to: storefrontPath(store.slug), label: "Home" },
+                ...((footerInfo?.locationCount ?? 0) > 0
+                  ? [{ to: storefrontPath(store.slug, "stores"), label: "Find a Store" }]
+                  : []),
                 { to: storefrontPath(store.slug, "about"), label: "About Us" },
                 { to: storefrontPath(store.slug, "contact"), label: "Contact Us" },
                 { to: storefrontPath(store.slug, "return-policy"), label: "Return, Refund & Cancellation" },
