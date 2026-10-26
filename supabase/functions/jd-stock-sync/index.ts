@@ -261,7 +261,8 @@ Deno.serve(async (req) => {
       // Delisted / unavailable at source → keep the product visible but Sold
       // Out, so it reappears automatically the moment the source restocks it.
       const nextStock = src.delisted || src.quantity <= OOS_THRESHOLD ? 0 : src.quantity;
-      const nextActive = true;
+      // Utkal Watches hides sold-out supplier watches; they reappear on restock.
+      const nextActive = store.slug === "utkalwatches" ? nextStock > 0 : true;
 
 
       const stockChanged = (p.stock_quantity ?? 0) !== nextStock;
