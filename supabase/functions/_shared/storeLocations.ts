@@ -11,7 +11,7 @@
  * - Replica disclosure for Utkal reuses the shared UTKAL_STATUS wording.
  * - Delivery-only cities must never be presented as physical branches.
  */
-import { isUtkalContentStore } from "./utkalContent";
+import { isUtkalContentStore } from "./utkalContent.ts";
 
 export interface StoreLocationRecord {
   id: string;
