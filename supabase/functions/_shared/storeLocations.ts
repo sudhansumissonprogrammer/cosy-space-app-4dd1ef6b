@@ -11,7 +11,7 @@
  * - Replica disclosure for Utkal reuses the shared UTKAL_STATUS wording.
  * - Delivery-only cities must never be presented as physical branches.
  */
-import { isUtkalContentStore } from "./utkalContent.ts";
+import { isUtkalContentStore, UTKAL_STATUS } from "./utkalContent.ts";
 
 export interface StoreLocationRecord {
   id: string;
@@ -78,7 +78,7 @@ export function cityPageDescription(store: StoreLike, loc: StoreLocationRecord):
     const where = loc.location_type === "main_store" && loc.address_line
       ? `Visit the main store at ${loc.address_line} or order online.`
       : `Utkal Watches delivers to ${city} from its Rajkot store with cash on delivery.`;
-    return `Shop first copy & replica watches in ${city}. ${where} Replica watches, not genuine brand products.`;
+    return `Shop first copy & replica watches in ${city}. ${where} ${UTKAL_STATUS}`;
   }
   return loc.location_type === "main_store" && loc.address_line
     ? `Shop ${store.name} in ${city}. Visit us at ${loc.address_line} or order online.`
@@ -115,12 +115,12 @@ export function cityIntroParagraph(store: StoreLike, loc: StoreLocationRecord): 
       return `Utkal Watches' main store is at ${loc.address_line}${hours ? ` — ${hours.replace(/^Open/, "open")}` : ""}. ` +
         `Browse the full catalogue online, compare listed prices and photos, and order with cash on delivery. ` +
         `Walk-in customers can check the available watches at the store before buying. ` +
-        `These are first copy / replica watches, not genuine products of the brands they resemble.`;
+        UTKAL_STATUS;
     }
     return `Utkal Watches is an online first-copy watch store delivering to ${cityText}. ` +
       `Browse the full catalogue, compare listed prices and product photos, and order online with cash on delivery. ` +
       `Every order is packed and dispatched from the Utkal Watches main store in Rajkot, Gujarat. ` +
-      `These are first copy / replica watches, not genuine products of the brands they resemble.`;
+      UTKAL_STATUS;
   }
 
   if (loc.location_type === "main_store" && loc.address_line) {
