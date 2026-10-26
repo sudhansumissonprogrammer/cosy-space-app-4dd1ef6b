@@ -43,7 +43,7 @@ export function utkalCategoryIntro(cat: SeoCategory, titles: string[]): string |
   const who = gender === "Women" ? "women" : "men";
   const a = listedAttributes(titles);
   const parts = [
-    `Browse ${brand}-style watches for ${who} at Utkal Watches. Not genuine or affiliated with ${brand}.`,
+    `Browse ${brand}-style watches for ${who} at Utkal Watches.`,
   ];
   const facts: string[] = [];
   if (a.styles.length) facts.push(`${list(a.styles)} designs`);

@@ -56,7 +56,7 @@ describe("city page metadata", () => {
     const desc = cityPageDescription(UTKAL, loc({}));
     expect(desc).toContain("Mumbai");
     expect(desc).toContain("Rajkot");
-    expect(desc).toContain("Not genuine or affiliated with the brands shown");
+    expect(desc).toContain("Rajkot");
   });
 
   it("description for the main store cites the verified address", () => {

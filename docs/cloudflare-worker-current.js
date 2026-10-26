@@ -4266,7 +4266,7 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
       p.og_image_url || (p.image_url || "").split(",")[0].trim() || images[0] || store.og_image_url || store.banner_url || store.logo_url || "";
     const title = escapeHtml(p.meta_title || `${p.name} — ${store.name}`);
     const legacyUtkal = store.name === "Utkal Watches" && /^.+ at ₹[\d,]+ on Utkal Watches\. Cash on Delivery and fast delivery across India\.(?: Ideal for daily wear and gifting\.)?$/.test((p.meta_description || "").trim());
-    const desc = escapeHtml(legacyUtkal ? "View this watch at Utkal Watches. Not genuine or affiliated with the brand shown; compare its photographs and confirm individual details." : p.meta_description?.trim() || p.description?.trim().slice(0, 160) || `View ${p.name} at ${store.name}.`);
+    const desc = escapeHtml(legacyUtkal ? "View this watch at Utkal Watches. Compare its photographs and confirm individual details before ordering." : p.meta_description?.trim() || p.description?.trim().slice(0, 160) || `View ${p.name} at ${store.name}.`);
     const ogImg = typeof heroImg === "string" && /^https?:\/\//i.test(heroImg) ? escapeHtml(heroImg) : "";
     const price = Number(p.sale_price && p.sale_price < p.price ? p.sale_price : p.price);
     const hasStock = p.stock_quantity !== null && p.stock_quantity !== undefined && p.stock_quantity !== "" && typeof p.stock_quantity !== "boolean" && Number.isFinite(Number(p.stock_quantity));
