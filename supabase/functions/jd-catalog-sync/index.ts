@@ -591,6 +591,7 @@ Deno.serve(async (req) => {
       retry_from_page: retryFromPage,
     };
 
+    (extraCursor as any).__skip = [...skip].slice(-20000);
     await admin
       .from("jd_sync_state")
       .upsert({
