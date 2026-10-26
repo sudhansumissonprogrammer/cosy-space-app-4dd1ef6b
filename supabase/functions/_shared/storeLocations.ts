@@ -112,7 +112,7 @@ export function cityIntroParagraph(store: StoreLike, loc: StoreLocationRecord): 
 
   if (isUtkalContentStore(store)) {
     if (loc.location_type === "main_store" && loc.address_line) {
-      return `Utkal Watches' main store is at ${loc.address_line}${hours ? ` — ${hours.toLowerCase()}` : ""}. ` +
+      return `Utkal Watches' main store is at ${loc.address_line}${hours ? ` — ${hours.replace(/^Open/, "open")}` : ""}. ` +
         `Browse the full catalogue online, compare listed prices and photos, and order with cash on delivery. ` +
         `Walk-in customers can check the available watches at the store before buying. ` +
         `These are first copy / replica watches, not genuine products of the brands they resemble.`;
@@ -124,7 +124,7 @@ export function cityIntroParagraph(store: StoreLike, loc: StoreLocationRecord): 
   }
 
   if (loc.location_type === "main_store" && loc.address_line) {
-    return `${store.name} is located at ${loc.address_line}${hours ? ` — ${hours.toLowerCase()}` : ""}. ` +
+    return `${store.name} is located at ${loc.address_line}${hours ? ` — ${hours.replace(/^Open/, "open")}` : ""}. ` +
       `Browse the catalogue online or visit the store.`;
   }
   return `${store.name} delivers to ${cityText}. Browse the catalogue online and place your order for delivery to ${city}.`;
@@ -151,7 +151,7 @@ export function cityFaqItems(
   if (isPhysical) {
     items.push({
       q: `Can I visit the ${store.name} store in ${city}?`,
-      a: `Yes. The store is at ${loc.address_line}${hours ? ` and is ${hours.toLowerCase()}` : ""}.` +
+      a: `Yes. The store is at ${loc.address_line}${hours ? ` and is ${hours.replace(/^Open/, "open")}` : ""}.` +
         (loc.whatsapp ? ` You can also message ${loc.whatsapp} on WhatsApp before visiting.` : ""),
     });
   } else {
