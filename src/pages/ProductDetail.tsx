@@ -1307,7 +1307,7 @@ export default function ProductDetail() {
                 isOpen={openAccordion === "returns"}
                 onToggle={() => toggleAccordion("returns")}
               >
-                {isUtkalContentStore(store) ? <p className="text-sm text-muted-foreground">Read the <Link className="underline" to={storefrontPath(store.slug, "refund-policy")}>returns and refund policy</Link> for applicable conditions before ordering.</p> : <ul className="space-y-1.5 text-sm text-muted-foreground">
+                {isUtkalContentStore(store) ? <p className="text-sm text-muted-foreground">Read the <Link className="underline" to={storefrontPath(store.slug, "return-policy")}>returns and refund policy</Link> for applicable conditions before ordering.</p> : <ul className="space-y-1.5 text-sm text-muted-foreground">
                   <li>• 7-day easy return policy</li>
                   <li>• Product must be unused and in original packaging</li>
                   <li>• Refund processed within 5-7 business days</li>
