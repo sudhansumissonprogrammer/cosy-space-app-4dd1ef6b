@@ -29,7 +29,7 @@ const STYLES: [RegExp, string][] = [[/chrono/i, "chronograph-style"], [/automati
 /** Attributes present in the listed product titles; never inferred beyond them. */
 export function listedAttributes(titles: string[]): { dials: string[]; straps: string[]; styles: string[] } {
   const text = titles.join(" ").toLowerCase();
-  const dials = DIALS.filter((d) => new RegExp(`\\b${d}\\b`).test(text)).filter((d, _, all) => !(d === "gold" && all.includes("rose gold") && !/(^|[^e] )gold/.test(text)));
+  const dials = DIALS.filter((d) => new RegExp(`\\b${d}\\b`).test(text));
   const straps = STRAPS.filter(([re]) => re.test(text)).map(([, l]) => l);
   const styles = STYLES.filter(([re]) => re.test(text)).map(([, l]) => l);
   return { dials: dials.slice(0, 5), straps, styles };
