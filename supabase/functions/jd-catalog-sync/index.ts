@@ -540,7 +540,7 @@ Deno.serve(async (req) => {
         sale_price: sale,
         currency: store.currency || "INR",
         stock_quantity: qty,
-        is_active: true,
+        is_active: subs ? qty > 0 : true,
         image_url: assetUrl(d.cover_image),
         image_alt: String(d.name || ""),
         category: sc?.name ?? null,
