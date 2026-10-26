@@ -3364,6 +3364,111 @@ export type Database = {
           },
         ]
       }
+      store_locations: {
+        Row: {
+          address_line: string | null
+          central_dispatch: boolean
+          city: string
+          content_verified_at: string | null
+          created_at: string
+          delivery_notes: string | null
+          id: string
+          intro: string | null
+          is_published: boolean
+          latitude: number | null
+          local_inventory_source: string | null
+          location_type: string
+          longitude: number | null
+          map_url: string | null
+          opening_hours: Json | null
+          phone: string | null
+          photos: string[]
+          pickup_available: boolean | null
+          pickup_notes: string | null
+          pincode: string | null
+          returns_notes: string | null
+          slug: string
+          store_id: string
+          store_name: string | null
+          updated_at: string
+          walk_in: boolean | null
+          whatsapp: string | null
+        }
+        Insert: {
+          address_line?: string | null
+          central_dispatch?: boolean
+          city: string
+          content_verified_at?: string | null
+          created_at?: string
+          delivery_notes?: string | null
+          id?: string
+          intro?: string | null
+          is_published?: boolean
+          latitude?: number | null
+          local_inventory_source?: string | null
+          location_type?: string
+          longitude?: number | null
+          map_url?: string | null
+          opening_hours?: Json | null
+          phone?: string | null
+          photos?: string[]
+          pickup_available?: boolean | null
+          pickup_notes?: string | null
+          pincode?: string | null
+          returns_notes?: string | null
+          slug: string
+          store_id: string
+          store_name?: string | null
+          updated_at?: string
+          walk_in?: boolean | null
+          whatsapp?: string | null
+        }
+        Update: {
+          address_line?: string | null
+          central_dispatch?: boolean
+          city?: string
+          content_verified_at?: string | null
+          created_at?: string
+          delivery_notes?: string | null
+          id?: string
+          intro?: string | null
+          is_published?: boolean
+          latitude?: number | null
+          local_inventory_source?: string | null
+          location_type?: string
+          longitude?: number | null
+          map_url?: string | null
+          opening_hours?: Json | null
+          phone?: string | null
+          photos?: string[]
+          pickup_available?: boolean | null
+          pickup_notes?: string | null
+          pincode?: string | null
+          returns_notes?: string | null
+          slug?: string
+          store_id?: string
+          store_name?: string | null
+          updated_at?: string
+          walk_in?: boolean | null
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_locations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_locations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_notifications: {
         Row: {
           body: string
