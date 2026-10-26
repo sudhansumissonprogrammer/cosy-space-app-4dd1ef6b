@@ -6,6 +6,7 @@ import { discoveryPage, discoveryUrl, DISCOVERY_PAGE_SIZE, productImageUrls } fr
 import { createClient } from "npm:@supabase/supabase-js@2";
 import TurndownService from "npm:turndown@7.2.0";
 import { prefersMarkdown } from "../_shared/agentContent.ts";
+import { isUtkalContentStore, UTKAL_HOME_HEADING, UTKAL_STATUS, UTKAL_QUALITY_TERMS, UTKAL_SHOP_TITLE, UTKAL_SHOP_INTRO, utkalCollectionIntroduction } from "../_shared/utkalContent.ts";
 
 /** wa.me needs a country code — owners often save a bare 10-digit mobile. */
 function waPhone(raw: unknown): string {
@@ -155,6 +156,7 @@ ${allImages.filter((img) => img !== heroImage).slice(0, 9).map((img: string, i: 
 </div>
 <div class="info">
 <h1 itemprop="name">${esc(product.name)}</h1>
+${isUtkalContentStore(store) ? `<p>${esc(UTKAL_STATUS)}</p>` : ""}
 <div class="price" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
 <span itemprop="price" content="${productSearchPrice(product)}">${price}</span>
 <meta itemprop="priceCurrency" content="${product.currency || store.currency || "INR"}">
@@ -163,6 +165,7 @@ ${availability ? `<link itemprop="availability" href="${availability === "in sto
 </div>
 ${availability ? `<p class="stock">${availability === "in stock" ? "In Stock" : "Out of Stock"}</p>` : ""}
 ${product.description ? `<div class="description" itemprop="description">${esc(product.description)}</div>` : ""}
+${isUtkalContentStore(store) ? `<h2>Product information</h2><p>${esc(UTKAL_QUALITY_TERMS)}</p>` : ""}
 </div>
 </article>
 </main>
@@ -249,8 +252,9 @@ ${store.logo_url ? `<img src="${esc(store.logo_url)}" alt="${storeName} logo">` 
 </header>
 <main class="container">
 <section class="hero">
-<h1>${storeName}</h1>
+<h1>${isUtkalContentStore(store) ? esc(UTKAL_HOME_HEADING) : storeName}</h1>
 ${store.description ? `<p>${esc(store.description)}</p>` : ""}
+${isUtkalContentStore(store) ? `<h2>Before choosing a watch</h2><p>${esc(UTKAL_STATUS)}</p><p>${esc(UTKAL_QUALITY_TERMS)}</p>` : ""}
 <a class="cta" href="${esc(canonical)}/shop">Shop products</a>
 </section>
 ${categories.length > 0 ? `<nav class="categories">${categoryLinks}</nav>` : ""}
@@ -428,6 +432,7 @@ ${buildShellHeader(store)}
 <main class="container">
 <nav class="breadcrumb"><a href="${esc(storeBase)}">${storeName}</a> &rsaquo; <a href="${esc(storeBase)}/categories">Categories</a> &rsaquo; ${esc(category.name)}</nav>
 <section class="hero"><h1>${esc(category.name)}</h1>${category.description ? `<p>${esc(category.description)}</p>` : ""}</section>
+${isUtkalContentStore(store) && page === 1 ? `${utkalCollectionIntroduction(store, category.slug) ? `<p>${esc(utkalCollectionIntroduction(store, category.slug))}</p>` : ""}<p>${esc(UTKAL_STATUS)}</p>` : ""}
 <section class="grid">${cards || `<p>No products in this category yet.</p>`}</section>
 ${renderPagination(`${storeBase}/category/${category.slug}`, page, hasNext)}
 </main>
@@ -924,7 +929,7 @@ async function renderRequest(req: Request): Promise<Response> {
 
     const opts = effectiveKind === "best-sellers" && !showAll
       ? { kind: "best-sellers" as const, title: `Best sellers at ${store.name}`, desc: `Top-selling products at ${store.name}.` }
-      : { kind: "shop" as const, title: `Shop all products — ${store.name}`, desc: `Browse the full product catalog at ${store.name}.` };
+      : { kind: "shop" as const, title: isUtkalContentStore(store) ? UTKAL_SHOP_TITLE : `Shop all products — ${store.name}`, desc: isUtkalContentStore(store) ? UTKAL_SHOP_INTRO : `Browse the full product catalog at ${store.name}.` };
     const html = buildListingHtml(
       store,
       (listingProducts || []).slice(0, DISCOVERY_PAGE_SIZE),

@@ -63,4 +63,11 @@ describe("product search representation consistency", () => {
     expect(renderer().home(fixture, [], [])).toContain(`<h1>${buildStorefrontH1(fixture)}</h1>`);
     expect(renderer().home(store, [], [])).toContain("<h1>Utkal Watches — Online Store</h1>");
   });
+  it("does not retain legacy Utkal price or delivery assertions in the Worker", () => {
+    const product = { id: "id", name: "Listed Watch", price: 1999, meta_description: "Analog watch for men at ₹1,650 on Utkal Watches. Cash on Delivery and fast delivery across India. Ideal for daily wear and gifting." };
+    const html = renderer().head(store, "utkalwatches", "utkalwatch.in", "/product/id", { kind: "product", json: JSON.stringify({ product }) });
+    expect(html).toContain(productSearchDescription(product, store.name));
+    expect(html).not.toContain("fast delivery across India");
+    expect(Number(schemas(html)[0].offers.price)).toBe(1999);
+  });
 });

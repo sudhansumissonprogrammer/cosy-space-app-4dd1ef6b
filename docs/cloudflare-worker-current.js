@@ -243,7 +243,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "9.2.8-discovery-facts";
+const WORKER_VERSION = "9.2.9-utkal-content-truth";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -4155,7 +4155,9 @@ function _buildSeoBodyBlock(store, categories, products) {
   const loc = [store.city, store.state].filter(Boolean).map(escapeHtml).join(", ");
   const wa = store.whatsapp_number ? escapeHtml(String(store.whatsapp_number)) : "";
 
-  let html = `<div id="seo-content" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:normal" aria-hidden="false">`;
+  const utkal = store.id ? store.id === "ab19143d-87a9-490e-90b7-837313522782" : store.slug === "utkalwatches";
+  // Utkal buying context is visible before hydration, not hidden ranking text.
+  let html = utkal ? `<section id="seo-content">` : `<div id="seo-content" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:normal" aria-hidden="false">`;
   // v8.65.0 — Descriptive H1 for AI search / "Understandable" audit. Was just
   // `<h1>{name}</h1>` which fails the "describe what the page is about" rule
   // (brand name alone doesn't count). Mirrors src/lib/storefrontSeoH1.ts.
@@ -4167,7 +4169,7 @@ function _buildSeoBodyBlock(store, categories, products) {
   const sentence = description.match(/[.!?]\s/);
   const tail = explicit || (sentence?.index != null ? description.slice(0, sentence.index + 1) : description);
   const heading = !tail ? `${storeName} — Online Store` : tail.toLocaleLowerCase().startsWith(storeName.toLocaleLowerCase()) ? truncate(tail, storeName.length + 93) : `${storeName} — ${truncate(tail)}`;
-  html += `<h1>${escapeHtml(heading)}</h1>`;
+  html += `<h1>${escapeHtml(utkal ? "Utkal Watches — First Copy & Replica Watches in India" : heading)}</h1>`;
   if (about) html += `<p>${about}</p>`;
   if (loc || wa) {
     const bits = [];
@@ -4229,7 +4231,7 @@ function _buildSeoBodyBlock(store, categories, products) {
     html += `</address>`;
   }
 
-  html += `</div>`;
+  html += utkal ? `</section>` : `</div>`;
   return html;
 }
 
@@ -4260,7 +4262,8 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
     const heroImg =
       p.og_image_url || (p.image_url || "").split(",")[0].trim() || images[0] || store.og_image_url || store.banner_url || store.logo_url || "";
     const title = escapeHtml(p.meta_title || `${p.name} — ${store.name}`);
-    const desc = escapeHtml(p.meta_description?.trim() || p.description?.trim().slice(0, 160) || `View ${p.name} at ${store.name}.`);
+    const legacyUtkal = store.name === "Utkal Watches" && /^.+ at ₹[\d,]+ on Utkal Watches\. Cash on Delivery and fast delivery across India\.(?: Ideal for daily wear and gifting\.)?$/.test((p.meta_description || "").trim());
+    const desc = escapeHtml(legacyUtkal ? "View this listed first copy / replica watch at Utkal Watches. Not a genuine branded product; compare its photographs and confirm individual details." : p.meta_description?.trim() || p.description?.trim().slice(0, 160) || `View ${p.name} at ${store.name}.`);
     const ogImg = typeof heroImg === "string" && /^https?:\/\//i.test(heroImg) ? escapeHtml(heroImg) : "";
     const price = Number(p.sale_price && p.sale_price < p.price ? p.sale_price : p.price);
     const hasStock = p.stock_quantity !== null && p.stock_quantity !== undefined && p.stock_quantity !== "" && typeof p.stock_quantity !== "boolean" && Number.isFinite(Number(p.stock_quantity));

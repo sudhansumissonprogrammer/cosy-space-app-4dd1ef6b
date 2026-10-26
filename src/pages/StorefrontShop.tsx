@@ -10,6 +10,7 @@ import { useProductListJsonLd } from "@/hooks/useJsonLd";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { discoveryPage, discoveryUrl } from "@/lib/catalogueDiscovery";
 import CataloguePagination from "@/components/storefront/CataloguePagination";
+import { isUtkalContentStore, UTKAL_SHOP_TITLE, UTKAL_SHOP_INTRO } from "../../supabase/functions/_shared/utkalContent";
 
 import { useInfiniteProducts, PAGE_SIZE } from "@/hooks/useInfiniteProducts";
 import ShopFilterBar, { applySort, type SortKey } from "@/components/storefront/ShopFilterBar";
@@ -91,8 +92,8 @@ export default function StorefrontShop() {
     customDomain: (store as any)?.custom_domain,
   });
   useMetaTags({
-    title: `Shop all products — ${store.name}`,
-    description: `Browse the full product catalog at ${store.name}.`,
+    title: isUtkalContentStore(store) ? UTKAL_SHOP_TITLE : `Shop all products — ${store.name}`,
+    description: isUtkalContentStore(store) ? UTKAL_SHOP_INTRO : `Browse the full product catalog at ${store.name}.`,
     ogImage: store.logo_url || undefined,
     storeSlug: store.slug, customDomain: store.custom_domain,
     canonicalPath: discoveryUrl("shop", discovery ?? 1),
@@ -136,6 +137,7 @@ export default function StorefrontShop() {
       <div className="mb-4 flex items-center gap-3">
         <Link
           to={categoryParam ? storefrontPath(slug || store.slug, "shop") : storefrontPath(slug || store.slug, "")}
+          aria-label="Back to store"
           className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card hover:bg-accent transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -143,6 +145,7 @@ export default function StorefrontShop() {
         <h1 className="text-xl sm:text-2xl font-bold text-foreground capitalize">{heading}</h1>
       </div>
 
+      {isUtkalContentStore(store) && discovery === 1 && <p className="mb-4 text-sm leading-relaxed text-muted-foreground">{UTKAL_SHOP_INTRO}</p>}
       {/* Category quick-jump strip */}
       <CategoryQuickJump storeId={store.id} slug={slug || store.slug} activeCategory={categoryParam} />
 

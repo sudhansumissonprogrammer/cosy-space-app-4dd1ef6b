@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { productSearchDescription } from "../../supabase/functions/_shared/productSeo";
+import { isUtkalContentStore, UTKAL_STATUS, UTKAL_QUALITY_TERMS } from "../../supabase/functions/_shared/utkalContent";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useProductJsonLd } from "@/hooks/useJsonLd";
 import { useProductCategory } from "@/hooks/useProductCategory";
@@ -907,9 +908,10 @@ export default function ProductDetail() {
             {product.name}
           </h1>
 
+          {isUtkalContentStore(store) && <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{UTKAL_STATUS}</p>}
 
           {/* Rating & Social Proof */}
-          <div className="mt-2 flex items-center gap-2.5 flex-wrap">
+          {!isUtkalContentStore(store) && <div className="mt-2 flex items-center gap-2.5 flex-wrap">
             <div className="flex items-center gap-0.5">
               {[...Array(5)].map((_, i) => (
                 <Star
@@ -931,7 +933,7 @@ export default function ProductDetail() {
                 </span>
               </>
             )}
-          </div>
+          </div>}
 
           {/* Price — simple, no border/background */}
           <div className="mt-4 flex items-start justify-between gap-3">
@@ -1263,6 +1265,7 @@ export default function ProductDetail() {
           )}
 
           {/* Accordion Sections */}
+          {isUtkalContentStore(store) && <section className="mt-5 space-y-2 text-sm leading-relaxed text-muted-foreground"><h2 className="font-semibold text-foreground">Product information</h2><p>{UTKAL_QUALITY_TERMS}</p></section>}
           <div className={`mt-6 divide-y overflow-hidden ${isV18 ? 'divide-[#333] border-y border-[#333]' : 'divide-border border border-border rounded-xl'}`}>
             {product.description && (
               <AccordionItem
