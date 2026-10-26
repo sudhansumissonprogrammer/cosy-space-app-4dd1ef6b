@@ -1289,6 +1289,8 @@ export default function ProductDetail() {
             >
               {isV18 ? (
                 <p className="text-sm" style={{ color: "#999", ...v18Font }}>Customer reviews will appear here.</p>
+              ) : isUtkalContentStore(store) ? (
+                <p className="text-sm text-muted-foreground">Check the <Link className="underline" to={storefrontPath(store.slug, "shipping-policy")}>shipping policy</Link> and confirm delivery options, charges and timing for your address before ordering.</p>
               ) : (
                 <ul className="space-y-1.5 text-sm text-muted-foreground">
                   <li>• Standard delivery: 3-7 business days</li>
@@ -1305,7 +1307,7 @@ export default function ProductDetail() {
                 isOpen={openAccordion === "returns"}
                 onToggle={() => toggleAccordion("returns")}
               >
-                <ul className="space-y-1.5 text-sm text-muted-foreground">
+                {isUtkalContentStore(store) ? <p className="text-sm text-muted-foreground">Read the <Link className="underline" to={storefrontPath(store.slug, "refund-policy")}>returns and refund policy</Link> for applicable conditions before ordering.</p> : <ul className="space-y-1.5 text-sm text-muted-foreground">
                   <li>• 7-day easy return policy</li>
                   <li>• Product must be unused and in original packaging</li>
                   <li>• Refund processed within 5-7 business days</li>
@@ -1315,7 +1317,7 @@ export default function ProductDetail() {
                       parcel. Return, replacement or refund claims cannot be approved without it.
                     </li>
                   )}
-                </ul>
+                </ul>}
               </AccordionItem>
             )}
           </div>
