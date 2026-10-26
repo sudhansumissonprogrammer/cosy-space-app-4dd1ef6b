@@ -57,6 +57,13 @@
       "when": 1792864894424,
       "tag": "0007_align_category_seed_membership",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792992761603,
+      "tag": "0008_create_store_locations",
+      "breakpoints": true
     }
   ]
 }
