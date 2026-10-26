@@ -301,7 +301,7 @@ async function handleSitemap(url: URL) {
   const storeHost = store.custom_domain || `${slug}.${ROOT_DOMAIN}`;
   const baseUrl = `https://${storeHost}`;
 
-  const [productsResult, categoriesResult, pagesResult] = await Promise.all([
+  const [productsResult, categoriesResult, pagesResult, locationsResult] = await Promise.all([
     readAllRows<any>((from, to) => supabase
       .from("products")
       .select("slug, id, updated_at, image_url, name, price, sale_price")
@@ -316,6 +316,9 @@ async function handleSitemap(url: URL) {
     readAllRows<any>((from, to) => supabase
       .from("store_pages").select("id, slug, page_type, updated_at, is_active")
       .eq("store_id", store.id).eq("is_active", true).order("id").range(from, to)),
+    readAllRows<any>((from, to) => supabase
+      .from("store_locations").select("id, slug, content_verified_at")
+      .eq("store_id", store.id).eq("is_published", true).order("id").range(from, to)),
   ]);
 
   const products = productsResult;
