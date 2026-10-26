@@ -117,12 +117,21 @@ interface ListItem {
   deepPage?: number;
 }
 
-async function fetchListPage(page: number, origin: string = SOURCE_ORIGIN): Promise<ListItem[] | null> {
+/** Utkal Watches mirrors only the supplier's watch sections (men 10, women 11, luxury 12). */
+const WATCH_STORE_SUBS: Record<string, { primary: number; extra: number[] }> = {
+  utkalwatches: { primary: 10, extra: [11, 12] },
+};
+const SUB_PAGES = 6;
+
+async function fetchListPage(page: number, origin: string = SOURCE_ORIGIN, sub?: number): Promise<ListItem[] | null> {
+  const f = sub ? `subCategoryIds=${sub}&` : "";
   // The source renamed this route (old `products/v2/recent` now 404s), which
   // silently stopped every catalog import. Try the current retailer route
   // first and keep the legacy one as a fallback in case they revert.
-  let body = await srcFetch(`products/v2/retailer/recent?sortBy=recently_added&page=${page}`, origin);
-  if (!Array.isArray(body?.data)) {
+  let body = await srcFetch(`products/v2/retailer/recent?${f}sortBy=recently_added&page=${page}`, origin);
+  if (sub) {
+    if (!Array.isArray(body?.data)) return null;
+  } else if (!Array.isArray(body?.data)) {
     body = await srcFetch(`products/v2/recent?sortBy=recently_added&page=${page}`, origin);
   }
   const data = body?.data;
@@ -274,6 +283,7 @@ Deno.serve(async (req) => {
     }
 
     // ── Walk listing pages ───────────────────────────────────────────────
+    const subs = WATCH_STORE_SUBS[store.slug];
     const startPage = phase === "steady" ? 1 : cursor;
     const maxPages = phase === "steady" ? STEADY_PAGES : pageBudget;
 
@@ -293,7 +303,7 @@ Deno.serve(async (req) => {
       // not keep up with a 1,200+ page catalog inside one run's time budget.
       const slice: number[] = [];
       for (let k = 0; k < PAGE_CONCURRENCY && pagesWalked + k < maxPages; k++) slice.push(page + k);
-      const pages = await Promise.all(slice.map((n) => fetchListPage(n)));
+      const pages = await Promise.all(slice.map((n) => fetchListPage(n, SOURCE_ORIGIN, subs?.primary)));
 
       for (let k = 0; k < pages.length; k++) {
         const items = pages[k];
@@ -363,7 +373,7 @@ Deno.serve(async (req) => {
       for (let n = 0; n < DEEP_PAGES; n++) {
         if (candidates.length >= importBudget) break;
         if (Date.now() - started > TIME_BUDGET_MS) break;
-        const items = await fetchListPage(deepCursor);
+        const items = await fetchListPage(deepCursor, SOURCE_ORIGIN, subs?.primary);
         if (items === null) break; // throttled — retry the same page next run
         deepPagesWalked++;
         if (items.length === 0) { deepCursor = 1; break; } // past the end → wrap
@@ -389,7 +399,27 @@ Deno.serve(async (req) => {
 
 
 
-    for (const origin of EXTRA_ORIGINS) {
+    // Other watch sections (women's, luxury) — own rotating cursors.
+    for (const sub of subs?.extra || []) {
+      const ck = `__sub${sub}`;
+      let p = Math.max(1, Number(extraCursor[ck]) || 1);
+      for (let n = 0; n < SUB_PAGES; n++) {
+        if (candidates.length >= importBudget || Date.now() - started > TIME_BUDGET_MS) break;
+        const items = await fetchListPage(p, SOURCE_ORIGIN, sub);
+        if (items === null) break;
+        if (items.length === 0) { p = 1; break; }
+        for (const it of items) {
+          if (knownSku.has(it.id)) continue;
+          knownSku.add(it.id);
+          candidates.push({ ...it });
+        }
+        p++;
+        await new Promise((r) => setTimeout(r, REQ_GAP_MS));
+      }
+      extraCursor[ck] = p;
+    }
+
+    for (const origin of (subs ? [] : EXTRA_ORIGINS)) {
       if (candidates.length >= importBudget) break;
       if (Date.now() - started > TIME_BUDGET_MS) break;
       let p = Math.max(1, Number(extraCursor[origin]) || 1);
