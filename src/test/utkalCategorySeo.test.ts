@@ -5,14 +5,14 @@ const guessMen = { name: "Guess Watch Men", slug: "guess-watch-men" };
 
 describe("Utkal category SEO", () => {
   it("heading matches the search wording", () => {
-    expect(utkalCategoryHeading(guessMen)).toBe("First Copy Guess Watches for Men");
-    expect(utkalCategoryHeading({ name: "Sale", slug: "sale", meta_title: "First Copy Watches on Sale | Utkal Watches" })).toBe("First Copy Watches on Sale");
+    expect(utkalCategoryHeading(guessMen)).toBe("Guess Watches for Men");
+    expect(utkalCategoryHeading({ name: "Sale", slug: "sale", meta_title: "Sale" })).toBe("Sale");
     expect(utkalCategoryHeading({ name: "Casio New", slug: "casio-new", meta_title: "Plain title" })).toBe("Casio New");
   });
 
   it("intro only names attributes present in listed titles", () => {
     const intro = utkalCategoryIntro(guessMen, ["Guess Black Dial Leather Strap"])!;
-    expect(intro).toContain("not genuine Guess products");
+    expect(intro).toContain("Not genuine or affiliated with Guess");
     expect(intro).toContain("black dials");
     expect(intro).toContain("leather straps");
     expect(intro).not.toContain("blue");
