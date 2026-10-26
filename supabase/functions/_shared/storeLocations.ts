@@ -41,7 +41,7 @@ export interface StoreLocationRecord {
   is_published: boolean;
 }
 
-type StoreLike = { id?: string | null; slug?: string | null; name?: string | null };
+type StoreLike = { id?: string | null; slug?: string | null; name?: string | null; state?: string | null };
 
 export const LOCATION_TYPE_LABELS: Record<string, string> = {
   main_store: "Main store",
@@ -173,7 +173,7 @@ export function cityFaqItems(
   if (mainStore && loc.slug !== mainStore.slug) {
     items.push({
       q: "Where will my order be dispatched from?",
-      a: `All orders are packed and dispatched from the ${store.name} main store in ${mainStore.city}${mainStore.state ? `, ${mainStore.state}` : ""}.`,
+      a: `All orders are packed and dispatched from the ${store.name} main store in ${mainStore.city}${store.state ? `, ${store.state}` : ""}.`,
     });
   }
 
