@@ -1082,6 +1082,60 @@ async function renderRequest(req: Request): Promise<Response> {
     return new Response(html, { headers: { ...corsHeaders, ...HTML_CACHE_HEADERS } });
   }
 
+  // Store directory — /stores
+  if (effectiveKind === "stores") {
+    const { data: locations, error: locError } = await supabase
+      .from("store_locations")
+      .select("*")
+      .eq("store_id", store.id)
+      .eq("is_published", true)
+      .order("city");
+    if (locError) return new Response("Locations unavailable", { status: 503, headers: noIndexHeaders });
+    if (!locations?.length) return new Response("Page not found", { status: 404, headers: noIndexHeaders });
+    const html = buildStoresDirectoryHtml(store, locations, `${canonical}/stores`, canonical);
+    return new Response(html, { headers: { ...corsHeaders, ...HTML_CACHE_HEADERS } });
+  }
+
+  // City page — /stores/:citySlug
+  if (effectiveKind === "city" && routeSlug) {
+    const { data: location, error: locError } = await supabase
+      .from("store_locations")
+      .select("*")
+      .eq("store_id", store.id)
+      .eq("slug", routeSlug)
+      .eq("is_published", true)
+      .maybeSingle();
+    if (locError) return new Response("Locations unavailable", { status: 503, headers: noIndexHeaders });
+    if (!location) return new Response("Page not found", { status: 404, headers: noIndexHeaders });
+    const { data: mainStore } = await supabase
+      .from("store_locations")
+      .select("*")
+      .eq("store_id", store.id)
+      .eq("location_type", "main_store")
+      .eq("is_published", true)
+      .maybeSingle();
+    const { data: cityProducts, error: prodError } = await supabase
+      .from("products")
+      .select("id, name, slug, price, sale_price, currency, image_url, stock_quantity, category")
+      .eq("store_id", store.id)
+      .eq("is_active", true)
+      .eq("hidden_by_category", false)
+      .order("display_order")
+      .order("created_at", { ascending: false })
+      .order("id")
+      .range(0, 11);
+    if (prodError) return new Response("Catalogue unavailable", { status: 503, headers: noIndexHeaders });
+    const html = buildCityHtml(
+      store,
+      location,
+      mainStore || null,
+      cityProducts || [],
+      `${canonical}/stores/${location.slug}`,
+      canonical,
+    );
+    return new Response(html, { headers: { ...corsHeaders, ...HTML_CACHE_HEADERS } });
+  }
+
   // Static info routes
   if (effectiveKind === "about" || effectiveKind === "contact" || effectiveKind === "track-order" || effectiveKind === "faq") {
     const html = buildStaticInfoHtml(store, effectiveKind as any, `${canonical}/${effectiveKind}`, canonical);
