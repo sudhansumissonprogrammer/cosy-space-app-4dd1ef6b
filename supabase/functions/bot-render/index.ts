@@ -7,6 +7,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import TurndownService from "npm:turndown@7.2.0";
 import { prefersMarkdown } from "../_shared/agentContent.ts";
 import { isUtkalContentStore, UTKAL_HOME_HEADING, UTKAL_STATUS, UTKAL_QUALITY_TERMS, UTKAL_SHOP_TITLE, UTKAL_SHOP_INTRO, utkalCollectionIntroduction } from "../_shared/utkalContent.ts";
+import { cityFaqItems, cityIntroParagraph, cityPageDescription, cityPageH1, cityPageTitle, directoryDescription, directoryH1, directoryTitle, formatOpeningHours, locationTypeLabel, mapsSearchUrl } from "../_shared/storeLocations.ts";
 
 /** wa.me needs a country code — owners often save a bare 10-digit mobile. */
 function waPhone(raw: unknown): string {
@@ -567,6 +568,134 @@ ${buildShellHeader(store)}
 <h1>${esc(page.title)}</h1>
 <div class="prose">${body || `<p>No content yet.</p>`}</div>
 </article>
+</main>
+${buildShellFooter(store, canonical)}
+</body></html>`;
+}
+
+function buildStoresDirectoryHtml(
+  store: any,
+  locations: any[],
+  canonical: string,
+  storeBase: string,
+): string {
+  const title = directoryTitle(store);
+  const desc = directoryDescription(store, locations);
+  const breadcrumb = buildBreadcrumb([
+    { name: store.name, url: storeBase },
+    { name: "Stores", url: canonical },
+  ]);
+  const itemList = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: `${store.name} store & delivery locations`,
+    numberOfItems: locations.length,
+    itemListElement: locations.map((l, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      url: `${storeBase}/stores/${l.slug}`,
+      name: l.city,
+    })),
+  });
+  const links = locations
+    .map((l) => `<a class="cat-card" href="${esc(storeBase)}/stores/${esc(l.slug)}">${esc(l.city)} — ${esc(locationTypeLabel(l.location_type))}</a>`)
+    .join("");
+  return `<!DOCTYPE html><html lang="en">${buildShellHead({
+    title,
+    desc,
+    canonical,
+    storeName: store.name,
+    ogImage: store.og_image_url || store.banner_url || store.logo_url || "",
+    jsonLd: [itemList, breadcrumb],
+  })}<body>
+${buildShellHeader(store)}
+<main class="container">
+<nav class="breadcrumb"><a href="${esc(storeBase)}">${esc(store.name)}</a> &rsaquo; Stores</nav>
+<section class="hero"><h1>${esc(directoryH1(store))}</h1><p>${esc(desc)}</p></section>
+<nav class="cat-grid">${links}</nav>
+</main>
+${buildShellFooter(store, canonical)}
+</body></html>`;
+}
+
+function buildCityHtml(
+  store: any,
+  loc: any,
+  mainStore: any | null,
+  products: any[],
+  canonical: string,
+  storeBase: string,
+): string {
+  const title = cityPageTitle(store, loc.city);
+  const desc = cityPageDescription(store, loc);
+  const h1 = cityPageH1(store, loc.city);
+  const intro = cityIntroParagraph(store, loc);
+  const hours = formatOpeningHours(loc.opening_hours);
+  const isPhysical = loc.location_type !== "delivery_only" && !!loc.address_line;
+  const faq = cityFaqItems(store, loc, mainStore);
+
+  const breadcrumb = buildBreadcrumb([
+    { name: store.name, url: storeBase },
+    { name: "Stores", url: `${storeBase}/stores` },
+    { name: loc.city, url: canonical },
+  ]);
+  const graphs: string[] = [breadcrumb];
+  // Store markup only when a verified address exists — delivery-only cities
+  // must never be marked up as physical branches.
+  if (loc.address_line) {
+    graphs.push(JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Store",
+      "@id": `${canonical}#store`,
+      name: loc.store_name || `${store.name} — ${loc.city}`,
+      url: canonical,
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: loc.address_line,
+        addressLocality: loc.city,
+        addressCountry: "IN",
+        ...(loc.pincode ? { postalCode: loc.pincode } : {}),
+      },
+      ...(loc.phone || loc.whatsapp ? { telephone: loc.phone || loc.whatsapp } : {}),
+      ...(hours ? { openingHours: hours.replace(/^Open daily, /, "Mo-Su ") } : {}),
+      ...(loc.latitude != null && loc.longitude != null
+        ? { geo: { "@type": "GeoCoordinates", latitude: loc.latitude, longitude: loc.longitude } }
+        : {}),
+    }));
+  }
+
+  const storeInfo = isPhysical
+    ? `<h2>${esc(locationTypeLabel(loc.location_type))} in ${esc(loc.city)}</h2>
+<p>${esc(loc.address_line)}${loc.pincode ? ` — ${esc(loc.pincode)}` : ""}</p>
+${hours ? `<p>${esc(hours)}</p>` : ""}
+<p><a href="${esc(loc.map_url || mapsSearchUrl(loc.address_line))}">Get directions</a></p>`
+    : `<h2>Delivery to ${esc(loc.city)}</h2>
+<p>${esc(store.name)} does not have a physical branch in ${esc(loc.city)} yet. Order online and${mainStore ? ` your order is dispatched from the main store in ${esc(mainStore.city)}.` : " your order is dispatched from the main store."}</p>
+${loc.delivery_notes ? `<p>${esc(loc.delivery_notes)}</p>` : ""}`;
+
+  const cards = products.map((p) => renderProductCard(store, p, storeBase)).join("\n");
+  const faqHtml = faq.length
+    ? `<section><h2>Common questions</h2>${faq.map((f) => `<h3>${esc(f.q)}</h3><p>${esc(f.a)}</p>`).join("\n")}</section>`
+    : "";
+
+  return `<!DOCTYPE html><html lang="en">${buildShellHead({
+    title,
+    desc,
+    canonical,
+    storeName: store.name,
+    ogImage: store.og_image_url || store.banner_url || store.logo_url || "",
+    jsonLd: graphs,
+  })}<body>
+${buildShellHeader(store)}
+<main class="container">
+<nav class="breadcrumb"><a href="${esc(storeBase)}">${esc(store.name)}</a> &rsaquo; <a href="${esc(storeBase)}/stores">Stores</a> &rsaquo; ${esc(loc.city)}</nav>
+<section class="hero"><h1>${esc(h1)}</h1><p>${esc(intro)}</p></section>
+<section>${storeInfo}</section>
+<section><h2>Shop watches delivered to ${esc(loc.city)}</h2>
+<div class="grid">${cards || `<p>Products are being added — check the full catalogue soon.</p>`}</div>
+<p><a href="${esc(storeBase)}/shop">View the full catalogue</a></p></section>
+${faqHtml}
+<nav class="breadcrumb"><a href="${esc(storeBase)}/stores">All stores &amp; cities</a> &middot; <a href="${esc(storeBase)}/categories">Categories</a> &middot; <a href="${esc(storeBase)}/contact">Contact</a></nav>
 </main>
 ${buildShellFooter(store, canonical)}
 </body></html>`;
