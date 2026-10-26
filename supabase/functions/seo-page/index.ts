@@ -301,7 +301,7 @@ async function handleSitemap(url: URL) {
   const storeHost = store.custom_domain || `${slug}.${ROOT_DOMAIN}`;
   const baseUrl = `https://${storeHost}`;
 
-  const [productsResult, categoriesResult, pagesResult] = await Promise.all([
+  const [productsResult, categoriesResult, pagesResult, locationsResult] = await Promise.all([
     readAllRows<any>((from, to) => supabase
       .from("products")
       .select("slug, id, updated_at, image_url, name, price, sale_price")
@@ -316,6 +316,9 @@ async function handleSitemap(url: URL) {
     readAllRows<any>((from, to) => supabase
       .from("store_pages").select("id, slug, page_type, updated_at, is_active")
       .eq("store_id", store.id).eq("is_active", true).order("id").range(from, to)),
+    readAllRows<any>((from, to) => supabase
+      .from("store_locations").select("id, slug, content_verified_at")
+      .eq("store_id", store.id).eq("is_published", true).order("id").range(from, to)),
   ]);
 
   const products = productsResult;
@@ -422,6 +425,29 @@ async function handleSitemap(url: URL) {
         }
       }
       xml += `
+  </url>
+`;
+    }
+  }
+
+  // Store directory + published city pages (/stores, /stores/{slug}).
+  // Only published locations are listed; drafts stay out of the sitemap.
+  const locations = locationsResult;
+  if (locations.length) {
+    xml += `  <url>
+    <loc>${baseUrl}/stores</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+`;
+    for (const loc of locations) {
+      if (!loc.slug) continue;
+      const lm = sitemapLastmod(loc.content_verified_at);
+      xml += `  <url>
+    <loc>${baseUrl}/stores/${escapeXml(loc.slug)}</loc>
+    ${lm}
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
   </url>
 `;
     }
@@ -573,6 +599,14 @@ async function handleLlms(url: URL) {
     body += `\n`;
   }
 
+  // Store locations (published only) — lets AI systems cite local pages.
+  const { data: llmsLocations } = await supabase
+    .from("store_locations")
+    .select("city, slug, location_type")
+    .eq("store_id", store.id)
+    .eq("is_published", true)
+    .order("city");
+
   // Pages
   body += `## Pages\n`;
   body += `- [Home](${baseUrl}/): Browse all products\n`;
@@ -581,6 +615,14 @@ async function handleLlms(url: URL) {
   body += `- [Categories](${baseUrl}/categories): Browse by category\n`;
   body += `- [About](${baseUrl}/about): Our story\n`;
   body += `- [Contact](${baseUrl}/contact): Get in touch\n`;
+
+  if (llmsLocations?.length) {
+    body += `- [Stores](${baseUrl}/stores): Store & delivery locations\n`;
+    body += `\n## Locations\n`;
+    for (const l of llmsLocations.slice(0, 50)) {
+      body += `- [${l.city}](${baseUrl}/stores/${l.slug})${l.location_type === "main_store" ? " (main store)" : ""}\n`;
+    }
+  }
 
   // Categories
   if (categories.length) {

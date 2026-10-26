@@ -426,6 +426,8 @@ const LoadingSpinner = () => {
 
 const OrderTrackingPage = lazy(() => import("./pages/OrderTrackingPage"));
 const StorefrontCustomPage = lazy(() => import("./pages/StorefrontCustomPage"));
+const StorefrontStoresDirectory = lazy(() => import("./pages/StorefrontStoresDirectory"));
+const StorefrontCityPage = lazy(() => import("./pages/StorefrontCityPage"));
 const BundlesIndexPage = lazy(() => import("./components/storefront/apps/BundleBuilder/BundlesIndexPage"));
 const BundleBuilderPage = lazy(() => import("./components/storefront/apps/BundleBuilder/BundleBuilderPage"));
 
@@ -442,6 +444,8 @@ const storefrontChildRoutes = (theme: string) => {
       <Route path="reviews" element={<StorefrontReviews />} />
 
       <Route path="categories" element={<StorefrontCategoriesPage />} />
+      <Route path="stores" element={<Suspense fallback={<CategoryDetailSkeleton />}><StorefrontStoresDirectory /></Suspense>} />
+      <Route path="stores/:citySlug" element={<Suspense fallback={<CategoryDetailSkeleton />}><StorefrontCityPage /></Suspense>} />
       <Route path="contact" element={<StorefrontContact />} />
       <Route path="contact-us" element={<StorefrontContact />} />
       <Route path="about" element={<StorefrontAboutUs />} />
