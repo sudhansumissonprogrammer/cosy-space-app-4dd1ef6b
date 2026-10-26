@@ -1,4 +1,4 @@
-import { isLegacyUtkalSnippet } from "./utkalContent";
+import { isLegacyUtkalSnippet } from "./utkalContent.ts";
 /** Search metadata only: never rewrites merchant facts or purchasing rules. */
 export function productSearchDescription(product: { name: string; meta_description?: string | null; description?: string | null }, storeName: string): string {
   if (storeName === "Utkal Watches" && isLegacyUtkalSnippet(product.meta_description || "")) {
