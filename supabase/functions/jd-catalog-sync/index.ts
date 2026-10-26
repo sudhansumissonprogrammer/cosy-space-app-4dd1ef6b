@@ -553,6 +553,8 @@ Deno.serve(async (req) => {
     if (imported > 0 || linked.length > 0) {
       const { error: orgErr } = await admin.rpc("jd_organize_watch_catalog", { _store_id: store.id });
       if (orgErr) console.error("jd organize", orgErr.message);
+      const { data: spam } = await admin.rpc("jd_collapse_spam_duplicates", { _store_id: store.id });
+      if (spam) console.log("jd spam removed", spam);
     }
 
     // ── Advance cursor / phase ───────────────────────────────────────────
@@ -587,6 +589,10 @@ Deno.serve(async (req) => {
       retry_from_page: retryFromPage,
     };
 
+    {
+      const { data: fresh } = await admin.from("jd_sync_state").select("extra_cursor").eq("store_id", store.id).maybeSingle();
+      for (const s2 of ((fresh?.extra_cursor as any)?.__skip || [])) skip.add(String(s2));
+    }
     (extraCursor as any).__skip = [...skip].slice(-20000);
     await admin
       .from("jd_sync_state")
