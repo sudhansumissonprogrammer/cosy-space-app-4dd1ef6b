@@ -71,6 +71,13 @@
       "when": 1793033495045,
       "tag": "0009_jd_organize_watch_catalog",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793033919858,
+      "tag": "0010_jd_organize_brand_aliases",
+      "breakpoints": true
     }
   ]
 }
