@@ -261,6 +261,7 @@ Deno.serve(async (req) => {
           if (p.slug) knownSlug.add(p.slug);
           const k = norm(p.name || "");
           if (k && !byName.has(k)) byName.set(k, { id: p.id, source_id: p.source_id });
+          if (k) nameCount.set(k, (nameCount.get(k) || 0) + 1);
         }
         if (!data || data.length < PAGE) break;
       }
@@ -483,6 +484,10 @@ Deno.serve(async (req) => {
       if (knownSlug.has(slug)) slug = `${slug}-${String(d.id).slice(-6).toLowerCase()}`;
       if (knownSlug.has(slug)) continue;
       knownSlug.add(slug);
+      // Never list the same product name more than 4 times.
+      const nk = norm(String(d.name || d.alternate_name || ""));
+      if ((nameCount.get(nk) || 0) >= 4) { skip.add(String(d.id)); continue; }
+      nameCount.set(nk, (nameCount.get(nk) || 0) + 1);
 
       const old = num(d.old_price);
       const fin = num(d.final_price);
@@ -586,6 +591,7 @@ Deno.serve(async (req) => {
       retry_from_page: retryFromPage,
     };
 
+    (extraCursor as any).__skip = [...skip].slice(-20000);
     await admin
       .from("jd_sync_state")
       .upsert({
