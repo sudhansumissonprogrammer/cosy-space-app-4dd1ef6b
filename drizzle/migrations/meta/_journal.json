@@ -85,6 +85,13 @@
       "when": 1793034570963,
       "tag": "0011_jd_collapse_spam_duplicates",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793038673756,
+      "tag": "0012_ui_translations",
+      "breakpoints": true
     }
   ]
 }

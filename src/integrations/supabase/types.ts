@@ -4764,6 +4764,30 @@ export type Database = {
         }
         Relationships: []
       }
+      ui_translations: {
+        Row: {
+          created_at: string
+          lang: string
+          src_hash: string
+          src_text: string
+          translated: string
+        }
+        Insert: {
+          created_at?: string
+          lang: string
+          src_hash: string
+          src_text: string
+          translated: string
+        }
+        Update: {
+          created_at?: string
+          lang?: string
+          src_hash?: string
+          src_text?: string
+          translated?: string
+        }
+        Relationships: []
+      }
       upsell_events: {
         Row: {
           created_at: string
