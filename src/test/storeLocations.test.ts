@@ -41,9 +41,9 @@ const RAJKOT = loc({
 });
 
 describe("city page metadata", () => {
-  it("uses the first-copy keyword pattern for Utkal", () => {
-    expect(cityPageH1(UTKAL, "Mumbai")).toBe("First Copy & Replica Watches in Mumbai");
-    expect(cityPageTitle(UTKAL, "Mumbai")).toBe("First Copy & Replica Watches in Mumbai | Utkal Watches");
+  it("uses plain watch wording for Utkal", () => {
+    expect(cityPageH1(UTKAL, "Mumbai")).toBe("Watches in Mumbai — Utkal Watches");
+    expect(cityPageTitle(UTKAL, "Mumbai")).toBe("Buy Watches Online in Mumbai | Utkal Watches");
   });
 
   it("uses neutral wording for generic stores (no replica terms)", () => {
@@ -56,7 +56,7 @@ describe("city page metadata", () => {
     const desc = cityPageDescription(UTKAL, loc({}));
     expect(desc).toContain("Mumbai");
     expect(desc).toContain("Rajkot");
-    expect(desc.toLowerCase()).toContain("replica");
+    expect(desc).toContain("Not genuine or affiliated with the brands shown");
   });
 
   it("description for the main store cites the verified address", () => {
