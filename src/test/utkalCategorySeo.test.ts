@@ -26,6 +26,12 @@ describe("Utkal category SEO", () => {
     expect(utkalCategoryFaq({ name: "Sale", slug: "sale" })).toEqual([]);
   });
 
+  it("intro stays short (about half the previous length)", () => {
+    const rich = utkalCategoryIntro(guessMen, ["Chronograph Black Dial Steel", "Automatic Blue Dial Leather", "Skeleton White Dial Rubber", "Chronograph Green Dial Metal"])!;
+    expect(rich.length).toBeLessThan(260);
+    expect(rich).toContain("COD available across India");
+  });
+
   it("related links point only to real categories, same brand first", () => {
     const all = [guessMen, { name: "Guess Watch Women", slug: "guess-watch-women" }, { name: "Diesel Watch Men", slug: "diesel-watch-men" }, { name: "Rolex Watch Women", slug: "rolex-watch-women" }];
     expect(relatedCategories(guessMen, all).map((c) => c.slug)).toEqual(["guess-watch-women", "diesel-watch-men"]);

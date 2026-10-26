@@ -42,16 +42,12 @@ export function utkalCategoryIntro(cat: SeoCategory, titles: string[]): string |
   const { brand, gender } = parsed;
   const who = gender === "Women" ? "women" : "men";
   const a = listedAttributes(titles);
-  const parts = [
-    `Browse ${brand}-style watches for ${who} at Utkal Watches.`,
-  ];
   const facts: string[] = [];
-  if (a.styles.length) facts.push(`${list(a.styles)} designs`);
-  if (a.dials.length) facts.push(`${list(a.dials)} dials`);
+  if (a.styles.length) facts.push(`${list(a.styles.slice(0, 2))} designs`);
+  if (a.dials.length) facts.push(`${list(a.dials.slice(0, 3))} dials`);
   if (a.straps.length) facts.push(`${list(a.straps)} straps`);
-  if (facts.length) parts.push(`Listed watches here include ${list(facts)}.`);
-  parts.push(`Open any watch to see its photos, current price and available details before ordering. Cash on delivery is available across India and orders dispatch from our Rajkot store.`);
-  return parts.join(" ");
+  const look = facts.length ? ` Choose from ${list(facts)}.` : "";
+  return `Browse ${brand}-style watches for ${who} at Utkal Watches.${look} COD available across India; dispatch from our Rajkot store.`;
 }
 
 export function utkalCategoryFaq(cat: SeoCategory): FaqItem[] {
