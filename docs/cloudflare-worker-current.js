@@ -4172,7 +4172,7 @@ function _buildSeoBodyBlock(store, categories, products) {
   const sentence = description.match(/[.!?]\s/);
   const tail = explicit || (sentence?.index != null ? description.slice(0, sentence.index + 1) : description);
   const heading = !tail ? `${storeName} — Online Store` : tail.toLocaleLowerCase().startsWith(storeName.toLocaleLowerCase()) ? truncate(tail, storeName.length + 93) : `${storeName} — ${truncate(tail)}`;
-  html += `<h1>${escapeHtml(utkal ? "Utkal Watches — First Copy & Replica Watches in India" : heading)}</h1>`;
+  html += `<h1>${escapeHtml(utkal ? "Utkal Watches — Men's & Women's Watches Online in India" : heading)}</h1>`;
   if (about) html += `<p>${about}</p>`;
   if (loc || wa) {
     const bits = [];
@@ -4266,7 +4266,7 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
       p.og_image_url || (p.image_url || "").split(",")[0].trim() || images[0] || store.og_image_url || store.banner_url || store.logo_url || "";
     const title = escapeHtml(p.meta_title || `${p.name} — ${store.name}`);
     const legacyUtkal = store.name === "Utkal Watches" && /^.+ at ₹[\d,]+ on Utkal Watches\. Cash on Delivery and fast delivery across India\.(?: Ideal for daily wear and gifting\.)?$/.test((p.meta_description || "").trim());
-    const desc = escapeHtml(legacyUtkal ? "View this listed first copy / replica watch at Utkal Watches. Not a genuine branded product; compare its photographs and confirm individual details." : p.meta_description?.trim() || p.description?.trim().slice(0, 160) || `View ${p.name} at ${store.name}.`);
+    const desc = escapeHtml(legacyUtkal ? "View this watch at Utkal Watches. Not genuine or affiliated with the brand shown; compare its photographs and confirm individual details." : p.meta_description?.trim() || p.description?.trim().slice(0, 160) || `View ${p.name} at ${store.name}.`);
     const ogImg = typeof heroImg === "string" && /^https?:\/\//i.test(heroImg) ? escapeHtml(heroImg) : "";
     const price = Number(p.sale_price && p.sale_price < p.price ? p.sale_price : p.price);
     const hasStock = p.stock_quantity !== null && p.stock_quantity !== undefined && p.stock_quantity !== "" && typeof p.stock_quantity !== "boolean" && Number.isFinite(Number(p.stock_quantity));
