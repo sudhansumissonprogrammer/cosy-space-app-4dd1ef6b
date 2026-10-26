@@ -616,6 +616,7 @@ function buildStaticInfoHtml(
 
   if (kind === "about") {
     if (aboutText) lines.push(`<p>${esc(aboutText)}</p>`);
+    if (isUtkalContentStore(store)) lines.push(`<h2>Before choosing a watch</h2><p>${esc(UTKAL_STATUS)}</p><p>${esc(UTKAL_QUALITY_TERMS)}</p>`);
     if (store.city || store.state) {
       lines.push(`<p><strong>Based in:</strong> ${esc([store.city, store.state].filter(Boolean).join(", "))}, India.</p>`);
     }

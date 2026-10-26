@@ -9,6 +9,8 @@ import { waPhoneNumber } from "@/lib/phoneUtils";
 import { kalingaPublicEmail, kalingaPublicAddress } from "@/lib/kalingaStore";
 import UtkalBuyingContext from "@/components/storefront/UtkalBuyingContext";
 import { isUtkalContentStore } from "../../supabase/functions/_shared/utkalContent";
+import { useMetaTags } from "@/hooks/useMetaTags";
+import { useLocation } from "react-router-dom";
 
 /* ── Rich Text Renderer ─────────────────────────────────────────── */
 const HEADING_PATTERNS = /^(about us|our mission|our story|why choose|our promise|contact us|our vision|what we do|who we are)/i;
@@ -211,6 +213,14 @@ function DefaultAboutContent({ store }: { store: StoreData }) {
 /* ── Main Page ───────────────────────────────────────────────────── */
 export default function StorefrontAboutUs() {
   const store = useOutletContext<StoreData>();
+  const { pathname } = useLocation();
+  useMetaTags({
+    title: `About ${store.name}`,
+    description: store.description || `About ${store.name} and contact information.`,
+    storeSlug: store.slug,
+    customDomain: store.custom_domain,
+    canonicalPath: pathname.endsWith("/about-us") ? "about-us" : "about",
+  });
   const aboutUsText = (store as any).about_us_text as string | null;
   const aboutUsImage = (store as any).about_us_image_url as string | null;
 
