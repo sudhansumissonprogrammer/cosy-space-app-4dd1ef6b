@@ -261,7 +261,6 @@ Deno.serve(async (req) => {
           if (p.slug) knownSlug.add(p.slug);
           const k = norm(p.name || "");
           if (k && !byName.has(k)) byName.set(k, { id: p.id, source_id: p.source_id });
-          if (k) nameCount.set(k, (nameCount.get(k) || 0) + 1);
         }
         if (!data || data.length < PAGE) break;
       }
