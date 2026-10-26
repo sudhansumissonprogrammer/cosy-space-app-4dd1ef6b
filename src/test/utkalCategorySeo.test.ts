@@ -21,7 +21,7 @@ describe("Utkal category SEO", () => {
 
   it("FAQ discloses replica status and schema mirrors it", () => {
     const faq = utkalCategoryFaq(guessMen);
-    expect(faq[0].answer.startsWith("No.")).toBe(true);
+    expect(faq[0].answer).toContain("1:1 inspired");
     expect((faqPageSchema(faq) as any).mainEntity).toHaveLength(faq.length);
     expect(utkalCategoryFaq({ name: "Sale", slug: "sale" })).toEqual([]);
   });

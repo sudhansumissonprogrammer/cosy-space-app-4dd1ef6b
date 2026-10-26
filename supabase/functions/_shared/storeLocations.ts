@@ -180,7 +180,7 @@ export function cityFaqItems(
   if (utkal) {
     items.push({
       q: "Are these genuine brand watches?",
-      a: "No. Watches at Utkal Watches are not genuine or affiliated with the brands shown.",
+      a: "Utkal Watches sells 1:1 inspired watches.",
     });
   }
 
