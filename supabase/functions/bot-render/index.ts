@@ -7,6 +7,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import TurndownService from "npm:turndown@7.2.0";
 import { prefersMarkdown } from "../_shared/agentContent.ts";
 import { isUtkalContentStore, UTKAL_HOME_HEADING, UTKAL_STATUS, UTKAL_QUALITY_TERMS, UTKAL_SHOP_TITLE, UTKAL_SHOP_INTRO, utkalCollectionIntroduction } from "../_shared/utkalContent.ts";
+import { utkalCategoryHeading, utkalCategoryIntro, utkalCategoryFaq, relatedCategories, faqPageSchema } from "../_shared/utkalCategorySeo.ts";
 import { cityFaqItems, cityIntroParagraph, cityPageDescription, cityPageH1, cityPageTitle, directoryDescription, directoryH1, directoryTitle, formatOpeningHours, locationTypeLabel, mapsSearchUrl } from "../_shared/storeLocations.ts";
 
 /** wa.me needs a country code — owners often save a bare 10-digit mobile. */
@@ -390,8 +391,15 @@ function buildCategoryHtml(
   canonical: string,
   storeBase: string,
   page = 1, hasNext = false,
+  allCategories: { name: string; slug: string }[] = [],
 ): string {
   const storeName = esc(store.name);
+  const utkal = isUtkalContentStore(store);
+  const heading = utkal ? utkalCategoryHeading(category) : category.name;
+  const brandIntro = utkal && page === 1 ? utkalCategoryIntro(category, products.map((p) => p.name || "")) : undefined;
+  const faq = utkal && page === 1 ? utkalCategoryFaq(category) : [];
+  const related = utkal ? relatedCategories(category, allCategories) : [];
+  const faqSchema = faqPageSchema(faq);
   const title = category.meta_title || `${category.name} — ${store.name}`;
   const desc =
     category.meta_description || category.description?.slice(0, 160) ||
@@ -427,15 +435,17 @@ function buildCategoryHtml(
     canonical,
     storeName: store.name,
     ogImage,
-    jsonLd: [itemList, breadcrumb],
+    jsonLd: faqSchema ? [itemList, breadcrumb, JSON.stringify(faqSchema)] : [itemList, breadcrumb],
   })}<body>
 ${buildShellHeader(store)}
 <main class="container">
 <nav class="breadcrumb"><a href="${esc(storeBase)}">${storeName}</a> &rsaquo; <a href="${esc(storeBase)}/categories">Categories</a> &rsaquo; ${esc(category.name)}</nav>
-<section class="hero"><h1>${esc(category.name)}</h1>${category.description ? `<p>${esc(category.description)}</p>` : ""}</section>
-${isUtkalContentStore(store) && page === 1 ? `${utkalCollectionIntroduction(store, category.slug) ? `<p>${esc(utkalCollectionIntroduction(store, category.slug))}</p>` : ""}<p>${esc(UTKAL_STATUS)}</p>` : ""}
+<section class="hero"><h1>${esc(heading)}</h1>${category.description ? `<p>${esc(category.description)}</p>` : ""}</section>
+${isUtkalContentStore(store) && page === 1 ? `${brandIntro ? `<p>${esc(brandIntro)}</p>` : ""}${utkalCollectionIntroduction(store, category.slug) ? `<p>${esc(utkalCollectionIntroduction(store, category.slug))}</p>` : ""}<p>${esc(UTKAL_STATUS)}</p>` : ""}
 <section class="grid">${cards || `<p>No products in this category yet.</p>`}</section>
 ${renderPagination(`${storeBase}/category/${category.slug}`, page, hasNext)}
+${faq.length ? `<section class="faq"><h2>Frequently asked questions</h2>${faq.map((f) => `<h3>${esc(f.question)}</h3><p>${esc(f.answer)}</p>`).join("")}</section>` : ""}
+${related.length ? `<nav class="related" aria-label="Related collections"><h2>Related collections</h2>${related.map((c) => `<a href="${esc(storeBase)}/category/${esc(c.slug)}">${esc(utkalCategoryHeading(c))}</a>`).join(" ")}</nav>` : ""}
 </main>
 ${buildShellFooter(store, canonical)}
 </body></html>`;
@@ -1011,13 +1021,18 @@ async function renderRequest(req: Request): Promise<Response> {
     if (catError) return new Response("Catalogue unavailable", { status: 503, headers: noIndexHeaders });
     const catProducts = Array.isArray(rows) ? rows : [];
     if (page > 1 && catProducts.length === 0) return new Response("Page not found", { status: 404, headers: noIndexHeaders });
+    let allCats: { name: string; slug: string }[] = [];
+    if (isUtkalContentStore(store)) {
+      const { data: cl } = await supabase.from("categories").select("name, slug, meta_title").eq("store_id", store.id).eq("is_hidden", false);
+      allCats = (cl as any[]) ?? [];
+    }
 
     const html = buildCategoryHtml(
       store,
       cat as any,
       catProducts.slice(0, DISCOVERY_PAGE_SIZE),
       discoveryUrl(`${canonical}/category/${cat.slug}`, page),
-      canonical, page, catProducts.length > DISCOVERY_PAGE_SIZE,
+      canonical, page, catProducts.length > DISCOVERY_PAGE_SIZE, allCats,
     );
     return new Response(html, { headers: { ...corsHeaders, ...HTML_CACHE_HEADERS } });
   }

@@ -27,6 +27,8 @@ import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 import { hidesCategoryFilters } from "@/components/storefront/pdp/storeSections/config";
 import { utkalCollectionIntroduction, isUtkalContentStore, UTKAL_STATUS } from "../../supabase/functions/_shared/utkalContent";
+import { utkalCategoryHeading, utkalCategoryIntro, utkalCategoryFaq, relatedCategories } from "../../supabase/functions/_shared/utkalCategorySeo";
+import { useStorefrontCategories } from "@/hooks/useStorefrontCategories";
 
 /**
  * Brand-grouped carousels: opt-in per store + category only. Lazy so no other
@@ -100,6 +102,7 @@ export default function CategoryDetail() {
 
 
 
+  const allStoreCategories = useStorefrontCategories(store.id);
   const [sort, setSort] = useState<SortKey>("default");
   const [categorySearchOpen, setCategorySearchOpen] = useState(false);
 
@@ -366,11 +369,17 @@ export default function CategoryDetail() {
     ? "flex flex-col gap-2.5"
     : `grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-5 xl:grid-cols-5${cardStyle === "style-6" ? " -mx-3 sm:mx-0 gap-x-1" : ""}`;
 
+  const utkalStore = isUtkalContentStore(store);
+  const brandIntro = utkalStore && category && page === 1 ? utkalCategoryIntro(category, rawProducts.slice(0, PAGE_SIZE).map((p: any) => p.name || "")) : undefined;
+  const categoryFaq = utkalStore && category && page === 1 ? utkalCategoryFaq(category) : [];
+  const relatedCats = utkalStore && category ? relatedCategories(category, (allStoreCategories ?? []).filter((c: any) => c?.slug && c?.name)) : [];
+
   return (
     <div className={`mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 ${hideFilters ? "py-1" : "py-5"}`}>
-      <h1 className={isUtkalContentStore(store) ? "py-2 text-lg font-semibold text-foreground" : "sr-only"}>{category?.name || "Category"} — {store.name}</h1>
-      {isUtkalContentStore(store) && category && page === 1 && (
+      <h1 className={utkalStore ? "py-2 text-lg font-semibold text-foreground" : "sr-only"}>{utkalStore && category ? utkalCategoryHeading(category) : <>{category?.name || "Category"} — {store.name}</>}</h1>
+      {utkalStore && category && page === 1 && (
         <div className="space-y-2 pb-3 text-sm leading-relaxed text-muted-foreground">
+          {brandIntro && <p>{brandIntro}</p>}
           {utkalCollectionIntroduction(store, categorySlug) && <p>{utkalCollectionIntroduction(store, categorySlug)}</p>}
           <p>{UTKAL_STATUS}</p>
         </div>
@@ -498,6 +507,29 @@ export default function CategoryDetail() {
         )}
       </div>
       <CataloguePagination firstPageHasNext={(data?.pages[0]?.products.length ?? 0) === PAGE_SIZE} />
+      {categoryFaq.length > 0 && (
+        <section className="mt-6 space-y-3 border-t border-border pt-5 text-sm">
+          <h2 className="text-base font-semibold text-foreground">Frequently asked questions</h2>
+          {categoryFaq.map((f) => (
+            <div key={f.question}>
+              <h3 className="font-medium text-foreground">{f.question}</h3>
+              <p className="text-muted-foreground">{f.answer}</p>
+            </div>
+          ))}
+        </section>
+      )}
+      {relatedCats.length > 0 && (
+        <nav aria-label="Related collections" className="mt-6 border-t border-border pt-5 pb-4">
+          <h2 className="mb-3 text-base font-semibold text-foreground">Related collections</h2>
+          <div className="flex flex-wrap gap-2">
+            {relatedCats.map((c: any) => (
+              <Link key={c.slug} to={storefrontPath(slug!, `category/${c.slug}`)} className="rounded-full border border-border bg-card px-3 py-1.5 text-xs text-foreground hover:bg-accent">
+                {utkalCategoryHeading(c)}
+              </Link>
+            ))}
+          </div>
+        </nav>
+      )}
     </div>
   );
 }
