@@ -113,11 +113,11 @@ export function cityIntroParagraph(store: StoreLike, loc: StoreLocationRecord): 
   if (isUtkalContentStore(store)) {
     if (loc.location_type === "main_store" && loc.address_line) {
       return `Utkal Watches' main store is at ${loc.address_line}${hours ? ` — ${hours.replace(/^Open/, "open")}` : ""}. ` +
-        `Walk-in customers can check the available watches before buying. ` +
+        `Walk-ins welcome. ` +
         UTKAL_STATUS;
     }
     return `Utkal Watches is an online store delivering to ${cityText}. ` +
-      `Browse the catalogue, compare listed prices and photos, and order online. ` +
+      `Browse the catalogue and order online. ` +
       UTKAL_STATUS;
   }
 
