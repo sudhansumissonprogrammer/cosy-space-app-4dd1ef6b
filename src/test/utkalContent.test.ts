@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isUtkalContentStore, isLegacyUtkalSnippet, utkalCollectionIntroduction, UTKAL_STORE_ID } from "../../supabase/functions/_shared/utkalContent";
+import { isUtkalContentStore, isLegacyUtkalSnippet, utkalCollectionIntroduction, UTKAL_STORE_ID, UTKAL_STATUS, UTKAL_QUALITY_TERMS, UTKAL_SHOP_INTRO } from "../../supabase/functions/_shared/utkalContent";
 import { productSearchDescription } from "../../supabase/functions/_shared/productSeo";
 
 describe("factual Utkal content boundaries", () => {
@@ -24,5 +24,19 @@ describe("factual Utkal content boundaries", () => {
   });
   it("preserves a separately approved product metadata override", () => {
     expect(productSearchDescription({ name: "Watch", meta_description: "Merchant-approved individual description" }, "Utkal Watches")).toBe("Merchant-approved individual description");
+  });
+  it("keeps shared storefront introductions compact", () => {
+    expect(UTKAL_STATUS.length).toBeLessThanOrEqual(110);
+    expect(UTKAL_STATUS).toContain("Cash on delivery");
+    expect(UTKAL_STATUS).toContain("Rajkot");
+    expect(UTKAL_SHOP_INTRO.length).toBeLessThanOrEqual(240);
+    for (const slug of ["men-s-watch", "women-s-watch", "luxury-watch", "sale", "trending-products"]) {
+      const intro = utkalCollectionIntroduction({ id: UTKAL_STORE_ID }, slug);
+      expect(intro).toBeDefined();
+      expect((intro || "").length).toBeLessThanOrEqual(100);
+    }
+  });
+  it("retains the 1:1 inspired disclosure alongside the shorter copy", () => {
+    expect(UTKAL_QUALITY_TERMS).toContain("1:1 inspired");
   });
 });

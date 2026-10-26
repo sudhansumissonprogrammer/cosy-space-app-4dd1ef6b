@@ -85,6 +85,15 @@ describe("city intro paragraphs", () => {
   it("a merchant-written intro override wins", () => {
     expect(cityIntroParagraph(UTKAL, loc({ intro: "Custom intro." }))).toBe("Custom intro.");
   });
+
+  it("Utkal intros stay compact and drop the retired first-copy wording", () => {
+    const delivery = cityIntroParagraph(UTKAL, loc({ city: "Pune", slug: "pune" }));
+    expect(delivery).not.toMatch(/first[- ]copy/i);
+    expect(delivery.length).toBeLessThanOrEqual(200);
+    const main = cityIntroParagraph(UTKAL, RAJKOT);
+    expect(main).not.toMatch(/first[- ]copy/i);
+    expect(main.length).toBeLessThanOrEqual(220);
+  });
 });
 
 describe("city FAQ — verified facts only", () => {
