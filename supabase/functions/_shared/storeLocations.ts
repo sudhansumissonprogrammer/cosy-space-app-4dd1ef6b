@@ -113,13 +113,11 @@ export function cityIntroParagraph(store: StoreLike, loc: StoreLocationRecord): 
   if (isUtkalContentStore(store)) {
     if (loc.location_type === "main_store" && loc.address_line) {
       return `Utkal Watches' main store is at ${loc.address_line}${hours ? ` — ${hours.replace(/^Open/, "open")}` : ""}. ` +
-        `Browse the full catalogue online, compare listed prices and photos, and order with cash on delivery. ` +
-        `Walk-in customers can check the available watches at the store before buying. ` +
+        `Walk-in customers can check the available watches before buying. ` +
         UTKAL_STATUS;
     }
-    return `Utkal Watches is an online first-copy watch store delivering to ${cityText}. ` +
-      `Browse the full catalogue, compare listed prices and product photos, and order online with cash on delivery. ` +
-      `Every order is packed and dispatched from the Utkal Watches main store in Rajkot, Gujarat. ` +
+    return `Utkal Watches is an online store delivering to ${cityText}. ` +
+      `Browse the catalogue, compare listed prices and photos, and order online. ` +
       UTKAL_STATUS;
   }
 
