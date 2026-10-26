@@ -225,7 +225,7 @@ export default function StorefrontCityPage() {
           </h2>
           <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm text-muted-foreground">
             <li>Browse the catalogue and order online — cash on delivery is available.</li>
-            {mainStore && <li>Orders are packed and dispatched from {mainStore.city}{mainStore.state ? `, ${mainStore.state}` : ""}.</li>}
+            {mainStore && <li>Orders are packed and dispatched from {mainStore.city}{store.state ? `, ${store.state}` : ""}.</li>}
             <li>
               See the{" "}
               <Link to={storefrontPath(storeSlug, "shipping-policy")} className="font-medium text-primary hover:underline">

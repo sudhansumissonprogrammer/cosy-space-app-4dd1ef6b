@@ -72,11 +72,11 @@
 - [x] Lens/Images: category pages no longer claim product photos; PDP owns all photos; sitemap lists every product photo.
 
 ## 20-city store directory & local landing pages (Utkal Watches) — 2026-10-26
-- [ ] Migration: store_locations table (RLS + grants) + seed 20 cities for Utkal (Rajkot=main store w/ verified address/hours/WhatsApp; 19 delivery-only; no invented facts)
-- [ ] Shared content module _shared/storeLocations.ts + src/lib re-export (titles, intros, FAQ — verified facts only, replica disclosure)
-- [ ] React: /stores directory + /stores/:city pages (all themes), routes in App.tsx, footer "Find a Store" link
-- [ ] bot-render: kinds stores + city (crawler HTML with products + verified local info)
-- [ ] seo-page: sitemap + llms.txt include published city pages
-- [ ] Worker: getBotRoute /stores + /stores/:city (user deploys manually)
-- [ ] Tests + build + browser validation
-- [ ] Handover doc docs/UTKAL-CITY-STORES-2026-10-26.md (20-city table, missing facts, remaining steps) + AGENTS.md rule
+- [x] Migration: store_locations table (RLS + grants) + seed 20 cities for Utkal (Rajkot=main store w/ verified address/hours/WhatsApp; 19 delivery-only; no invented facts)
+- [x] Shared content module _shared/storeLocations.ts + src/lib re-export (titles, intros, FAQ — verified facts only, replica disclosure)
+- [x] React: /stores directory + /stores/:city pages (all themes), routes in App.tsx, footer "Find a Store" link
+- [x] bot-render: kinds stores + city (crawler HTML with products + verified local info)
+- [x] seo-page: sitemap + llms.txt include published city pages
+- [x] Worker: getBotRoute /stores + /stores/:city (code done; OWNER MUST DEPLOY docs/cloudflare-worker-current.js)
+- [x] Tests + build + browser validation (288 tests, build OK, browser + live edge checks passed)
+- [x] Handover doc docs/UTKAL-CITY-STORES-2026-10-26.md (20-city table, missing facts, remaining steps) + AGENTS.md rule
