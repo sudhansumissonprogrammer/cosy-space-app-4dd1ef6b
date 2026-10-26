@@ -6457,6 +6457,7 @@ export type Database = {
         Returns: boolean
       }
       is_user_blocked: { Args: never; Returns: boolean }
+      jd_organize_watch_catalog: { Args: { _store_id: string }; Returns: Json }
       log_partner_audit: {
         Args: {
           _action: string
