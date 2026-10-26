@@ -858,6 +858,9 @@ function getBotRoute(pathname) {
   m = pathname.match(/^\/page\/([^/?#]+)\/?$/i);
   if (m) return { kind: "page", slug: decodeURIComponent(m[1]) };
   if (/^\/shop\/?$/i.test(pathname)) return { kind: "shop" };
+  if (/^\/stores\/?$/i.test(pathname)) return { kind: "stores" };
+  m = pathname.match(/^\/stores\/([^/?#]+)\/?$/i);
+  if (m) return { kind: "city", slug: decodeURIComponent(m[1]) };
   if (/^\/best-sellers\/?$/i.test(pathname)) return { kind: "best-sellers" };
   if (/^\/categories\/?$/i.test(pathname)) return { kind: "categories" };
   if (/^\/about\/?$/i.test(pathname)) return { kind: "about" };

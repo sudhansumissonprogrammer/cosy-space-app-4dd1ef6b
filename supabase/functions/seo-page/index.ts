@@ -616,6 +616,14 @@ async function handleLlms(url: URL) {
   body += `- [About](${baseUrl}/about): Our story\n`;
   body += `- [Contact](${baseUrl}/contact): Get in touch\n`;
 
+  if (llmsLocations?.length) {
+    body += `- [Stores](${baseUrl}/stores): Store & delivery locations\n`;
+    body += `\n## Locations\n`;
+    for (const l of llmsLocations.slice(0, 50)) {
+      body += `- [${l.city}](${baseUrl}/stores/${l.slug})${l.location_type === "main_store" ? " (main store)" : ""}\n`;
+    }
+  }
+
   // Categories
   if (categories.length) {
     body += `\n## Categories\n`;
