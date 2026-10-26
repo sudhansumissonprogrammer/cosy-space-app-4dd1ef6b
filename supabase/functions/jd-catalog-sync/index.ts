@@ -51,7 +51,7 @@ const ASSETS = "https://assets.jdwebnship.in/";
 /** Pages of the listing walked per run while backfilling. The source enforces
  *  a hard 200 requests / 15 min rolling quota shared with jd-stock-sync, so the
  *  per-run budgets stay small and the cron runs every 15 minutes. */
-const PAGE_BUDGET = 10;
+const PAGE_BUDGET = 40;
 /** Listing pages fetched in parallel (their WAF tolerates ~6). */
 const PAGE_CONCURRENCY = 2;
 /** Newest pages re-scanned every run once backfill is done. */
@@ -62,7 +62,7 @@ const STEADY_PAGES = 8;
  *  walks a moving window deeper into the catalog and wraps at the end. */
 const DEEP_PAGES = 10;
 /** Max new products imported in one run (each costs 1 detail request). */
-const IMPORT_BUDGET = 30;
+const IMPORT_BUDGET = 150;
 const CONCURRENCY = 3;
 const REQ_GAP_MS = 100;
 const REQ_TIMEOUT_MS = 12_000;
