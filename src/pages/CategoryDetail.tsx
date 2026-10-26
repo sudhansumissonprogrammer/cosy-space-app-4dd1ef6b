@@ -26,6 +26,7 @@ import CategoryCrossShopCard, { isSerdiyaCrossShopCategory } from "@/components/
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 import { hidesCategoryFilters } from "@/components/storefront/pdp/storeSections/config";
+import { utkalCollectionIntroduction, isUtkalContentStore, UTKAL_STATUS } from "../../supabase/functions/_shared/utkalContent";
 
 /**
  * Brand-grouped carousels: opt-in per store + category only. Lazy so no other
@@ -367,7 +368,13 @@ export default function CategoryDetail() {
 
   return (
     <div className={`mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 ${hideFilters ? "py-1" : "py-5"}`}>
-      <h1 className="sr-only">{category?.name || "Category"} — {store.name}</h1>
+      <h1 className={isUtkalContentStore(store) ? "py-2 text-lg font-semibold text-foreground" : "sr-only"}>{category?.name || "Category"} — {store.name}</h1>
+      {isUtkalContentStore(store) && category && page === 1 && (
+        <div className="space-y-2 pb-3 text-sm leading-relaxed text-muted-foreground">
+          {utkalCollectionIntroduction(store, categorySlug) && <p>{utkalCollectionIntroduction(store, categorySlug)}</p>}
+          <p>{UTKAL_STATUS}</p>
+        </div>
+      )}
       {!hideFilters && <CategoryQuickJump storeId={store.id} slug={slug!} activeCategory={categorySlug} />}
 
       {hideFilters ? null : (

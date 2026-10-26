@@ -7,6 +7,8 @@ import type { StoreData } from "@/layouts/StorefrontLayout";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import { waPhoneNumber } from "@/lib/phoneUtils";
 import { kalingaPublicEmail, kalingaPublicAddress } from "@/lib/kalingaStore";
+import UtkalBuyingContext from "@/components/storefront/UtkalBuyingContext";
+import { isUtkalContentStore } from "../../supabase/functions/_shared/utkalContent";
 
 /* ── Rich Text Renderer ─────────────────────────────────────────── */
 const HEADING_PATTERNS = /^(about us|our mission|our story|why choose|our promise|contact us|our vision|what we do|who we are)/i;
@@ -254,7 +256,9 @@ export default function StorefrontAboutUs() {
         )}
 
         {/* If about_us_text exists → render with smart formatting, else → fixed template */}
-        {aboutUsText?.trim() ? (
+        {isUtkalContentStore(store) ? (
+          <UtkalBuyingContext slug={store.slug} description={store.description} />
+        ) : aboutUsText?.trim() ? (
           <RichTextRenderer text={aboutUsText} />
         ) : (
           <DefaultAboutContent store={store} />

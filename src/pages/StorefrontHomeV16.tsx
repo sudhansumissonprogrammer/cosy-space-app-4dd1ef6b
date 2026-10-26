@@ -33,6 +33,8 @@ import StorefrontTrustStrip from "@/components/storefront/StorefrontTrustStrip";
 import { DeferUntilVisible } from "@/components/storefront/DeferUntilVisible";
 import BestSellerBadge from "@/components/storefront/BestSellerBadge";
 import { useStorefrontCategories } from "@/hooks/useStorefrontCategories";
+import UtkalBuyingContext from "@/components/storefront/UtkalBuyingContext";
+import { isUtkalContentStore, UTKAL_HOME_HEADING } from "../../supabase/functions/_shared/utkalContent";
 
 const BATCH_SIZE = 20;
 
@@ -271,7 +273,7 @@ export default function StorefrontHomeV16() {
   return (
     <VariantCountProvider products={allProducts}>
       <>
-        <h1 className="sr-only">{buildStorefrontH1(store)}</h1>
+        {!isUtkalContentStore(store) && <h1 className="sr-only">{buildStorefrontH1(store)}</h1>}
         {/* Search bar */}
         {!hideSearchBar && (
           <div className="px-4 pt-3 pb-1" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", minHeight: 52, contain: "layout style" }}>
@@ -307,6 +309,12 @@ export default function StorefrontHomeV16() {
         <UniversalCategories categories={storeCategories} storeSlug={slug!} isLoading={!storeCategories} categoryStyle={categoryStyle} />
 
         <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 pt-4 pb-8 space-y-8 min-h-[80vh]">
+          {isUtkalContentStore(store) && (
+            <section className="space-y-3">
+              <h1 className="text-xl font-semibold text-foreground sm:text-2xl">{UTKAL_HOME_HEADING}</h1>
+              <UtkalBuyingContext slug={store.slug} description={store.description} />
+            </section>
+          )}
           {/* Shop by Video must stay above infinite product feeds. Stores with
               thousands of best sellers otherwise push this enabled app below
               an ever-growing list, making it effectively unreachable. */}
