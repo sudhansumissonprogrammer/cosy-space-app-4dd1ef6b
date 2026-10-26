@@ -60,7 +60,7 @@ export function utkalCategoryFaq(cat: SeoCategory): FaqItem[] {
   const { brand, gender } = parsed;
   const label = `${brand} watches for ${gender.toLowerCase()}`;
   return [
-    { question: `Are these genuine ${brand} watches?`, answer: `No. These watches are not genuine ${brand} products and are not affiliated with ${brand}.` },
+    { question: `Are these genuine ${brand} watches?`, answer: `These are 1:1 inspired ${brand}-style watches.` },
     { question: `Can I pay cash on delivery for ${label}?`, answer: "Yes. Cash on delivery is available on orders across India." },
     { question: "Where are orders dispatched from?", answer: "Orders dispatch from the Utkal Watches store in Rajkot, Gujarat." },
     { question: "How do I check a watch's details?", answer: "Open the product page to see its photos, current price and available description. Movement, functions and materials can vary by model, so confirm them for the individual watch." },
