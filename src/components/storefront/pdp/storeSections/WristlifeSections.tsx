@@ -14,6 +14,7 @@
 import ParcelAssuranceSection from "./ParcelAssuranceSection";
 import QualityAssuranceGrid from "./QualityAssuranceGrid";
 import PdpFaqSection from "./PdpFaqSection";
+import { isUtkalContentStore } from "../../../../../supabase/functions/_shared/utkalContent";
 
 interface Props {
   slot: "under-gallery" | "under-price" | "after-info" | "after-related";
@@ -22,6 +23,9 @@ interface Props {
 }
 
 export default function WristlifeSections({ slot, product, store }: Props) {
+  // The Utkal catalogue has no verified catalogue-wide movement/material,
+  // water-resistance or warranty evidence for these generic assurances.
+  if (isUtkalContentStore(store)) return null;
   if (slot === "under-gallery") {
     return (
       <div className="mb-4">
