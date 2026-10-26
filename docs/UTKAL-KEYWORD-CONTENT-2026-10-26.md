@@ -18,3 +18,5 @@ All six live Googlebot requests returned 200, intended updated title/description
 Fresh Chromium homepage hydrated older store metadata/heading, while raw Googlebot HTML was current. Shopper shell cache propagation remains unresolved; use existing authenticated store/shell purge and recheck before claiming browser rollout. Screenshots and request captures are under /tmp/browser/utkal-keywords.
 
 Search Console indexing, selected search snippets, traffic and rankings remain unverified. New wording alone cannot guarantee indexing or ranking.
+## Category meta titles/descriptions (2026-10-26, later)
+Semrush (IN) showed Utkal category pages ranking pos 30-50 for high-volume brand queries (diesel watches 40.5K/mo, guess watches for men 18.1K/mo, tudor 27.1K/mo) while 55 of 62 visible categories had no meta_title/meta_description. Filled all 62 via data update: pattern "First Copy {Brand} Watches for Men/Women | Utkal Watches" with replica disclosure + COD + Rajkot dispatch in descriptions. No category names, slugs, products or prices changed. Verified live in bot-render output for guess-watch-men, diesel-watch-men, tudor-watch-men, omega-watch-women, casio-new.
