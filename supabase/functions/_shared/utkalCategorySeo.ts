@@ -17,9 +17,8 @@ export function parseBrandCategory(name: string): { brand: string; gender: "Men"
 /** Visible heading matching the search title; falls back to the category name. */
 export function utkalCategoryHeading(cat: SeoCategory): string {
   const parsed = parseBrandCategory(cat.name);
-  if (parsed) return `First Copy ${parsed.brand} Watches for ${parsed.gender}`;
-  const t = (cat.meta_title || "").split(" | ")[0].trim();
-  return t.startsWith("First Copy") || t.includes("Replica") ? t : cat.name;
+  if (parsed) return `${parsed.brand} Watches for ${parsed.gender}`;
+  return cat.name;
 }
 
 const DIALS = ["black", "blue", "white", "silver", "green", "gold", "rose gold", "brown", "grey", "red", "skeleton"];
@@ -44,7 +43,7 @@ export function utkalCategoryIntro(cat: SeoCategory, titles: string[]): string |
   const who = gender === "Women" ? "women" : "men";
   const a = listedAttributes(titles);
   const parts = [
-    `This collection lists first copy ${brand}-style watches for ${who} at Utkal Watches. These are replica designs, not genuine ${brand} products, and are not made or authorised by ${brand}.`,
+    `Browse ${brand}-style watches for ${who} at Utkal Watches. Not genuine or affiliated with ${brand}.`,
   ];
   const facts: string[] = [];
   if (a.styles.length) facts.push(`${list(a.styles)} designs`);
@@ -61,8 +60,8 @@ export function utkalCategoryFaq(cat: SeoCategory): FaqItem[] {
   const { brand, gender } = parsed;
   const label = `${brand} watches for ${gender.toLowerCase()}`;
   return [
-    { question: `Are these genuine ${brand} watches?`, answer: `No. These are first copy / replica watches, not genuine ${brand} products, and they are not made or authorised by ${brand}.` },
-    { question: `Can I pay cash on delivery for first copy ${label}?`, answer: "Yes. Cash on delivery is available on orders across India." },
+    { question: `Are these genuine ${brand} watches?`, answer: `No. These watches are not genuine ${brand} products and are not affiliated with ${brand}.` },
+    { question: `Can I pay cash on delivery for ${label}?`, answer: "Yes. Cash on delivery is available on orders across India." },
     { question: "Where are orders dispatched from?", answer: "Orders dispatch from the Utkal Watches store in Rajkot, Gujarat." },
     { question: "How do I check a watch's details?", answer: "Open the product page to see its photos, current price and available description. Movement, functions and materials can vary by model, so confirm them for the individual watch." },
   ];

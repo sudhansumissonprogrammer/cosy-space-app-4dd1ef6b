@@ -8,7 +8,7 @@
  * - Only verified facts may appear: records come from public.store_locations,
  *   which is seeded/owned by merchant-provided data. Never invent addresses,
  *   hours, photos, stock or services here.
- * - Replica disclosure for Utkal reuses the shared UTKAL_STATUS wording.
+ * - Brand disclosure for Utkal reuses the shared UTKAL_STATUS wording.
  * - Delivery-only cities must never be presented as physical branches.
  */
 import { isUtkalContentStore, UTKAL_STATUS } from "./utkalContent.ts";
@@ -62,13 +62,13 @@ export function cityAlias(city: string): string {
 
 export function cityPageH1(store: StoreLike, city: string): string {
   return isUtkalContentStore(store)
-    ? `First Copy & Replica Watches in ${city}`
+    ? `Watches in ${city} — Utkal Watches`
     : `${store.name} in ${city}`;
 }
 
 export function cityPageTitle(store: StoreLike, city: string): string {
   return isUtkalContentStore(store)
-    ? `First Copy & Replica Watches in ${city} | ${store.name}`
+    ? `Buy Watches Online in ${city} | ${store.name}`
     : `${store.name} in ${city} — Shop Online`;
 }
 
@@ -78,7 +78,7 @@ export function cityPageDescription(store: StoreLike, loc: StoreLocationRecord):
     const where = loc.location_type === "main_store" && loc.address_line
       ? `Visit the main store at ${loc.address_line} or order online.`
       : `Utkal Watches delivers to ${city} from its Rajkot store with cash on delivery.`;
-    return `Shop first copy & replica watches in ${city}. ${where} ${UTKAL_STATUS}`;
+    return `Shop men's and women's watches in ${city}. ${where} ${UTKAL_STATUS}`;
   }
   return loc.location_type === "main_store" && loc.address_line
     ? `Shop ${store.name} in ${city}. Visit us at ${loc.address_line} or order online.`
@@ -180,7 +180,7 @@ export function cityFaqItems(
   if (utkal) {
     items.push({
       q: "Are these genuine brand watches?",
-      a: "No. Utkal Watches sells first copy / replica watches. They are not genuine products of, and are not affiliated with or authorized by, the brands they resemble.",
+      a: "No. Watches at Utkal Watches are not genuine or affiliated with the brands shown.",
     });
   }
 
@@ -201,7 +201,7 @@ export function directoryDescription(store: StoreLike, locations: StoreLocationR
   const main = locations.find((l) => l.location_type === "main_store");
   const cityCount = locations.length;
   if (isUtkalContentStore(store)) {
-    return `Utkal Watches delivers first copy & replica watches across ${cityCount} cities in India` +
+    return `Utkal Watches delivers watches across ${cityCount} cities in India` +
       (main ? `, with its main store in ${main.city}` : "") +
       `. Find your city for delivery details.`;
   }
