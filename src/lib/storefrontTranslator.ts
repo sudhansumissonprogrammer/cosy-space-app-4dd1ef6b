@@ -45,7 +45,7 @@ function isProtected(el: Element | null): boolean {
 }
 
 function core(s: string) { return s.trim(); }
-function apply(text: string, src: string) {
+function apply(src: string) {
   const c = core(src);
   const t = memo[c];
   if (t == null) return null;
@@ -56,18 +56,15 @@ function handleText(node: Text) {
   const current = node.nodeValue || "";
   const orig = originals.get(node);
   // React may have changed content: treat new content as new original.
-  if (orig === undefined || (current !== orig && apply(node, orig) !== current)) originals.set(node, current);
+  if (orig === undefined || (current !== orig && apply(orig) !== current)) originals.set(node, current);
   const src = originals.get(node)!;
   const c = core(src);
   if (!c || !HAS_LETTERS.test(c) || c.length > 2000) return;
   if (isProtected(node.parentElement)) return;
-  const out = apply(node, src);
+  const out = apply(src);
   if (out != null) { if (node.nodeValue !== out) node.nodeValue = out; }
   else pending.add(c);
 }
-// apply signature helper for compare
-function applyNode(_: Text, s: string) { return apply(_ as any, s); }
-void applyNode;
 
 function handleAttrs(el: Element) {
   if (isProtected(el.parentElement) && el.tagName !== "INPUT") return;
