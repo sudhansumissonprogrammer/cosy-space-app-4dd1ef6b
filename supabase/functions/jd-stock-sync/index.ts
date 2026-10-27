@@ -24,6 +24,7 @@
 // Auth: requires header `x-cron-key` matching the token in public.cron_auth.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { jdStockVisibility } from "../_shared/jdStockVisibility.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -58,8 +59,6 @@ const REQ_GAP_MS = 250;
 /** Max throttled lookups retried in the slow second pass (time budget). */
 const MAX_RETRY = 10;
 const REQ_TIMEOUT_MS = 12_000;
-/** Products with source quantity <= this are treated as sold out. */
-const OOS_THRESHOLD = 0;
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -187,6 +186,7 @@ Deno.serve(async (req) => {
         .from("products")
         .select("id, slug, source_id, stock_quantity, is_active")
         .eq("store_id", store.id)
+        .eq("source_platform", "jdwebship")
         .in("id", hotIds);
       for (const p of hot || []) targets.set(p.id, p as never);
     }
@@ -260,9 +260,7 @@ Deno.serve(async (req) => {
 
       // Delisted / unavailable at source → keep the product visible but Sold
       // Out, so it reappears automatically the moment the source restocks it.
-      const nextStock = src.delisted || src.quantity <= OOS_THRESHOLD ? 0 : src.quantity;
-      // Utkal Watches hides sold-out supplier watches; they reappear on restock.
-      const nextActive = store.slug === "utkalwatches" ? nextStock > 0 : true;
+      const { stock_quantity: nextStock, is_active: nextActive } = jdStockVisibility(store.id, src.quantity, src.delisted);
 
 
       const stockChanged = (p.stock_quantity ?? 0) !== nextStock;

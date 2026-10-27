@@ -2,6 +2,7 @@ import { useSearchParams } from "react-router-dom";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { discoveryPage } from "@/lib/catalogueDiscovery";
+import { applyCatalogueOrder, catalogueSort } from "../../supabase/functions/_shared/catalogueOrder";
 
 /**
  * Worker /api/products page size is 20 — must match PRODUCTS_PAGE_SIZE
@@ -51,11 +52,7 @@ async function fetchPageFromSupabase({ storeId, category, page, sort: _sort }: F
       .order("category_pinned_at", { ascending: false, nullsFirst: false });
   }
 
-  q = q
-    .order("display_order", { ascending: true })
-    .order("created_at", { ascending: false })
-    .order("id", { ascending: true })
-    .range(from, to);
+  q = applyCatalogueOrder(q, storeId).range(from, to);
 
   const { data, error } = await q;
   if (error) throw error;
@@ -93,6 +90,7 @@ async function fetchCategoryPageRpc({ storeId, category, categorySlug, page }: F
 }
 
 async function fetchPage({ storeId, category, categorySlug, page, sort }: FetchOpts): Promise<any[]> {
+  sort = catalogueSort(storeId, sort);
   if ((category || categorySlug) && storeId) {
     // Preserve membership and errors: an unfiltered fallback can expose the
     // entire store when the slug lookup fails.
@@ -154,7 +152,7 @@ export function useInfiniteProducts(opts: {
       queryKeyPrefix,
       storeId,
       categorySlug || category || "__all__",
-      sort || "default",
+      (category || categorySlug ? sort : catalogueSort(storeId || "", sort)) || "default",
       PAGE_SIZE,
       ...(startPage > 0 ? [startPage] : []),
     ],

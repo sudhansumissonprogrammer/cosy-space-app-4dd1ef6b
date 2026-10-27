@@ -1,4 +1,5 @@
 import { productSearchDescription, productSearchPrice } from "../_shared/productSeo.ts";
+import { applyCatalogueOrder } from "../_shared/catalogueOrder.ts";
 import { discoveryAvailability } from "../_shared/productDiscoveryFacts.ts";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { discoveryPage, discoveryUrl, DISCOVERY_PAGE_SIZE, productImageUrls } from "../_shared/seoDiscovery.ts";
@@ -1066,8 +1067,8 @@ async function renderRequest(req: Request): Promise<Response> {
       .eq("hidden_by_category", false);
     const showAll = ["theme-10", "theme-12"].includes(store.theme);
     const query = effectiveKind === "best-sellers" && !showAll ? baseQuery.eq("is_best_selling", true) : baseQuery;
-    if (effectiveKind === "shop") query.order("display_order");
-    const { data: listingProducts, error: listingError } = await query.order("created_at", { ascending: false }).order("id")
+    const ordered = effectiveKind === "shop" ? applyCatalogueOrder(query, store.id) : query.order("created_at", { ascending: false }).order("id");
+    const { data: listingProducts, error: listingError } = await ordered
       .range((page - 1) * DISCOVERY_PAGE_SIZE, page * DISCOVERY_PAGE_SIZE);
     if (listingError) return new Response("Catalogue unavailable", { status: 503, headers: noIndexHeaders });
     if (page > 1 && !listingProducts?.length) return new Response("Page not found", { status: 404, headers: noIndexHeaders });

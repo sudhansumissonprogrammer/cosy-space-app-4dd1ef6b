@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Correct Utkal Shop All and every category to newest-first, including future imports; audit current watch counts and automatic stock hiding/reappearance.
 - [x] Restore Utkal's six original sticker artworks, contact actions and FAQ layout hidden by the Oct 26 blanket gate; qualify model-specific claims, preserve unrelated stores and retired award removal. Real PDP contact dialog/FAQ and mobile/desktop artwork verified through hosted asset forwarding (localhost lacks the asset endpoint); 11 tests pass, build OK. Catalogue, sync and checkout unchanged; publication remains owner-controlled.
 - [x] Execute the available Utkal SEO audit and safe template repairs: reconcile 6,583 database/sitemap products; check 93 search-labelled responses, 20 photos and mobile home/category/shop/PDP/About/cart/checkout. Handover: docs/UTKAL-SEO-AUDIT-2026-10-26.md; this is not full-catalogue HTTP/indexing certification.
 - [ ] Utkal 11-phase completion gates: deploy Worker 9.2.9 and publish frontend, then repeat raw/rendered/cache checks; Search Console access, owner-verified facts/photos, exhaustive graph crawl and field performance measurement remain required.
