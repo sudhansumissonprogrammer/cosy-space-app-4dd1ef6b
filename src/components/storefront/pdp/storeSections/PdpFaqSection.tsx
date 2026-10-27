@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { Plus, Minus } from "lucide-react";
+import { Link } from "react-router-dom";
+import { storefrontPath } from "@/lib/subdomain";
+import type { ReactNode } from "react";
 
 const FAQS: { q: string; a: string }[] = [
   {
@@ -40,8 +43,15 @@ const FAQS: { q: string; a: string }[] = [
   },
 ];
 
-export default function PdpFaqSection() {
+export default function PdpFaqSection({ store }: { store?: { slug: string } } = {}) {
   const [open, setOpen] = useState<number | null>(null);
+  const faqs: { q: string; a: ReactNode }[] = store ? [
+    { q: "How can I contact support?", a: "Use the Call Now, Request Call or WhatsApp Now buttons on this page to contact the store about this watch." },
+    { q: "How do I check the materials and water resistance?", a: "Specifications vary by model. Check the product description and confirm missing details with the store before ordering or exposing the watch to water." },
+    { q: "Is the watch covered under warranty?", a: "Contact the store to confirm this model's warranty, coverage and exclusions before ordering." },
+    { q: "How long does delivery take?", a: <>Check the <Link className="underline" to={storefrontPath(store.slug, "shipping-policy")}>shipping policy</Link> and confirm delivery timing for your address with the store.</> },
+    { q: "How do I raise a return or refund request?", a: <>Read the <Link className="underline" to={storefrontPath(store.slug, "return-policy")}>returns and refund policy</Link> for deadlines, evidence requirements and applicable conditions, then contact the store with your order number.</> },
+  ] : FAQS;
 
   return (
     <section
@@ -61,7 +71,7 @@ export default function PdpFaqSection() {
       </p>
 
       <div className="mx-auto mt-6 max-w-2xl divide-y divide-border border-t border-border">
-        {FAQS.map((item, i) => {
+        {faqs.map((item, i) => {
           const isOpen = open === i;
           return (
             <div key={item.q}>

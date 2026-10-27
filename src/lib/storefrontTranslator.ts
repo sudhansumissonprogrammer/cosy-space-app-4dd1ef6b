@@ -34,7 +34,7 @@ function isProtected(el: Element | null): boolean {
   for (let n: Element | null = el; n; n = n.parentElement) {
     if (SKIP_TAGS.has(n.tagName)) return true;
     if (n.getAttribute("translate") === "no" || n.classList.contains("notranslate") || n.hasAttribute("data-no-translate")) return true;
-    if (n.isContentEditable) return true;
+    if (n instanceof HTMLElement && n.isContentEditable) return true;
     // Product names: headings/title text inside product links, and the PDP title.
     if (n.tagName === "H1" && /\/product\//.test(location.pathname)) return true;
     if (n.tagName === "A" && /\/product\//.test(n.getAttribute("href") || "")) {

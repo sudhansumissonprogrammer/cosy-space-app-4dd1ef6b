@@ -27,7 +27,18 @@ const STRIP = [
   { Icon: Heart, label: "Customer First" },
 ];
 
-export default function QualityAssuranceGrid() {
+// Preserve merchant artwork without making the same technical promise for every model.
+const MODEL_ITEMS = [
+  { icon: steelIcon.url, title: "Build & Materials", sub: "Check this model's description for material details" },
+  { icon: waterIcon.url, title: "Water Resistance", sub: "Confirm the rating before exposing your watch to water" },
+  { icon: scratchIcon.url, title: "Finish & Care", sub: "Protect the glass and finish from scratches" },
+  { icon: warrantyIcon.url, title: "Warranty Information", sub: "Contact us to confirm coverage for this model" },
+  { icon: qualityIcon.url, title: "Product Details", sub: "Ask us about the model before ordering" },
+  { icon: realphotoIcon.url, title: "Product Photos", sub: "View the listed photos and ask for more details" },
+];
+
+export default function QualityAssuranceGrid({ modelSpecific = false }: { modelSpecific?: boolean } = {}) {
+  const items = modelSpecific ? MODEL_ITEMS : ITEMS;
   return (
     <section
       className="mt-5 -mx-4 sm:mx-0"
@@ -38,7 +49,7 @@ export default function QualityAssuranceGrid() {
 
 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
-          {ITEMS.map(({ icon, title, sub }) => (
+          {items.map(({ icon, title, sub }) => (
             <div
               key={title}
               className="flex flex-col items-center rounded-xl bg-white/90 px-2 py-3 text-center shadow-[0_1px_3px_rgba(20,40,30,0.06)] ring-1 ring-[#E7DFC9]"

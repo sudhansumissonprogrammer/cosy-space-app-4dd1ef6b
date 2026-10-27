@@ -23,9 +23,6 @@ interface Props {
 }
 
 export default function WristlifeSections({ slot, product, store }: Props) {
-  // The Utkal catalogue has no verified catalogue-wide movement/material,
-  // water-resistance or warranty evidence for these generic assurances.
-  if (isUtkalContentStore(store)) return null;
   if (slot === "under-gallery") {
     return (
       <div className="mb-4">
@@ -35,7 +32,7 @@ export default function WristlifeSections({ slot, product, store }: Props) {
   }
 
   if (slot === "under-price") {
-    return <QualityAssuranceGrid />;
+    return <QualityAssuranceGrid modelSpecific={isUtkalContentStore(store)} />;
   }
 
 
@@ -45,7 +42,7 @@ export default function WristlifeSections({ slot, product, store }: Props) {
 
   return (
     <div className="mt-8 space-y-8">
-      <PdpFaqSection />
+      <PdpFaqSection store={isUtkalContentStore(store) ? store : undefined} />
     </div>
   );
 }
