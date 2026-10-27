@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Speed up storefront language switching and replace the full-width strip with a compact below-header corner selector; verify real Hindi/Hinglish/English flows.
 - [x] Recheck Utkal sync: 06:00 imported 155 watches/221 photos and advanced cursor; 06:05 verified 150 watches and hid a real stockout (public lookup confirmed); six own-stock Hublots protected, newest arrivals visible. 06:10 supplier throttling observed; instantaneous/full-catalogue equality and real restock event remain unverified. Details in the catalogue audit.
 - [x] Correct Utkal newest-first catalogue rules: 74 category API checks, three real pages, 18 tests, deployed category RPCs/edge repairs; snapshot 7,687 total, 7,298 supplier-linked, 5,636 supplier-available and 1,662 hidden stockouts. Preserve independent Sale/custom sections. Audit: docs/UTKAL-CATALOGUE-SYNC-2026-10-27.md.
 - [ ] Utkal catalogue rollout: owner publishes frontend/deploys Worker; exhaustive supplier equality remains rate-limited/unverified. Post-repair import progress verified at 06:00; complete restored supplier coverage not established.
