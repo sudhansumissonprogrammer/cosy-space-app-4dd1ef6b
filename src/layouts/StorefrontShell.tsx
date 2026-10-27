@@ -181,11 +181,11 @@ export default function StorefrontShell({
   useEffect(() => {
     if (!store?.name) return;
     try {
-      const identity = store.slug || window.location.hostname;
-      localStorage.setItem(
-        `sb_splash:${identity}`,
-        JSON.stringify({ logo: store.logo_url || "", name: store.name })
-      );
+      // index.html looks up `slug || hostname`; on custom domains the slug is
+      // not in the URL, so save under both or the splash misses the logo.
+      const value = JSON.stringify({ logo: store.logo_url || "", name: store.name });
+      const identities = new Set([store.slug, window.location.hostname].filter(Boolean));
+      identities.forEach((identity) => localStorage.setItem(`sb_splash:${identity}`, value));
     } catch { /* storage blocked — splash falls back to the favicon/monogram */ }
   }, [store?.slug, store?.name, store?.logo_url]);
 

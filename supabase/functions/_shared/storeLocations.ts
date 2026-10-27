@@ -112,7 +112,7 @@ export function cityIntroParagraph(store: StoreLike, loc: StoreLocationRecord): 
 
   if (isUtkalContentStore(store)) {
     if (loc.location_type === "main_store" && loc.address_line) {
-      return `Utkal Watch' main store is at ${loc.address_line}${hours ? ` — ${hours.replace(/^Open/, "open")}` : ""}. ` +
+      return `Utkal Watch's main store is at ${loc.address_line}${hours ? ` — ${hours.replace(/^Open/, "open")}` : ""}. ` +
         `Walk-ins welcome. ` +
         UTKAL_STATUS;
     }
