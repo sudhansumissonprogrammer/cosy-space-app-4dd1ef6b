@@ -626,6 +626,11 @@ Deno.serve(async (req) => {
       await admin.from("product_images").insert(imgRows.slice(i, i + 200));
     }
     // Supplier added-date order + brand categories by product name.
+    // Repair Utkal title aliases first; retain all merchant-managed links.
+    if (store.id === "ab19143d-87a9-490e-90b7-837313522782") {
+      const { error: brandErr } = await admin.rpc("utkal_repair_watch_brand_links", { _store_id: store.id });
+      if (brandErr) console.error("jd watch brand repair", brandErr.message);
+    }
     if (imported > 0 || linked.length > 0) {
       const { error: orgErr } = await admin.rpc("jd_organize_watch_catalog", { _store_id: store.id });
       if (orgErr) console.error("jd organize", orgErr.message);
