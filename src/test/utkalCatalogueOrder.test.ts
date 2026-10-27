@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { applyCatalogueOrder, catalogueSort, UTKAL_CATALOGUE_STORE_ID } from "../../supabase/functions/_shared/catalogueOrder";
 import { jdStockVisibility } from "../../supabase/functions/_shared/jdStockVisibility";
+import { uniqueSupplierItems } from "../../supabase/functions/_shared/jdImportIdentity";
 
 describe("Utkal catalogue rules", () => {
+  it("keeps distinct suppliers even when their watch names match", () => {
+    const rows = [{ id: "supplier-a", name: "Titan Watch" }, { id: "supplier-b", name: "Titan Watch" }, { id: "supplier-a", name: "Titan Watch" }];
+    expect(uniqueSupplierItems(rows).map(row => row.id)).toEqual(["supplier-a", "supplier-b"]);
+  });
   it("defaults Shop All to newest, not popular", () => {
     expect(catalogueSort(UTKAL_CATALOGUE_STORE_ID, "popular")).toBe("newest");
   });
