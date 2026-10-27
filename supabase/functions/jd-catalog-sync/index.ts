@@ -304,6 +304,19 @@ Deno.serve(async (req) => {
     let retryFromPage: number | null = null;
     let page = startPage;
 
+    // Backfill must not postpone new arrivals until hundreds of older pages
+    // finish. Check the newest page of every watch section on each run.
+    if (subs && phase === "backfill") {
+      for (const sub of [subs.primary, ...subs.extra]) {
+        const arrivals = await fetchListPage(1, SOURCE_ORIGIN, sub);
+        for (const it of arrivals || []) {
+          if (knownSku.has(it.id)) continue;
+          knownSku.add(it.id);
+          candidates.push({ ...it });
+        }
+      }
+    }
+
     outer: while (pagesWalked < maxPages) {
       if (Date.now() - started > TIME_BUDGET_MS) break;
       // Fetch a slice of listing pages in parallel — sequential paging could
