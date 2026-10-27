@@ -179,6 +179,7 @@ export function setTranslatorLanguage(next: SfLang) {
   if (next === "en") return;
   try { memo = JSON.parse(localStorage.getItem(`sf_tr_${next}`) || "{}"); } catch { memo = {}; }
   Object.assign(memo, commonTranslations[next]);
+  for (const [src, translated] of Object.entries(commonTranslations[next])) memo[src.toUpperCase()] = translated;
   walk(document.body);
   observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
