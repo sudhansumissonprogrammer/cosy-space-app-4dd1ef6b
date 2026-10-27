@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hidesCategoryFilters } from "./config";
+import { hasCustomPdpSections, hidesCategoryFilters } from "./config";
 import { KALINGA_STORE_ID } from "@/lib/kalingaStore";
 import WristlifeSections from "./WristlifeSections";
 import { UTKAL_STORE_ID } from "../../../../../supabase/functions/_shared/utkalContent";
@@ -13,11 +13,15 @@ describe("Kalinga category filtering isolation", () => {
   });
 });
 
-describe("unverified Utkal catalogue assurances", () => {
-  it("does not apply generic assurance sections to Utkal products", () => {
+describe("Utkal merchant custom sections", () => {
+  it("retains all three custom slots for the Utkal store after renaming", () => {
+    const store = { id: UTKAL_STORE_ID, slug: "future-name" };
+    expect(hasCustomPdpSections(store)).toBe(true);
     for (const slot of ["under-gallery", "under-price", "after-related"] as const) {
-      expect(WristlifeSections({ slot, product: {}, store: { id: UTKAL_STORE_ID } })).toBeNull();
-      expect(WristlifeSections({ slot, product: {}, store: { id: "another-store" } })).not.toBeNull();
+      expect(WristlifeSections({ slot, product: {}, store })).not.toBeNull();
     }
+  });
+  it("keeps custom sections gated away from unrelated stores", () => {
+    expect(hasCustomPdpSections({ id: "another-store", slug: "another-store" })).toBe(false);
   });
 });
