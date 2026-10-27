@@ -126,7 +126,7 @@ export default function StorefrontShell({
   notFoundLabel = "Store",
   children,
 }: StorefrontShellProps) {
-  const { store, isLoading, slug, themeConfig: shellThemeConfig } = useStorefront(slugOverride);
+  const { store, isLoading, isError, refetch, slug, themeConfig: shellThemeConfig } = useStorefront(slugOverride);
   const viewTracked = useRef(false);
 
   // Analytics hooks — safe to call even when store is null
@@ -447,12 +447,12 @@ export default function StorefrontShell({
 
   // Not found
   if (!store) {
-    return <StorefrontNotFound slug={slug} label={notFoundLabel} />;
+    return <StorefrontNotFound slug={slug} label={notFoundLabel} loadFailed={isError} onRetry={() => { void refetch(); }} />;
   }
 
   const renderProps: ShellRenderProps = {
     store,
-    slug: slug!,
+    slug: slug || store.slug,
     themeConfig,
     primaryColor,
     btnTextColor,

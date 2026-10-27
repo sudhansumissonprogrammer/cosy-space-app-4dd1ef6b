@@ -53,7 +53,7 @@ export function useStorefront(slugOverride?: string) {
   const useInjectedInitialData = !!(injected?.store && slug && !seeded.current);
   if (useInjectedInitialData && !initialInjectedRef.current) initialInjectedRef.current = true;
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["storefront-bulk", slug],
     queryFn: async () => {
       // 1. Check synchronous injected data first (Worker already set it)
@@ -90,7 +90,8 @@ export function useStorefront(slugOverride?: string) {
       }
 
       // 3. Fresh RPC call — use shell (lightweight, no products)
-      return rpcGetStorefrontShell(slug!);
+      if (!slug) throw new Error("missing_store_slug");
+      return rpcGetStorefrontShell(slug);
     },
     enabled: !!slug,
     staleTime: 2 * 60 * 1000,
@@ -206,5 +207,5 @@ export function useStorefront(slugOverride?: string) {
   const rawStore = (data as any)?.store as StoreData | undefined;
   const store = useMemo(() => rawStore ? resolveKalingaPublicStore(rawStore) : undefined, [rawStore]);
 
-  return { store: store ?? null, isLoading, slug, themeConfig: (data as any)?.theme_config ?? null };
+  return { store: store ?? null, isLoading, isError, refetch, slug, themeConfig: (data as any)?.theme_config ?? null };
 }
