@@ -152,7 +152,7 @@ export function useInfiniteProducts(opts: {
       queryKeyPrefix,
       storeId,
       categorySlug || category || "__all__",
-      catalogueSort(storeId || "", sort) || "default",
+      (category || categorySlug ? sort : catalogueSort(storeId || "", sort)) || "default",
       PAGE_SIZE,
       ...(startPage > 0 ? [startPage] : []),
     ],
