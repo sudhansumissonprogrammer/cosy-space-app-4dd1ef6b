@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,36 +11,18 @@ const OPTIONS: { id: SfLang; label: string }[] = [
   { id: "hinglish", label: "Hinglish" },
 ];
 
-function runTranslator(lang: SfLang) {
+function runTranslator() {
   import("@/lib/storefrontTranslator").then((m) => m.setTranslatorLanguage(getSfLang())).catch(() => {});
 }
 
-/** Shared below-header control. The portal preserves each theme's header/main sibling rules. */
+/** Body portal takes no layout space and stays clear of right-hand storefront overlays. */
 export default function LanguageStrip() {
   const [lang, setLang] = useState<SfLang>(getSfLang);
   const [hint, setHint] = useState(false);
-  const anchorRef = useRef<HTMLSpanElement>(null);
-  const [host, setHost] = useState<HTMLElement | null>(null);
-
-  useEffect(() => {
-    const shell = anchorRef.current?.closest('[data-storefront-ready="true"]');
-    if (!shell) return;
-    const slot = document.createElement("div");
-    slot.className = "sf-language-slot";
-    const place = () => {
-      const main = shell.querySelector("main");
-      if (main && slot.parentElement !== main) main.prepend(slot);
-      if (slot.isConnected) setHost(slot);
-    };
-    place();
-    const observer = new MutationObserver(place);
-    observer.observe(shell, { childList: true, subtree: true });
-    return () => { observer.disconnect(); slot.remove(); };
-  }, []);
 
   useEffect(() => {
     if (lang !== "en") {
-      runTranslator(lang);
+      runTranslator();
     }
     try {
       if (!localStorage.getItem("sf_lang_seen")) {
@@ -58,20 +40,20 @@ export default function LanguageStrip() {
     setLang(next);
     setSfLang(next);
     setHint(false);
-    runTranslator(next);
+    runTranslator();
   };
 
   const selector = (
-    <div translate="no" className="notranslate mx-auto flex h-8 max-w-7xl items-center justify-end px-3" role="region" aria-label="Language">
-      <DropdownMenu>
+    <div translate="no" className="notranslate fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] left-2 z-30 sm:bottom-5 sm:left-3" role="region" aria-label="Language">
+      <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" aria-label="Choose language" title="Choose language" className={`h-6 gap-1.5 rounded-md border border-border bg-background px-2 text-[11px] text-foreground ${hint ? "sf-lang-hint" : ""}`}>
+          <Button variant="ghost" aria-label="Choose language" title="Choose language" className={`h-8 gap-1.5 rounded-md border border-border bg-background px-2 text-[11px] text-foreground shadow-sm ${hint ? "sf-lang-hint" : ""}`}>
             <Languages className={`h-3.5 w-3.5 ${hint ? "sf-lang-icon" : ""}`} aria-hidden="true" />
             <span>{OPTIONS.find((option) => option.id === lang)?.label}</span>
             <ChevronDown className="h-3 w-3 opacity-60" aria-hidden="true" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" translate="no" className="notranslate min-w-32">
+        <DropdownMenuContent side="top" align="start" translate="no" className="notranslate min-w-32">
           <DropdownMenuRadioGroup value={lang} onValueChange={(value) => { if (value === "en" || value === "hi" || value === "hinglish") choose(value); }}>
             {OPTIONS.map((option) => <DropdownMenuRadioItem key={option.id} value={option.id}>{option.label}</DropdownMenuRadioItem>)}
           </DropdownMenuRadioGroup>
@@ -79,5 +61,5 @@ export default function LanguageStrip() {
       </DropdownMenu>
     </div>
   );
-  return <><span ref={anchorRef} hidden />{host && createPortal(selector, host)}</>;
+  return createPortal(selector, document.body);
 }
