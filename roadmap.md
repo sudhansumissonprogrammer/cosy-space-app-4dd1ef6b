@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Correct Utkal Hindi homepage wording with an immediate reviewed translation that overrides stale saved wording; verify language switching without changing titles, numbers or layout.
 - [x] Shrunk the floating language control to a 59x26 pill and added a small close cross; closing leaves only a 24x24 globe dot that restores it, so language stays reachable. Two component tests pass, build OK, real Utkal preview checked (close, restore, Hindi switch, no page errors). Frontend publication required for live stores. Hindi heading spelling still needs review.
 
 - [x] Fixed __sb_heal refresh trigger: removed 12-second slow-boot reload and duplicate boot guards; single asset-only recovery uses URL/storage/cookie budget, idempotent navigation and successful-boot cancellation. Five tests pass; real Utkal opening cleans marker while retaining query parameters and stays on one document navigation past 14 seconds. Frontend publication required for live rollout.

@@ -1,6 +1,9 @@
 /** Instant translations for common controls; longer merchant copy uses the existing cache/service. */
+import { UTKAL_HOME_HEADING } from "../../supabase/functions/_shared/utkalContent";
+
 export const commonTranslations: Record<"hi" | "hinglish", Record<string, string>> = {
   hi: {
+    [UTKAL_HOME_HEADING]: "Utkal Watches — भारत में पुरुषों और महिलाओं के लिए ऑनलाइन घड़ियाँ",
     "Home": "होम", "Shop": "शॉप", "Shop All": "सभी उत्पाद", "Categories": "श्रेणियाँ",
     "Cart": "कार्ट", "My Cart": "मेरा कार्ट", "Wishlist": "पसंदीदा", "Account": "खाता",
     "Add to Cart": "कार्ट में जोड़ें", "Add to cart": "कार्ट में जोड़ें", "Buy Now": "अभी खरीदें",
