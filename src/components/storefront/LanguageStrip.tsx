@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, Languages } from "lucide-react";
+import { Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem } from "@/components/ui/dropdown-menu";
 import { getSfLang, setSfLang, type SfLang } from "@/lib/storefrontLanguage";
@@ -47,10 +47,9 @@ export default function LanguageStrip() {
     <div translate="no" className="notranslate fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] left-2 z-30 sm:bottom-5 sm:left-3" role="region" aria-label="Language">
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" aria-label="Choose language" title="Choose language" className={`h-8 gap-1.5 rounded-md border border-border bg-background px-2 text-[11px] text-foreground shadow-sm ${hint ? "sf-lang-hint" : ""}`}>
+          <Button variant="ghost" aria-label="Choose language" title="Choose language: English / हिंदी / Hinglish" className={`h-8 w-16 gap-1 rounded-md border border-border bg-background px-1.5 text-[11px] text-foreground shadow-sm ${hint ? "sf-lang-hint" : ""}`}>
             <Languages className={`h-3.5 w-3.5 ${hint ? "sf-lang-icon" : ""}`} aria-hidden="true" />
-            <span>{OPTIONS.find((option) => option.id === lang)?.label}</span>
-            <ChevronDown className="h-3 w-3 opacity-60" aria-hidden="true" />
+            <span>{lang === "en" ? "EN" : lang === "hi" ? "हिंदी" : "HIN"}</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent side="top" align="start" translate="no" className="notranslate min-w-32">
