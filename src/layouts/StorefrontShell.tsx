@@ -23,6 +23,7 @@ import { usePaymentResumeGuard } from "@/hooks/usePaymentResumeGuard";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 
 import { buildThemeStyle, loadGoogleFonts } from "@/lib/themeUtils";
+import LanguageStrip from "@/components/storefront/LanguageStrip";
 import StorefrontNotFound from "@/components/storefront/StorefrontNotFound";
 import { initSfGlass } from "@/lib/sfGlassRuntime";
 import "@/styles/sf-glass.css";
@@ -460,6 +461,7 @@ export default function StorefrontShell({
   // Build provider tree — conditionally include WishlistProvider
   const content = (
     <div className={`${wrapperClassName}${isKalingaStore(store) ? " sf-kalinga-mobile" : ""}`} style={mergedStyle} data-storefront-ready="true">
+      <LanguageStrip />
       {children(renderProps)}
 
       {/* Lazy overlays — shared across all themes */}
