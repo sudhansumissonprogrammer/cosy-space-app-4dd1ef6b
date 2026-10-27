@@ -344,9 +344,8 @@ export default function CategoryDetail() {
     if (useBrandCarousels) importBrandCarousels();
   }, [useBrandCarousels]);
 
-  // Carousel mode groups by brand, so every product must be present before the
-  // rails appear. Fetch the remaining page immediately; deferring this work to
-  // idle made some brand rows arrive seconds after others on mobile.
+  // Paint the available rails immediately; continue bounded catalogue paging
+  // without making opening photos wait for the complete Sale collection.
   useEffect(() => {
     if (!useBrandCarousels || !hasNextPage || isFetchingNextPage || productsLoading) return;
     fetchNextPage();
@@ -455,23 +454,9 @@ export default function CategoryDetail() {
         ) : products.length > 0 ? (
           <>
             {useBrandCarousels ? (
-              hasNextPage || isFetchingNextPage ? (
-                <div className={gridClass} aria-label="Loading complete Sale collection">
-                  {Array.from({ length: 8 }).map((_, i) => (
-                    <div key={i} className="overflow-hidden rounded-2xl border border-border bg-card">
-                      <Skeleton className="w-full" style={{ aspectRatio: "4/5" }} />
-                      <div className="space-y-2 px-2.5 pb-2.5 pt-2">
-                        <Skeleton className="h-3.5 w-full" />
-                        <Skeleton className="h-4 w-20" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
                 <Suspense fallback={<div className="min-h-[2200px]" />}>
-                  <LazyBrandCarousels products={products} slug={slug!} store={store} cardStyle={cardStyle} />
+                  <LazyBrandCarousels products={products} slug={slug || store.slug} store={store} cardStyle={cardStyle} />
                 </Suspense>
-              )
             ) : (
               <div className={gridClass}>
                 {showCrossShopCard && categorySlug && (
