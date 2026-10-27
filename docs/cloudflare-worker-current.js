@@ -243,7 +243,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "9.2.9-utkal-content-truth";
+const WORKER_VERSION = "9.3.0-utkal-watch-splash-logo";
 
 /**
  * v8.81.0 — /cf-img resize allow-list.
@@ -1831,7 +1831,7 @@ async function enrichHeadWithDeepPreloads(head, origin, env) {
   // sees the first <img>. Cheap (~140 bytes), idempotent, skipped if present.
   if (!head.includes('href="https://cdn.shopbanao.in"') && head.includes("</head>")) {
     const cdnHints =
-      `<link rel="preconnect" href="https://cdn.shopbanao.in" crossorigin />` +
+      `<link rel="preconnect" href="https://cdn.shopbanao.in" />` +
       `<link rel="dns-prefetch" href="https://cdn.shopbanao.in" />`;
     head = head.replace("</head>", `${cdnHints}</head>`);
   }
@@ -4172,7 +4172,7 @@ function _buildSeoBodyBlock(store, categories, products) {
   const sentence = description.match(/[.!?]\s/);
   const tail = explicit || (sentence?.index != null ? description.slice(0, sentence.index + 1) : description);
   const heading = !tail ? `${storeName} — Online Store` : tail.toLocaleLowerCase().startsWith(storeName.toLocaleLowerCase()) ? truncate(tail, storeName.length + 93) : `${storeName} — ${truncate(tail)}`;
-  html += `<h1>${escapeHtml(utkal ? "Utkal Watches — Men's & Women's Watches Online in India" : heading)}</h1>`;
+  html += `<h1>${escapeHtml(utkal ? "Utkal Watch — Men's & Women's Watches Online in India" : heading)}</h1>`;
   if (about) html += `<p>${about}</p>`;
   if (loc || wa) {
     const bits = [];
@@ -4265,8 +4265,8 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
     const heroImg =
       p.og_image_url || (p.image_url || "").split(",")[0].trim() || images[0] || store.og_image_url || store.banner_url || store.logo_url || "";
     const title = escapeHtml(p.meta_title || `${p.name} — ${store.name}`);
-    const legacyUtkal = store.name === "Utkal Watches" && /^.+ at ₹[\d,]+ on Utkal Watches\. Cash on Delivery and fast delivery across India\.(?: Ideal for daily wear and gifting\.)?$/.test((p.meta_description || "").trim());
-    const desc = escapeHtml(legacyUtkal ? "View this watch at Utkal Watches. Compare its photographs and confirm individual details before ordering." : p.meta_description?.trim() || p.description?.trim().slice(0, 160) || `View ${p.name} at ${store.name}.`);
+    const legacyUtkal = /^Utkal Watch(?:es)?$/.test(store.name || "") && /^.+ at ₹[\d,]+ on Utkal Watch(?:es)?\. Cash on Delivery and fast delivery across India\.(?: Ideal for daily wear and gifting\.)?$/.test((p.meta_description || "").trim());
+    const desc = escapeHtml(legacyUtkal ? "View this watch at Utkal Watch. Compare its photographs and confirm individual details before ordering." : p.meta_description?.trim() || p.description?.trim().slice(0, 160) || `View ${p.name} at ${store.name}.`);
     const ogImg = typeof heroImg === "string" && /^https?:\/\//i.test(heroImg) ? escapeHtml(heroImg) : "";
     const price = Number(p.sale_price && p.sale_price < p.price ? p.sale_price : p.price);
     const hasStock = p.stock_quantity !== null && p.stock_quantity !== undefined && p.stock_quantity !== "" && typeof p.stock_quantity !== "boolean" && Number.isFinite(Number(p.stock_quantity));
@@ -4480,6 +4480,9 @@ function _buildHomepageSeoHead(s, cats, canonicalBase, logoUrl) {
   if (logoUrl && /^https?:\/\//i.test(logoUrl)) {
     out += `<link rel="icon" type="image/png" href="${escapeHtml(logoUrl)}">`;
     out += `<link rel="apple-touch-icon" href="${escapeHtml(logoUrl)}">`;
+    // v9.3.0 — fetch the splash logo from <head> so the loading screen shows
+    // the logo immediately instead of only the caption on slow mobile networks.
+    out += `<link rel="preload" as="image" href="${escapeHtml(logoUrl)}" fetchpriority="high">`;
   }
   return out;
 }

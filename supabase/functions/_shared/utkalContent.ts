@@ -21,5 +21,5 @@ export function utkalCollectionIntroduction(store: { id?: string | null; slug?: 
 
 /** Recognize only the exact old generated campaign, preserving other overrides. */
 export function isLegacyUtkalSnippet(text: string): boolean {
-  return /^.+ at ₹[\d,]+ on Utkal Watches\. Cash on Delivery and fast delivery across India\.(?: Ideal for daily wear and gifting\.)?$/.test(text.trim());
+  return /^.+ at ₹[\d,]+ on Utkal Watch(?:es)?\. Cash on Delivery and fast delivery across India\.(?: Ideal for daily wear and gifting\.)?$/.test(text.trim());
 }
