@@ -64,10 +64,11 @@ export default function LanguageStrip() {
 
   const open = (
     <div translate="no" className={`notranslate ${corner}`} role="region" aria-label="Language">
-      <div className={`inline-flex h-6 items-center gap-0.5 rounded-full border border-border bg-background pl-1.5 pr-0.5 text-[10px] text-foreground shadow-sm ${hint ? "sf-lang-hint" : ""}`}>
+      <div className={`inline-flex h-6 items-center gap-0 rounded-full border border-border bg-background pl-1 pr-0.5 text-[10px] text-foreground shadow-sm ${hint ? "sf-lang-hint" : ""}`}>
         <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" aria-label="Choose language" title="Choose language: English / हिंदी / Hinglish" className="h-5 gap-1 rounded-full bg-transparent px-1 py-0 text-[10px] font-medium text-foreground hover:bg-transparent">
+            <Button variant="ghost" aria-label="Choose language" title="Choose language: English / हिंदी / Hinglish" className="h-5 gap-0.5 rounded-full bg-transparent px-0.5 py-0 text-[10px] font-medium text-foreground hover:bg-transparent">
+
               <Languages className={`h-3 w-3 ${hint ? "sf-lang-icon" : ""}`} aria-hidden="true" />
               <span>{SHORT[lang]}</span>
             </Button>
