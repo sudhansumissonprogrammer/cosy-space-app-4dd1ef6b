@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Fix false store-not-found on failed shell loads; verify both review-category links on utkalwatch.in without renaming the existing tenant slug.
 - [x] Created additive Utkal review categories for the exact 519 repaired watches and 1,664 remaining unclassified entries; existing categories and stock unchanged, exact membership counts asserted during creation.
 - [x] Audited 10,746 Utkal entries; added 519 missing brand memberships and 38 absent brand categories, preserving existing links/stock/prices. Deployed automatic additive repair in JD imports; SQL alias/isolation/idempotence/no-missing-clear-match checks and seven catalogue tests pass. Real Daniel Wellington category verified. 1,664 entries remain without a confidently identified brand (including 1,600 generic Diver/Field titles); no brands guessed.
 - [x] Corrected Utkal Hindi homepage wording with an immediate reviewed translation overriding stale saved wording; real preview verified Hindi heading and English restoration, seven language tests pass, build OK. Frontend publication required.
