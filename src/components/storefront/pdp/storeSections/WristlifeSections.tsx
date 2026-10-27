@@ -14,6 +14,7 @@
 import ParcelAssuranceSection from "./ParcelAssuranceSection";
 import QualityAssuranceGrid from "./QualityAssuranceGrid";
 import PdpFaqSection from "./PdpFaqSection";
+import { isUtkalContentStore } from "../../../../../supabase/functions/_shared/utkalContent";
 
 interface Props {
   slot: "under-gallery" | "under-price" | "after-info" | "after-related";
@@ -31,7 +32,7 @@ export default function WristlifeSections({ slot, product, store }: Props) {
   }
 
   if (slot === "under-price") {
-    return <QualityAssuranceGrid />;
+    return <QualityAssuranceGrid modelSpecific={isUtkalContentStore(store)} />;
   }
 
 
@@ -41,7 +42,7 @@ export default function WristlifeSections({ slot, product, store }: Props) {
 
   return (
     <div className="mt-8 space-y-8">
-      <PdpFaqSection />
+      <PdpFaqSection store={isUtkalContentStore(store) ? store : undefined} />
     </div>
   );
 }
