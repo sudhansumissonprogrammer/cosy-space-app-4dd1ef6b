@@ -43,7 +43,7 @@ export default function LanguageStrip() {
   return (
     <div
       translate="no"
-      className={`notranslate relative z-[60] w-full border-b border-border bg-muted/70 text-foreground ${hint ? "sf-lang-hint" : ""}`}
+      className={`notranslate sf-lang-strip w-full border-b border-border bg-muted/70 text-foreground ${hint ? "sf-lang-hint" : ""}`}
       role="region"
       aria-label="Language"
     >
