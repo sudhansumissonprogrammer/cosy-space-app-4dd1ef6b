@@ -30,6 +30,7 @@
 // Auth: header `x-cron-key` matching a token in public.cron_auth.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { uniqueSupplierItems } from "../_shared/jdImportIdentity.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -256,6 +257,7 @@ Deno.serve(async (req) => {
     const knownSku = new Set<string>();
     const byName = new Map<string, { id: string; source_id: string | null }>();
     const knownSlug = new Set<string>();
+    let indexFailed = false;
     {
       const PAGE = 1000;
       for (let off = 0; ; off += PAGE) {
@@ -263,8 +265,9 @@ Deno.serve(async (req) => {
           .from("products")
           .select("id, name, slug, source_id")
           .eq("store_id", store.id)
+          .order("id", { ascending: true })
           .range(off, off + PAGE - 1);
-        if (error) break;
+        if (error) { indexFailed = true; break; }
         for (const p of data || []) {
           if (p.source_id) knownSku.add(p.source_id);
           if (p.slug) knownSlug.add(p.slug);
@@ -273,6 +276,10 @@ Deno.serve(async (req) => {
         }
         if (!data || data.length < PAGE) break;
       }
+    }
+    if (indexFailed) {
+      report.push({ store: store.slug, error: "Existing supplier index unavailable; no imports attempted" });
+      continue;
     }
 
     // ── Existing categories ──────────────────────────────────────────────
@@ -333,6 +340,7 @@ Deno.serve(async (req) => {
             byName.delete(key); // one legacy row can adopt only one SKU
             continue;
           }
+          knownSku.add(it.id);
           candidates.push({ ...it, sourcePage: slice[k] });
         }
       }
@@ -508,7 +516,7 @@ Deno.serve(async (req) => {
     // ── Build product rows ───────────────────────────────────────────────
     const rows: any[] = [];
     const galleries: Record<string, string[]> = {};
-    for (const d of details) {
+    for (const d of uniqueSupplierItems(details)) {
       let slug = String(d.slug);
       if (knownSlug.has(slug)) slug = `${slug}-${String(d.id).slice(-6).toLowerCase()}`;
       if (knownSlug.has(slug)) continue;
@@ -560,7 +568,33 @@ Deno.serve(async (req) => {
     const imgRows: any[] = [];
     for (let i = 0; i < rows.length; i += 50) {
       const chunk = rows.slice(i, i + 50);
-      const { data, error } = await admin.from("products").insert(chunk).select("id, slug, name");
+      // Re-check just this bounded batch: another run may have inserted a SKU
+      // after the paged index was read. Never overwrite merchant product data.
+      const { data: existing, error: lookupError } = await admin.from("products")
+        .select("source_id").eq("store_id", store.id).eq("source_platform", "jdwebship")
+        .in("source_id", chunk.map(row => row.source_id));
+      if (lookupError) {
+        retryFromPage = retryFromPage == null ? startPage : Math.min(retryFromPage, startPage);
+        continue;
+      }
+      const existingIds = new Set((existing || []).map(row => row.source_id));
+      const freshChunk = chunk.filter(row => !existingIds.has(row.source_id));
+      if (!freshChunk.length) continue;
+      let { data, error } = await admin.from("products").insert(freshChunk).select("id, slug, name");
+      if (error?.code === "23505") {
+        // Isolate a concurrent/conflicting item instead of rejecting 50 good
+        // watches together. Successful items still get their original photos.
+        const accepted: { id: string; slug: string; name: string }[] = [];
+        let failedWrite = false;
+        for (const row of freshChunk) {
+          const one = await admin.from("products").insert(row).select("id, slug, name");
+          if (one.error && one.error.code !== "23505") failedWrite = true;
+          else if (one.data) accepted.push(...one.data);
+        }
+        data = accepted;
+        error = null;
+        if (failedWrite) retryFromPage = retryFromPage == null ? startPage : Math.min(retryFromPage, startPage);
+      }
       if (error) {
         console.error("jd-catalog-sync insert", error.message);
         // Rows are ordered like `details`; retrying the whole scanned range is
