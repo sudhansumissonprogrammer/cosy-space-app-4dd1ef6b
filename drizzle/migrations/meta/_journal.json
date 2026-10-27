@@ -99,6 +99,13 @@
       "when": 1793079898036,
       "tag": "0013_utkal_category_newest_first",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1793122133694,
+      "tag": "0014_utkal_watch_brand_memberships",
+      "breakpoints": true
     }
   ]
 }
