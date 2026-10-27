@@ -10,11 +10,11 @@ afterEach(() => { cleanup(); document.head.querySelectorAll('link[rel="canonical
 
 it("keeps product data intact when the store entity unmounts", () => {
   function Store() {
-    useStoreJsonLd({ storeName: "Utkal Watches", storeSlug: "utkalwatches", customDomain: "utkalwatch.in" });
+    useStoreJsonLd({ storeName: "Utkal Watch", storeSlug: "utkalwatches", customDomain: "utkalwatch.in" });
     return null;
   }
   function Product() {
-    useProductJsonLd({ product: { id: "watch", name: "Watch", price: 1149, currency: "INR", stock_quantity: 1 }, storeSlug: "utkalwatches", storeName: "Utkal Watches", customDomain: "utkalwatch.in" });
+    useProductJsonLd({ product: { id: "watch", name: "Watch", price: 1149, currency: "INR", stock_quantity: 1 }, storeSlug: "utkalwatches", storeName: "Utkal Watch", customDomain: "utkalwatch.in" });
     return null;
   }
   const page = render(<><Product /><Store /></>);
@@ -29,7 +29,7 @@ it("keeps product data intact when the store entity unmounts", () => {
 it("updates offer price and stock from changed product data without altering images", () => {
   const image = "https://cdn.shopbanao.in/original.webp";
   function Product({ price, stock }: { price: number; stock: number }) {
-    useProductJsonLd({ product: { id: "watch", name: "Watch", price: 1999, sale_price: price, currency: "INR", stock_quantity: stock, image_url: image }, storeSlug: "utkalwatches", storeName: "Utkal Watches", customDomain: "utkalwatch.in" });
+    useProductJsonLd({ product: { id: "watch", name: "Watch", price: 1999, sale_price: price, currency: "INR", stock_quantity: stock, image_url: image }, storeSlug: "utkalwatches", storeName: "Utkal Watch", customDomain: "utkalwatch.in" });
     return null;
   }
   const page = render(<Product price={1149} stock={1} />);
@@ -66,7 +66,7 @@ it("keeps PDP canonical when an inactive shell updates", () => {
 
 it("publishes seller without inventing manufacturer or expiry", () => {
   function Page() {
-    useProductJsonLd({ product: { id: "p", slug: "watch", name: "Watch", price: 1149, currency: "INR", category: "Men's - Watch", stock_quantity: 1 }, storeSlug: "utkalwatches", storeName: "Utkal Watches", customDomain: "utkalwatch.in" });
+    useProductJsonLd({ product: { id: "p", slug: "watch", name: "Watch", price: 1149, currency: "INR", category: "Men's - Watch", stock_quantity: 1 }, storeSlug: "utkalwatches", storeName: "Utkal Watch", customDomain: "utkalwatch.in" });
     return null;
   }
   render(<Page />);
@@ -76,7 +76,7 @@ it("publishes seller without inventing manufacturer or expiry", () => {
   expect(data.sku).toBeUndefined();
   expect(data.offers.itemCondition).toBeUndefined();
   expect(data.offers.priceValidUntil).toBeUndefined();
-  expect(data.offers.seller.name).toBe("Utkal Watches");
+  expect(data.offers.seller.name).toBe("Utkal Watch");
   const crumb = JSON.parse(document.getElementById("json-ld-breadcrumb")?.textContent || "{}");
   expect(crumb.itemListElement[1].item).toBe("https://utkalwatch.in/shop");
   expect(crumb.itemListElement[1].name).toBe("Shop All");
@@ -84,7 +84,7 @@ it("publishes seller without inventing manufacturer or expiry", () => {
 
 it("uses the actual category slug, not one guessed from its label", () => {
   function Page() {
-    useProductJsonLd({ product: { id: "p", name: "Watch", price: 1149, currency: "INR", category: "Men's - Watch" }, categoryLink: { name: "Men's - Watch", slug: "mens-watch-collection" }, storeSlug: "utkalwatches", storeName: "Utkal Watches", customDomain: "utkalwatch.in" });
+    useProductJsonLd({ product: { id: "p", name: "Watch", price: 1149, currency: "INR", category: "Men's - Watch" }, categoryLink: { name: "Men's - Watch", slug: "mens-watch-collection" }, storeSlug: "utkalwatches", storeName: "Utkal Watch", customDomain: "utkalwatch.in" });
     return null;
   }
   render(<Page />);

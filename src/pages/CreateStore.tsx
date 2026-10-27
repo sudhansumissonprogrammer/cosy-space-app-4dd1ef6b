@@ -719,7 +719,7 @@ export default function CreateStore() {
             <Input
               id="store-name"
               autoFocus
-              placeholder="e.g. Utkal Watches"
+              placeholder="e.g. Utkal Watch"
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
               maxLength={100}

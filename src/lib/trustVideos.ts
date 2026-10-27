@@ -115,7 +115,7 @@ export async function fetchTrustReel(storeId: string, slug: string): Promise<Tru
     /* app registry unavailable — trust videos alone are fine */
   }
 
-  // Utkal Watches only: pin a fixed 4-product mini grid onto the FIRST slide
+  // Utkal Watch only: pin a fixed 4-product mini grid onto the FIRST slide
   // so the opening trust video doubles as a shoppable collection card.
   if (slug === "utkalwatches" && slides.length > 0) {
     try {

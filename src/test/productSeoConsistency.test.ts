@@ -13,7 +13,7 @@ function renderer() {
 function schemas(html: string) {
   return Array.from(html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g), m => JSON.parse(m[1]));
 }
-const store = { name: "Utkal Watches", custom_domain: "utkalwatch.in", currency: "INR" };
+const store = { name: "Utkal Watch", custom_domain: "utkalwatch.in", currency: "INR" };
 
 describe("product search representation consistency", () => {
   it.each([null, undefined, "", "invalid"])("omits Worker stock claims for unknown quantity %s", stock_quantity => {
@@ -40,7 +40,7 @@ describe("product search representation consistency", () => {
   });
   it.each([null, "", "  "])("keeps missing facts absent for description %s", description => {
     const product = { id: "id", name: "Watch & Chain", price: 100, description, meta_description: " " };
-    expect(productSearchDescription(product, store.name)).toBe("View Watch & Chain at Utkal Watches.");
+    expect(productSearchDescription(product, store.name)).toBe("View Watch & Chain at Utkal Watch.");
     const html = renderer().head(store, "utkalwatches", "utkalwatch.in", "/product/id", { kind: "product", json: JSON.stringify({ product }) });
     expect(schemas(html)[0].description).toBeUndefined();
   });
@@ -59,12 +59,12 @@ describe("product search representation consistency", () => {
     expect(data.description).toBeUndefined();
   });
   it("mirrors the app's nonduplicated homepage identity", () => {
-    const fixture = { ...store, description: "Utkal Watches — wrist watches for men and women" };
+    const fixture = { ...store, description: "Utkal Watch — wrist watches for men and women" };
     expect(renderer().home(fixture, [], [])).toContain(`<h1>${buildStorefrontH1(fixture)}</h1>`);
-    expect(renderer().home(store, [], [])).toContain("<h1>Utkal Watches — Online Store</h1>");
+    expect(renderer().home(store, [], [])).toContain("<h1>Utkal Watch — Online Store</h1>");
   });
   it("does not retain legacy Utkal price or delivery assertions in the Worker", () => {
-    const product = { id: "id", name: "Listed Watch", price: 1999, meta_description: "Analog watch for men at ₹1,650 on Utkal Watches. Cash on Delivery and fast delivery across India. Ideal for daily wear and gifting." };
+    const product = { id: "id", name: "Listed Watch", price: 1999, meta_description: "Analog watch for men at ₹1,650 on Utkal Watch. Cash on Delivery and fast delivery across India. Ideal for daily wear and gifting." };
     const html = renderer().head(store, "utkalwatches", "utkalwatch.in", "/product/id", { kind: "product", json: JSON.stringify({ product }) });
     expect(html).toContain(productSearchDescription(product, store.name));
     expect(html).not.toContain("fast delivery across India");

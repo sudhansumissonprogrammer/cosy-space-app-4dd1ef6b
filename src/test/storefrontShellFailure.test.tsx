@@ -23,12 +23,12 @@ function mount() {
 
 it("does not report an existing store as missing after a failed request and retries its same identity", async () => {
   rpc.mockResolvedValueOnce({ data: null, error: new Error("temporary failure") })
-    .mockResolvedValueOnce({ data: { store: { id: "ab19143d-87a9-490e-90b7-837313522782", slug: "utkalwatches", name: "Utkal Watches" } }, error: null });
+    .mockResolvedValueOnce({ data: { store: { id: "ab19143d-87a9-490e-90b7-837313522782", slug: "utkalwatches", name: "Utkal Watch" } }, error: null });
   mount();
   await screen.findByRole("heading", { name: "Store couldn't load" });
   expect(screen.queryByText(/doesn't exist/)).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Try again" }));
-  await screen.findByRole("heading", { name: "Utkal Watches" });
+  await screen.findByRole("heading", { name: "Utkal Watch" });
   expect(rpc).toHaveBeenCalledTimes(2);
   expect(rpc).toHaveBeenNthCalledWith(2, "get_storefront_shell", { _slug: "utkalwatches" });
 });

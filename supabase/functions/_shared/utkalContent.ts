@@ -5,8 +5,8 @@ export function isUtkalContentStore(store: { id?: string | null; slug?: string |
 }
 export const UTKAL_STATUS = "Men's and women's watches online in India. Cash on delivery; dispatch from our Rajkot store.";
 export const UTKAL_QUALITY_TERMS = "Product features and specifications may vary by model. These are 1:1 inspired watches.";
-export const UTKAL_HOME_HEADING = "Utkal Watches — Men's & Women's Watches Online in India";
-export const UTKAL_SHOP_TITLE = "Shop Men's & Women's Watches Online | Utkal Watches";
+export const UTKAL_HOME_HEADING = "Utkal Watch — Men's & Women's Watches Online in India";
+export const UTKAL_SHOP_TITLE = "Shop Men's & Women's Watches Online | Utkal Watch";
 export const UTKAL_SHOP_INTRO = "Compare listed prices and product photos across the full catalogue, then open a watch for its available details. " + UTKAL_STATUS;
 const INTRODUCTIONS: Record<string, string> = {
   "men-s-watch": "Browse watches for men, compare listed prices and photos, then open a watch for its details.",

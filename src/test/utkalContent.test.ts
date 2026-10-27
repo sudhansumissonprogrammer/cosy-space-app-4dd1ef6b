@@ -12,18 +12,18 @@ describe("factual Utkal content boundaries", () => {
     expect(utkalCollectionIntroduction({ id: UTKAL_STORE_ID }, "hublot-new")).toBeUndefined();
   });
   it("recognizes the obsolete generated price and delivery campaign only", () => {
-    expect(isLegacyUtkalSnippet("Analog watch for men at ₹1,650 on Utkal Watches. Cash on Delivery and fast delivery across India. Ideal for daily wear and gifting.")).toBe(true);
+    expect(isLegacyUtkalSnippet("Analog watch for men at ₹1,650 on Utkal Watch. Cash on Delivery and fast delivery across India. Ideal for daily wear and gifting.")).toBe(true);
     expect(isLegacyUtkalSnippet("A merchant-approved watch description.")).toBe(false);
   });
   it("drops obsolete assertions without inventing watch functions", () => {
-    const product = { name: "Listed Watch", meta_description: "Analog watch for men with chronograph at ₹1,650 on Utkal Watches. Cash on Delivery and fast delivery across India. Ideal for daily wear and gifting." };
-    const result = productSearchDescription(product, "Utkal Watches");
+    const product = { name: "Listed Watch", meta_description: "Analog watch for men with chronograph at ₹1,650 on Utkal Watch. Cash on Delivery and fast delivery across India. Ideal for daily wear and gifting." };
+    const result = productSearchDescription(product, "Utkal Watch");
     expect(result).not.toContain("₹1,650");
     expect(result).not.toContain("chronograph");
     expect(result).not.toContain("fast delivery");
   });
   it("preserves a separately approved product metadata override", () => {
-    expect(productSearchDescription({ name: "Watch", meta_description: "Merchant-approved individual description" }, "Utkal Watches")).toBe("Merchant-approved individual description");
+    expect(productSearchDescription({ name: "Watch", meta_description: "Merchant-approved individual description" }, "Utkal Watch")).toBe("Merchant-approved individual description");
   });
   it("keeps shared storefront introductions compact", () => {
     expect(UTKAL_STATUS.length).toBeLessThanOrEqual(110);

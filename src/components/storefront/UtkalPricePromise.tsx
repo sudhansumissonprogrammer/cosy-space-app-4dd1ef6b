@@ -47,7 +47,7 @@ export default function UtkalPricePromise() {
   return (
     <>
       <section
-        aria-label="Utkal Watches lowest price guarantee"
+        aria-label="Utkal Watch lowest price guarantee"
         className="mb-3 overflow-hidden border"
         style={{
           borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 16%, transparent)",
