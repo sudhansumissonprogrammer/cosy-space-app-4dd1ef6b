@@ -31,3 +31,13 @@
 
 ## Owner-managed rollout
 Publish frontend so production Shop All requests explicitly select newest order. Deploy `docs/cloudflare-worker-current.js` so every default Worker product request follows the same Utkal recency contract. Category sorting is already applied in Lovable Cloud; cached category payloads may take time to refresh.
+
+## Live recheck at 06:09–06:11 UTC
+- The repaired 06:00 catalogue run imported 155 watches and 221 photos, linked one legacy row, advanced the men's backfill cursor from 483 to 523, and purged the storefront cache. Zero listing errors and no retry page: the duplicate-SKU blocker is no longer holding that run.
+- New supplier arrivals dated 05:21 appeared in the 06:00 import and at the top of the real preview Shop All page. Men's, women's, luxury and Sale public category responses have no recency inversions in their first 50 rows.
+- The 06:05 stock run verified 150/150 Utkal targets, detected one real stockout, hid it and successfully purged caches. Public product lookup for that exact watch returns `{product:null}`.
+- The 06:10 run was throttled: eight verified, 22 failed lookups, remaining batch skipped. This is a real supplier-rate limitation, not an all-clear. Unknown quantities were not converted into stockouts.
+- Snapshot: 7,842 total entries; 6,072 visible; 7,448 supplier-linked watches, of which 5,678 available and 1,770 hidden sold-out. Supplier available by section: men's 5,233; women's 336; luxury 109.
+- All six owner-stock Sale Hublots remain active, positive-stock and merchant-managed after scheduled stock updates.
+- Stockout propagation verified with a real change. Restock visibility passed logic tests, but no real supplier restock occurred in the observed runs. Full supplier equality is still unverified; batches and throttling mean a full stock sweep takes hours, not five minutes.
+- Newest page of each watch section runs every 15 minutes. Deeper new arrivals and failed women's/luxury detail fetches can wait for a later section rotation; no immediate delivery guarantee is established.
