@@ -192,8 +192,10 @@ export function clearChunkLoadRecoveryState() {
   }
   try {
     const url = new URL(window.location.href);
-    if (url.searchParams.has("__r")) {
+    if (["__r", "__sb_heal", "__sh"].some((key) => url.searchParams.has(key))) {
       url.searchParams.delete("__r");
+      url.searchParams.delete("__sb_heal");
+      url.searchParams.delete("__sh");
       const nextSearch = url.searchParams.toString();
       const nextUrl = `${url.pathname}${nextSearch ? `?${nextSearch}` : ""}${url.hash}`;
       window.history.replaceState(window.history.state, "", nextUrl);

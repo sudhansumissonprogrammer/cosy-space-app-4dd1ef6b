@@ -38,36 +38,52 @@
         } catch (_) {}
       })();
     </script>
-    <!-- ─── Stale-shell self-heal ───
-         When a new deploy lands, the Cloudflare Worker may still serve a
-         previously cached HTML shell that references a JS bundle hash that
-         no longer exists at origin (404/503). React never mounts → blank
-         "loading" screen (the exact serdiyajewellers.shop incident).
-         This guard catches the failed <script> for the main entry chunk,
-         calls the browser-safe shell-heal endpoint, then hard-reloads ONCE.
-         A sessionStorage flag prevents infinite loops if the asset really is
-         gone for an unrelated reason. -->
-    <script>
+    <!-- One boot guard: slow downloads never reload; confirmed entry asset
+         failures get at most one recovery, even with storage blocked. -->
+    <script data-sb-boot-guard>
       (function(){
-        try{
-          var FLAG='__sb_shell_healed__';
-          window.addEventListener('error', function(e){
-            var t = e && e.target;
-            if (!t || t.tagName !== 'SCRIPT') return;
-            var src = (t.src || '') + '';
-            if (!/\/assets\/(index|main)-[A-Za-z0-9_-]+\.js(\?|$)/.test(src)) return;
-            if (sessionStorage.getItem(FLAG)) return;
-            sessionStorage.setItem(FLAG, '1');
-            var host = location.hostname;
-            var done = function(){
-              location.replace(location.pathname + (location.search ? location.search + '&' : '?') + '__sh=' + Date.now() + location.hash);
-            };
-            try {
-              fetch('/api/shell-broken?r=entry-asset&domain=' + encodeURIComponent(host), { method:'POST', cache:'no-store', keepalive:true })
-                .then(done, done);
-            } catch(_) { done(); }
-          }, true);
-        }catch(_){}
+        var recovering = false;
+        var K = 'sb_boot_heal';
+        function attempted(){
+          var url = new URL(location.href);
+          if (url.searchParams.has('__sb_heal') || url.searchParams.has('__sh') || url.searchParams.has('__r')) return true;
+          try { if (Number(sessionStorage.getItem(K)) > 0 || sessionStorage.getItem('__sb_shell_healed__')) return true; } catch(_){}
+          try { if (/(?:^|;\s*)sb_boot_recovery=1(?:;|$)/.test(document.cookie)) return true; } catch(_){}
+          return false;
+        }
+        window.__sbBootOk = function(){
+          try { sessionStorage.removeItem(K); sessionStorage.removeItem('__sb_shell_healed__'); } catch(_){}
+          try {
+            var url = new URL(location.href);
+            var dirty = url.searchParams.has('__sb_heal') || url.searchParams.has('__sh');
+            url.searchParams.delete('__sb_heal'); url.searchParams.delete('__sh');
+            if (dirty) history.replaceState(history.state, '', url.pathname + url.search + url.hash);
+          } catch(_){}
+        };
+        window.addEventListener('error', function(e){
+          if (recovering || window.__APP_BOOTED__ || attempted()) return;
+          var t = e && e.target;
+          if (!t || (t.tagName !== 'SCRIPT' && !(t.tagName === 'LINK' && t.rel === 'stylesheet'))) return;
+          var src = t.src || t.href || '';
+          if (!/\/assets\/[^/?]+\.(js|css)(?:\?|$)/.test(src)) return;
+          recovering = true;
+          try { sessionStorage.setItem(K, '1'); } catch(_){}
+          try { document.cookie = 'sb_boot_recovery=1; Path=/; Max-Age=600; SameSite=Lax'; } catch(_){}
+          var navigated = false;
+          var timer;
+          function go(){
+            if (navigated || window.__APP_BOOTED__) return;
+            navigated = true;
+            clearTimeout(timer);
+            var url = new URL(location.href);
+            url.searchParams.set('__sb_heal', String(Date.now()) + '-1');
+            location.replace(url.toString());
+          }
+          timer = setTimeout(go, 1500);
+          try {
+            fetch('/api/shell-broken?r=entry-asset', { method:'POST', cache:'no-store', keepalive:true }).then(go, go);
+          } catch(_) { go(); }
+        }, true);
       })();
     </script>
     <!-- v8.67.0 BAN-FIX P1-1: Strip __sh=<timestamp> cache-buster from URL
@@ -1313,53 +1329,6 @@
           var twI=document.querySelector('meta[name="twitter:image"]');if(twI)twI.setAttribute('content','');
           var fav=document.querySelector('link[rel="icon"]');if(fav)fav.setAttribute('href','');
         }
-      })();
-    </script>
-    <!-- BOOT GUARD (2026-08-22 incident): if a cached HTML shell points at a
-         build hash that no longer exists, the entry bundle 404/503s and the
-         page stays blank with zero JS running. This guard is plain inline JS,
-         so it always runs: it asks the edge to drop its stale shell, then
-         hard-reloads with a cache-buster. Max 2 attempts per session. -->
-    <script>
-      (function () {
-        var K = 'sb_boot_heal';
-        function attempts() { try { return parseInt(sessionStorage.getItem(K) || '0', 10) || 0; } catch (e) { return 99; } }
-        var healing = false;
-        // Dev/preview sandboxes (Vite HMR on lovableproject.com) cold-start
-        // slowly and legitimately take >12s — the timeout heal there is a
-        // false positive that reloads a perfectly healthy page. Asset-404
-        // healing still applies everywhere.
-        var isDevPreview = /(^|\.)lovableproject\.com$/.test(location.hostname) || location.hostname === 'localhost';
-        function heal(reason) {
-          if (healing || window.__APP_BOOTED__) return;
-          if (reason === 'timeout' && isDevPreview) return;
-
-          var n = attempts();
-          if (n >= 2) return;
-          healing = true;
-          try { sessionStorage.setItem(K, String(n + 1)); } catch (e) {}
-          var go = function () {
-            var u = new URL(window.location.href);
-            u.searchParams.set('__sb_heal', String(Date.now()));
-            window.location.replace(u.toString());
-          };
-          try {
-            fetch('/api/shell-broken?r=' + encodeURIComponent(reason), { method: 'POST', cache: 'no-store', keepalive: true })
-              .then(go, go);
-          } catch (e) { go(); }
-          setTimeout(go, 1500);
-        }
-        // 1) Entry script / stylesheet failed to load.
-        window.addEventListener('error', function (e) {
-          var t = e && e.target;
-          if (!t || t === window) return;
-          var src = t.src || t.href || '';
-          if (/\/assets\/[^/]+\.(js|css)$/.test(src)) heal('asset');
-        }, true);
-        // 2) Nothing booted within 12s (blank screen) — reload once.
-        setTimeout(function () { if (!window.__APP_BOOTED__) heal('timeout'); }, 12000);
-        // Successful boot clears the counter.
-        window.__sbBootOk = function () { try { sessionStorage.removeItem(K); } catch (e) {} };
       })();
     </script>
     <script type="module" src="/src/main.tsx"></script>
