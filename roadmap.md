@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Recheck Utkal scheduled new-watch imports, real stockout propagation, restock safety and own Sale Hublot protection after the 06:00 repair run.
 - [x] Correct Utkal newest-first catalogue rules: 74 category API checks, three real pages, 18 tests, deployed category RPCs/edge repairs; snapshot 7,687 total, 7,298 supplier-linked, 5,636 supplier-available and 1,662 hidden stockouts. Preserve independent Sale/custom sections. Audit: docs/UTKAL-CATALOGUE-SYNC-2026-10-27.md.
 - [ ] Utkal catalogue rollout: owner publishes frontend/deploys Worker; exhaustive supplier equality remains rate-limited/unverified. Observe next scheduled import after duplicate-SKU repair before claiming complete restored coverage.
 - [x] Restore Utkal's six original sticker artworks, contact actions and FAQ layout hidden by the Oct 26 blanket gate; qualify model-specific claims, preserve unrelated stores and retired award removal. Real PDP contact dialog/FAQ and mobile/desktop artwork verified through hosted asset forwarding (localhost lacks the asset endpoint); 11 tests pass, build OK. Catalogue, sync and checkout unchanged; publication remains owner-controlled.
