@@ -62,7 +62,7 @@ export function cityAlias(city: string): string {
 
 export function cityPageH1(store: StoreLike, city: string): string {
   return isUtkalContentStore(store)
-    ? `Watches in ${city} — Utkal Watches`
+    ? `Watches in ${city} — Utkal Watch`
     : `${store.name} in ${city}`;
 }
 
@@ -77,7 +77,7 @@ export function cityPageDescription(store: StoreLike, loc: StoreLocationRecord):
   if (isUtkalContentStore(store)) {
     const where = loc.location_type === "main_store" && loc.address_line
       ? `Visit the main store at ${loc.address_line} or order online.`
-      : `Utkal Watches delivers to ${city} from its Rajkot store with cash on delivery.`;
+      : `Utkal Watch delivers to ${city} from its Rajkot store with cash on delivery.`;
     return `Shop men's and women's watches in ${city}. ${where} ${UTKAL_STATUS}`;
   }
   return loc.location_type === "main_store" && loc.address_line
@@ -112,11 +112,11 @@ export function cityIntroParagraph(store: StoreLike, loc: StoreLocationRecord): 
 
   if (isUtkalContentStore(store)) {
     if (loc.location_type === "main_store" && loc.address_line) {
-      return `Utkal Watches' main store is at ${loc.address_line}${hours ? ` — ${hours.replace(/^Open/, "open")}` : ""}. ` +
+      return `Utkal Watch's main store is at ${loc.address_line}${hours ? ` — ${hours.replace(/^Open/, "open")}` : ""}. ` +
         `Walk-ins welcome. ` +
         UTKAL_STATUS;
     }
-    return `Utkal Watches is an online store delivering to ${cityText}. ` +
+    return `Utkal Watch is an online store delivering to ${cityText}. ` +
       `Browse the catalogue and order online. ` +
       UTKAL_STATUS;
   }
@@ -178,7 +178,7 @@ export function cityFaqItems(
   if (utkal) {
     items.push({
       q: "Are these genuine brand watches?",
-      a: "Utkal Watches sells 1:1 inspired watches.",
+      a: "Utkal Watch sells 1:1 inspired watches.",
     });
   }
 
@@ -199,7 +199,7 @@ export function directoryDescription(store: StoreLike, locations: StoreLocationR
   const main = locations.find((l) => l.location_type === "main_store");
   const cityCount = locations.length;
   if (isUtkalContentStore(store)) {
-    return `Utkal Watches delivers watches across ${cityCount} cities in India` +
+    return `Utkal Watch delivers watches across ${cityCount} cities in India` +
       (main ? `, with its main store in ${main.city}` : "") +
       `. Find your city for delivery details.`;
   }

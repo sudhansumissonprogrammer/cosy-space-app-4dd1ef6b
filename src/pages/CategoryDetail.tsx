@@ -38,7 +38,7 @@ const importBrandCarousels = () => import("@/components/storefront/BrandCarousel
 const LazyBrandCarousels = lazy(importBrandCarousels);
 const LazySearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
 const BRAND_CAROUSEL_CATEGORIES: Record<string, string[]> = {
-  "ab19143d-87a9-490e-90b7-837313522782": ["sale"], // Utkal Watches
+  "ab19143d-87a9-490e-90b7-837313522782": ["sale"], // Utkal Watch
 };
 
 /**
@@ -92,7 +92,7 @@ export default function CategoryDetail() {
   const isMenuStyle = cardStyle === "style-4";
 
 
-  // Utkal Watches / Hopknock: no category strip, no sort-filter bar.
+  // Utkal Watch / Hopknock: no category strip, no sort-filter bar.
   const hideFilters = hidesCategoryFilters({ id: store.id, slug: store.slug });
 
   // Brand-grouped carousels instead of a flat grid (opt-in store + category).

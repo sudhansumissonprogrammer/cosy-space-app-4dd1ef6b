@@ -1,6 +1,6 @@
 /**
  * BrandCarouselGroups — brand-grouped horizontal carousels for a single
- * category page (Utkal Watches → /category/sale).
+ * category page (Utkal Watch → /category/sale).
  *
  * Perf notes:
  *  - No embla / autoplay / extra deps: plain CSS scroll-snap row. Zero JS on

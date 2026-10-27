@@ -12,7 +12,7 @@ import {
   type StoreLocationRecord,
 } from "@/lib/storeLocations";
 
-const UTKAL = { id: "ab19143d-87a9-490e-90b7-837313522782", slug: "utkalwatches", name: "Utkal Watches" };
+const UTKAL = { id: "ab19143d-87a9-490e-90b7-837313522782", slug: "utkalwatches", name: "Utkal Watch" };
 const GENERIC = { id: "00000000-0000-0000-0000-0000000000aa", slug: "acme", name: "Acme Store" };
 
 const DAILY_HOURS = {
@@ -42,8 +42,8 @@ const RAJKOT = loc({
 
 describe("city page metadata", () => {
   it("uses plain watch wording for Utkal", () => {
-    expect(cityPageH1(UTKAL, "Mumbai")).toBe("Watches in Mumbai — Utkal Watches");
-    expect(cityPageTitle(UTKAL, "Mumbai")).toBe("Buy Watches Online in Mumbai | Utkal Watches");
+    expect(cityPageH1(UTKAL, "Mumbai")).toBe("Watches in Mumbai — Utkal Watch");
+    expect(cityPageTitle(UTKAL, "Mumbai")).toBe("Buy Watches Online in Mumbai | Utkal Watch");
   });
 
   it("uses neutral wording for generic stores (no replica terms)", () => {

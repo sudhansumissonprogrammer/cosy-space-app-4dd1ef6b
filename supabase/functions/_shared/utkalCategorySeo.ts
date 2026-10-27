@@ -47,7 +47,7 @@ export function utkalCategoryIntro(cat: SeoCategory, titles: string[]): string |
   if (a.dials.length) facts.push(`${list(a.dials.slice(0, 3))} dials`);
   if (a.straps.length) facts.push(`${list(a.straps)} straps`);
   const look = facts.length ? ` Choose from ${list(facts)}.` : "";
-  return `Browse ${brand}-style watches for ${who} at Utkal Watches.${look} COD available across India; dispatch from our Rajkot store.`;
+  return `Browse ${brand}-style watches for ${who} at Utkal Watch.${look} COD available across India; dispatch from our Rajkot store.`;
 }
 
 export function utkalCategoryFaq(cat: SeoCategory): FaqItem[] {
@@ -58,7 +58,7 @@ export function utkalCategoryFaq(cat: SeoCategory): FaqItem[] {
   return [
     { question: `Are these genuine ${brand} watches?`, answer: `These are 1:1 inspired ${brand}-style watches.` },
     { question: `Can I pay cash on delivery for ${label}?`, answer: "Yes. Cash on delivery is available on orders across India." },
-    { question: "Where are orders dispatched from?", answer: "Orders dispatch from the Utkal Watches store in Rajkot, Gujarat." },
+    { question: "Where are orders dispatched from?", answer: "Orders dispatch from the Utkal Watch store in Rajkot, Gujarat." },
     { question: "How do I check a watch's details?", answer: "Open the product page to see its photos, current price and available description. Movement, functions and materials can vary by model, so confirm them for the individual watch." },
   ];
 }

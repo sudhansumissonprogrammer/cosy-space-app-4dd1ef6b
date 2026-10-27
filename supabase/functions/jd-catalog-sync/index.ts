@@ -118,7 +118,7 @@ interface ListItem {
   deepPage?: number;
 }
 
-/** Utkal Watches mirrors only the supplier's watch sections (men 10, women 11, luxury 12). */
+/** Utkal Watch mirrors only the supplier's watch sections (men 10, women 11, luxury 12). */
 const WATCH_STORE_SUBS: Record<string, { primary: number; extra: number[] }> = {
   utkalwatches: { primary: 10, extra: [11, 12] },
 };

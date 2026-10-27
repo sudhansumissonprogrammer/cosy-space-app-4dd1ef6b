@@ -120,6 +120,13 @@
       "when": 1793122663836,
       "tag": "0016_cover_manual_watch_brand_links",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793127641296,
+      "tag": "0017_products_store_category_normalized_index",
+      "breakpoints": true
     }
   ]
 }
