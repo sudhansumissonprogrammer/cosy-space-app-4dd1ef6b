@@ -29,9 +29,29 @@ const BRANDS: { key: string; label: string; match: (n: string) => boolean }[] = 
   { key: "rado", label: "Rado", match: (n) => n.includes("rado") || n.includes("raddo") },
   { key: "fossil", label: "Fossil", match: (n) => n.includes("fossil") || n.includes("fossiil") },
   { key: "hublot", label: "Hublot", match: (n) => n.includes("hublot") || n.includes("hublo") },
+  { key: "rolex", label: "Rolex", match: (n) => n.includes("rolex") },
+  { key: "patek-philippe", label: "Patek Philippe", match: (n) => n.includes("patekphil") },
+  { key: "audemars-piguet", label: "Audemars Piguet", match: (n) => n.includes("audemarspiguet") },
+  { key: "cartier", label: "Cartier", match: (n) => n.includes("cartier") },
 ];
 
 const normalize = (s: string) => (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+export function groupSaleProductsByBrand(products: any[]) {
+  const used = new Set<string>();
+  const out: { key: string; label: string; items: any[] }[] = [];
+  for (const brand of BRANDS) {
+    const items = products.filter((p) => {
+      if (used.has(p.id) || !brand.match(normalize(p.name))) return false;
+      used.add(p.id);
+      return true;
+    });
+    if (items.length) out.push({ key: brand.key, label: brand.label, items });
+  }
+  const rest = products.filter((p) => !used.has(p.id));
+  if (rest.length) out.push({ key: "more", label: "More Watches", items: rest });
+  return out;
+}
 
 interface BrandRailProps extends Props {
   group: { key: string; label: string; items: any[] };
@@ -92,16 +112,14 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle }: BrandRailProps
       </div>
 
       <div
-        className={`brand-rail -mx-3 grid grid-flow-col ${
-          group.items.length > 2 ? "grid-rows-2" : "grid-rows-1"
-        } auto-rows-fr auto-cols-[44%] snap-x snap-mandatory gap-x-2 gap-y-3 overflow-x-auto scroll-px-3 px-3 pb-1 scrollbar-hide sm:mx-0 sm:auto-cols-[31%] sm:gap-x-4 sm:px-0 sm:scroll-px-0 md:auto-cols-[23.5%] lg:auto-cols-[19%]`}
+        className="brand-rail -mx-3 grid grid-flow-col grid-rows-2 auto-rows-fr auto-cols-[44%] snap-x snap-mandatory gap-x-2 gap-y-3 overflow-x-auto scroll-px-3 px-3 pb-1 scrollbar-hide sm:mx-0 sm:auto-cols-[31%] sm:gap-x-4 sm:px-0 sm:scroll-px-0 md:auto-cols-[23.5%] lg:auto-cols-[19%]"
         style={{
           overscrollBehaviorX: "contain",
           WebkitOverflowScrolling: "touch",
           // Reserve space only while a below-fold rail is deferred. Keeping a
           // fixed 620px height after cards mount stretches the two grid rows
           // and creates a large blank band between them on mobile.
-          minHeight: isNearViewport ? undefined : group.items.length > 2 ? 620 : 300,
+          minHeight: isNearViewport ? undefined : 620,
         }}
         onScroll={(event) => {
           if (!hasMore) return;
@@ -128,25 +146,7 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle }: BrandRailProps
 }
 
 export default function BrandCarouselGroups({ products, slug, store, cardStyle = "style-1" }: Props) {
-  const groups = useMemo(() => {
-    const used = new Set<string>();
-    const out: { key: string; label: string; items: any[] }[] = [];
-
-    for (const brand of BRANDS) {
-      const items = products.filter((p) => {
-        if (used.has(p.id)) return false;
-        const n = normalize(p.name);
-        if (!brand.match(n)) return false;
-        used.add(p.id);
-        return true;
-      });
-      if (items.length) out.push({ key: brand.key, label: brand.label, items });
-    }
-
-    const rest = products.filter((p) => !used.has(p.id));
-    if (rest.length) out.push({ key: "more", label: "More Watches", items: rest });
-    return out;
-  }, [products]);
+  const groups = useMemo(() => groupSaleProductsByBrand(products), [products]);
 
   if (groups.length === 0) return null;
 

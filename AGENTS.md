@@ -1,4 +1,5 @@
 # Project architecture decisions
+- Utkal Sale retains lazy two-row title-brand rails and additive membership, preserving supplier identity and bounded photo activation.
 - Storefront shell load errors remain distinct from confirmed missing stores and retry the same query without navigation; preserve registered tenant slugs and use custom domains in shared links, because temporary failures must not imply deleted stores or break existing integrations.
 - Utkal missing watch brand memberships use the service-only title matcher and additive repair RPC before the legacy JD organizer; never overwrite existing merchant category links or infer a brand from generic titles, because imports must repair spelling aliases without changing inventory or manual merchandising.
 - Inline boot recovery has one asset-error-only guard and one navigation budget carried by URL/storage/cookie; never reload on a boot timeout, and clean recovery markers on successful boot without touching shopper parameters, because slow networks and blocked storage must not create refresh loops.
