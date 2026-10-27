@@ -6708,6 +6708,11 @@ export type Database = {
         Returns: undefined
       }
       unaccent: { Args: { "": string }; Returns: string }
+      utkal_repair_watch_brand_links: {
+        Args: { _store_id: string }
+        Returns: Json
+      }
+      utkal_watch_title_brand: { Args: { _name: string }; Returns: string }
       validate_store_coupon: {
         Args: { _code: string; _store_id: string }
         Returns: {

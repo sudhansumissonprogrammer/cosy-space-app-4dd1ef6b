@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Audit Utkal watch brand memberships and add missing clear brand matches without removing existing links or changing stock.
 - [x] Corrected Utkal Hindi homepage wording with an immediate reviewed translation overriding stale saved wording; real preview verified Hindi heading and English restoration, seven language tests pass, build OK. Frontend publication required.
 - [x] Shrunk the floating language control to a 59x26 pill and added a small close cross; closing leaves only a 24x24 globe dot that restores it, so language stays reachable. Two component tests pass, build OK, real Utkal preview checked (close, restore, Hindi switch, no page errors). Frontend publication required for live stores.
 
