@@ -193,7 +193,7 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle }: BrandRailProps
           <button
             type="button"
             onClick={() => scrollByPage(1)}
-            className="flex shrink-0 items-center gap-1 rounded-full border border-current/20 px-2.5 py-1 text-[11px] font-medium"
+            className="flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium"
             style={{ color: textColor, borderColor: "color-mix(in srgb, currentColor 22%, transparent)" }}
             aria-label={`See more ${group.label} watches`}
           >
