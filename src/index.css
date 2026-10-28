@@ -1476,6 +1476,36 @@ html.sf-storefront body {
 
 /* Brand rail swipe hints: round arrow over the peeking card, a nudging chevron
    in the header chip, and a one-time card nudge. Transform/opacity only. */
+.sale-brand-section {
+  --sale-ink: var(--storefront-text, hsl(var(--foreground)));
+  --sale-accent: var(--storefront-primary, hsl(var(--primary)));
+  --sale-rule: color-mix(in srgb, var(--sale-ink) 15%, transparent);
+  color: var(--sale-ink);
+}
+.sale-brand-heading {
+  border-bottom: 1px solid var(--sale-rule);
+  padding-bottom: 8px;
+  position: relative;
+}
+.sale-brand-heading::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 2px;
+  width: 36px;
+  height: 3px;
+  background: var(--sale-accent);
+}
+.sale-brand-title {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  letter-spacing: 0;
+  line-height: 1.25;
+}
+.sale-brand-browse { color: var(--sale-ink); }
+.sale-brand-browse:hover { background: transparent; color: var(--sale-accent); }
+.sale-brand-progress { background: var(--sale-rule); }
+.sale-brand-progress-thumb { background: var(--sale-accent); width: 30%; }
 .brand-rail-btn {
   display: flex; align-items: center; justify-content: center;
   width: 36px; height: 36px; border-radius: 9999px;

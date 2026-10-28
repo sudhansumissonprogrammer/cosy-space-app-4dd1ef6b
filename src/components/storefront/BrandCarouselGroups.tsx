@@ -13,6 +13,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import UniversalProductCard from "./UniversalProductCard";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
@@ -205,29 +206,28 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle, cardHeight, onCa
     rail.scrollTo({ left: Math.max(0, (current + dir * cols) * step), behavior: "smooth" });
   };
 
-  const textColor = "var(--storefront-text, hsl(var(--foreground)))";
   const showIndicators = isNearViewport && totalCols > 2;
 
   return (
-    <section ref={sectionRef}>
-      <div className="mb-2 flex items-center justify-between gap-2 px-0.5">
-        <h2 className="text-[15px] sm:text-lg font-semibold tracking-tight" style={{ color: textColor }}>
+    <section ref={sectionRef} className="sale-brand-section" aria-labelledby={`sale-brand-${group.key}`}>
+      <div className="sale-brand-heading mb-3 flex items-center justify-between gap-2 px-0.5">
+        <h2 id={`sale-brand-${group.key}`} className="sale-brand-title text-base sm:text-xl font-semibold">
           {group.label}
         </h2>
         {totalCols > 2 ? (
-          <button
+          <Button
+            variant="ghost"
             type="button"
             onClick={() => scrollByPage(1)}
-            className="flex h-7 shrink-0 items-center gap-1 rounded-full border px-2.5 text-[11px] font-medium"
-            style={{ color: textColor, borderColor: "color-mix(in srgb, currentColor 22%, transparent)" }}
+            className="sale-brand-browse h-8 shrink-0 gap-1 rounded-none px-0 text-[11px] font-medium"
             aria-label={`See more ${group.label} watches`}
           >
             <span className="opacity-70">{group.items.length} watches</span>
             <span className="font-semibold">· Swipe</span>
             <ChevronRight className="brand-rail-arrow-hint h-3.5 w-3.5" aria-hidden />
-          </button>
+          </Button>
         ) : (
-          <span className="flex h-7 items-center text-[11px] opacity-60" style={{ color: textColor }}>
+          <span className="flex h-8 shrink-0 items-center text-[11px] opacity-60">
             {group.items.length} {group.items.length === 1 ? "watch" : "watches"}
           </span>
         )}
@@ -282,30 +282,32 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle, cardHeight, onCa
         </div>
 
         {showIndicators && !atStart && (
-          <button
+          <Button
+            variant="ghost"
             type="button"
             onClick={() => scrollByPage(-1)}
             className="brand-rail-btn absolute left-1.5 top-[28%] z-[2] -translate-y-1/2"
             aria-label={`Previous ${group.label} watches`}
           >
             <ChevronLeft className="h-5 w-5" aria-hidden />
-          </button>
+          </Button>
         )}
         {showIndicators && !atEnd && (
-          <button
+          <Button
+            variant="ghost"
             type="button"
             onClick={() => scrollByPage(1)}
             className="brand-rail-btn brand-rail-btn-pulse absolute right-1.5 top-[28%] z-[2] -translate-y-1/2"
             aria-label={`More ${group.label} watches`}
           >
             <ChevronRight className="h-5 w-5" aria-hidden />
-          </button>
+          </Button>
         )}
       </div>
 
       {totalCols > 2 && (
-        <div className="mx-auto mt-2 h-[3px] w-24 overflow-hidden rounded-full" style={{ background: "color-mix(in srgb, " + textColor + " 14%, transparent)" }} aria-hidden>
-          <div ref={thumbRef} className="h-full rounded-full transition-transform duration-150 ease-out" style={{ background: textColor, width: "30%" }} />
+        <div className="sale-brand-progress mt-3 h-1 overflow-hidden rounded-full" aria-hidden>
+          <div ref={thumbRef} className="sale-brand-progress-thumb h-full rounded-full transition-transform duration-150 ease-out" />
         </div>
       )}
     </section>
@@ -331,7 +333,7 @@ export default function BrandCarouselGroups({ products, slug, store, cardStyle =
   if (groups.length === 0) return null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {groups.map((group, gi) => (
         <BrandRail
           key={group.key}
