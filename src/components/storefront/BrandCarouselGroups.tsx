@@ -223,7 +223,7 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle }: BrandRailProps
           onTouchStart={() => {
             touchedRef.current = true;
           }}
-          onAnimationEnd={() => setNudge(false)}
+          onAnimationEnd={(e) => { if (e.animationName === "brand-rail-nudge") setNudge(false); }}
           onScroll={(event) => {
             const rail = event.currentTarget;
             if (hasMore && rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - rail.clientWidth * 0.75) revealMore();
