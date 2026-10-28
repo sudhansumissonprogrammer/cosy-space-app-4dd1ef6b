@@ -1511,7 +1511,10 @@ html.sf-scrolling .brand-rail-btn-pulse { animation-play-state: paused; }
   --sf-gauge-line: color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 26%, transparent);
   --sf-gauge-track: color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 13%, transparent);
   display: flex; align-items: center;
-  margin: 16px 0 2px;
+  /* 22px above the rule, and the parent's 24px section gap falls below it, so
+     the divider sits evenly between the row it closes and the next brand. */
+  margin: 22px 0 0;
+
 }
 .brand-rail-gauge-rule { flex: 1 1 0; height: 1px; }
 .brand-rail-gauge-rule-l { background: linear-gradient(to left, var(--sf-gauge-line), transparent 88%); }
