@@ -39,6 +39,11 @@ const BRANDS: { key: string; label: string; match: (n: string) => boolean }[] = 
 
 const normalize = (s: string) => (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 
+/** Owner-pinned watches shown first in their brand row. */
+const PINNED_FIRST = new Set<string>([
+  "e4205ba1-7edd-485a-9075-a156fbdd4254", // Fossil Machine Chronograph Gunmetal Brown
+]);
+
 export function groupSaleProductsByBrand(products: any[]) {
   const used = new Set<string>();
   const out: { key: string; label: string; items: any[] }[] = [];
@@ -48,8 +53,11 @@ export function groupSaleProductsByBrand(products: any[]) {
       used.add(p.id);
       return true;
     });
-    // Owner request: show each brand row in reverse of the loaded order.
-    if (items.length) out.push({ key: brand.key, label: brand.label, items: items.reverse() });
+    // Owner request: show each brand row in reverse of the loaded order,
+    // with owner-pinned watches first.
+    const ordered = items.reverse();
+    ordered.sort((a, b) => (PINNED_FIRST.has(b.id) ? 1 : 0) - (PINNED_FIRST.has(a.id) ? 1 : 0));
+    if (ordered.length) out.push({ key: brand.key, label: brand.label, items: ordered });
   }
   const rest = products.filter((p) => !used.has(p.id));
   if (rest.length) out.push({ key: "more", label: "More Watches", items: rest.reverse() });
