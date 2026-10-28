@@ -14,3 +14,11 @@ it("keeps Sale brand rails in first-seen order as later pages arrive", async () 
   // A brand discovered on a later page is appended below, never inserted above.
   expect(stableGroupOrder([{ key: "seiko" }, { key: "tissot" }, { key: "hublot" }, { key: "more" }], seen).map((g) => g.key)).toEqual(["seiko", "hublot", "tissot", "more"]);
 });
+it("opens Sale with Seiko, Hublot, Fossil, Rolex and Patek while preserving the rest", async () => {
+  const { stableGroupOrder } = await import("@/components/storefront/BrandCarouselGroups");
+  const keys = ["seiko", "fossil", "hublot", "rolex", "patek-philippe", "tissot", "audemars-piguet", "casio", "more"];
+  const groups = keys.map((key) => ({ key, items: [`${key}-second`, `${key}-first`] }));
+  const result = stableGroupOrder(groups, []);
+  expect(result.map((group) => group.key)).toEqual(["seiko", "hublot", "fossil", "rolex", "patek-philippe", "tissot", "audemars-piguet", "casio", "more"]);
+  for (const group of result) expect(group.items).toEqual([`${group.key}-second`, `${group.key}-first`]);
+});

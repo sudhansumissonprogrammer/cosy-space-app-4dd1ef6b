@@ -313,13 +313,17 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle, cardHeight, onCa
 }
 
 /**
- * Keep rails in first-seen order while later Sale pages arrive: brands found
- * later are appended (before "More Watches"), never inserted above rails the
- * shopper is already looking at. Older products only extend rails rightwards.
+ * Pin the owner's opening brands, then retain first-seen order for the rest.
+ * This only orders sections; product order and photo activation stay unchanged.
  */
+const OPENING_BRANDS = ["seiko", "hublot", "fossil", "rolex", "patek-philippe"];
 export function stableGroupOrder<T extends { key: string }>(groups: T[], seen: string[]): T[] {
   for (const g of groups) if (g.key !== "more" && !seen.includes(g.key)) seen.push(g.key);
-  const rank = (k: string) => (k === "more" ? Number.MAX_SAFE_INTEGER : seen.indexOf(k));
+  const rank = (k: string) => {
+    if (k === "more") return Number.MAX_SAFE_INTEGER;
+    const openingIndex = OPENING_BRANDS.indexOf(k);
+    return openingIndex >= 0 ? openingIndex : OPENING_BRANDS.length + seen.indexOf(k);
+  };
   return [...groups].sort((a, b) => rank(a.key) - rank(b.key));
 }
 
