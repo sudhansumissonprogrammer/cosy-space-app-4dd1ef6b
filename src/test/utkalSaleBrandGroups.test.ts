@@ -7,3 +7,10 @@ it("assigns supplied title spellings to the correct Sale brands exactly once", (
   expect(Object.fromEntries(groups.map((g) => [g.label, g.items.length]))).toEqual({ Rolex: 2, "Patek Philippe": 3, "Audemars Piguet": 1, Cartier: 1, "Seiko Trending": 1, Tissot: 1, Rado: 1, Fossil: 1, Hublot: 1 });
   expect(groups.flatMap((g) => g.items).map((p) => p.id).sort()).toEqual(titles.map((_, i) => String(i)).sort());
 });
+it("keeps Sale brand rails in first-seen order as later pages arrive", async () => {
+  const { stableGroupOrder } = await import("@/components/storefront/BrandCarouselGroups");
+  const seen: string[] = [];
+  expect(stableGroupOrder([{ key: "seiko" }, { key: "hublot" }, { key: "more" }], seen).map((g) => g.key)).toEqual(["seiko", "hublot", "more"]);
+  // A brand discovered on a later page is appended below, never inserted above.
+  expect(stableGroupOrder([{ key: "seiko" }, { key: "tissot" }, { key: "hublot" }, { key: "more" }], seen).map((g) => g.key)).toEqual(["seiko", "hublot", "tissot", "more"]);
+});
