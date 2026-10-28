@@ -1510,7 +1510,7 @@ html.sf-scrolling .brand-rail-btn-pulse { animation-play-state: paused; }
   --sf-gauge-b: var(--storefront-accent, var(--sf-gauge-a));
   --sf-gauge-line: color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 26%, transparent);
   --sf-gauge-track: color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 13%, transparent);
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center;
   margin: 16px 0 2px;
 }
 .brand-rail-gauge-rule { flex: 1 1 0; height: 1px; }
@@ -1518,9 +1518,13 @@ html.sf-scrolling .brand-rail-btn-pulse { animation-play-state: paused; }
 .brand-rail-gauge-rule-r { background: linear-gradient(to right, var(--sf-gauge-line), transparent 88%); }
 .brand-rail-gauge-track {
   position: relative; flex: 0 0 auto;
-  width: 96px; height: 3px; border-radius: 9999px;
+  width: 96px; height: 4px; border-radius: 9999px;
   background: var(--sf-gauge-track);
+  /* Overlap the hairlines by 6px each side so the whole thing reads as one rule
+     with a thicker middle, not three separate pieces. */
+  margin: 0 -6px;
 }
+
 .brand-rail-gauge-fill {
   position: absolute; top: 0; bottom: 0; left: 0; width: 30%;
   border-radius: 9999px;
