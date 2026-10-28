@@ -48,10 +48,11 @@ export function groupSaleProductsByBrand(products: any[]) {
       used.add(p.id);
       return true;
     });
-    if (items.length) out.push({ key: brand.key, label: brand.label, items });
+    // Owner request: show each brand row in reverse of the loaded order.
+    if (items.length) out.push({ key: brand.key, label: brand.label, items: items.reverse() });
   }
   const rest = products.filter((p) => !used.has(p.id));
-  if (rest.length) out.push({ key: "more", label: "More Watches", items: rest });
+  if (rest.length) out.push({ key: "more", label: "More Watches", items: rest.reverse() });
   return out;
 }
 
