@@ -1545,17 +1545,8 @@ html.sf-scrolling .brand-rail-btn-pulse { animation-play-state: paused; }
 
   transition: transform 150ms ease-out;
 }
-/* Knob centred on the fill's leading edge; the rail's scroll math keeps that
-   edge inside the track, so nothing is clipped. */
-.brand-rail-gauge-fill::after {
-  content: ""; position: absolute; top: 50%; right: 0;
-  width: 8px; height: 8px; border-radius: 9999px;
-  transform: translate(50%, -50%);
-  background: var(--storefront-bg, hsl(var(--background)));
-  border: 1.5px solid var(--sf-gauge-a);
-  box-shadow: 0 1px 3px hsl(var(--foreground) / 0.20);
-}
 /* Rails short enough to need no swipe get the same rule with a small diamond
+
    instead of the gauge, so every section ends the same way. */
 .brand-rail-gauge-ornament {
   flex: 0 0 auto; width: 5px; height: 5px; transform: rotate(45deg);
