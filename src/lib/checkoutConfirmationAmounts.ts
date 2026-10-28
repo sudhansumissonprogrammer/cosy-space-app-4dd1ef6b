@@ -15,7 +15,7 @@ export function checkoutConfirmationAmounts(input: ConfirmationInput) {
   return {
     discount,
     total,
-    dueOnDelivery: input.isPartial ? input.balanceDue : isCod ? total : 0,
-    paidNow: input.isPartial ? input.advancePaid : isCod ? 0 : total,
+    dueOnDelivery: isCod ? total : input.isPartial ? input.balanceDue : 0,
+    paidNow: isCod ? 0 : input.isPartial ? input.advancePaid : total,
   };
 }

@@ -10,6 +10,7 @@
 // store, and only if the store actually has COD enabled in payment_methods.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
+import { requiresCheckoutAdvance } from "../_shared/checkoutPaymentPolicy.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -72,7 +73,7 @@ Deno.serve(async (req) => {
         .single(),
       supabase
         .from("stores")
-        .select("partial_payment_enabled, partial_payment_value")
+        .select("id, partial_payment_enabled, partial_payment_value")
         .eq("id", store_id)
         .single(),
     ]);
@@ -86,7 +87,7 @@ Deno.serve(async (req) => {
     }
     // Advance-payment stores must collect the advance online — but only if an
     // online gateway actually exists to collect it.
-    if (hasOnline && store?.partial_payment_enabled && Number(store.partial_payment_value || 0) > 0) {
+    if (hasOnline && store && requiresCheckoutAdvance(store)) {
       return jsonRes({ error: "Advance payment is required for this store" }, 400);
     }
 
