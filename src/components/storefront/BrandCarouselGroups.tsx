@@ -58,6 +58,9 @@ export function groupSaleProductsByBrand(products: any[]) {
 interface BrandRailProps extends Props {
   group: { key: string; label: string; items: any[] };
   groupIndex: number;
+  /** Real card height measured by any mounted rail (0 until known). */
+  cardHeight: number;
+  onCardHeight: (h: number) => void;
 }
 
 /**
@@ -66,7 +69,7 @@ interface BrandRailProps extends Props {
  * downloads several screens early, which previously fetched the whole Sale
  * collection during the first load.
  */
-function BrandRail({ group, groupIndex, slug, store, cardStyle }: BrandRailProps) {
+function BrandRail({ group, groupIndex, slug, store, cardStyle, cardHeight, onCardHeight }: BrandRailProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const [isNearViewport, setIsNearViewport] = useState(groupIndex === 0);
   const [visibleCount, setVisibleCount] = useState(() =>
@@ -153,7 +156,10 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle }: BrandRailProps
     const observer = new ResizeObserver(() => {
       if (!first.classList.contains("prepared-product-card")) return;
       const h = Math.round(first.getBoundingClientRect().height);
-      if (h > 0) rail.style.setProperty("--brand-card-h", `${h}px`);
+      if (h > 0) {
+        rail.style.setProperty("--brand-card-h", `${h}px`);
+        onCardHeight(h);
+      }
     });
     observer.observe(first);
     return () => observer.disconnect();
@@ -236,7 +242,9 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle }: BrandRailProps
             // Reserve space only while a below-fold rail is deferred. Keeping a
             // fixed 620px height after cards mount stretches the two grid rows
             // and creates a large blank band between them on mobile.
-            minHeight: isNearViewport ? undefined : 620,
+            // Once a real card has been measured, reserve exactly two rows so
+            // mounting a rail never moves the rails below it.
+            minHeight: isNearViewport ? undefined : cardHeight > 0 ? (group.items.length > 1 ? cardHeight * 2 + 4 : cardHeight) + 4 : 620,
           }}
           onTouchStart={() => {
             touchedRef.current = true;
@@ -294,7 +302,7 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle }: BrandRailProps
         )}
       </div>
 
-      {showIndicators && (
+      {totalCols > 2 && (
         <div className="mx-auto mt-2 h-[3px] w-24 overflow-hidden rounded-full" style={{ background: "color-mix(in srgb, " + textColor + " 14%, transparent)" }} aria-hidden>
           <div ref={thumbRef} className="h-full rounded-full transition-transform duration-150 ease-out" style={{ background: textColor, width: "30%" }} />
         </div>
@@ -316,6 +324,7 @@ export function stableGroupOrder<T extends { key: string }>(groups: T[], seen: s
 
 export default function BrandCarouselGroups({ products, slug, store, cardStyle = "style-1" }: Props) {
   const seenOrder = useRef<string[]>([]);
+  const [cardHeight, setCardHeight] = useState(0);
   const groups = useMemo(() => stableGroupOrder(groupSaleProductsByBrand(products), seenOrder.current), [products]);
 
   if (groups.length === 0) return null;
@@ -331,6 +340,8 @@ export default function BrandCarouselGroups({ products, slug, store, cardStyle =
           slug={slug}
           store={store}
           cardStyle={cardStyle}
+          cardHeight={cardHeight}
+          onCardHeight={setCardHeight}
         />
       ))}
     </div>
