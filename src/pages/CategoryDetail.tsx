@@ -351,6 +351,17 @@ export default function CategoryDetail() {
     fetchNextPage();
   }, [useBrandCarousels, hasNextPage, isFetchingNextPage, productsLoading, fetchNextPage, pageCount]);
 
+  // Brand rails regroup and reverse as pages arrive, so the first watches
+  // would change under the shopper. Wait for the full Sale list (pages load
+  // back-to-back), with a short safety cap on slow networks.
+  const [brandWaitExpired, setBrandWaitExpired] = useState(false);
+  useEffect(() => {
+    if (!useBrandCarousels) return;
+    const t = window.setTimeout(() => setBrandWaitExpired(true), 4000);
+    return () => clearTimeout(t);
+  }, [useBrandCarousels, categorySlug]);
+  const brandRailsReady = !useBrandCarousels || !hasNextPage || brandWaitExpired;
+
   if (!categoryLoading && !category) {
     return (
       <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 py-6">
@@ -375,7 +386,7 @@ export default function CategoryDetail() {
 
   return (
     <div className={`mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 ${hideFilters ? "py-1" : "py-5"}`}>
-      <h1 className={utkalStore ? "py-2 text-lg font-semibold text-foreground" : "sr-only"}>{utkalStore && category ? utkalCategoryHeading(category) : <>{category?.name || "Category"} — {store.name}</>}</h1>
+      <h1 className={utkalStore ? "py-2 text-lg font-semibold text-foreground" : "sr-only"}>{utkalStore && category ? utkalCategoryHeading(category) : <>{category?.name || (categorySlug ? categorySlug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Category")}{utkalStore && !category ? "" : ` — ${store.name}`}</>}</h1>
       {utkalStore && category && page === 1 && (
         <div className="space-y-2 pb-3 text-sm leading-relaxed text-muted-foreground">
           {brandIntro && <p>{brandIntro}</p>}
@@ -454,6 +465,7 @@ export default function CategoryDetail() {
         ) : products.length > 0 ? (
           <>
             {useBrandCarousels ? (
+                !brandRailsReady ? <div className="min-h-[2200px] animate-pulse rounded-xl bg-muted/40" /> :
                 <Suspense fallback={<div className="min-h-[2200px]" />}>
                   <LazyBrandCarousels products={products} slug={slug || store.slug} store={store} cardStyle={cardStyle} />
                 </Suspense>
