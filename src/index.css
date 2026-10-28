@@ -1470,6 +1470,10 @@ html.sf-storefront body {
   contain-intrinsic-size: auto !important;
 }
 
+/* Not-yet-activated cards match the measured real card height so they never
+   stretch the rail and open a blank band under it. */
+.brand-rail .stagger-card:not(.prepared-product-card) { height: var(--brand-card-h, auto); overflow: hidden; }
+
 /* Brand rail swipe hints: round arrow over the peeking card, a nudging chevron
    in the header chip, and a one-time card nudge. Transform/opacity only. */
 .brand-rail-btn {

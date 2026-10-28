@@ -143,6 +143,22 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle }: BrandRailProps
 
   useEffect(() => () => cancelAnimationFrame(frameRef.current), []);
 
+  // Placeholder cards (not yet activated, further right) are taller than real
+  // cards; they set the shared row height and leave a blank band under the
+  // rail. Measure the first real card and size placeholders to match.
+  useEffect(() => {
+    const rail = railRef.current;
+    const first = rail?.children[0]?.children[0] as HTMLElement | undefined;
+    if (!rail || !first || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => {
+      if (!first.classList.contains("prepared-product-card")) return;
+      const h = Math.round(first.getBoundingClientRect().height);
+      if (h > 0) rail.style.setProperty("--brand-card-h", `${h}px`);
+    });
+    observer.observe(first);
+    return () => observer.disconnect();
+  }, [isNearViewport, visibleItems.length > 0]);
+
   // One gentle "there's more →" nudge the first time the rail is properly on
   // screen. Transform-only CSS animation on the cards, skipped once touched
   // and for shoppers who prefer reduced motion.
@@ -195,7 +211,7 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle }: BrandRailProps
           <button
             type="button"
             onClick={() => scrollByPage(1)}
-            className="flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium"
+            className="flex h-7 shrink-0 items-center gap-1 rounded-full border px-2.5 text-[11px] font-medium"
             style={{ color: textColor, borderColor: "color-mix(in srgb, currentColor 22%, transparent)" }}
             aria-label={`See more ${group.label} watches`}
           >
@@ -204,7 +220,7 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle }: BrandRailProps
             <ChevronRight className="brand-rail-arrow-hint h-3.5 w-3.5" aria-hidden />
           </button>
         ) : (
-          <span className="text-[11px] opacity-60" style={{ color: textColor }}>
+          <span className="flex h-7 items-center text-[11px] opacity-60" style={{ color: textColor }}>
             {group.items.length} {group.items.length === 1 ? "watch" : "watches"}
           </span>
         )}
@@ -287,8 +303,20 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle }: BrandRailProps
   );
 }
 
+/**
+ * Keep rails in first-seen order while later Sale pages arrive: brands found
+ * later are appended (before "More Watches"), never inserted above rails the
+ * shopper is already looking at. Older products only extend rails rightwards.
+ */
+export function stableGroupOrder<T extends { key: string }>(groups: T[], seen: string[]): T[] {
+  for (const g of groups) if (g.key !== "more" && !seen.includes(g.key)) seen.push(g.key);
+  const rank = (k: string) => (k === "more" ? Number.MAX_SAFE_INTEGER : seen.indexOf(k));
+  return [...groups].sort((a, b) => rank(a.key) - rank(b.key));
+}
+
 export default function BrandCarouselGroups({ products, slug, store, cardStyle = "style-1" }: Props) {
-  const groups = useMemo(() => groupSaleProductsByBrand(products), [products]);
+  const seenOrder = useRef<string[]>([]);
+  const groups = useMemo(() => stableGroupOrder(groupSaleProductsByBrand(products), seenOrder.current), [products]);
 
   if (groups.length === 0) return null;
 
