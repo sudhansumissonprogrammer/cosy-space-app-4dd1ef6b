@@ -1517,8 +1517,9 @@ html.sf-scrolling .brand-rail-btn-pulse { animation-play-state: paused; }
 
 }
 .brand-rail-gauge-rule { flex: 1 1 0; height: 1px; }
-.brand-rail-gauge-rule-l { background: linear-gradient(to left, var(--sf-gauge-line), transparent 88%); }
-.brand-rail-gauge-rule-r { background: linear-gradient(to right, var(--sf-gauge-line), transparent 88%); }
+.brand-rail-gauge-rule-l { background: linear-gradient(to left, var(--sf-gauge-line), transparent 96%); }
+.brand-rail-gauge-rule-r { background: linear-gradient(to right, var(--sf-gauge-line), transparent 96%); }
+
 .brand-rail-gauge-track {
   position: relative; flex: 0 0 auto;
   width: 96px; height: 3px; border-radius: 9999px;
