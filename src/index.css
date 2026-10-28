@@ -1510,7 +1510,7 @@ html.sf-scrolling .brand-rail-btn-pulse { animation-play-state: paused; }
   --sf-gauge-b: var(--storefront-accent, var(--sf-gauge-a));
   --sf-gauge-line: color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 26%, transparent);
   --sf-gauge-track: color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 13%, transparent);
-  display: flex; align-items: center; gap: 12px;
+  display: flex; align-items: center; gap: 8px;
   margin: 16px 0 2px;
 }
 .brand-rail-gauge-rule { flex: 1 1 0; height: 1px; }
@@ -1528,8 +1528,9 @@ html.sf-scrolling .brand-rail-btn-pulse { animation-play-state: paused; }
      black), so the sweep runs from a lightened brand tint up to the full
      colour instead of between the two. */
   background: linear-gradient(90deg,
-    color-mix(in srgb, var(--sf-gauge-a) 30%, transparent),
-    var(--sf-gauge-a) 70%, var(--sf-gauge-b));
+    color-mix(in srgb, var(--sf-gauge-a) 22%, transparent),
+    color-mix(in srgb, var(--sf-gauge-b) 66%, transparent));
+
   transition: transform 150ms ease-out;
 }
 /* Knob centred on the fill's leading edge; the rail's scroll math keeps that
