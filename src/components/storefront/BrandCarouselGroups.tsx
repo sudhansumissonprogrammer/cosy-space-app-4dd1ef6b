@@ -206,7 +206,8 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle, cardHeight, onCa
     rail.scrollTo({ left: Math.max(0, (current + dir * cols) * step), behavior: "smooth" });
   };
 
-  const showIndicators = isNearViewport && totalCols > 2;
+  const hasOverflow = totalCols > 2 && !(atStart && atEnd);
+  const showIndicators = isNearViewport && hasOverflow;
 
   return (
     <section ref={sectionRef} className="sale-brand-section" aria-labelledby={`sale-brand-${group.key}`}>
@@ -214,7 +215,7 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle, cardHeight, onCa
         <h2 id={`sale-brand-${group.key}`} className="sale-brand-title text-base sm:text-xl font-semibold">
           {group.label}
         </h2>
-        {totalCols > 2 ? (
+        {hasOverflow ? (
           <Button
             variant="ghost"
             type="button"
@@ -305,7 +306,7 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle, cardHeight, onCa
         )}
       </div>
 
-      {totalCols > 2 && (
+      {hasOverflow && (
         <div className="sale-brand-progress mt-3 h-1 overflow-hidden rounded-full" aria-hidden>
           <div ref={thumbRef} className="sale-brand-progress-thumb h-full rounded-full transition-transform duration-150 ease-out" />
         </div>
