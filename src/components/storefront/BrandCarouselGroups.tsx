@@ -112,7 +112,7 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle }: BrandRailProps
       </div>
 
       <div
-        className="brand-rail -mx-3 grid grid-flow-col grid-rows-2 auto-rows-fr auto-cols-[44%] snap-x snap-mandatory gap-x-2 gap-y-3 overflow-x-auto scroll-px-3 px-3 pb-1 scrollbar-hide sm:mx-0 sm:auto-cols-[31%] sm:gap-x-4 sm:px-0 sm:scroll-px-0 md:auto-cols-[23.5%] lg:auto-cols-[19%]"
+        className="brand-rail -mx-3 grid grid-flow-col grid-rows-1 items-start auto-cols-[49%] snap-x snap-mandatory gap-x-1 gap-y-1 overflow-x-auto scroll-px-2 px-2 pb-1 scrollbar-hide sm:mx-0 sm:auto-cols-[32.5%] sm:gap-x-1.5 sm:px-0 sm:scroll-px-0 md:auto-cols-[24.5%] lg:auto-cols-[19.6%]"
         style={{
           overscrollBehaviorX: "contain",
           WebkitOverflowScrolling: "touch",
@@ -127,17 +127,25 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle }: BrandRailProps
           if (rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - rail.clientWidth * 0.75) revealMore();
         }}
       >
-        {visibleItems.map((product, idx) => (
-          <div key={product.id} className="h-full snap-start">
-            <UniversalProductCard
-              product={product}
-              slug={slug}
-              store={store}
-              cardStyle={cardStyle}
-              index={idx}
-              priority={groupIndex === 0 && idx < 4}
-              deferOffscreen={false}
-            />
+        {/* Each column stacks its own two cards, so a taller card further along
+            the rail can never stretch a shared row and open a gap. */}
+        {Array.from({ length: Math.ceil(visibleItems.length / 2) }, (_, col) => (
+          <div key={visibleItems[col * 2].id} className="flex snap-start flex-col gap-1">
+            {visibleItems.slice(col * 2, col * 2 + 2).map((product, j) => {
+              const idx = col * 2 + j;
+              return (
+                <UniversalProductCard
+                  key={product.id}
+                  product={product}
+                  slug={slug}
+                  store={store}
+                  cardStyle={cardStyle}
+                  index={idx}
+                  priority={groupIndex === 0 && idx < 4}
+                  deferOffscreen={false}
+                />
+              );
+            })}
           </div>
         ))}
       </div>
