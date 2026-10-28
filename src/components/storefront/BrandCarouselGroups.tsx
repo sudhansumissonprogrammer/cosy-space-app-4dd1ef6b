@@ -127,17 +127,25 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle }: BrandRailProps
           if (rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - rail.clientWidth * 0.75) revealMore();
         }}
       >
-        {visibleItems.map((product, idx) => (
-          <div key={product.id} className="snap-start">
-            <UniversalProductCard
-              product={product}
-              slug={slug}
-              store={store}
-              cardStyle={cardStyle}
-              index={idx}
-              priority={groupIndex === 0 && idx < 4}
-              deferOffscreen={false}
-            />
+        {/* Each column stacks its own two cards, so a taller card further along
+            the rail can never stretch a shared row and open a gap. */}
+        {Array.from({ length: Math.ceil(visibleItems.length / 2) }, (_, col) => (
+          <div key={visibleItems[col * 2].id} className="row-span-2 flex snap-start flex-col gap-1">
+            {visibleItems.slice(col * 2, col * 2 + 2).map((product, j) => {
+              const idx = col * 2 + j;
+              return (
+                <UniversalProductCard
+                  key={product.id}
+                  product={product}
+                  slug={slug}
+                  store={store}
+                  cardStyle={cardStyle}
+                  index={idx}
+                  priority={groupIndex === 0 && idx < 4}
+                  deferOffscreen={false}
+                />
+              );
+            })}
           </div>
         ))}
       </div>
