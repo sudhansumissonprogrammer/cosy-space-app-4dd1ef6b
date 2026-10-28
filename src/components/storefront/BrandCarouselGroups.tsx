@@ -128,7 +128,7 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle }: BrandRailProps
         }}
       >
         {visibleItems.map((product, idx) => (
-          <div key={product.id} className="h-full snap-start">
+          <div key={product.id} className="snap-start">
             <UniversalProductCard
               product={product}
               slug={slug}
