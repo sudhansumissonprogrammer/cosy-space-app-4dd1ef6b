@@ -303,20 +303,11 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle, cardHeight, onCa
         )}
       </div>
 
-      {/* Section footer: two hairlines fading outward with the scroll gauge
-          (or a small diamond on short rails) riding in the middle. */}
-      <div className="brand-rail-gauge" aria-hidden>
-        <div className="brand-rail-gauge-rule brand-rail-gauge-rule-l" />
-        {totalCols > 2 ? (
-          <div className="brand-rail-gauge-track">
-            <div ref={thumbRef} className="brand-rail-gauge-fill" style={{ width: "30%" }} />
-          </div>
-        ) : (
-          <div className="brand-rail-gauge-ornament" />
-        )}
-        <div className="brand-rail-gauge-rule brand-rail-gauge-rule-r" />
-      </div>
-
+      {totalCols > 2 && (
+        <div className="mx-auto mt-2 h-[3px] w-24 overflow-hidden rounded-full" style={{ background: "color-mix(in srgb, " + textColor + " 14%, transparent)" }} aria-hidden>
+          <div ref={thumbRef} className="h-full rounded-full transition-transform duration-150 ease-out" style={{ background: textColor, width: "30%" }} />
+        </div>
+      )}
     </section>
   );
 }
