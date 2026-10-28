@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
+import { requiresCheckoutAdvance } from "../_shared/checkoutPaymentPolicy.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -533,8 +534,7 @@ Deno.serve(async (req) => {
     // storefront bundles and direct function calls cannot create full COD.
     if (
       order.payment_method === "cod" &&
-      store.partial_payment_enabled &&
-      Number(store.partial_payment_value || 0) > 0
+      requiresCheckoutAdvance(store)
     ) {
       return new Response(JSON.stringify({ error: "Advance payment is required for this store" }), {
         status: 400,

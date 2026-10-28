@@ -62,6 +62,8 @@ import { isKalingaStore } from "@/lib/kalingaStore";
 import { checkoutExitCoupon, KALINGA_EXIT_CODE } from "@/lib/checkoutExitCoupon";
 import { checkoutCashback } from "@/lib/checkoutCashback";
 import { kalingaCodPrepaidHint, kalingaUpiDeliveryHint } from "@/lib/kalingaCheckoutHints";
+import { utkalCodHint, utkalDeliveryHint } from "@/lib/utkalCheckoutHints";
+import { requiresCheckoutAdvance } from "../../supabase/functions/_shared/checkoutPaymentPolicy";
 
 type UpiApp = "gpay" | "phonepe" | "paytm" | "bhim" | "any";
 type PayMethod = "upi" | "gateway" | "cod";
@@ -692,7 +694,7 @@ export default function CheckoutV2Page() {
   const codAvailable = hasCod || (!hasOnline && paymentConfigLoaded);
   /** Kalinga-only display notes; null for every other store. */
   const upiDeliveryHint = kalingaUpiDeliveryHint(store);
-  const codPrepaidHint = kalingaCodPrepaidHint(store);
+  const codPrepaidHint = kalingaCodPrepaidHint(store) ?? utkalCodHint(store);
   const activeGateway: "razorpay" | "cashfree" | "payu" | null =
     hasRazorpay ? "razorpay" : hasCashfree ? "cashfree" : hasPayu ? "payu" : null;
   const gatewayLabel = activeGateway === "razorpay" ? "Razorpay" : activeGateway === "cashfree" ? "Cashfree" : "PayU";
@@ -1478,6 +1480,7 @@ export default function CheckoutV2Page() {
   // standalone full COD is never offered — regardless of gateway availability.
   const partialConfigured = partialEnabled && !!partialValue && Number(partialValue) > 0;
   const hasPartial = partialConfigured && hasOnline;
+  const advanceRequired = requiresCheckoutAdvance(store);
 
   const partialAdvanceTotal = useMemo(() => {
     if (!hasPartial) return total;
@@ -1505,6 +1508,7 @@ export default function CheckoutV2Page() {
   const [payMode, setPayModeState] = useState<"full" | "partial">("partial");
   const isPartialOrder = hasPartial && payMode === "partial";
   const effectiveMode: "full" | "partial" = isPartialOrder ? "partial" : "full";
+  const onlineDeliveryHint = utkalDeliveryHint(store, effectiveMode) ?? upiDeliveryHint;
   // Wrap setPayMode so a user-driven Partial↔Full toggle always resets the
   // mint-loop guards. Otherwise a shopper who typed their address (7-8 mints)
   // and then switches payment plan sees the UPI tiles stuck on "Updating
@@ -4261,7 +4265,7 @@ export default function CheckoutV2Page() {
     // Partial-payment stores collect the configured advance online and only
     // the remaining balance on delivery. Never allow a separate zero-advance
     // COD path, including from a stale tab that rendered older checkout code.
-    if (partialConfigured && hasOnline) {
+    if (advanceRequired && hasOnline) {
       toast.error("Please pay the advance to place this order");
       return;
     }
@@ -5520,6 +5524,7 @@ export default function CheckoutV2Page() {
                         Pay {formatPrice(partialAdvanceTotal, currency)} advance now
                       </div>
                       <div className="text-[10.5px] text-muted-foreground">Balance {formatPrice(partialBalanceDue, currency)} on delivery</div>
+                      {utkalDeliveryHint(store, "partial") && <div className="text-[10px] font-semibold text-success leading-tight mt-0.5">{utkalDeliveryHint(store, "partial")}</div>}
 
                     </div>
                   </div>
@@ -5547,6 +5552,7 @@ export default function CheckoutV2Page() {
                       <div className="text-[12px] font-semibold mt-0.5">
                         Pay full {formatPrice(prepaidTotalPreview, currency)} online
                       </div>
+                      {utkalDeliveryHint(store, "full") && <div className="text-[10px] font-semibold text-success leading-tight mt-0.5">{utkalDeliveryHint(store, "full")}</div>}
 
 
 
@@ -5740,8 +5746,8 @@ export default function CheckoutV2Page() {
                 </div>
                 <div className="text-right">
                   <div className="text-[15px] font-bold">{formatPrice(chargeAmount, currency)}</div>
-                  {upiDeliveryHint && (
-                    <div className="text-[10px] font-semibold text-emerald-700 leading-tight">{upiDeliveryHint}</div>
+                  {onlineDeliveryHint && (
+                    <div className="text-[10px] font-semibold text-success leading-tight max-w-[160px]">{onlineDeliveryHint}</div>
                   )}
                 </div>
               </div>
@@ -5797,8 +5803,8 @@ export default function CheckoutV2Page() {
                 </div>
                 <div className="text-right">
                   <div className="text-[15px] font-bold">{formatPrice(chargeAmount, currency)}</div>
-                  {upiDeliveryHint && (
-                    <div className="text-[10px] font-semibold text-emerald-700 leading-tight">{upiDeliveryHint}</div>
+                  {onlineDeliveryHint && (
+                    <div className="text-[10px] font-semibold text-success leading-tight max-w-[160px]">{onlineDeliveryHint}</div>
                   )}
                 </div>
               </div>
@@ -5975,7 +5981,7 @@ export default function CheckoutV2Page() {
               the configured online advance has been paid — unless the store has
               no online gateway at all, in which case COD is the only way to
               order and must always be offered. */}
-          {codAvailable && (!partialConfigured || !hasOnline) && (
+          {codAvailable && (!advanceRequired || !hasOnline) && (
             <button
               onClick={() => setCodConfirmOpen(true)}
               disabled={placingCod || confirmingPayment || creatingOrder || couponLoading || paymentAmountSyncing}
