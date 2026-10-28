@@ -112,7 +112,7 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle }: BrandRailProps
       </div>
 
       <div
-        className="brand-rail -mx-3 grid grid-flow-col grid-rows-2 auto-rows-fr auto-cols-[44%] snap-x snap-mandatory gap-x-2 gap-y-3 overflow-x-auto scroll-px-3 px-3 pb-1 scrollbar-hide sm:mx-0 sm:auto-cols-[31%] sm:gap-x-4 sm:px-0 sm:scroll-px-0 md:auto-cols-[23.5%] lg:auto-cols-[19%]"
+        className="brand-rail -mx-3 grid grid-flow-col [grid-template-rows:auto_auto] items-start auto-cols-[49%] snap-x snap-mandatory gap-x-1 gap-y-1 overflow-x-auto scroll-px-2 px-2 pb-1 scrollbar-hide sm:mx-0 sm:auto-cols-[32.5%] sm:gap-x-1.5 sm:px-0 sm:scroll-px-0 md:auto-cols-[24.5%] lg:auto-cols-[19.6%]"
         style={{
           overscrollBehaviorX: "contain",
           WebkitOverflowScrolling: "touch",
