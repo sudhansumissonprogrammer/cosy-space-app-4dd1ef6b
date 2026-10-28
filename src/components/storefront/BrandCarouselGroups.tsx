@@ -7,7 +7,7 @@
  *    scroll, so cold-load cost over the normal grid is ~0.
  *  - Rendered through React.lazy from CategoryDetail and only for the one
  *    store+category that opts in, so every other storefront ships nothing.
- *  - Mobile shows 2 cards + a clear peek of the third (45% basis), a pulsing
+ *  - Mobile shows 2 cards + a clear peek of the third (43% basis), a pulsing
  *    arrow, a "Swipe" header chip, a progress bar and a one-time nudge so the
  *    row reads as swipeable. All transform-only; no scroll-jacking.
  */
@@ -177,7 +177,9 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle }: BrandRailProps
     const step = colStep(rail);
     const cols = Math.max(1, Math.floor(rail.clientWidth / step));
     revealMore();
-    rail.scrollBy({ left: dir * cols * step, behavior: "smooth" });
+    // Land exactly on a column start so snap never pulls the row back.
+    const current = Math.round(rail.scrollLeft / step);
+    rail.scrollTo({ left: Math.max(0, (current + dir * cols) * step), behavior: "smooth" });
   };
 
   const textColor = "var(--storefront-text, hsl(var(--foreground)))";
@@ -211,7 +213,7 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle }: BrandRailProps
       <div className="relative -mx-3 sm:mx-0">
         <div
           ref={railRef}
-          className={`brand-rail grid grid-flow-col grid-rows-1 items-start auto-cols-[45%] snap-x snap-mandatory gap-x-1 overflow-x-auto scroll-pl-1.5 pl-1.5 pb-1 scrollbar-hide sm:auto-cols-[32.5%] sm:gap-x-1.5 sm:pl-0 sm:scroll-pl-0 md:auto-cols-[24.5%] lg:auto-cols-[19.6%]${nudge ? " brand-rail-nudge" : ""}`}
+          className={`brand-rail grid grid-flow-col grid-rows-1 items-start auto-cols-[43%] snap-x snap-mandatory gap-x-1 overflow-x-auto scroll-px-1.5 px-1.5 pb-1 scrollbar-hide sm:auto-cols-[32.5%] sm:gap-x-1.5 sm:px-0 sm:scroll-px-0 md:auto-cols-[24.5%] lg:auto-cols-[19.6%]${nudge ? " brand-rail-nudge" : ""}`}
           style={{
             overscrollBehaviorX: "contain",
             WebkitOverflowScrolling: "touch",
@@ -252,15 +254,13 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle }: BrandRailProps
               })}
             </div>
           ))}
-          {/* Trailing spacer so the last column can snap fully into view. */}
-          <div aria-hidden className="w-1.5 sm:w-0" />
         </div>
 
         {showIndicators && !atStart && (
           <button
             type="button"
             onClick={() => scrollByPage(-1)}
-            className="brand-rail-btn absolute left-1.5 top-1/2 z-[2] -translate-y-1/2"
+            className="brand-rail-btn absolute left-1.5 top-[28%] z-[2] -translate-y-1/2"
             aria-label={`Previous ${group.label} watches`}
           >
             <ChevronLeft className="h-5 w-5" aria-hidden />
@@ -270,7 +270,7 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle }: BrandRailProps
           <button
             type="button"
             onClick={() => scrollByPage(1)}
-            className="brand-rail-btn brand-rail-btn-pulse absolute right-1.5 top-1/2 z-[2] -translate-y-1/2"
+            className="brand-rail-btn brand-rail-btn-pulse absolute right-1.5 top-[28%] z-[2] -translate-y-1/2"
             aria-label={`More ${group.label} watches`}
           >
             <ChevronRight className="h-5 w-5" aria-hidden />
