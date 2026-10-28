@@ -112,7 +112,7 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle }: BrandRailProps
       </div>
 
       <div
-        className="brand-rail -mx-3 grid grid-flow-col [grid-template-rows:auto_auto] items-start auto-cols-[49%] snap-x snap-mandatory gap-x-1 gap-y-1 overflow-x-auto scroll-px-2 px-2 pb-1 scrollbar-hide sm:mx-0 sm:auto-cols-[32.5%] sm:gap-x-1.5 sm:px-0 sm:scroll-px-0 md:auto-cols-[24.5%] lg:auto-cols-[19.6%]"
+        className="brand-rail -mx-3 grid grid-flow-col grid-rows-1 items-start auto-cols-[49%] snap-x snap-mandatory gap-x-1 gap-y-1 overflow-x-auto scroll-px-2 px-2 pb-1 scrollbar-hide sm:mx-0 sm:auto-cols-[32.5%] sm:gap-x-1.5 sm:px-0 sm:scroll-px-0 md:auto-cols-[24.5%] lg:auto-cols-[19.6%]"
         style={{
           overscrollBehaviorX: "contain",
           WebkitOverflowScrolling: "touch",
@@ -130,7 +130,7 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle }: BrandRailProps
         {/* Each column stacks its own two cards, so a taller card further along
             the rail can never stretch a shared row and open a gap. */}
         {Array.from({ length: Math.ceil(visibleItems.length / 2) }, (_, col) => (
-          <div key={visibleItems[col * 2].id} className="row-span-2 flex snap-start flex-col gap-1">
+          <div key={visibleItems[col * 2].id} className="flex snap-start flex-col gap-1">
             {visibleItems.slice(col * 2, col * 2 + 2).map((product, j) => {
               const idx = col * 2 + j;
               return (
