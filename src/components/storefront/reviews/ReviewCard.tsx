@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Star, BadgeCheck, Play, Expand } from "lucide-react";
 import ReviewMediaLightbox from "./ReviewMediaLightbox";
+import PhotoOnlyReviewCard from "./PhotoOnlyReviewCard";
 import { formatReviewDate, type StoreReview } from "./reviewTypes";
 
 export function ReviewStars({
@@ -40,6 +41,8 @@ export default function ReviewCard({
   onOpenMedia?: (indexWithinReview: number) => void;
 }) {
   const [lightbox, setLightbox] = useState<number | null>(null);
+
+  if (review.photo_only) return <PhotoOnlyReviewCard review={review} onOpenMedia={onOpenMedia} />;
 
   const media = review.media || [];
   const hero = media[0];

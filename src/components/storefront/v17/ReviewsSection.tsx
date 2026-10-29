@@ -1,4 +1,5 @@
 import { useStoreReviews } from "@/hooks/useStoreReviews";
+import PhotoOnlyReviewCard from "@/components/storefront/reviews/PhotoOnlyReviewCard";
 
 const STAR_COLOR = "var(--v17-primary, #1B5E4B)";
 const STAR_EMPTY = "color-mix(in srgb, var(--v17-text, #1a1a1a) 20%, transparent)";
@@ -81,7 +82,7 @@ export default function ReviewsSection({ storeId }: { storeId: string }) {
         </p>
         <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide">
           {reviews.map((r, i) => (
-            <ReviewCard
+            r.photo_only ? <div key={r.id} className="w-[78%] max-w-[340px] shrink-0 snap-start"><PhotoOnlyReviewCard review={r} /></div> : <ReviewCard
               key={i}
               name={r.customer_name}
               text={r.review_text || "Great product!"}
