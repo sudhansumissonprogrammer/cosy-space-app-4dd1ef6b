@@ -8,10 +8,21 @@ import photo07 from "@/assets/reviews/utkal/07_1000498255.webp.asset.json";
 import photo08 from "@/assets/reviews/utkal/08_1000498253.webp.asset.json";
 import photo09 from "@/assets/reviews/utkal/09_1000498250.webp.asset.json";
 import photo10 from "@/assets/reviews/utkal/10_1000498249.webp.asset.json";
+import photo11 from "@/assets/reviews/utkal/01-1000498247.webp.asset.json";
+import photo12 from "@/assets/reviews/utkal/02-1000498246.webp.asset.json";
+import photo13 from "@/assets/reviews/utkal/03-1000498245.webp.asset.json";
+import photo14 from "@/assets/reviews/utkal/04-1000498243.webp.asset.json";
+import photo15 from "@/assets/reviews/utkal/05-1000498242.webp.asset.json";
+import photo16 from "@/assets/reviews/utkal/06-1000498241.webp.asset.json";
+import photo17 from "@/assets/reviews/utkal/07-1000498240.webp.asset.json";
+import photo18 from "@/assets/reviews/utkal/08-1000498239.webp.asset.json";
+import photo19 from "@/assets/reviews/utkal/09-1000498235.webp.asset.json";
+import photo20 from "@/assets/reviews/utkal/10-1000498236.webp.asset.json";
 import type { StoreReview } from "@/components/storefront/reviews/reviewTypes";
 
 const UTKAL_ID = "ab19143d-87a9-490e-90b7-837313522782";
-const photos = [photo01, photo02, photo03, photo04, photo05, photo06, photo07, photo08, photo09, photo10];
+const photos = [photo01, photo02, photo03, photo04, photo05, photo06, photo07, photo08, photo09, photo10,
+  photo11, photo12, photo13, photo14, photo15, photo16, photo17, photo18, photo19, photo20];
 
 /** Merchant-supplied, unrated store photos; never used in rating aggregates. */
 export function utkalPhotoReviews(storeId?: string): StoreReview[] {
