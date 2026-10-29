@@ -3,12 +3,13 @@ import { utkalPhotoReviews } from "./utkalPhotoReviews";
 import { ratingBreakdown } from "@/components/storefront/reviews/reviewTypes";
 
 describe("Utkal merchant photo reviews", () => {
-  it("retains the first ten and adds ten more unnamed, unrated photos only to Utkal", () => {
+  it("retains the first twenty and adds ten more unnamed, unrated photos only to Utkal", () => {
     const photos = utkalPhotoReviews("ab19143d-87a9-490e-90b7-837313522782");
-    expect(photos).toHaveLength(20);
-    expect(new Set(photos.map(r => r.media[0]?.url)).size).toBe(20);
+    expect(photos).toHaveLength(30);
+    expect(new Set(photos.map(r => r.media[0]?.url)).size).toBe(30);
     expect(photos[0].media[0].url).toContain("01_1000498261");
     expect(photos[10].media[0].url).toContain("01-1000498247");
+    expect(photos[20].media[0].url).toContain("01-1000498272_utkalwatch");
     expect(photos.every(r => r.customer_name === "" && r.rating === 0 && r.photo_only && r.media.length === 1)).toBe(true);
     expect(utkalPhotoReviews("another-store")).toEqual([]);
   });
