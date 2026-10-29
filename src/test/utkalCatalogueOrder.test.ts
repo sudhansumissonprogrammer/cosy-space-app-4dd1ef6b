@@ -39,10 +39,17 @@ describe("Utkal catalogue rules", () => {
   it("hides a verified supplier stockout", () => {
     expect(jdStockVisibility(UTKAL_CATALOGUE_STORE_ID, 0, false)).toEqual({ stock_quantity: 0, is_active: false });
   });
-  it("shows a watch again after verified restock", () => {
-    expect(jdStockVisibility(UTKAL_CATALOGUE_STORE_ID, 1, false)).toEqual({ stock_quantity: 1, is_active: true });
+  it("shows a watch again after verified restock with full stock", () => {
+    expect(jdStockVisibility(UTKAL_CATALOGUE_STORE_ID, 1, false)).toEqual({ stock_quantity: 999999, is_active: true });
   });
   it("hides supplier delistings even if quantity is positive", () => {
     expect(jdStockVisibility(UTKAL_CATALOGUE_STORE_ID, 3, true)).toEqual({ stock_quantity: 0, is_active: false });
+  });
+  it("gives new Utkal imports full stock only when the supplier has stock", () => {
+    expect(jdStockQuantity(UTKAL_CATALOGUE_STORE_ID, 1)).toBe(999999);
+    expect(jdStockQuantity(UTKAL_CATALOGUE_STORE_ID, 0)).toBe(0);
+  });
+  it("keeps other stores on the supplier's real quantity", () => {
+    expect(jdStockVisibility("another-store", 3, false)).toEqual({ stock_quantity: 3, is_active: true });
   });
 });
