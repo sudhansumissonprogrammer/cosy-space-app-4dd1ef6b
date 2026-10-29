@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { applyCatalogueOrder, catalogueSort, UTKAL_CATALOGUE_STORE_ID } from "../../supabase/functions/_shared/catalogueOrder";
-import { jdStockVisibility } from "../../supabase/functions/_shared/jdStockVisibility";
+import { jdStockQuantity, jdStockVisibility } from "../../supabase/functions/_shared/jdStockVisibility";
 import { uniqueSupplierItems } from "../../supabase/functions/_shared/jdImportIdentity";
 
 describe("Utkal catalogue rules", () => {
