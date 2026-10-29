@@ -1,4 +1,5 @@
 # Roadmap
+- [x] Utkal Sale: uploaded banner converted to pixel-identical lossless WebP (19.6% smaller), placed flush under header; separate introductory/related text hidden without empty space. Existing brand/product rails preserved; desktop/mobile checked using local asset forwarding. Frontend publication required.
 - [x] Utkal-only WhatsApp Bulk Campaigns tab: upload list, pick approved template, send, live sent/delivered/read/failed results; one-number test sent OK. Publish required.
 - [x] Added four complete unique photos from fourth batch, compressed about 92%; thirty existing retained, thirty-four total. Six tests/build pass; new photos and opening one verified with hosted asset forwarding. Skipped byte-identical fourth photo and incomplete second upload; publish required.
 - [ ] Complete photo 02_1000498228_utkalwatch.png awaits a non-truncated reupload; current resend still lacks lower half.
