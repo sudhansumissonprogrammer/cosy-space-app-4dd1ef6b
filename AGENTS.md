@@ -7,7 +7,7 @@
 - Inline boot recovery has one asset-error-only guard and one navigation budget carried by URL/storage/cookie; never reload on a boot timeout, and clean recovery markers on successful boot without touching shopper parameters, because slow networks and blocked storage must not create refresh loops.
 - Utkal catalogue pages use identity-scoped supplier recency before merchandising; app/edge share catalogueOrder, category RPCs order before paging, and Worker mirrors it, because sorting only a loaded page cannot establish catalogue-wide order.
 - Utkal buying context is a store-identity-scoped shared public content contract for app and edge rendering; only the exact legacy generated snippet campaign is bypassed, preserving separate merchant overrides and never deriving technical watch facts.
-- Merchant PDP visual sections retain their existing store-scoped slot routing during content audits; address copy concerns individually rather than disabling the entire section, because blanket suppression removes unrelated merchant controls and artwork.
+- Preserve store-scoped PDP slots during audits; fix individual copy, never suppress merchant sections.
 - Shared discovery-fact validation governs public stock and feed-required facts; both existing feed endpoints page visible tenant products and fail on query errors, because unknown inventory, guessed attributes and truncated catalogues must not be presented as verified merchant data.
 - Product search metadata uses the shared neutral description/parent-price helper across app and edge renderers; Worker mirrors that contract, resolves PDP identities from the product and omits missing facts, because search/share representations must not contradict shopper data or invent commercial claims.
 - Static platform JSON-LD in index.html is authoritative for the landing page; do not mount duplicate client schemas or unsupported ratings/search actions. Store and Product hooks use distinct script identities so lifecycle cleanup cannot remove another entity.
@@ -50,7 +50,7 @@
 
 - Resolve Kalinga public content and store-only features through its shared helper; known IDs override legacy slugs to prevent stale identity and cross-store overrides.
 - Kalinga’s separate lazy carousel shares teaser cache; opt-in glass cards preserve the independent popup and animated teaser.
-- Reviews use owner routes with admin fallback; errors are not empty lists.
+- Reviews use owner routes with admin fallback; preserve errors. Merchant photo collections join the shared feed by exact store ID, omit invented names/stars and stay outside rating aggregates.
 
 - Validate exit coupons independently; replace only smaller discounts and hide competing sheets to prevent overlap.
 - Store-gated cashback display is separate from charges to keep badges consistent.
