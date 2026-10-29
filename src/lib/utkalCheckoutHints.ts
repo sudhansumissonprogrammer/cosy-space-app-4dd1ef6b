@@ -31,3 +31,9 @@ export const UTKAL_COD_CONFIRM_NOTE = [
 export function utkalCodConfirmNote(store: StoreRef): string[] | null {
   return isUtkalContentStore(store) ? UTKAL_COD_CONFIRM_NOTE : null;
 }
+
+/** Display-only review count label. Utkal Watch shows "300+" because most of
+ * its customer reviews live on WhatsApp/Instagram, not in the uploaded set. */
+export function reviewCountLabel(storeId: string | null | undefined, total: number): string {
+  return isUtkalContentStore({ id: storeId ?? null }) ? "300+" : String(total);
+}

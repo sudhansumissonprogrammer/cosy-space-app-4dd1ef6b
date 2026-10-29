@@ -1,3 +1,4 @@
+import { reviewCountLabel } from "@/lib/utkalCheckoutHints";
 import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -101,7 +102,7 @@ export default function CustomerReviews({
                 <Star key={i} className={`h-5 w-5 ${i < Math.floor(avgRating) ? "fill-foreground text-foreground" : i < avgRating ? "fill-foreground/50 text-foreground" : "text-muted-foreground/30"}`} />
               ))}
             </div>
-            <p className="text-sm text-muted-foreground mb-4">Based on {totalCount} reviews</p>
+            <p className="text-sm text-muted-foreground mb-4">Based on {reviewCountLabel(storeId, totalCount)} reviews</p>
 
             <button
               onClick={() => setShowForm(!showForm)}
@@ -230,7 +231,7 @@ export default function CustomerReviews({
 
           {totalCount > 12 && (
             <Link to={storefrontPath(storeSlug, "reviews")} className="mt-3 inline-block text-sm font-semibold text-primary hover:underline">
-              View all {totalCount} reviews →
+              View all {reviewCountLabel(storeId, totalCount)} reviews →
             </Link>
           )}
         </div>

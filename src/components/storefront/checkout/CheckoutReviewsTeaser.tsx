@@ -1,3 +1,4 @@
+import { reviewCountLabel } from "@/lib/utkalCheckoutHints";
 /**
  * Tiny "real customer photos" strip for the checkout payment step.
  *
@@ -161,7 +162,7 @@ export default function CheckoutReviewsTeaser({
           </span>
           <span className="mt-0.5 flex items-center gap-1 text-[10px] text-muted-foreground">
             <ReviewStars rating={average} className="h-3 w-3" activeClassName="fill-warning text-warning" />
-            <span>{total} reviews</span>
+            <span>{reviewCountLabel(storeId, total)} reviews</span>
           </span>
         </span>
         <span className="flex shrink-0 items-center gap-1 text-[10px] font-bold text-foreground">View {modernReviews && <ChevronRight className="h-3.5 w-3.5" />}</span>
@@ -185,7 +186,7 @@ export default function CheckoutReviewsTeaser({
                 <div className="text-[16px] font-bold" style={{ fontFamily: "var(--review-heading-font, var(--storefront-heading-font, inherit))" }}>Customer reviews</div>
                 <div className="mt-0.5 flex items-center gap-1.5">
                   <ReviewStars rating={average} className="h-3.5 w-3.5" activeClassName="fill-warning text-warning" />
-                  <span className="text-xs text-muted-foreground">{total} reviews</span>
+                  <span className="text-xs text-muted-foreground">{reviewCountLabel(storeId, total)} reviews</span>
                 </div>
               </div>
               <Button
