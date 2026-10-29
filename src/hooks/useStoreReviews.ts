@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { utkalPhotoReviews } from "@/lib/utkalPhotoReviews";
 import {
   normalizeReview,
   ratingBreakdown,
@@ -52,7 +53,10 @@ export function useStoreReviews(storeId?: string, limit = 20) {
     refetchOnWindowFocus: false,
   });
 
-  const reviews = query.data?.reviews || [];
+  const reviews = useMemo(() => [
+    ...utkalPhotoReviews(storeId),
+    ...(query.data?.reviews || []),
+  ].slice(0, limit), [storeId, limit, query.data?.reviews]);
   const summary = useMemo(
     () => query.data?.summary || ratingBreakdown([]),
     [query.data?.summary],

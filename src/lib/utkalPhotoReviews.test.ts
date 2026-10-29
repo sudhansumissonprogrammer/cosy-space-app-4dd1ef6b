@@ -1,0 +1,19 @@
+import { describe, expect, it } from "vitest";
+import { utkalPhotoReviews } from "./utkalPhotoReviews";
+import { ratingBreakdown } from "@/components/storefront/reviews/reviewTypes";
+
+describe("Utkal merchant photo reviews", () => {
+  it("adds exactly ten unnamed, unrated photos only to Utkal", () => {
+    const photos = utkalPhotoReviews("ab19143d-87a9-490e-90b7-837313522782");
+    expect(photos).toHaveLength(10);
+    expect(photos.every(r => r.customer_name === "" && r.rating === 0 && r.photo_only && r.media.length === 1)).toBe(true);
+    expect(utkalPhotoReviews("another-store")).toEqual([]);
+  });
+  it("never adds unprovided ratings to the store average", () => {
+    const photos = utkalPhotoReviews("ab19143d-87a9-490e-90b7-837313522782");
+    expect(ratingBreakdown([...photos, { rating: 4 }])).toEqual({ counts: { 5: 0, 4: 1, 3: 0, 2: 0, 1: 0 }, total: 1, average: 4 });
+  });
+  it("does not claim verification before merchant confirmation", () => {
+    expect(utkalPhotoReviews("ab19143d-87a9-490e-90b7-837313522782").every(r => r.is_verified === false)).toBe(true);
+  });
+});

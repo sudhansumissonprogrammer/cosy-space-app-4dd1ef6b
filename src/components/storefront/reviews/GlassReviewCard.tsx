@@ -2,6 +2,7 @@ import { BadgeCheck, Expand, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LiquidGlass from "@/components/storefront/LiquidGlass";
 import { ReviewStars } from "./ReviewCard";
+import PhotoOnlyReviewCard from "./PhotoOnlyReviewCard";
 import { formatReviewDate, type StoreReview } from "./reviewTypes";
 import "@/styles/review-glass.css";
 
@@ -9,6 +10,7 @@ export default function GlassReviewCard({ review, onOpenMedia }: {
   review: StoreReview;
   onOpenMedia?: (index: number) => void;
 }) {
+  if (review.photo_only) return <PhotoOnlyReviewCard review={review} onOpenMedia={onOpenMedia} />;
   const hero = review.media[0];
   const name = review.customer_name?.trim() || "Customer";
   return (

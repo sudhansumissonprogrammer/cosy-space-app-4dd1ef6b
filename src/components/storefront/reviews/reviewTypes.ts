@@ -3,6 +3,8 @@ export interface StoreReview {
   product_id: string | null;
   customer_name: string;
   rating: number;
+  /** Unrated merchant photo, excluded from star scores and customer identity. */
+  photo_only?: boolean;
   title: string | null;
   review_text: string | null;
   is_verified: boolean;
@@ -44,7 +46,8 @@ export function ratingBreakdown(reviews: { rating: number }[]) {
   reviews.forEach((r) => {
     if (counts[r.rating] !== undefined) counts[r.rating]++;
   });
-  const total = reviews.length;
-  const average = total ? reviews.reduce((s, r) => s + r.rating, 0) / total : 0;
+  const rated = reviews.filter((r) => Number.isInteger(r.rating) && r.rating >= 1 && r.rating <= 5);
+  const total = rated.length;
+  const average = total ? rated.reduce((s, r) => s + r.rating, 0) / total : 0;
   return { counts, total, average };
 }
