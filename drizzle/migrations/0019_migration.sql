@@ -1,0 +1,1 @@
+UPDATE public.platform_config SET wa_queue_batch_size = 150, wa_tier_limit = 9500;

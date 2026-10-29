@@ -127,7 +127,10 @@ Deno.serve(async (req) => {
       (mt === "order_confirmation" && (s as any).send_order_confirmation === true) ||
       (mt === "order_shipped" && (s as any).send_order_shipped === true) ||
       (mt === "abandoned_cart" && (s as any).send_abandoned_cart === true) ||
-      ((mt === "cod_confirmation" || mt === "cod_confirm_followup") && (s as any).send_cod_confirmation === true);
+      ((mt === "cod_confirmation" || mt === "cod_confirm_followup") && (s as any).send_cod_confirmation === true) ||
+      // Campaigns are only enqueued by admin/owner-gated campaign functions;
+      // the store master switch above still applies.
+      mt === "campaign";
     if (!perEventOk) {
       return json({ skipped: true, reason: "event_toggle_off" });
     }

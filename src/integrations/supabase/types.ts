@@ -6745,6 +6745,10 @@ export type Database = {
         }[]
       }
       wa_campaign_precheck: { Args: { _campaign_id: string }; Returns: Json }
+      wa_campaign_upload_stats: {
+        Args: { _campaign_id: string }
+        Returns: Json
+      }
       wa_cancel_campaign: { Args: { _campaign_id: string }; Returns: Json }
       wa_clone_template: {
         Args: { _id: string; _new_language?: string; _new_name: string }

@@ -116,12 +116,14 @@ Deno.serve(async (req) => {
   // Skip any rows whose campaign was paused/cancelled while queued.
   const campaignIds = Array.from(new Set(((claimed as any[]) ?? []).map((r) => r.campaign_id).filter(Boolean)));
   let blocked = new Set<string>();
+  let pausedCamps = new Set<string>();
   if (campaignIds.length) {
     const { data: camps } = await admin
       .from("platform_wa_campaigns")
       .select("id,status")
       .in("id", campaignIds);
     blocked = new Set(((camps as any[]) || []).filter((c) => c.status === "paused" || c.status === "cancelled").map((c) => c.id));
+    pausedCamps = new Set(((camps as any[]) || []).filter((c) => c.status === "paused").map((c) => c.id));
   }
 
   let sent = 0, retried = 0, failed = 0, skippedPaused = 0;
@@ -138,6 +140,14 @@ Deno.serve(async (req) => {
       await new Promise((r) => setTimeout(r, STAGGER_MS));
     }
     firstIter = false;
+    if (row.campaign_id && pausedCamps.has(row.campaign_id)) {
+      // Paused campaigns keep their messages waiting until resumed.
+      await admin.from("wa_send_queue").update({
+        status: "pending", locked_until: null, scheduled_at: new Date(Date.now() + 2 * 60_000).toISOString(),
+      } as any).eq("id", row.id);
+      skippedPaused++;
+      continue;
+    }
     if (row.campaign_id && blocked.has(row.campaign_id)) {
       await admin.from("wa_send_queue").update({
         status: "skipped", last_error: "campaign_paused_or_cancelled", locked_until: null,
