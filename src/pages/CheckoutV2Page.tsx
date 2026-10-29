@@ -62,7 +62,7 @@ import { isKalingaStore } from "@/lib/kalingaStore";
 import { checkoutExitCoupon, KALINGA_EXIT_CODE } from "@/lib/checkoutExitCoupon";
 import { checkoutCashback } from "@/lib/checkoutCashback";
 import { kalingaCodPrepaidHint, kalingaUpiDeliveryHint } from "@/lib/kalingaCheckoutHints";
-import { utkalCodHint, utkalDeliveryHint } from "@/lib/utkalCheckoutHints";
+import { utkalCodHint, utkalDeliveryHint, utkalPartialDiscount } from "@/lib/utkalCheckoutHints";
 import { requiresCheckoutAdvance } from "../../supabase/functions/_shared/checkoutPaymentPolicy";
 
 type UpiApp = "gpay" | "phonepe" | "paytm" | "bhim" | "any";
@@ -1503,7 +1503,10 @@ export default function CheckoutV2Page() {
 
   }, [checkoutItems, hasPartial, partialType, partialValue, subtotal, taxAmount, taxInclusive, shippingCharge, total]);
 
-  const partialBalanceDue = Math.max(0, total - partialAdvanceTotal);
+  // Utkal-only ₹50 partial discount comes out of the delivery balance (never
+  // the advance), mirroring coupon behaviour. Server recomputes in place-order.
+  const partialOff = hasPartial ? utkalPartialDiscount(store) : 0;
+  const partialBalanceDue = Math.max(0, total - partialAdvanceTotal - partialOff);
 
   const [payMode, setPayModeState] = useState<"full" | "partial">("partial");
   const isPartialOrder = hasPartial && payMode === "partial";
