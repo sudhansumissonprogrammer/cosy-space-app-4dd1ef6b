@@ -948,6 +948,15 @@ Deno.serve(async (req) => {
         advancePaid = Math.min(Number(order.total), Math.max(50, Math.round(raw)));
 
         balanceDue = Math.max(0, Number(order.total) - advancePaid);
+        // Utkal-only ₹50 partial discount: comes out of the delivery balance
+        // (never the advance), mirroring coupon behaviour. Client shows the
+        // same reduced balance; this server value is authoritative.
+        const partialOff = utkalPartialDiscount(store_id);
+        if (partialOff > 0) {
+          balanceDue = Math.max(0, balanceDue - partialOff);
+          const note = `Partial payment discount: -${partialOff.toFixed(2)}`;
+          order.notes = order.notes ? `${order.notes}\n${note}` : note;
+        }
       } else {
         // Store doesn't actually offer partial — downgrade to full instead of
         // silently stamping payment_type=partial with advance_paid=0.
