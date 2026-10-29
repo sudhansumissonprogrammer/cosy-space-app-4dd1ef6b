@@ -1,27 +1,39 @@
-import { useParams } from "react-router-dom";
+import { useOutletContext, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import CustomHtmlRenderer from "@/components/storefront/CustomHtmlRenderer";
+import { useMetaTags } from "@/hooks/useMetaTags";
+import type { StoreData } from "@/layouts/StorefrontLayout";
 
 export default function StorefrontCustomPage() {
+  const store = useOutletContext<StoreData>();
   const { pageSlug, slug } = useParams<{ pageSlug: string; slug?: string }>();
 
   // Resolve store id from slug or subdomain
-  const storeSlug = slug || (window as any).__STORE_SLUG__ || window.location.hostname.split(".")[0];
+  const storeSlug = store.slug || slug;
 
   const { data: page, isLoading } = useQuery({
     queryKey: ["storefront-custom-page", storeSlug, pageSlug],
     queryFn: async () => {
+      if (!pageSlug || !storeSlug) return null;
       const { data, error } = await (supabase as any).rpc("get_store_custom_page", {
         _store_slug: storeSlug,
-        _page_slug: pageSlug!,
+        _page_slug: pageSlug,
       });
       if (error) return null;
       const row = Array.isArray(data) ? data[0] ?? null : data ?? null;
       return row;
     },
     enabled: !!pageSlug && !!storeSlug,
+  });
+
+  useMetaTags({
+    enabled: !!page,
+    title: page ? `${page.title} — ${store.name}` : undefined,
+    storeSlug: store.slug,
+    customDomain: store.custom_domain,
+    canonicalPath: pageSlug ? `page/${pageSlug}` : undefined,
   });
 
   if (isLoading) {

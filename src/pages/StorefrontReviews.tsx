@@ -4,7 +4,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import { ArrowLeft, ImageIcon, Loader2 } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import ReviewCard, { ReviewStars } from "@/components/storefront/reviews/ReviewCard";
-import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { useMetaTags } from "@/hooks/useMetaTags";
 import { useStoreReviews } from "@/hooks/useStoreReviews";
 
 const ReviewMediaLightbox = lazy(() => import("@/components/storefront/reviews/ReviewMediaLightbox"));
@@ -18,7 +18,7 @@ export default function StorefrontReviews() {
   const [starFilter, setStarFilter] = useState<number | null>(null);
   const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
 
-  useDocumentTitle(`Customer Reviews — ${store?.name || "Store"}`);
+  useMetaTags({ title: `Customer Reviews — ${store.name}`, storeSlug: store.slug, customDomain: store.custom_domain, canonicalPath: "reviews" });
 
   const { reviews, counts, total, average, isLoading } = useStoreReviews(store?.id, 1000);
 
