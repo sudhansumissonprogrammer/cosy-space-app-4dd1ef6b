@@ -58,6 +58,7 @@ import { useAutoFreeGiftLine } from "@/hooks/useAutoFreeGiftLine";
 import CheckoutItemImage from "@/components/storefront/CheckoutItemImage";
 import { getFunctionErrorMessage } from "@/lib/functionError";
 import { checkoutConfirmationAmounts } from "@/lib/checkoutConfirmationAmounts";
+import { checkoutPartialAmounts } from "@/lib/checkoutPartialAmounts";
 import { isKalingaStore } from "@/lib/kalingaStore";
 import { checkoutExitCoupon, KALINGA_EXIT_CODE } from "@/lib/checkoutExitCoupon";
 import { checkoutCashback } from "@/lib/checkoutCashback";
@@ -1505,8 +1506,8 @@ export default function CheckoutV2Page() {
 
   // Utkal-only ₹50 partial discount comes out of the delivery balance (never
   // the advance), mirroring coupon behaviour. Server recomputes in place-order.
-  const partialOff = hasPartial ? utkalPartialDiscount(store) : 0;
-  const partialBalanceDue = Math.max(0, total - partialAdvanceTotal - partialOff);
+  const { discount: partialOff, total: partialTotal, balance: partialBalanceDue } =
+    checkoutPartialAmounts(total, partialAdvanceTotal, hasPartial ? utkalPartialDiscount(store) : 0);
 
   const [payMode, setPayModeState] = useState<"full" | "partial">("partial");
   const isPartialOrder = hasPartial && payMode === "partial";
@@ -4489,7 +4490,7 @@ export default function CheckoutV2Page() {
             )}
             {tyPrepaidDiscount > 0 && (
               <div className="flex items-center justify-between text-[13px]">
-                <span className="text-muted-foreground">Prepaid discount</span>
+                <span className="text-muted-foreground">{lastPaidMethodRef.current !== "cod" && isPartialOrder ? "Partial COD discount" : "Prepaid discount"}</span>
                 <span className="tabular-nums text-emerald-600">− {formatPrice(tyPrepaidDiscount, currency)}</span>
               </div>
             )}
@@ -4781,7 +4782,7 @@ export default function CheckoutV2Page() {
   // Keeps the "₹X saved so far" chip accurate as the shopper toggles plans.
   const savedAmount =
     (couponDiscount > 0 ? couponDiscount : 0) +
-    (!isPartialOrder && prepaidDiscount > 0 ? prepaidDiscount : 0);
+    (isPartialOrder ? partialOff : Math.max(0, prepaidDiscount));
   // Fixed anchor = the cart's value BEFORE any discount, matching the
   // Order Summary line items + shipping + tax. Prevents the strike-through
   // total from jumping when the shopper toggles Partial↔Full.
@@ -4789,7 +4790,7 @@ export default function CheckoutV2Page() {
     0,
     subtotal + (taxInclusive ? 0 : taxAmount) + shippingCharge,
   );
-  const finalTotal = isPartialOrder ? total : prepaidTotal;
+  const finalTotal = isPartialOrder ? partialTotal : prepaidTotal;
 
   return (
     <div
@@ -5002,9 +5003,15 @@ export default function CheckoutV2Page() {
                   )}
                   {isPartialOrder ? (
                     <>
+                      {partialOff > 0 && (
+                        <div className="flex justify-between text-[12px] font-semibold text-success pt-1 border-t border-border">
+                          <span>Partial COD discount</span>
+                          <span>−{formatPrice(partialOff, currency)}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between text-[13px] pt-2 border-t border-[#ECECEC]">
                         <span className="text-muted-foreground">Order total</span>
-                        <span className="tabular-nums">{formatPrice(total, currency)}</span>
+                        <span className="tabular-nums">{formatPrice(partialTotal, currency)}</span>
                       </div>
                       <div className="flex justify-between text-[14px] font-bold text-emerald-700">
                         <span>Advance now</span>
@@ -5628,9 +5635,15 @@ export default function CheckoutV2Page() {
                     </div>
                     {/* Numeric breakup */}
                     <div className="bg-white px-3.5 py-3 space-y-2">
+                      {partialOff > 0 && (
+                        <div className="flex items-center justify-between text-[12.5px] text-success">
+                          <span>Partial COD discount</span>
+                          <span className="font-semibold tabular-nums">−{formatPrice(partialOff, currency)}</span>
+                        </div>
+                      )}
                       <div className="flex items-center justify-between text-[12.5px]">
                         <span className="flex items-center gap-1.5 text-muted-foreground"><ShoppingCart className="h-3.5 w-3.5" /> Order total</span>
-                        <span className="font-semibold tabular-nums">{formatPrice(total, currency)}</span>
+                        <span className="font-semibold tabular-nums">{formatPrice(partialTotal, currency)}</span>
                       </div>
                       <div className="flex items-center justify-between text-[12.5px]">
                         <span className="flex items-center gap-1.5 text-emerald-700"><Wallet className="h-3.5 w-3.5" /> Advance now (online)</span>
@@ -5756,6 +5769,7 @@ export default function CheckoutV2Page() {
                 </div>
                 <div className="text-right">
                   <div className="text-[15px] font-bold">{formatPrice(chargeAmount, currency)}</div>
+                  {isPartialOrder && <div className="text-[10px] text-muted-foreground leading-tight max-w-[180px]">Balance {formatPrice(partialBalanceDue, currency)} on delivery</div>}
                   {onlineDeliveryHint && (
                     <div className="text-[10px] font-semibold text-success leading-tight max-w-[160px]">{onlineDeliveryHint}</div>
                   )}
@@ -5813,6 +5827,7 @@ export default function CheckoutV2Page() {
                 </div>
                 <div className="text-right">
                   <div className="text-[15px] font-bold">{formatPrice(chargeAmount, currency)}</div>
+                  {isPartialOrder && <div className="text-[10px] text-muted-foreground leading-tight max-w-[180px]">Balance {formatPrice(partialBalanceDue, currency)} on delivery</div>}
                   {onlineDeliveryHint && (
                     <div className="text-[10px] font-semibold text-success leading-tight max-w-[160px]">{onlineDeliveryHint}</div>
                   )}
@@ -5997,9 +6012,12 @@ export default function CheckoutV2Page() {
                   <div className="text-[11px] text-muted-foreground">Visa, Mastercard, RuPay, all major banks</div>
                 </div>
               </div>
-              <div className="flex items-center gap-1 text-[14px] font-bold">
-                {formatPrice(chargeAmount, currency)}
-                {openingGateway ? <Loader2 className="h-4 w-4 animate-spin ml-1" /> : <ArrowLeft className="h-4 w-4 rotate-180 text-muted-foreground ml-1" />}
+              <div className="text-right">
+                <div className="flex items-center justify-end gap-1 text-[14px] font-bold">
+                  {formatPrice(chargeAmount, currency)}
+                  {openingGateway ? <Loader2 className="h-4 w-4 animate-spin ml-1" /> : <ArrowLeft className="h-4 w-4 rotate-180 text-muted-foreground ml-1" />}
+                </div>
+                {isPartialOrder && <div className="text-[10px] text-muted-foreground leading-tight">Balance {formatPrice(partialBalanceDue, currency)} on delivery</div>}
               </div>
             </button>
           )}

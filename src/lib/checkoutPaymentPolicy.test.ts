@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { requiresCheckoutAdvance, utkalPartialDiscount } from "../../supabase/functions/_shared/checkoutPaymentPolicy";
 import { checkoutConfirmationAmounts } from "./checkoutConfirmationAmounts";
 import { utkalPartialDiscount as clientUtkalPartialDiscount } from "./utkalCheckoutHints";
+import { checkoutPartialAmounts } from "./checkoutPartialAmounts";
 
 describe("Utkal optional advance policy", () => {
   it("allows full COD alongside the configured ₹100 advance only at Utkal", () => {
@@ -28,6 +29,14 @@ describe("Utkal optional advance policy", () => {
   });
   it("the ₹50 partial discount reduces only the delivery balance, never the advance", () => {
     // ₹1,499 watch: ₹100 advance, balance ₹1,499 − ₹100 − ₹50 = ₹1,349.
-    expect(checkoutConfirmationAmounts({ paymentMethod: "payu", total: 1499, prepaidTotal: 1499, isPartial: true, advancePaid: 100, balanceDue: 1349 })).toEqual({ discount: 0, total: 1499, dueOnDelivery: 1349, paidNow: 100 });
+    expect(checkoutConfirmationAmounts({ paymentMethod: "payu", total: 1499, prepaidTotal: 1499, isPartial: true, advancePaid: 100, balanceDue: 1349 })).toEqual({ discount: 50, total: 1449, dueOnDelivery: 1349, paidNow: 100 });
+    expect(checkoutPartialAmounts(1499, 100, 50)).toEqual({ discount: 50, total: 1449, balance: 1349 });
+  });
+  it("retains other stores' configured advance and undiscounted delivery balance", () => {
+    expect(checkoutPartialAmounts(1499, 300, clientUtkalPartialDiscount({ id: "other-store" }))).toEqual({ discount: 0, total: 1499, balance: 1199 });
+  });
+  it("cannot advertise a discount larger than the remaining delivery balance", () => {
+    expect(checkoutPartialAmounts(120, 100, 50)).toEqual({ discount: 20, total: 100, balance: 0 });
+    expect(checkoutPartialAmounts(100, 100, 50)).toEqual({ discount: 0, total: 100, balance: 0 });
   });
 });
