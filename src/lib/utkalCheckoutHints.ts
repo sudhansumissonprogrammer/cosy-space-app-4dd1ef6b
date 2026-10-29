@@ -20,3 +20,14 @@ export const UTKAL_PARTIAL_DISCOUNT = 50;
 export function utkalPartialDiscount(store: StoreRef): number {
   return isUtkalContentStore(store) ? UTKAL_PARTIAL_DISCOUNT : 0;
 }
+/** Utkal-only founder note shown in the COD confirm sheet. */
+export const UTKAL_COD_CONFIRM_NOTE = [
+  "Hey! 👋 I'm Sudhansu, founder of Utkal Watch. ❤️",
+  "🙏 A humble request: Please confirm only if you'll accept delivery, as refused COD parcels cost us shipping charges. 📦",
+  "💳 Prepaid or Partial COD gets you faster delivery & special discounts!",
+  "⭐ Have doubts? Check our 300+ customer reviews on Instagram.",
+  "Thank you for your trust & support! ❤️",
+];
+export function utkalCodConfirmNote(store: StoreRef): string[] | null {
+  return isUtkalContentStore(store) ? UTKAL_COD_CONFIRM_NOTE : null;
+}
