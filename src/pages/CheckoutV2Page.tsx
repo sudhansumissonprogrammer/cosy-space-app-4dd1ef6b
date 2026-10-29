@@ -63,7 +63,7 @@ import { isKalingaStore } from "@/lib/kalingaStore";
 import { checkoutExitCoupon, KALINGA_EXIT_CODE } from "@/lib/checkoutExitCoupon";
 import { checkoutCashback } from "@/lib/checkoutCashback";
 import { kalingaCodPrepaidHint, kalingaUpiDeliveryHint } from "@/lib/kalingaCheckoutHints";
-import { utkalCodHint, utkalDeliveryHint, utkalPartialDiscount } from "@/lib/utkalCheckoutHints";
+import { utkalCodConfirmNote, utkalCodHint, utkalDeliveryHint, utkalPartialDiscount } from "@/lib/utkalCheckoutHints";
 import { requiresCheckoutAdvance } from "../../supabase/functions/_shared/checkoutPaymentPolicy";
 
 type UpiApp = "gpay" | "phonepe" | "paytm" | "bhim" | "any";
