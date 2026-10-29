@@ -46,7 +46,7 @@
 - Small photos up to 320px use the uploaded manifest; unknown and card/PDP/zoom URLs stay unchanged to preserve originals and avoid missing siblings.
 - Keep homepage route components and inactive theme layouts out of the shared storefront manual chunk; retain the dominant layout's critical path, because category/PDP ad entries should not parse homepage-only code.
 
-- Savings stay separate from billing; confirmations use completed payment methods. Shared app/edge persisted-ID policy allows Utkal optional advance plus full COD; other stores retain required advances. Utkal's partial discount lives in _shared/checkoutPaymentPolicy (utkalPartialDiscount), reduces only the delivery balance, and place-order recomputes it.
+- Confirmations use completed payment methods. Shared app/edge policy permits Utkal full COD plus optional advance; others retain required advances. place-order recomputes utkalPartialDiscount from _shared/checkoutPaymentPolicy; checkoutPartialAmounts caps display savings to the delivery balance so net payable equals advance plus balance without changing stored gross totals.
 
 - Resolve Kalinga public content and store-only features through its shared helper; known IDs override legacy slugs to prevent stale identity and cross-store overrides.
 - Kalinga’s separate lazy carousel shares teaser cache; opt-in glass cards preserve the independent popup and animated teaser.
