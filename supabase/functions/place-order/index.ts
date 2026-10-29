@@ -1,6 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
-import { requiresCheckoutAdvance } from "../_shared/checkoutPaymentPolicy.ts";
+import { requiresCheckoutAdvance, utkalPartialDiscount } from "../_shared/checkoutPaymentPolicy.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -888,7 +888,7 @@ Deno.serve(async (req) => {
     // entirely, leaving the stale line in the DB. Strip + re-add.
     const baseNotes = String(order.notes ?? "")
       .split("\n")
-      .filter((l) => !/^\s*Prepaid discount:/i.test(l))
+      .filter((l) => !/^\s*Prepaid discount:/i.test(l) && !/^\s*Partial payment discount:/i.test(l))
       .join("\n")
       .trim();
     order.notes = baseNotes || null;
