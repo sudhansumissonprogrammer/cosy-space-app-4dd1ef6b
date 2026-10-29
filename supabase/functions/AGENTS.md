@@ -1,0 +1,3 @@
+# Edge function decisions
+- JD stock hot/rotating targets exclude other suppliers; JD imports deduplicate by SKU, never title, use stable paged indexes, isolate conflicting inserts and check all watch-section arrivals during backfill, because old-page work must not block new watches.
+- Newest-first (Utkal) supplier stock goes through the shared jdStockQuantity/jdStockVisibility helper in import and stock sync: verified in-stock maps to the unlimited-stock marker and only verified supplier stockouts zero it, because the supplier quantity is an availability flag and website orders must never consume stock.
