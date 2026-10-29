@@ -5520,8 +5520,15 @@ export default function CheckoutV2Page() {
                       {payMode === "partial" && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-600">
-                        Partial COD
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-600">
+                          Partial COD
+                        </div>
+                        {partialOff > 0 && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm shrink-0 whitespace-nowrap">
+                            <Sparkles className="h-3 w-3" /> Extra {formatPrice(partialOff, currency)} OFF
+                          </span>
+                        )}
                       </div>
                       <div className="text-[12px] font-semibold mt-0.5">
                         Pay {formatPrice(partialAdvanceTotal, currency)} advance now
