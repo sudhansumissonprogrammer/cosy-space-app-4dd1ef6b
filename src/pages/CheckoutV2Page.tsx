@@ -5965,7 +5965,7 @@ export default function CheckoutV2Page() {
                     >
                       <CreditCard className="h-3.5 w-3.5 flex-shrink-0" />
                       <span className="text-[12px] font-semibold leading-none whitespace-nowrap">Cards &amp; More</span>
-                      {openingGateway && <Loader2 className="h-3 w-3 animate-spin flex-shrink-0" />
+                      {openingGateway && <Loader2 className="h-3 w-3 animate-spin flex-shrink-0" />}
                     </button>
                   </div>
                 );
