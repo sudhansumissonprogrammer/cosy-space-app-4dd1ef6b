@@ -6012,9 +6012,12 @@ export default function CheckoutV2Page() {
                   <div className="text-[11px] text-muted-foreground">Visa, Mastercard, RuPay, all major banks</div>
                 </div>
               </div>
-              <div className="flex items-center gap-1 text-[14px] font-bold">
-                {formatPrice(chargeAmount, currency)}
-                {openingGateway ? <Loader2 className="h-4 w-4 animate-spin ml-1" /> : <ArrowLeft className="h-4 w-4 rotate-180 text-muted-foreground ml-1" />}
+              <div className="text-right">
+                <div className="flex items-center justify-end gap-1 text-[14px] font-bold">
+                  {formatPrice(chargeAmount, currency)}
+                  {openingGateway ? <Loader2 className="h-4 w-4 animate-spin ml-1" /> : <ArrowLeft className="h-4 w-4 rotate-180 text-muted-foreground ml-1" />}
+                </div>
+                {isPartialOrder && <div className="text-[10px] text-muted-foreground leading-tight">Balance {formatPrice(partialBalanceDue, currency)} on delivery</div>}
               </div>
             </button>
           )}
