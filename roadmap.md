@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Compare popular GitHub SEO skills, import one compatible audit skill with tenant-safe guardrails, and verify activation; do not change shopper pages.
 - [x] Enabled Utkal-only optional ₹100/unit advance alongside full online and full COD; shared app/order enforcement, delivery notes and COD-first confirmation totals. Both order functions deployed; 11 regression tests pass. Real checkout product loaded; no order/payment placed.
 - [ ] Utkal payment rollout verification: publish frontend and complete the phone verification step to visually check all choices; completed gateway payments remain untested to avoid real charges.
 - [x] Added all 66 supplied existing watches to Sale only; 62 retain JD stock identity, four older entries have no supplier link. Added four missing title-brand sections, retained special cards and bounded photo activation, enforced two rows, and removed full-collection paint blocking. Eight tests/build pass; real Sale brand rails and deferred cards verified. Frontend publication required; no automatic stock claim for the four unlinked entries.
