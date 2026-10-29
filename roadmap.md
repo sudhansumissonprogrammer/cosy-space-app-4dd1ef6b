@@ -1,4 +1,6 @@
 # Roadmap
+- [ ] Finish fourth photo batch: add four complete unique screenshots, preserve thirty existing photos, verify display. Second upload is truncated; fourth is byte-identical to first.
+- [ ] Complete photo 02_1000498228_utkalwatch.png awaits a non-truncated reupload; current resend still lacks lower half.
 - [x] Added third ten Utkal photo reviews, compressed 91.7% (10.34 MB to 0.86 MB); previous twenty preserved, thirty total. Six tests/build pass; thirty cards and opening a new photo verified with hosted asset forwarding. No added names/ratings; publish required, verification confirmation pending.
 - [x] Added second ten Utkal photo reviews, compressed 91.8% (10.68 MB to 0.88 MB); first ten preserved, twenty total. No added names/ratings or rating-summary changes; six tests/build pass, twenty cards and new-photo lightbox verified with hosted asset forwarding. Publish required; verification confirmation remains pending.
 - [x] Added ten Utkal-only screenshot reviews, compressed 92.6% (11.65 MB to 0.86 MB), without invented names/ratings; existing rating summary unchanged. Six tests and build pass; all ten cards and expanded photo verified in preview using hosted asset forwarding. Publish required.
