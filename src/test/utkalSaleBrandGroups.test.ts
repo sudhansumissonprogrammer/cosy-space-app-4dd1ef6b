@@ -10,15 +10,15 @@ it("assigns supplied title spellings to the correct Sale brands exactly once", (
 it("keeps Sale brand rails in first-seen order as later pages arrive", async () => {
   const { stableGroupOrder } = await import("@/components/storefront/BrandCarouselGroups");
   const seen: string[] = [];
-  expect(stableGroupOrder([{ key: "seiko" }, { key: "hublot" }, { key: "more" }], seen).map((g) => g.key)).toEqual(["seiko", "hublot", "more"]);
-  // A brand discovered on a later page is appended below, never inserted above.
-  expect(stableGroupOrder([{ key: "seiko" }, { key: "tissot" }, { key: "hublot" }, { key: "more" }], seen).map((g) => g.key)).toEqual(["seiko", "hublot", "tissot", "more"]);
+  expect(stableGroupOrder([{ key: "seiko" }, { key: "tissot" }, { key: "more" }], seen).map((g) => g.key)).toEqual(["seiko", "tissot", "more"]);
+  // A non-opening brand discovered on a later page is appended below, never inserted above.
+  expect(stableGroupOrder([{ key: "seiko" }, { key: "rado" }, { key: "tissot" }, { key: "more" }], seen).map((g) => g.key)).toEqual(["seiko", "tissot", "rado", "more"]);
 });
-it("opens Sale with Seiko, Hublot, Fossil, Rolex and Patek while preserving the rest", async () => {
+it("opens Sale with Seiko, Tissot, Fossil, Rolex and Patek, then Hublot, preserving the rest", async () => {
   const { stableGroupOrder } = await import("@/components/storefront/BrandCarouselGroups");
   const keys = ["seiko", "fossil", "hublot", "rolex", "patek-philippe", "tissot", "audemars-piguet", "casio", "more"];
   const groups = keys.map((key) => ({ key, items: [`${key}-second`, `${key}-first`] }));
   const result = stableGroupOrder(groups, []);
-  expect(result.map((group) => group.key)).toEqual(["seiko", "hublot", "fossil", "rolex", "patek-philippe", "tissot", "audemars-piguet", "casio", "more"]);
+  expect(result.map((group) => group.key)).toEqual(["seiko", "tissot", "fossil", "rolex", "patek-philippe", "hublot", "audemars-piguet", "casio", "more"]);
   for (const group of result) expect(group.items).toEqual([`${group.key}-second`, `${group.key}-first`]);
 });

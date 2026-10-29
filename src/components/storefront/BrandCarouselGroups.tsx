@@ -324,7 +324,7 @@ function BrandRail({ group, groupIndex, slug, store, cardStyle, cardHeight, onCa
  * Pin the owner's opening brands, then retain first-seen order for the rest.
  * This only orders sections; product order and photo activation stay unchanged.
  */
-const OPENING_BRANDS = ["seiko", "hublot", "fossil", "rolex", "patek-philippe"];
+const OPENING_BRANDS = ["seiko", "tissot", "fossil", "rolex", "patek-philippe", "hublot"];
 export function stableGroupOrder<T extends { key: string }>(groups: T[], seen: string[]): T[] {
   for (const g of groups) if (g.key !== "more" && !seen.includes(g.key)) seen.push(g.key);
   const rank = (k: string) => {
