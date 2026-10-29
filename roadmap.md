@@ -1,5 +1,5 @@
 # Roadmap
-- [ ] Add the second ten compressed photo reviews to Utkal only; preserve the first ten and verify photo display without added names or ratings.
+- [x] Added second ten Utkal photo reviews, compressed 91.8% (10.68 MB to 0.88 MB); first ten preserved, twenty total. No added names/ratings or rating-summary changes; six tests/build pass, twenty cards and new-photo lightbox verified with hosted asset forwarding. Publish required; verification confirmation remains pending.
 - [x] Added ten Utkal-only screenshot reviews, compressed 92.6% (11.65 MB to 0.86 MB), without invented names/ratings; existing rating summary unchanged. Six tests and build pass; all ten cards and expanded photo verified in preview using hosted asset forwarding. Publish required.
 - [ ] Verified badge for the uploaded photos awaits merchant confirmation of genuine purchases and permission for public display.
 - [x] Show delivery balance below online payment-option amounts for all partial-COD stores; Utkal's effective ₹50 discount now appears in savings, summary, breakup and confirmation net amounts. Eight calculation tests pass; real mobile Utkal partial/full summary toggles verified without placing an order, build OK. Frontend publication required; completed payments not tested.
