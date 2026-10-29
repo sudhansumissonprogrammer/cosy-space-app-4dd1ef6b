@@ -12,7 +12,7 @@
 - Product search metadata uses the shared neutral description/parent-price helper across app and edge renderers; Worker mirrors that contract, resolves PDP identities from the product and omits missing facts, because search/share representations must not contradict shopper data or invent commercial claims.
 - Static platform JSON-LD in index.html is authoritative for the landing page; do not mount duplicate client schemas or unsupported ratings/search actions. Store and Product hooks use distinct script identities so lifecycle cleanup cannot remove another entity.
 - The visible FAQ owns its matching FAQPage schema; marked platform schemas are removed before storefront app boot, and Worker utility HTML receives query-free identity with noindex/no-store at the response boundary to cover every shell exit without changing app data.
-- Rounded Classic navigation reuses the Classic component through a presentation-only flag, preserving icons, cart actions, route visibility and scroll behavior without duplicated navigation logic.
+- Rounded Classic navigation reuses Classic via a presentation-only flag, avoiding duplicated navigation logic.
 - Static platform robots and generated storefront robots use the shared crawler policy; AI crawler rendering must agree with those permissions, while authentication and utility noindex remain independent.
 - Public search/AI GET and HEAD requests dispatch to tenant SEO rendering before human HTML caches and cold/streaming shell exits; AI budgets remain host-scoped and bounded because user-agent names are not authentication.
 - Storefront Markdown is negotiated from the same successful public HTML renderer with a pinned converter; Worker caches separate format and page identity and vary by Accept, preventing cross-format leaks without changing browser or private pages.
@@ -49,7 +49,7 @@
 - Confirmations use completed payment methods. Shared app/edge policy permits Utkal full COD plus optional advance; others retain required advances. place-order recomputes utkalPartialDiscount from _shared/checkoutPaymentPolicy; checkoutPartialAmounts caps display savings to the delivery balance so net payable equals advance plus balance without changing stored gross totals.
 
 - Resolve Kalinga public content and store-only features through its shared helper; known IDs override legacy slugs to prevent stale identity and cross-store overrides.
-- Kalinga’s separate lazy carousel shares teaser cache; opt-in glass cards preserve the independent popup and animated teaser.
+- Kalinga's lazy carousel shares teaser cache; glass cards keep the separate popup/teaser.
 - Reviews use owner routes with admin fallback; preserve errors. Merchant photo collections join the shared feed by exact store ID, omit invented names/stars and stay outside rating aggregates.
 
 - Validate exit coupons independently; replace only smaller discounts and hide competing sheets to prevent overlap.
@@ -64,4 +64,4 @@
 - City/store-directory pages (`/stores`, `/stores/:city`) read `public.store_locations` (published rows only) and build all wording through `supabase/functions/_shared/storeLocations.ts`, shared by the app and bot-render, because human and crawler output must never diverge and only merchant-verified facts may appear; delivery-only cities must never be presented as physical branches or carry Store schema.
 - Utkal brand-category headings, intros, FAQs and related links come from one shared helper (_shared/utkalCategorySeo.ts) used by the app and bot-render, built only from category names and listed product titles, because crawler and shopper pages must match and must not invent facts.
 - StorefrontShell's language selector portals to document.body as a fixed lower-left control outside page layout and right-hand overlays, preserving header/main sibling rules and PDP geometry; the non-English-only translator applies common controls/local cache immediately and uses bounded, visible-first requests with in-flight deduplication and language-generation cancellation, preserving product names and digits without delaying English page load.
-- Utkal bulk WhatsApp campaigns go through the owner-gated utkal-wa-bulk function into wa_send_queue, so every send keeps wa-platform-send opt-out, cap and recent-buyer guards.
+- Utkal bulk WhatsApp uses owner-gated utkal-wa-bulk into wa_send_queue, keeping wa-platform-send guards.
