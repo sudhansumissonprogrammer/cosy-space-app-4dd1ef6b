@@ -5979,9 +5979,11 @@ export default function CheckoutV2Page() {
               suffered from scan-then-approve friction. */}
 
           {/* Cards / Netbanking / Wallets — single consolidated gateway tile.
-              Hidden on mobile hosted-gateway stores: the "Pay with <Gateway>"
-              card above already opens the exact same hosted page. */}
-          {hasOnline && !(mobile && gatewayOnly) && (
+              Desktop only: on mobile hosted-gateway stores the "Pay with
+              <Gateway>" card already opens the same hosted page, and on mobile
+              direct-intent stores a compact half-width version sits next to
+              "All UPI Apps" inside the UPI card above. */}
+          {hasOnline && !mobile && (
 
             <button
               onClick={startGatewayPayment}
