@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { requiresCheckoutAdvance } from "../../supabase/functions/_shared/checkoutPaymentPolicy";
+import { requiresCheckoutAdvance, utkalPartialDiscount } from "../../supabase/functions/_shared/checkoutPaymentPolicy";
 import { checkoutConfirmationAmounts } from "./checkoutConfirmationAmounts";
+import { utkalPartialDiscount as clientUtkalPartialDiscount } from "./utkalCheckoutHints";
 
 describe("Utkal optional advance policy", () => {
   it("allows full COD alongside the configured ₹100 advance only at Utkal", () => {
