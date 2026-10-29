@@ -31,6 +31,7 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { uniqueSupplierItems } from "../_shared/jdImportIdentity.ts";
+import { jdStockQuantity } from "../_shared/jdStockVisibility.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -560,7 +561,7 @@ Deno.serve(async (req) => {
         price,
         sale_price: sale,
         currency: store.currency || "INR",
-        stock_quantity: qty,
+        stock_quantity: jdStockQuantity(store.id, qty),
         is_active: subs ? qty > 0 : true,
         image_url: assetUrl(d.cover_image),
         image_alt: String(d.name || ""),
