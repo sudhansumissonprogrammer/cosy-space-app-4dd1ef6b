@@ -1,3 +1,4 @@
+import { reviewCountLabel } from "@/lib/utkalCheckoutHints";
 import { useMemo, useState, lazy, Suspense } from "react";
 import { ReviewStars } from "@/components/storefront/reviews/ReviewCard";
 import GlassReviewCard from "@/components/storefront/reviews/GlassReviewCard";
@@ -10,10 +11,10 @@ const ReviewMediaLightbox = lazy(() => import("@/components/storefront/reviews/R
 
 export function StoreReviewCardsCarousel({ storeId }: { storeId: string }) {
   const { reviews, total, average } = useStoreReviews(storeId, 14);
-  return <ReviewCardsCarousel reviews={reviews} total={total} average={average} />;
+  return <ReviewCardsCarousel reviews={reviews} total={total} average={average} storeId={storeId} />;
 }
 
-export default function ReviewCardsCarousel({ reviews, total, average }: { reviews: StoreReview[]; total: number; average: number }) {
+export default function ReviewCardsCarousel({ reviews, total, average, storeId }: { reviews: StoreReview[]; total: number; average: number; storeId?: string }) {
   const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
   const { gallery, offsets } = useMemo(() => {
     const gallery: { url: string; type: "image" | "video" }[] = [];
@@ -33,7 +34,7 @@ export default function ReviewCardsCarousel({ reviews, total, average }: { revie
         <h2 className="text-xl font-semibold text-foreground">Customer reviews</h2>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <ReviewStars rating={average} className="h-3 w-3" activeClassName="fill-warning text-warning" />
-          <span>{average.toFixed(1)} · {total} reviews</span>
+          <span>{average.toFixed(1)} · {reviewCountLabel(storeId, total)} reviews</span>
         </div>
       </div>
       <Carousel opts={{ align: "start", containScroll: "trimSnaps" }} className="pb-12" aria-label="Customer reviews carousel">

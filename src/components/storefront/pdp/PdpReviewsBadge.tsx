@@ -1,3 +1,4 @@
+import { reviewCountLabel } from "@/lib/utkalCheckoutHints";
 import { Star } from "lucide-react";
 import { useStoreReviews } from "@/hooks/useStoreReviews";
 
@@ -35,7 +36,7 @@ export default function PdpReviewsBadge({ storeId, className = "" }: { storeId?:
       type="button"
       onClick={goToReviews}
       className={`flex items-center gap-1 rounded-full border border-white/25 bg-black/55 px-1.5 py-0.5 text-white shadow-md backdrop-blur-sm transition-transform active:scale-95 ${className}`}
-      aria-label={`See all ${total} customer reviews`}
+      aria-label={`See all ${reviewCountLabel(storeId, total)} customer reviews`}
     >
       <span className="flex items-center gap-0.5">
         <Star className="h-2.5 w-2.5 fill-emerald-400 text-emerald-400" />
