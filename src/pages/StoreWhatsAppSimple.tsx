@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { MessageSquare, ShoppingCart, CheckCircle2, Truck, Inbox, Zap, ShieldCheck } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { StoreInbox } from "@/components/whatsapp/StoreInbox";
+import { UtkalBulkCampaigns } from "@/components/whatsapp/UtkalBulkCampaigns";
+import { Megaphone } from "lucide-react";
 import { toast } from "sonner";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
@@ -75,6 +77,8 @@ export default function StoreWhatsAppSimple() {
     { key: "abandoned_cart", icon: ShoppingCart, label: "Abandoned cart recovery", desc: "Customers who left items in their cart get one friendly reminder." },
   ];
 
+  const isUtkal = (store as any)?.slug === "utkalwatches";
+
   return (
     <div className="space-y-5">
       <div>
@@ -95,7 +99,18 @@ export default function StoreWhatsAppSimple() {
           <TabsTrigger value="automations" className="gap-1.5">
             <Zap className="h-4 w-4" /> Automations
           </TabsTrigger>
+          {isUtkal && (
+            <TabsTrigger value="bulk" className="gap-1.5">
+              <Megaphone className="h-4 w-4" /> Bulk Campaigns
+            </TabsTrigger>
+          )}
         </TabsList>
+
+        {isUtkal && (
+          <TabsContent value="bulk" className="m-0">
+            <UtkalBulkCampaigns />
+          </TabsContent>
+        )}
 
         <TabsContent value="inbox" className="m-0">
           <StoreInbox storeId={storeId} />
