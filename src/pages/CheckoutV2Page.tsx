@@ -62,7 +62,7 @@ import { isKalingaStore } from "@/lib/kalingaStore";
 import { checkoutExitCoupon, KALINGA_EXIT_CODE } from "@/lib/checkoutExitCoupon";
 import { checkoutCashback } from "@/lib/checkoutCashback";
 import { kalingaCodPrepaidHint, kalingaUpiDeliveryHint } from "@/lib/kalingaCheckoutHints";
-import { utkalCodHint, utkalDeliveryHint } from "@/lib/utkalCheckoutHints";
+import { utkalCodHint, utkalDeliveryHint, utkalPartialDiscount } from "@/lib/utkalCheckoutHints";
 import { requiresCheckoutAdvance } from "../../supabase/functions/_shared/checkoutPaymentPolicy";
 
 type UpiApp = "gpay" | "phonepe" | "paytm" | "bhim" | "any";
@@ -1503,7 +1503,10 @@ export default function CheckoutV2Page() {
 
   }, [checkoutItems, hasPartial, partialType, partialValue, subtotal, taxAmount, taxInclusive, shippingCharge, total]);
 
-  const partialBalanceDue = Math.max(0, total - partialAdvanceTotal);
+  // Utkal-only ₹50 partial discount comes out of the delivery balance (never
+  // the advance), mirroring coupon behaviour. Server recomputes in place-order.
+  const partialOff = hasPartial ? utkalPartialDiscount(store) : 0;
+  const partialBalanceDue = Math.max(0, total - partialAdvanceTotal - partialOff);
 
   const [payMode, setPayModeState] = useState<"full" | "partial">("partial");
   const isPartialOrder = hasPartial && payMode === "partial";
@@ -5517,8 +5520,15 @@ export default function CheckoutV2Page() {
                       {payMode === "partial" && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-600">
-                        Partial COD
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-600">
+                          Partial COD
+                        </div>
+                        {partialOff > 0 && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm shrink-0 whitespace-nowrap">
+                            <Sparkles className="h-3 w-3" /> Extra {formatPrice(partialOff, currency)} OFF
+                          </span>
+                        )}
                       </div>
                       <div className="text-[12px] font-semibold mt-0.5">
                         Pay {formatPrice(partialAdvanceTotal, currency)} advance now
@@ -5903,37 +5913,54 @@ export default function CheckoutV2Page() {
                 const anyBusy = addressReady && !anyRetryable && !anyNeedsMint && (anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny);
                 const anyPressed = tappedUpiApp === "any";
                 return (
-                  <a
-                    href={gatewayOnly || anyBusy || anyRetryable || anyNeedsMint || !addressReady || isIOS() ? undefined : anyS.url}
+                  /* "All UPI Apps" and "Cards & More" share one line (half
+                     width each) so the payment section stays short on mobile. */
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <a
+                      href={gatewayOnly || anyBusy || anyRetryable || anyNeedsMint || !addressReady || isIOS() ? undefined : anyS.url}
 
-                    onClick={(e) => {
-                      // iOS has no Android-style `upi://` chooser. Sending an
-                      // iPhone to that generic scheme is a dead tap (or opens an
-                      // arbitrary app), so use the configured hosted gateway,
-                      // where PayU/Cashfree/Razorpay presents its supported UPI
-                      // choices and reliably returns to this checkout.
-                      // Same route for hosted-gateway stores on any device.
-                      if (isIOS() || gatewayOnly) {
-                        e.preventDefault();
-                        if (gatewayOnly) flashUpiTap("any", 1800);
-                        void startGatewayPayment();
-                        return;
-                      }
-                      tapUpiApp("any", e);
-                    }}
-                    aria-busy={anyBusy}
-                    className={`mt-3 w-full flex items-center justify-between border rounded-lg px-3 py-2.5 select-none touch-manipulation cursor-pointer active:scale-[0.97] transition-[transform,box-shadow,border-color] duration-150 ease-out ${anyPressed ? "scale-[0.98] border-primary ring-2 ring-primary/40 bg-primary/5" : "border-[#ECECEC]"} ${anyBusy ? "opacity-70" : ""}`}
-                  >
+                      onClick={(e) => {
+                        // iOS has no Android-style `upi://` chooser. Sending an
+                        // iPhone to that generic scheme is a dead tap (or opens an
+                        // arbitrary app), so use the configured hosted gateway,
+                        // where PayU/Cashfree/Razorpay presents its supported UPI
+                        // choices and reliably returns to this checkout.
+                        // Same route for hosted-gateway stores on any device.
+                        if (isIOS() || gatewayOnly) {
+                          e.preventDefault();
+                          if (gatewayOnly) flashUpiTap("any", 1800);
+                          void startGatewayPayment();
+                          return;
+                        }
+                        tapUpiApp("any", e);
+                      }}
+                      aria-busy={anyBusy}
+                      className={`flex flex-col items-center justify-center gap-0.5 border rounded-lg px-2 py-2 min-h-[64px] text-center select-none touch-manipulation cursor-pointer active:scale-[0.97] transition-[transform,box-shadow,border-color] duration-150 ease-out ${anyPressed ? "scale-[0.98] border-primary ring-2 ring-primary/40 bg-primary/5" : "border-[#ECECEC]"} ${anyBusy ? "opacity-70" : ""}`}
+                    >
 
-                    <span className="text-[13px] font-semibold">All UPI Apps</span>
-                    <span className="flex items-center gap-2 text-[12px] text-muted-foreground font-semibold">
-                      {anyPressed ? "Opening…" : gatewayOnly ? `Pay ${formatPrice(chargeAmount, currency)} with ${gatewayLabel}` : isIOS() ? "Choose payment app" : `Pay ${formatPrice(chargeAmount, currency)}`}
+                      <span className="text-[12px] font-semibold leading-tight">All UPI Apps</span>
+                      <span className="flex items-center gap-1 text-[10.5px] text-muted-foreground font-semibold">
+                        {anyPressed ? "Opening…" : gatewayOnly ? `Pay ${formatPrice(chargeAmount, currency)} with ${gatewayLabel}` : isIOS() ? "Choose payment app" : `Pay ${formatPrice(chargeAmount, currency)}`}
 
-                      {anyPressed
-                        ? <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                        : <ArrowLeft className="h-4 w-4 rotate-180 text-muted-foreground" />}
-                    </span>
-                  </a>
+                        {anyPressed
+                          ? <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                          : <ArrowLeft className="h-3 w-3 rotate-180 text-muted-foreground" />}
+                      </span>
+                    </a>
+                    <button
+                      type="button"
+                      onClick={startGatewayPayment}
+                      disabled={openingGateway || confirmingPayment || creatingOrder || couponLoading || paymentAmountSyncing}
+                      className="flex flex-col items-center justify-center gap-0.5 border border-[#ECECEC] rounded-lg px-2 py-2 min-h-[64px] text-center select-none touch-manipulation cursor-pointer active:scale-[0.97] transition-all disabled:opacity-40"
+                    >
+                      <span className="flex items-center gap-1 text-[12px] font-bold leading-tight"><CreditCard className="h-3.5 w-3.5" /> Cards &amp; More</span>
+                      <span className="text-[10px] text-muted-foreground leading-tight">Netbanking &amp; Wallets</span>
+                      <span className="flex items-center gap-1 text-[10.5px] text-muted-foreground font-semibold">
+                        {formatPrice(chargeAmount, currency)}
+                        {openingGateway && <Loader2 className="h-3 w-3 animate-spin" />}
+                      </span>
+                    </button>
+                  </div>
                 );
 
               })()}
@@ -5952,9 +5979,11 @@ export default function CheckoutV2Page() {
               suffered from scan-then-approve friction. */}
 
           {/* Cards / Netbanking / Wallets — single consolidated gateway tile.
-              Hidden on mobile hosted-gateway stores: the "Pay with <Gateway>"
-              card above already opens the exact same hosted page. */}
-          {hasOnline && !(mobile && gatewayOnly) && (
+              Desktop only: on mobile hosted-gateway stores the "Pay with
+              <Gateway>" card already opens the same hosted page, and on mobile
+              direct-intent stores a compact half-width version sits next to
+              "All UPI Apps" inside the UPI card above. */}
+          {hasOnline && !mobile && (
 
             <button
               onClick={startGatewayPayment}
