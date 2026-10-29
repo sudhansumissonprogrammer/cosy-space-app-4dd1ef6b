@@ -5084,17 +5084,9 @@ export default function CheckoutV2Page() {
                   <div className="text-[12.5px] text-foreground/80 mt-1 whitespace-normal break-words leading-snug">
                     {streetAddress}, {city}, {state} {pincode}
                   </div>
-                  {deliveryEta && (
-                    <div className="mt-2 flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2 py-1.5">
-                      <Truck className="h-3.5 w-3.5 text-emerald-700 flex-shrink-0" />
-                      <span className="text-[12.5px] font-semibold text-emerald-800 truncate">
-                        Arriving {deliveryEta.shortLabel}
-                      </span>
-                    </div>
-                  )}
-                  {/* Line 3: phone with inline change link */}
-                  <div className="text-[12px] text-muted-foreground mt-1 flex items-center gap-2 min-w-0">
-                    <span className="truncate">+91 {phone}</span>
+                  {/* Phone + Change + Arriving date share one line */}
+                  <div className="mt-1.5 flex items-center gap-2 min-w-0">
+                    <span className="text-[12px] text-muted-foreground whitespace-nowrap">+91 {phone}</span>
                     <button
                       type="button"
                       onClick={() => {
@@ -5105,6 +5097,14 @@ export default function CheckoutV2Page() {
                     >
                       Change
                     </button>
+                    {deliveryEta && (
+                      <span className="ml-auto flex items-center gap-1 rounded-md bg-emerald-50 px-1.5 py-0.5 min-w-0">
+                        <Truck className="h-3 w-3 text-emerald-700 flex-shrink-0" />
+                        <span className="text-[11.5px] font-semibold text-emerald-800 truncate">
+                          Arriving {deliveryEta.shortLabel}
+                        </span>
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -5950,30 +5950,22 @@ export default function CheckoutV2Page() {
                         tapUpiApp("any", e);
                       }}
                       aria-busy={anyBusy}
-                      className={`flex flex-col items-center justify-center gap-0.5 border rounded-lg px-2 py-2 min-h-[64px] text-center select-none touch-manipulation cursor-pointer active:scale-[0.97] transition-[transform,box-shadow,border-color] duration-150 ease-out ${anyPressed ? "scale-[0.98] border-primary ring-2 ring-primary/40 bg-primary/5" : "border-[#ECECEC]"} ${anyBusy ? "opacity-70" : ""}`}
+                      className={`flex items-center justify-center gap-1 border rounded-lg px-2 h-10 text-center select-none touch-manipulation cursor-pointer active:scale-[0.97] transition-[transform,box-shadow,border-color] duration-150 ease-out ${anyPressed ? "scale-[0.98] border-primary ring-2 ring-primary/40 bg-primary/5" : "border-[#ECECEC]"} ${anyBusy ? "opacity-70" : ""}`}
                     >
-
-                      <span className="text-[12px] font-semibold leading-tight">All UPI Apps</span>
-                      <span className="flex items-center gap-1 text-[10.5px] text-muted-foreground font-semibold">
-                        {anyPressed ? "Opening…" : gatewayOnly ? `Pay ${formatPrice(chargeAmount, currency)} with ${gatewayLabel}` : isIOS() ? "Choose payment app" : `Pay ${formatPrice(chargeAmount, currency)}`}
-
-                        {anyPressed
-                          ? <Loader2 className="h-3 w-3 animate-spin text-primary" />
-                          : <ArrowLeft className="h-3 w-3 rotate-180 text-muted-foreground" />}
-                      </span>
+                      <span className="text-[12px] font-semibold leading-none whitespace-nowrap">{anyPressed ? "Opening…" : "All UPI Apps"}</span>
+                      {anyPressed
+                        ? <Loader2 className="h-3 w-3 animate-spin text-primary flex-shrink-0" />
+                        : <ArrowLeft className="h-3 w-3 rotate-180 text-muted-foreground flex-shrink-0" />}
                     </a>
                     <button
                       type="button"
                       onClick={startGatewayPayment}
                       disabled={openingGateway || confirmingPayment || creatingOrder || couponLoading || paymentAmountSyncing}
-                      className="flex flex-col items-center justify-center gap-0.5 border border-[#ECECEC] rounded-lg px-2 py-2 min-h-[64px] text-center select-none touch-manipulation cursor-pointer active:scale-[0.97] transition-all disabled:opacity-40"
+                      className="flex items-center justify-center gap-1 border border-[#ECECEC] rounded-lg px-2 h-10 text-center select-none touch-manipulation cursor-pointer active:scale-[0.97] transition-all disabled:opacity-40"
                     >
-                      <span className="flex items-center gap-1 text-[12px] font-bold leading-tight"><CreditCard className="h-3.5 w-3.5" /> Cards &amp; More</span>
-                      <span className="text-[10px] text-muted-foreground leading-tight">Netbanking &amp; Wallets</span>
-                      <span className="flex items-center gap-1 text-[10.5px] text-muted-foreground font-semibold">
-                        {formatPrice(chargeAmount, currency)}
-                        {openingGateway && <Loader2 className="h-3 w-3 animate-spin" />}
-                      </span>
+                      <CreditCard className="h-3.5 w-3.5 flex-shrink-0" />
+                      <span className="text-[12px] font-semibold leading-none whitespace-nowrap">Cards &amp; More</span>
+                      {openingGateway && <Loader2 className="h-3 w-3 animate-spin flex-shrink-0" />
                     </button>
                   </div>
                 );
@@ -6070,9 +6062,20 @@ export default function CheckoutV2Page() {
               >
                 <X className="h-5 w-5" />
               </button>
-              <div className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl p-4 pb-6">
+              <div className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl p-4 pb-6 max-h-[85dvh] overflow-y-auto">
                 <div className="text-[17px] font-bold">Confirm Your Order</div>
-                <div className="mt-4 rounded-xl border border-[#ECECEC] p-4">
+                {(() => {
+                  const note = utkalCodConfirmNote(store);
+                  if (!note) return null;
+                  return (
+                    <div className="mt-3 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5 space-y-1">
+                      {note.map((line, i) => (
+                        <p key={i} className={`text-[12px] leading-snug text-amber-950 ${i === 0 ? "font-semibold" : ""}`}>{line}</p>
+                      ))}
+                    </div>
+                  );
+                })()}
+                <div className="mt-3 rounded-xl border border-[#ECECEC] p-4">
                   <div className="text-[15px] font-semibold">
                     Total amount: {formatPrice(total, currency)}
                   </div>
