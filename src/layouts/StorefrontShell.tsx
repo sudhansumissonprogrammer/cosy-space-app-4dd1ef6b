@@ -11,6 +11,7 @@ import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useThemePreview } from "@/hooks/useThemePreview";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { storefrontUtilityRoute } from "@/lib/storefrontSearchPolicy";
+import { storefrontPageMeta } from "@/lib/storefrontPageMeta";
 import { generateEventId, useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { claimPageView, registerPageViewFired } from "@/lib/pixelPageView";
 
@@ -133,6 +134,14 @@ export default function StorefrontShell({
   useFacebookPixel((store as any)?.facebook_pixel_id, store?.id);
 
   const seoLocation = useLocation();
+  const publicPageMeta = store ? storefrontPageMeta(seoLocation.pathname, store) : null;
+  useMetaTags({
+    enabled: !!publicPageMeta,
+    title: publicPageMeta?.title,
+    storeSlug: store?.slug,
+    customDomain: store?.custom_domain,
+    canonicalPath: publicPageMeta?.canonicalPath,
+  });
   const utilityRoute = store ? storefrontUtilityRoute(seoLocation.pathname, store.slug) : null;
   useMetaTags({
     enabled: !!utilityRoute,

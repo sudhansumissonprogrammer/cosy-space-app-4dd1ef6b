@@ -1,5 +1,5 @@
 # Project architecture decisions
-- SEO skills stay agent-only to avoid shopper load costs.
+- SEO skills stay agent-only; shell title fallbacks exclude route-owned metadata.
 - Utkal Sale keeps lazy two-row brand rails, additive membership and transform-only swipe cues, because hidden items must be discoverable without scroll-jacking or extra photo loads.
 - Storefront shell load errors remain distinct from confirmed missing stores and retry the same query without navigation; preserve registered tenant slugs and use custom domains in shared links, because temporary failures must not imply deleted stores or break existing integrations.
 - Utkal missing watch brand memberships use the service-only title matcher and additive repair RPC before the legacy JD organizer; never overwrite existing merchant category links or infer a brand from generic titles, because imports must repair spelling aliases without changing inventory or manual merchandising.
