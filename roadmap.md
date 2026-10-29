@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Audit product/all-public-page SEO title coverage and automatic new-product fallback; repair confirmed gaps and verify app/crawler output without changing merchant data.
 - [x] Compared GitHub/registry SEO skills; activated user-selected Storefront SEO Audit adapted from Corey Haines (reviewed revision and MIT licence retained). Reference/licence/no-executable checks passed; tenant, product-truth, bounded audit and app/edge/Worker guardrails included. No shopper pages changed or all-store audit performed.
 - [x] Enabled Utkal-only optional ₹100/unit advance alongside full online and full COD; shared app/order enforcement, delivery notes and COD-first confirmation totals. Both order functions deployed; 11 regression tests pass. Real checkout product loaded; no order/payment placed.
 - [ ] Utkal payment rollout verification: publish frontend and complete the phone verification step to visually check all choices; completed gateway payments remain untested to avoid real charges.
