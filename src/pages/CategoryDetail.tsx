@@ -29,6 +29,7 @@ import { hidesCategoryFilters } from "@/components/storefront/pdp/storeSections/
 import { utkalCollectionIntroduction, isUtkalContentStore, UTKAL_STATUS } from "../../supabase/functions/_shared/utkalContent";
 import { utkalCategoryHeading, utkalCategoryIntro, utkalCategoryFaq, relatedCategories } from "../../supabase/functions/_shared/utkalCategorySeo";
 import { useStorefrontCategories } from "@/hooks/useStorefrontCategories";
+import utkalSaleBanner from "@/assets/utkal-sale-banner.webp.asset.json";
 
 /**
  * Brand-grouped carousels: opt-in per store + category only. Lazy so no other
@@ -380,14 +381,29 @@ export default function CategoryDetail() {
     : `grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-5 xl:grid-cols-5${cardStyle === "style-6" ? " -mx-3 sm:mx-0 gap-x-1" : ""}`;
 
   const utkalStore = isUtkalContentStore(store);
+  const showUtkalSaleBanner = utkalStore && categorySlug === "sale";
   const brandIntro = utkalStore && category && page === 1 ? utkalCategoryIntro(category, rawProducts.slice(0, PAGE_SIZE).map((p: any) => p.name || "")) : undefined;
   const categoryFaq = utkalStore && category && page === 1 ? utkalCategoryFaq(category) : [];
   const relatedCats = utkalStore && category ? relatedCategories(category, (allStoreCategories ?? []).filter((c: any) => c?.slug && c?.name)) : [];
 
   return (
-    <div className={`mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 ${hideFilters ? "py-1" : "py-5"}`}>
-      <h1 className={utkalStore ? "py-2 text-lg font-semibold text-foreground" : "sr-only"}>{utkalStore && category ? utkalCategoryHeading(category) : <>{category?.name || (categorySlug ? categorySlug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Category")}{utkalStore && !category ? "" : ` — ${store.name}`}</>}</h1>
-      {utkalStore && category && page === 1 && (
+    <div className={`mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 ${showUtkalSaleBanner ? "pt-0 pb-1" : hideFilters ? "py-1" : "py-5"}`}>
+      {showUtkalSaleBanner && (
+        <div className="-mx-3 sm:-mx-4 lg:-mx-6">
+          <img
+            src={utkalSaleBanner.url}
+            alt="Utkal Watch Sale collection banner"
+            width={1920}
+            height={702}
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
+            className="block h-auto w-full"
+          />
+        </div>
+      )}
+      <h1 className={utkalStore && !showUtkalSaleBanner ? "py-2 text-lg font-semibold text-foreground" : "sr-only"}>{utkalStore && category ? utkalCategoryHeading(category) : <>{category?.name || (categorySlug ? categorySlug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Category")}{utkalStore && !category ? "" : ` — ${store.name}`}</>}</h1>
+      {utkalStore && !showUtkalSaleBanner && category && page === 1 && (
         <div className="space-y-2 pb-3 text-sm leading-relaxed text-muted-foreground">
           {brandIntro && <p>{brandIntro}</p>}
           {utkalCollectionIntroduction(store, categorySlug) && <p>{utkalCollectionIntroduction(store, categorySlug)}</p>}
@@ -515,7 +531,7 @@ export default function CategoryDetail() {
           ))}
         </section>
       )}
-      {relatedCats.length > 0 && (
+      {!showUtkalSaleBanner && relatedCats.length > 0 && (
         <nav aria-label="Related collections" className="mt-6 border-t border-border pt-5 pb-4">
           <h2 className="mb-3 text-base font-semibold text-foreground">Related collections</h2>
           <div className="flex flex-wrap gap-2">
