@@ -25,9 +25,9 @@ interface Props {
 
 /** Ordered brand groups. `match` runs on the normalized (a-z0-9 only) name. */
 const BRANDS: { key: string; label: string; match: (n: string) => boolean }[] = [
-  { key: "seiko", label: "Seiko Trending", match: (n) => n.includes("seiko") || n.startsWith("seko") },
-  { key: "casio", label: "Casio Illuminator", match: (n) => n.includes("casio") || n.includes("iluminator") || n.includes("illuminator") },
   { key: "tissot", label: "Tissot", match: (n) => n.includes("tisso") },
+  { key: "casio", label: "Casio Illuminator", match: (n) => n.includes("casio") || n.includes("iluminator") || n.includes("illuminator") },
+  { key: "seiko", label: "Seiko Trending", match: (n) => n.includes("seiko") || n.startsWith("seko") },
   { key: "rado", label: "Rado", match: (n) => n.includes("rado") || n.includes("raddo") },
   { key: "fossil", label: "Fossil", match: (n) => n.includes("fossil") || n.includes("fossiil") },
   { key: "hublot", label: "Hublot", match: (n) => n.includes("hublot") || n.includes("hublo") },
