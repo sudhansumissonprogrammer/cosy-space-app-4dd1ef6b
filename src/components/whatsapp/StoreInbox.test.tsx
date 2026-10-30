@@ -30,7 +30,7 @@ describe("WhatsApp replied conversation filter", () => {
     await screen.findByText("919876543210");
     expect(screen.queryByText("919876543211")).toBeNull();
     expect(rpc).toHaveBeenCalledWith("store_wa_replied_threads", expect.objectContaining({ _store_id: "store-a", _offset: 0 }));
-    fireEvent.click(screen.getByRole("radio", { name: "All", exact: true }));
+    fireEvent.click(screen.getByRole("radio", { name: /^All$/ }));
     await screen.findByText("919876543211");
   });
 
