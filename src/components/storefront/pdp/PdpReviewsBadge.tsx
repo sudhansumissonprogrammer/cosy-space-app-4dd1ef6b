@@ -1,49 +1,37 @@
 import { reviewCountLabel } from "@/lib/utkalCheckoutHints";
 import { Star } from "lucide-react";
 import { useStoreReviews } from "@/hooks/useStoreReviews";
+import { Button } from "@/components/ui/button";
 
 /**
  * Small rating pill that floats over the product gallery.
- * Tapping it scrolls the shopper straight to the reviews section on the PDP.
+ * Tapping it requests the store-scoped sheet, even before its lazy chunk loads.
  */
-export default function PdpReviewsBadge({ storeId, className = "" }: { storeId?: string; className?: string }) {
-  const { total } = useStoreReviews(storeId, 14);
+export default function PdpReviewsBadge({ storeId, onOpenReviews, className = "" }: { storeId?: string; onOpenReviews: () => void; className?: string }) {
+  const { total, reviews } = useStoreReviews(storeId, 14);
 
-  if (!total) return null;
+  if (!total && !reviews.length) return null;
 
   const goToReviews = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // The reviews block is lazy-mounted, so on first tap only the placeholder
-    // exists. Scroll to the placeholder, then re-align once the real section
-    // renders.
-    const scrollTo = (smooth: boolean) => {
-      const el = document.getElementById("reviews") || document.getElementById("reviews-anchor");
-      if (el) el.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "start" });
-      return !!document.getElementById("reviews");
-    };
-    scrollTo(true);
-    let tries = 0;
-    const timer = setInterval(() => {
-      tries += 1;
-      const mounted = scrollTo(false);
-      if (mounted || tries > 12) clearInterval(timer);
-    }, 150);
+    onOpenReviews();
   };
 
 
   return (
-    <button
+    <Button
+      variant="ghost"
       type="button"
       onClick={goToReviews}
-      className={`flex items-center gap-1 rounded-full border border-white/25 bg-black/55 px-1.5 py-0.5 text-white shadow-md backdrop-blur-sm transition-transform active:scale-95 ${className}`}
+      className={`h-auto flex items-center gap-1 rounded-full border border-primary-foreground/25 bg-primary/55 px-1.5 py-0.5 text-primary-foreground shadow-md backdrop-blur-sm transition-transform hover:bg-primary/70 hover:text-primary-foreground active:scale-95 ${className}`}
       aria-label={`See all ${reviewCountLabel(storeId, total)} customer reviews`}
     >
       <span className="flex items-center gap-0.5">
-        <Star className="h-2.5 w-2.5 fill-emerald-400 text-emerald-400" />
-        <Star className="h-2.5 w-2.5 fill-emerald-400 text-emerald-400" />
+        <Star className="h-2.5 w-2.5 fill-success text-success" />
+        <Star className="h-2.5 w-2.5 fill-success text-success" />
       </span>
-      <span className="text-[9px] font-semibold leading-none text-white/90">See reviews</span>
-    </button>
+      <span className="text-[9px] font-semibold leading-none text-primary-foreground/90">See reviews</span>
+    </Button>
   );
 }
 

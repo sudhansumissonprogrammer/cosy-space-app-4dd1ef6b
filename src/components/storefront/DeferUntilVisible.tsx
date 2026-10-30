@@ -6,6 +6,8 @@ interface Props {
   /** Fallback delay (ms) after mount if IntersectionObserver unavailable */
   fallbackDelay?: number;
   minHeight?: number | string;
+  /** Explicit shopper intent bypasses viewport deferral without polling. */
+  forceRender?: boolean;
 }
 
 /**
@@ -18,6 +20,7 @@ export function DeferUntilVisible({
   rootMargin = "400px",
   fallbackDelay = 2500,
   minHeight = 200,
+  forceRender = false,
 }: Props) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [show, setShow] = useState(false);
@@ -56,7 +59,7 @@ export function DeferUntilVisible({
   }, [show, rootMargin, fallbackDelay]);
 
 
-  if (show) return <>{children}</>;
+  if (show || forceRender) return <>{children}</>;
   return <div ref={ref} style={{ minHeight }} aria-hidden="true" />;
 }
 

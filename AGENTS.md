@@ -50,7 +50,7 @@
 
 - Resolve Kalinga public content and store-only features through its shared helper; known IDs override legacy slugs to prevent stale identity and cross-store overrides.
 - Kalinga's lazy carousel shares teaser cache; glass cards keep the separate popup/teaser.
-- Reviews use owner routes with admin fallback; preserve errors. Merchant photo collections join the shared feed by exact store ID, omit invented names/stars and stay outside rating aggregates.
+- Reviews retain owner/admin routes, errors and store-scoped photos without invented ratings. Gallery taps force lazy mounting with retained open intent; community banners mount only for eligible mobile sticky actions.
 
 - Validate exit coupons independently; replace only smaller discounts and hide competing sheets to prevent overlap.
 - Store-gated cashback display is separate from charges to keep badges consistent.
