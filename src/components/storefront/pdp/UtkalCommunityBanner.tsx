@@ -25,7 +25,7 @@ export default function UtkalCommunityBanner({ store, visible }: {
       className="block w-full sm:hidden"
     >
       <img src={banner.url} alt="Join our WhatsApp Community — exclusive offers, new arrivals and member-only deals"
-        width={1920} height={277} loading="lazy" decoding="async" fetchPriority="low"
+        width={1920} height={277} loading="lazy" decoding="async"
         className="block h-auto w-full" />
     </a>
   );
