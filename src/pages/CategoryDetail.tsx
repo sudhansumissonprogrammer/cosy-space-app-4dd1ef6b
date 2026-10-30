@@ -29,7 +29,7 @@ import { hidesCategoryFilters } from "@/components/storefront/pdp/storeSections/
 import { utkalCollectionIntroduction, isUtkalContentStore, UTKAL_STATUS } from "../../supabase/functions/_shared/utkalContent";
 import { utkalCategoryHeading, utkalCategoryIntro, utkalCategoryFaq, relatedCategories } from "../../supabase/functions/_shared/utkalCategorySeo";
 import { useStorefrontCategories } from "@/hooks/useStorefrontCategories";
-import utkalSaleBanner from "@/assets/utkal-sale-banner-v2.webp.asset.json";
+import utkalSaleBanner from "@/assets/utkal-sale-banner-v3.webp.asset.json";
 
 /**
  * Brand-grouped carousels: opt-in per store + category only. Lazy so no other
