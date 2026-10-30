@@ -155,6 +155,13 @@
       "when": 1793369498331,
       "tag": "0021_order_item_packaging_snapshot",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1793380990767,
+      "tag": "0022_store_whatsapp_replied_threads",
+      "breakpoints": true
     }
   ]
 }
