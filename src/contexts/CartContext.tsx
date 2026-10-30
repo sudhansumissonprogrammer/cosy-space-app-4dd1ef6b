@@ -218,7 +218,9 @@ export function CartProvider({ slug, storeId, currency = "INR", children }: { sl
         // shown, stored meta and server-side surcharge always agree.
         const packagingChanged =
           (existing.meta?.kind === "packaging" || item.meta?.kind === "packaging") &&
-          (existing.meta?.packaging ?? null) !== (item.meta?.packaging ?? null);
+          ((existing.meta?.packaging ?? null) !== (item.meta?.packaging ?? null) ||
+          (existing.meta?.packaging_option_id ?? null) !== (item.meta?.packaging_option_id ?? null) ||
+          existing.price !== item.price);
         updated[idx] = {
           ...existing,
           ...(packagingChanged ? { price: item.price, meta: item.meta } : {}),
