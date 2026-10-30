@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { isUtkalContentStore } from "../../../../supabase/functions/_shared/utkalContent";
-import banner from "@/assets/utkal-whatsapp-community.webp.asset.json";
+import banner from "@/assets/utkal-community-compact.webp.asset.json";
 
 export default function UtkalCommunityBanner({ store, visible }: {
   store: { id?: string | null; slug?: string | null };
@@ -22,11 +22,11 @@ export default function UtkalCommunityBanner({ store, visible }: {
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Join Utkal Watch WhatsApp community"
-      className="block w-full sm:hidden"
+      className="block w-full overflow-hidden leading-none sm:hidden"
     >
       <img src={banner.url} alt="Join our WhatsApp Community — exclusive offers, new arrivals and member-only deals"
-        width={1920} height={277} loading="lazy" decoding="async"
-        className="block h-auto w-full" />
+        width={1536} height={174} loading="eager" decoding="async"
+        className="block aspect-[1536/174] h-auto w-full" />
     </a>
   );
 }

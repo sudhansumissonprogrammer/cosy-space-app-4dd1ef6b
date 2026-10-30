@@ -1385,7 +1385,7 @@ export default function ProductDetail() {
                 fontFamily: "var(--storefront-body-font, inherit)",
               }}
             >
-              <div className={`mx-auto max-w-6xl ${isKalingaStore(store) ? "px-3 py-1.5 sm:p-3" : "p-3"}`}>
+              <div className={`mx-auto max-w-6xl ${isKalingaStore(store) || isUtkalContentStore(store) ? "px-3 py-1.5 sm:p-3" : "p-3"}`}>
                 <div className="flex items-center gap-3">
                   {/* Product info — desktop only */}
                   <div className="hidden sm:flex items-center gap-3 flex-1 min-w-0">
@@ -1419,7 +1419,7 @@ export default function ProductDetail() {
                   </div>
                   <div className="flex flex-1 sm:flex-none gap-2">
                     <button
-                      className={`btn-press flex ${isKalingaStore(store) ? "h-9" : "h-10"} sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-1.5 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-[transform,opacity,colors,box-shadow] ${
+                      className={`btn-press flex ${isKalingaStore(store) || isUtkalContentStore(store) ? "h-9" : "h-10"} sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-1.5 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-[transform,opacity,colors,box-shadow] ${
                         justAdded ? "bg-emerald-600 text-white" : "btn-gold"
                       }`}
                       style={{ fontFamily: "var(--storefront-body-font, inherit)" }}
@@ -1438,7 +1438,7 @@ export default function ProductDetail() {
                       )}
                     </button>
                     <button
-                      className={`btn-press flex ${isKalingaStore(store) ? "h-9" : "h-10"} sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-2 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-[transform,opacity,colors,box-shadow]`}
+                      className={`btn-press flex ${isKalingaStore(store) || isUtkalContentStore(store) ? "h-9" : "h-10"} sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-2 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-[transform,opacity,colors,box-shadow]`}
                       style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", fontFamily: "var(--storefront-body-font, inherit)" }}
                       onPointerDown={prefetchCheckout}
                       onClick={handleBuyNow}
