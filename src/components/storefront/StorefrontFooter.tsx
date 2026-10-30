@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { MapPin, Clock, MessageCircle, Instagram, Facebook, Mail } from "lucide-react";
 import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
+import { hidesPlatformBranding } from "@/lib/storefrontBranding";
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath, isCustomDomainHost } from "@/lib/subdomain";
@@ -258,7 +259,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
             </p>
             <PaymentIcons methods={paymentMethods} />
           </div>
-          {!isCustomDomainHost() && (
+          {!hidesPlatformBranding(store) && !isCustomDomainHost() && (
             <p className="text-xs opacity-50 flex items-center justify-center gap-1">
               Powered by{" "}
               <span className="inline-flex items-center gap-1">

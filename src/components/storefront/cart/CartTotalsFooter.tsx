@@ -3,8 +3,10 @@ import { ReceiptIndianRupee } from "lucide-react";
 import { formatPrice } from "@/lib/productUtils";
 import { storefrontPath } from "@/lib/subdomain";
 import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
+import { hidesPlatformBranding } from "@/lib/storefrontBranding";
 
 interface Props {
+  storeId?: string;
   slug: string;
   currency: string;
   /** Sum of MRP across cart lines (falls back to subtotal when unknown). */
@@ -27,6 +29,7 @@ const UPI_ICONS = [
  * with struck MRP + % off, and a two-line checkout CTA with UPI icons.
  */
 export default function CartTotalsFooter({
+  storeId,
   slug,
   currency,
   mrpTotal,
@@ -105,7 +108,7 @@ export default function CartTotalsFooter({
           )}
         </Link>
 
-        <div className="mt-1.5 flex items-center justify-center gap-1 opacity-60">
+        {!hidesPlatformBranding({ id: storeId, slug }) && <div className="mt-1.5 flex items-center justify-center gap-1 opacity-60">
           <span className="text-[9px] font-medium" style={{ color: "var(--storefront-text, inherit)" }}>
             Powered by
           </span>
@@ -113,7 +116,7 @@ export default function CartTotalsFooter({
           <span className="text-[9px] font-bold" style={{ color: "var(--storefront-text, inherit)" }}>
             ShopBanao
           </span>
-        </div>
+        </div>}
 
       </div>
     </div>

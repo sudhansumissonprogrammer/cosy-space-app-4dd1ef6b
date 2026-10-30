@@ -232,6 +232,7 @@ export default function SideCart({ store }: SideCartProps) {
               )}
 
               <CartTotalsFooter
+                storeId={store.id}
                 slug={store.slug}
                 currency={currency}
                 mrpTotal={mrpTotal}
