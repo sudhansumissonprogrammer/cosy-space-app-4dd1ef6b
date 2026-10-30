@@ -12,6 +12,7 @@ import { UtkalBulkCampaigns } from "@/components/whatsapp/UtkalBulkCampaigns";
 import { Megaphone } from "lucide-react";
 import { toast } from "sonner";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { isUtkalContentStore } from "../../supabase/functions/_shared/utkalContent";
 
 type ToggleKey = "master" | "order_confirmation" | "cod_confirmation" | "order_shipped" | "abandoned_cart";
 type Toggles = Record<ToggleKey, boolean>;
@@ -77,7 +78,7 @@ export default function StoreWhatsAppSimple() {
     { key: "abandoned_cart", icon: ShoppingCart, label: "Abandoned cart recovery", desc: "Customers who left items in their cart get one friendly reminder." },
   ];
 
-  const isUtkal = (store as any)?.slug === "utkalwatches";
+  const isUtkal = isUtkalContentStore({ id: storeId ?? store?.id, slug: store?.slug });
 
   return (
     <div className="space-y-5">
@@ -92,7 +93,7 @@ export default function StoreWhatsAppSimple() {
       </div>
 
       <Tabs defaultValue="inbox" className="space-y-5">
-        <TabsList>
+        <TabsList className="h-auto max-w-full flex-wrap justify-start gap-1">
           <TabsTrigger value="inbox" className="gap-1.5">
             <Inbox className="h-4 w-4" /> Inbox
           </TabsTrigger>
