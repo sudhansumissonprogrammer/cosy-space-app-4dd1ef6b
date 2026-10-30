@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Fix first-tap gallery reviews across stores without waiting for the deferred teaser; add Utkal-only lossless cropped mobile community banner below sticky purchase buttons and verify.
 - [x] Increased Utkal Partial COD discount to ₹100 in checkout and authoritative order policy; ₹100/unit advance unchanged, discount capped to delivery balance and notes record actual saving. 15 tests/build pass; place-order and checkout-v2-cod deployed. Frontend publication and real paid-order verification remain pending; no payment placed.
 - [x] Removed Utkal full-prepaid selector and full-mode fallback; retained Partial COD, ₹50 discount and COD, updated COD wording. Other stores unchanged; 15 tests pass, build OK. Live checkout-choice readback remains unverified after repeated product-load timeouts; publish frontend.
 - [x] Utkal Sale: uploaded banner converted to pixel-identical lossless WebP (19.6% smaller), placed flush under header; separate introductory/related text hidden without empty space. Existing brand/product rails preserved; desktop/mobile checked using local asset forwarding. Frontend publication required.
