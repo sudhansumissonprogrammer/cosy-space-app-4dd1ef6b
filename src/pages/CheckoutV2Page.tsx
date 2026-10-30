@@ -17,6 +17,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { supabaseStorefront } from "@/integrations/supabase/storefrontClient";
 import { useCart } from "@/contexts/CartContext";
 import { getPackagingOption } from "@/lib/packagingOptions";
+import { selectedUtkalPackaging, type CategoryPackaging } from "@/lib/categoryPackaging";
+import { fetchProductPackaging } from "@/hooks/useProductPackaging";
+import { isUtkalContentStore } from "../../supabase/functions/_shared/utkalContent";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import { formatPrice } from "@/lib/productUtils";
 import { normalizePhone, isValidIndianPhone, toCanonicalIndianPhone } from "@/lib/phoneUtils";
@@ -373,7 +376,28 @@ export default function CheckoutV2Page() {
   const isRecoveryRetry = searchParams.get("recover") === "order";
   const isSingleMode = !!productId;
   // Packaging add-on carried over from the PDP buy-now link (?pkg=).
-  const pkgOption = getPackagingOption(searchParams.get("pkg"));
+  const isUtkalPackaging = isUtkalContentStore(store);
+  const pkgId = searchParams.get("pkgid");
+  const packagingRequests = isSingleMode
+    ? (searchParams.get("pkg") === "brandkit" && productId ? [{ productId, optionId: pkgId }] : [])
+    : cartItems.filter(item => item.meta?.packaging === "brandkit").map(item => ({ productId: item.productId, optionId: item.meta?.packaging_option_id }));
+  const packagingCheck = useQuery({
+    queryKey: ["checkout-packaging", store.id, JSON.stringify(packagingRequests)],
+    enabled: isUtkalPackaging && packagingRequests.length > 0,
+    staleTime: 0,
+    queryFn: async () => {
+      const resolved: Record<string, CategoryPackaging> = {};
+      await Promise.all(packagingRequests.map(async request => {
+        const saved = await fetchProductPackaging(store.id, request.productId);
+        if (!saved || saved.id !== request.optionId) throw new Error("This packaging choice has changed. Please choose your box again.");
+        resolved[request.productId] = saved;
+      }));
+      return resolved;
+    },
+  });
+  const pkgOption = isUtkalPackaging
+    ? selectedUtkalPackaging(searchParams.get("pkg"), productId ? packagingCheck.data?.[productId] : null)
+    : getPackagingOption(searchParams.get("pkg"));
   const pkgSurcharge = pkgOption.surcharge;
 
   // Anonymous shoppers have no direct SELECT grant on `products` /
@@ -417,8 +441,8 @@ export default function CheckoutV2Page() {
         price: ((buyNowVariant?.price ?? (buyNowProduct.sale_price && buyNowProduct.sale_price < buyNowProduct.price ? buyNowProduct.sale_price : buyNowProduct.price)) as number) + pkgSurcharge,
         quantity: buyNowQty,
         image: buyNowProduct.image_url as string | null,
-        meta: (pkgSurcharge > 0
-          ? { kind: "packaging", packaging: pkgOption.key, packaging_label: pkgOption.label, packaging_surcharge: pkgSurcharge }
+        meta: (pkgOption.key !== "complimentary"
+          ? { kind: "packaging", packaging: pkgOption.key, packaging_label: pkgOption.label, packaging_surcharge: pkgSurcharge, packaging_option_id: pkgId }
           : null) as any,
       }];
     }
@@ -426,12 +450,16 @@ export default function CheckoutV2Page() {
       productId: i.productId,
       variantId: i.variantId,
       name: i.variantName ? `${i.name} (${i.variantName})` : i.name,
-      price: i.price,
+      price: isUtkalPackaging && i.meta?.packaging === "brandkit" && packagingCheck.data?.[i.productId]
+        ? i.price - Number(i.meta.packaging_surcharge || 0) + Number(packagingCheck.data[i.productId].surcharge)
+        : i.price,
       quantity: i.quantity,
       image: (i as any).image || null,
-      meta: (i as any).meta || null,
+      meta: isUtkalPackaging && i.meta?.packaging === "brandkit" && packagingCheck.data?.[i.productId]
+        ? { ...i.meta, packaging_label: packagingCheck.data[i.productId].label, packaging_surcharge: Number(packagingCheck.data[i.productId].surcharge) }
+        : (i as any).meta || null,
     }));
-  }, [isSingleMode, buyNowProduct, buyNowVariant, buyNowQty, cartItems, pkgSurcharge, pkgOption.key, pkgOption.label]);
+  }, [isSingleMode, buyNowProduct, buyNowVariant, buyNowQty, cartItems, pkgSurcharge, pkgOption.key, pkgOption.label, pkgId, isUtkalPackaging, packagingCheck.data]);
 
   // Free gift (Upsell app, cart_value trigger) — also for Buy Now checkouts,
   // which never pass through the cart where AutoFreeGift runs.
@@ -4321,7 +4349,7 @@ export default function CheckoutV2Page() {
   const forceRecheck = () => { manualRecheck(); };
 
   // ─── Loading skeletons ──────────────────────────────────────────────────
-  if (isSingleMode && buyNowProductLoading && !buyNowProduct) {
+  if ((isSingleMode && buyNowProductLoading && !buyNowProduct) || (isUtkalPackaging && packagingRequests.length > 0 && packagingCheck.isPending)) {
     return (
       <div className="mx-auto max-w-md p-4 space-y-4">
         <Skeleton className="h-10 w-full" />
@@ -4330,6 +4358,10 @@ export default function CheckoutV2Page() {
         <Skeleton className="h-10 w-full" />
       </div>
     );
+  }
+
+  if (isUtkalPackaging && packagingRequests.length > 0 && packagingCheck.isError) {
+    return <div className="mx-auto max-w-md space-y-4 p-6"><p className="text-foreground">{packagingCheck.error.message}</p><Button onClick={() => void packagingCheck.refetch()}>Retry</Button><Button variant="outline" onClick={() => navigate(storefrontPath(store.slug, "shop"))}>Choose your box again</Button></div>;
   }
 
   // ─── Sold-out guard ─────────────────────────────────────────────────────

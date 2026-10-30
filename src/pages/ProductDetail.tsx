@@ -53,6 +53,8 @@ import PartialPaymentTrustCard from "@/components/storefront/PartialPaymentTrust
 const PackagingSelector = lazy(() => import("@/components/storefront/pdp/storeSections/PackagingSelector"));
 const CodAssuranceStrip = lazy(() => import("@/components/storefront/pdp/storeSections/CodAssuranceStrip"));
 import { DEFAULT_PACKAGING, UTKAL_PACKAGING_OPTIONS, packagingVisibleForProduct, packagingSurcharge, getPackagingOption, type PackagingKey } from "@/lib/packagingOptions";
+import { selectedUtkalPackaging, utkalPackagingOptions } from "@/lib/categoryPackaging";
+import { useProductPackaging } from "@/hooks/useProductPackaging";
 import WarrantyBadge from "@/components/storefront/WarrantyBadge";
 import PdpTrustSeals from "@/components/storefront/PdpTrustSeals";
 import PdpTrustBadges from "@/components/storefront/PdpTrustBadges";
@@ -399,6 +401,7 @@ export default function ProductDetail() {
   }, [productSlug, isLoading]);
 
   const productId = product?.id;
+  const { data: categoryPackaging } = useProductPackaging(store.id, productId, isUtkalContentStore(store));
 
   // Use cached product_images from RPC data as initialData
   const getCachedImages = () => {
@@ -695,11 +698,13 @@ export default function ProductDetail() {
   // Packaging add-on (store-scoped). Surcharge is re-derived server-side in
   // `place-order`, so this is display + cart metadata only.
   const showPackaging = packagingVisibleForProduct(isUtkalContentStore(store), packagingEligible, inPackagingCategory === true);
-  const pkgOption = getPackagingOption(showPackaging ? packaging : DEFAULT_PACKAGING);
-  const pkgSurcharge = showPackaging ? packagingSurcharge(packaging) : 0;
+  const pkgOption = isUtkalContentStore(store)
+    ? selectedUtkalPackaging(showPackaging ? packaging : DEFAULT_PACKAGING, categoryPackaging)
+    : getPackagingOption(showPackaging ? packaging : DEFAULT_PACKAGING);
+  const pkgSurcharge = showPackaging ? pkgOption.surcharge : 0;
   const unitPrice = variantPrice + pkgSurcharge;
-  const packagingMeta = showPackaging && pkgSurcharge > 0
-    ? { kind: "packaging" as const, packaging: pkgOption.key, packaging_label: pkgOption.label, packaging_surcharge: pkgSurcharge }
+  const packagingMeta = showPackaging && pkgOption.key !== DEFAULT_PACKAGING
+    ? { kind: "packaging" as const, packaging: pkgOption.key, packaging_label: pkgOption.label, packaging_surcharge: pkgSurcharge, packaging_option_id: pkgOption.key === "brandkit" ? categoryPackaging?.id : undefined }
     : undefined;
   // Commission-only model: checkout is always enabled and direct WhatsApp
   // ordering is disabled to prevent commission bypass.
@@ -794,7 +799,8 @@ export default function ProductDetail() {
     qs.set("product", product.id);
     if (selectedVariant?.id) qs.set("variant", selectedVariant.id);
     if (quantity > 1) qs.set("qty", String(quantity));
-    if (pkgSurcharge > 0) qs.set("pkg", pkgOption.key);
+    if (pkgOption.key !== DEFAULT_PACKAGING) qs.set("pkg", pkgOption.key);
+    if (pkgOption.key === "brandkit" && categoryPackaging?.id) qs.set("pkgid", categoryPackaging.id);
     navigate(storefrontPath(store.slug, `checkout?${qs.toString()}`));
   };
 
@@ -1086,9 +1092,10 @@ export default function ProductDetail() {
               <PackagingSelector
                 basePrice={variantPrice}
                 currency={currency}
-                value={packaging}
+                value={pkgOption.key}
                 onChange={setPackaging}
-                options={isUtkalContentStore(store) ? UTKAL_PACKAGING_OPTIONS : undefined}
+                options={isUtkalContentStore(store) ? utkalPackagingOptions(categoryPackaging) : undefined}
+                images={isUtkalContentStore(store) && categoryPackaging ? { brandkit: categoryPackaging.image_url } : undefined}
               />
             </Suspense>
           )}

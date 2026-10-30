@@ -1330,6 +1330,7 @@ export type Database = {
           id: string
           image_url: string | null
           order_id: string
+          packaging: Json | null
           product_id: string | null
           product_name: string
           quantity: number
@@ -1340,6 +1341,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           order_id: string
+          packaging?: Json | null
           product_id?: string | null
           product_name: string
           quantity?: number
@@ -1350,6 +1352,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           order_id?: string
+          packaging?: Json | null
           product_id?: string | null
           product_name?: string
           quantity?: number
