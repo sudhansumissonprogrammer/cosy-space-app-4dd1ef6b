@@ -26,11 +26,11 @@ describe("WhatsApp replied conversation filter", () => {
     rpc.mockImplementation(async (name: string) => ({ data: [thread(name === "store_wa_replied_threads" ? "919876543210" : "919876543211", name === "store_wa_replied_threads")], error: null }));
     mount();
     await screen.findByText("919876543211");
-    fireEvent.click(screen.getByRole("button", { name: "Replied only" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Replied only" }));
     await screen.findByText("919876543210");
     expect(screen.queryByText("919876543211")).toBeNull();
     expect(rpc).toHaveBeenCalledWith("store_wa_replied_threads", expect.objectContaining({ _store_id: "store-a", _offset: 0 }));
-    fireEvent.click(screen.getByRole("button", { name: "All", exact: true }));
+    fireEvent.click(screen.getByRole("radio", { name: "All", exact: true }));
     await screen.findByText("919876543211");
   });
 
@@ -40,7 +40,7 @@ describe("WhatsApp replied conversation filter", () => {
         args._offset === 0 ? Array.from({ length: 30 }, (_, i) => thread(`91987654${String(i).padStart(4, "0")}`, true, 31)) : [thread("919876543210", true, 31)], error: null,
     }));
     mount();
-    fireEvent.click(screen.getByRole("button", { name: "Replied only" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Replied only" }));
     fireEvent.click(await screen.findByRole("button", { name: "Load older conversations" }));
     await screen.findByText("919876543210");
     expect(rpc).toHaveBeenCalledWith("store_wa_replied_threads", expect.objectContaining({ _offset: 30 }));
