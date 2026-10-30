@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { productSearchDescription } from "../../supabase/functions/_shared/productSeo";
-import { isUtkalContentStore, UTKAL_STATUS, UTKAL_QUALITY_TERMS } from "../../supabase/functions/_shared/utkalContent";
+import { isUtkalContentStore, UTKAL_QUALITY_TERMS } from "../../supabase/functions/_shared/utkalContent";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useProductJsonLd } from "@/hooks/useJsonLd";
 import { useProductCategory } from "@/hooks/useProductCategory";
@@ -907,8 +907,6 @@ export default function ProductDetail() {
           <h1 className={`${isKalingaStore(store) ? "text-base sm:text-xl lg:text-2xl -mx-3 break-words sm:mx-0" : "text-xl sm:text-2xl lg:text-[1.7rem]"} font-semibold leading-snug`} style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif", ...(isV18 ? { color: "#ffffff", fontWeight: 400, letterSpacing: "0.01em" } : { color: undefined }) }}>
             {product.name}
           </h1>
-
-          {isUtkalContentStore(store) && <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{UTKAL_STATUS}</p>}
 
           {/* Rating & Social Proof */}
           {!isUtkalContentStore(store) && <div className="mt-2 flex items-center gap-2.5 flex-wrap">

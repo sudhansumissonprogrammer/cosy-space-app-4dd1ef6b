@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { PackageCheck, Phone, MessageCircle, PhoneCall, X } from "lucide-react";
 import { waPhoneNumber } from "@/lib/phoneUtils";
+import { isUtkalContentStore } from "../../../../../supabase/functions/_shared/utkalContent";
 
 interface Props {
   product: any;
@@ -58,7 +59,7 @@ export default function ParcelAssuranceSection({ product, store }: Props) {
   return (
     <section>
       {/* Assurance strip */}
-      <div
+      {!isUtkalContentStore(store) && <div
         className="flex items-start gap-3 rounded-sm border-l-4 p-3.5 sm:p-4"
         style={{
           borderLeftColor: "var(--storefront-primary, hsl(var(--primary)))",
@@ -83,10 +84,10 @@ export default function ParcelAssuranceSection({ product, store }: Props) {
           </p>
         </div>
 
-      </div>
+      </div>}
 
       {/* Actions — single row, never wrap */}
-      <div className="mt-3 flex flex-nowrap gap-2">
+      <div className={`${isUtkalContentStore(store) ? "" : "mt-3 "}flex flex-nowrap gap-2`}>
         <button
           type="button"
           onClick={() => setOpen(true)}
