@@ -20,6 +20,7 @@ import { getPackagingOption } from "@/lib/packagingOptions";
 import { selectedUtkalPackaging, type CategoryPackaging } from "@/lib/categoryPackaging";
 import { fetchProductPackaging } from "@/hooks/useProductPackaging";
 import { isUtkalContentStore } from "../../supabase/functions/_shared/utkalContent";
+import { needsCheckoutPhoneScreen } from "@/lib/checkoutPhonePolicy";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import { formatPrice } from "@/lib/productUtils";
 import { normalizePhone, isValidIndianPhone, toCanonicalIndianPhone } from "@/lib/phoneUtils";
@@ -926,6 +927,9 @@ export default function CheckoutV2Page() {
   >("idle");
   useEffect(() => {
     const canon = toCanonicalIndianPhone(phone);
+    // Unverified Utkal phone entry must not retrieve another person's address
+    // or mint their account session. Signed-in address books remain available.
+    if (isUtkalPackaging) return;
     if (!store?.id || !canon) return;
     if (hasStreetAddress(streetAddress) && pincode && city && state && fullName) return;
     const key = `${store.id}:${canon}`;
@@ -1023,7 +1027,7 @@ export default function CheckoutV2Page() {
   };
 
   const phoneValid = !!toCanonicalIndianPhone(phone);
-  const addressComplete = !!(pincode && hasStreetAddress(streetAddress) && city && state && fullName);
+  const addressComplete = !!(phoneValid && pincode && hasStreetAddress(streetAddress) && city && state && fullName);
   // Ref mirror so async mint paths read the live value, never a stale closure.
   const addressCompleteRef = useRef(addressComplete);
   addressCompleteRef.current = addressComplete;
@@ -1261,6 +1265,7 @@ export default function CheckoutV2Page() {
   const [returningUsed, setReturningUsed] = useState(false);
   const lastLookedUpPhoneRef = useRef<string>("");
   useEffect(() => {
+    if (isUtkalPackaging) return;
     if (savedAddresses && savedAddresses.length > 0) return;
     if (returningDismissed || returningUsed) return;
     const canon = toCanonicalIndianPhone(phone);
@@ -1593,7 +1598,35 @@ export default function CheckoutV2Page() {
   // `sessionStorage[ac_${storeId}]` on submit, so we MUST re-read it here to
   // avoid a duplicate `capture_checkout_lead` call after the phone gate.
   const [abandonedCartId, setAbandonedCartId] = useState<string | null>(null);
+  const utkalLeadIdentityRef = useRef("");
   useEffect(() => {
+    if (!isUtkalPackaging || !store.id || checkoutItems.length === 0) return;
+    const canon = toCanonicalIndianPhone(phone);
+    if (!canon) return;
+    let cancelled = false;
+    const fingerprint = `${store.id}:${canon}:${waConsent}:${JSON.stringify(checkoutItems.map(i => [i.productId, i.quantity, i.price]))}`;
+    if (utkalLeadIdentityRef.current === fingerprint) return;
+    const timer = window.setTimeout(async () => {
+      try {
+        const { data, error } = await supabase.rpc("capture_checkout_lead", {
+          p_store_id: store.id, p_phone: canon,
+          p_cart_items: checkoutItems.map(i => ({ name: i.name, price: i.price, quantity: i.quantity, productId: i.productId, variantId: i.variantId, image: i.image })),
+          p_consent: waConsent, p_session_token: getOrCreateSessionId(), p_source: "checkout_v2",
+        });
+        if (cancelled || error) return;
+        const cartId = (data as any)?.cart_id;
+        utkalLeadIdentityRef.current = fingerprint;
+        if (cartId) {
+          setAbandonedCartId(cartId);
+          try { sessionStorage.setItem(`ac_${store.id}`, cartId); sessionStorage.setItem(`ac_phone_${store.id}`, canon); } catch { /* noop */ }
+        }
+        try { localStorage.setItem("checkout_phone", canon); } catch { /* noop */ }
+      } catch { /* Best-effort recovery never blocks the address form. */ }
+    }, 500);
+    return () => { cancelled = true; window.clearTimeout(timer); };
+  }, [isUtkalPackaging, store.id, phone, waConsent, checkoutItems]);
+  useEffect(() => {
+    if (isUtkalPackaging) return;
     if (!store?.id) return;
     if (abandonedCartId) return;
     // Hydrate from Step 1's write first — prevents double capture.
@@ -4769,7 +4802,7 @@ export default function CheckoutV2Page() {
   // create the abandoned_carts row (via CheckoutPhoneStep → capture_checkout_lead)
   // BEFORE the shopper can drop off on the address form. WhatsApp cart-recovery
   // cron then reaches out after 30 min.
-  const needsPhone = !toCanonicalIndianPhone(phone);
+  const needsPhone = needsCheckoutPhoneScreen(store, phone);
   if (needsPhone) {
     return (
       <>
@@ -4814,7 +4847,7 @@ export default function CheckoutV2Page() {
   const mobile = isMobile();
 
   const savedAddr = savedAddresses?.find((a: any) => a.id === selectedAddressId);
-  const addressFilled = !!(pincode && hasStreetAddress(streetAddress) && city && state && fullName);
+  const addressFilled = addressComplete;
   // One source of truth for discounts shown in the header:
   //   • coupon always counts (applies to both plans)
   //   • prepaid discount counts only when the shopper is on "Pay full"
@@ -5129,6 +5162,7 @@ export default function CheckoutV2Page() {
                     <button
                       type="button"
                       onClick={() => {
+                        if (isUtkalPackaging) { openAddressFormSheet(); return; }
                         setPhone("");
                         try { localStorage.removeItem("checkout_phone"); } catch { /* noop */ }
                       }}
@@ -5301,7 +5335,18 @@ export default function CheckoutV2Page() {
 
                 {/* Phone entered in Step 1 — shown here with a Change link that
                     takes the shopper back to the mobile-number screen. */}
-                {phone && (
+                {isUtkalPackaging ? (
+                  <div className="space-y-1">
+                    <Label htmlFor="ck-phone" className="text-xs text-muted-foreground">Mobile number *</Label>
+                    <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3">
+                      <span className="text-sm text-muted-foreground">+91</span>
+                      <Input id="ck-phone" data-field="phone" name="tel" type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={16} value={phone} aria-invalid={addressAttempted && !phoneValid} placeholder="10-digit mobile number" className="border-0 px-0 shadow-none" onChange={event => {
+                        const entered = event.target.value.replace(/\D/g, "");
+                        setPhone(toCanonicalIndianPhone(entered) || entered.slice(0, 10));
+                      }} />
+                    </div>
+                  </div>
+                ) : phone && (
                   <div className="rounded-lg border border-[#ECECEC] bg-[#FAFAFA] px-3 py-2 flex items-center gap-2">
                     <div className="min-w-0 flex-1">
                       <div className="text-[11px] text-muted-foreground">Mobile number</div>
@@ -5474,6 +5519,7 @@ export default function CheckoutV2Page() {
                     // just kept tapping Continue and dropped off.
                     const missing: Array<[string, string]> =
                       [
+                        !phoneValid ? ["phone", "Enter a valid 10-digit phone number"] as [string, string] : null,
                         !fullName.trim() ? ["full_name", "Please enter your full name"] as [string, string] : null,
                         !/^\d{6}$/.test(pincode) ? ["pincode", "Enter a valid 6-digit pincode"] as [string, string] : null,
                         !city.trim() ? ["city", "Enter your city"] as [string, string] : null,

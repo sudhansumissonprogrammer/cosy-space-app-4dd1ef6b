@@ -18,7 +18,7 @@ export default function PackagingSettings() {
   const { store, storeId, isLoading } = useDashboardStore();
   const { user } = useAuth();
   const qc = useQueryClient();
-  const eligible = isUtkalContentStore(store);
+  const eligible = !!store && isUtkalContentStore(store);
   const [categoryId, setCategoryId] = useState("");
   const [label, setLabel] = useState("");
   const [price, setPrice] = useState("");

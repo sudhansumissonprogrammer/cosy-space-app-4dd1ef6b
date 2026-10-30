@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Utkal only: disable checkout phone verification, open checkout directly and collect phone with delivery address; preserve lead capture, abandoned-cart automation and other stores.
 - [ ] Add Utkal-only category Packaging menu, uploaded photo/name/price settings, product third-choice resolution and authoritative checkout charges; test tenant/category isolation and selection flow.
 - [x] Hide platform branding in Utkal/Kalinga footer, cart, phone, OTP and both checkout implementations. Eleven identity tests pass; both real product→cart→phone flows checked without ordering. OTP/address gates checked in source, not live; payment-provider screens and emails unchanged. Publish frontend.
 - [x] Merge Utkal PDP assurances into existing stickers: tiny lossless gold airplane shipping badge, compact COD/exchange/tracking strip, separate section removed; other stores unchanged. Four isolation tests pass, build OK; real mobile/desktop badge text, image readiness and no overflow checked. Publish frontend.
