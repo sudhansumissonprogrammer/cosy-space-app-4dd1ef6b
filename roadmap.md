@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Remove visible platform branding only in Utkal Watch and Kalinga Jewels; verify cart, phone, verification, checkout and footer.
 - [x] Merge Utkal PDP assurances into existing stickers: tiny lossless gold airplane shipping badge, compact COD/exchange/tracking strip, separate section removed; other stores unchanged. Four isolation tests pass, build OK; real mobile/desktop badge text, image readiness and no overflow checked. Publish frontend.
 - [x] Updated Utkal-only PDP assurances to Full COD Available, Exchange Only Within 3 Days, and Express Air Shipping Available at Checkout with airplane icon; real mobile/desktop labels and no overflow verified, seven regression tests/build pass. Display only; shipping configuration unchanged, publish frontend.
 - [x] Fit Utkal PDP photos to measured per-slide proportions, flush beneath header without cropping; original video viewport/player and other stores preserved. Ten tests/build pass; real mobile photo 390×520, desktop 604×805, photo/video/photo navigation and zoom checked. Sandbox video source reports unsupported media (code 4), so playback remains unverified; publish frontend.
