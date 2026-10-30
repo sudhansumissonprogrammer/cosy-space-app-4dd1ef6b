@@ -10,7 +10,7 @@ import { reviewCountLabel } from "@/lib/utkalCheckoutHints";
  *  - Nothing renders (no layout shift, no placeholder) until reviews exist.
  *  - The full review sheet is only mounted on tap.
  */
-import { useEffect, useMemo, useRef, useState, lazy, Suspense, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { BadgeCheck, ChevronRight, PenLine, X } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -34,6 +34,8 @@ interface Props {
   productName?: string;
   storeSlug?: string;
   modernReviews?: boolean;
+  /** Monotonic request retained while this component's lazy chunk loads. */
+  openRequest?: number;
 }
 
 export default function CheckoutReviewsTeaser({
@@ -44,6 +46,7 @@ export default function CheckoutReviewsTeaser({
   productName,
   storeSlug,
   modernReviews = false,
+  openRequest = 0,
 }: Props) {
   // The SAME shared summary RPC the PDP uses,
   // so a shopper arriving from a PDP reuses the warm cache and pays no extra
@@ -83,7 +86,7 @@ export default function CheckoutReviewsTeaser({
 
   const shown = open && allReviews.length > 0 ? allReviews : reviews;
 
-  const openReviews = () => {
+  const openReviews = useCallback(() => {
     const styles = teaserRef.current ? window.getComputedStyle(teaserRef.current) : null;
     const headingFont = styles?.getPropertyValue("--storefront-heading-font").trim();
     const bodyFont = styles?.getPropertyValue("--storefront-body-font").trim();
@@ -92,7 +95,11 @@ export default function CheckoutReviewsTeaser({
       ...(bodyFont ? { "--review-body-font": bodyFont } : {}),
     } as CSSProperties);
     setOpen(true);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (openRequest > 0) openReviews();
+  }, [openRequest, openReviews]);
 
   // Cards inside the sheet mount 10 at a time while the shopper scrolls, so
   // opening it never floods the checkout with dozens of image requests.

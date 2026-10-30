@@ -69,6 +69,7 @@ const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/
 const StoreReviewCardsCarousel = lazy(() => import("@/components/storefront/pdp/ReviewCardsCarousel").then((module) => ({ default: module.StoreReviewCardsCarousel })));
 const CheckoutReviewsTeaser = lazy(() => import("@/components/storefront/checkout/CheckoutReviewsTeaser"));
 import PdpReviewsBadge from "@/components/storefront/pdp/PdpReviewsBadge";
+import UtkalCommunityBanner from "@/components/storefront/pdp/UtkalCommunityBanner";
 const PdpCarousels = lazy(() => import("@/components/storefront/pdp/PdpCarousels"));
 const ImitationWorldSimilarDesigns = lazy(() => import("@/components/storefront/pdp/ImitationWorldSimilarDesigns"));
 const WristlifeSections = lazy(() => import("@/components/storefront/pdp/storeSections/WristlifeSections"));
@@ -165,6 +166,7 @@ export default function ProductDetail() {
   const [variantPromptOpen, setVariantPromptOpen] = useState(false);
   const [packaging, setPackaging] = useState<PackagingKey>(DEFAULT_PACKAGING);
   const [stickyBarVisible, setStickyBarVisible] = useState(false);
+  const [reviewsOpenRequest, setReviewsOpenRequest] = useState(0);
   // buyNowModalOpen removed — phone capture is now Step 1 of CheckoutPage.
   const inlineCtaRef = useRef<HTMLDivElement>(null);
 
@@ -178,6 +180,7 @@ export default function ProductDetail() {
     setPackaging(DEFAULT_PACKAGING);
     setJustAdded(false);
     setCartBounce(false);
+    setReviewsOpenRequest(0);
     setOpenAccordion("description");
     window.scrollTo(0, 0);
     document.documentElement.scrollTop = 0;
@@ -852,6 +855,7 @@ export default function ProductDetail() {
           showWarrantyBadge={!!(mainThemeConfig as any)?.show_warranty_badge}
           storeId={store.id}
           compactGallery={isKalingaStore(store)}
+          onOpenReviews={() => setReviewsOpenRequest(request => request + 1)}
           galleryProduct={product}
           onShare={async () => {
             const storeHost = (store as any).custom_domain
@@ -1221,9 +1225,11 @@ export default function ProductDetail() {
           )}
 
           <div id="reviews-anchor">
-            <DeferUntilVisible rootMargin="200px" minHeight={54}>
-              <Suspense fallback={null}>
+            <DeferUntilVisible rootMargin="200px" minHeight={54} forceRender={reviewsOpenRequest > 0}>
+              <Suspense fallback={reviewsOpenRequest > 0 ? <p role="status" className="py-2 text-center text-sm text-muted-foreground">Loading reviews…</p> : null}>
                 <CheckoutReviewsTeaser
+                  key={`${store.id}:${product.id}`}
+                  openRequest={reviewsOpenRequest}
                   storeId={store.id}
                   storeSlug={store.slug}
                   productId={product.id}
@@ -1450,6 +1456,7 @@ export default function ProductDetail() {
                   </div>
                 </div>
               </div>
+              <UtkalCommunityBanner store={store} visible={stickyBarVisible} />
             </div>
           )}
 
@@ -1736,6 +1743,7 @@ function ImageGallery({
   storeId,
   compactGallery = false,
   galleryProduct,
+  onOpenReviews,
 }: {
   images: string[];
   video?: { url: string; poster: string } | null;
@@ -1747,6 +1755,7 @@ function ImageGallery({
   storeId?: string;
   compactGallery?: boolean;
   galleryProduct?: { slug?: string | null; category?: string | null };
+  onOpenReviews: () => void;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -2037,7 +2046,7 @@ function ImageGallery({
 
           {/* Rating pill → jumps to the reviews section */}
           <div className={`absolute right-7 sm:right-3 z-10 ${isVideoSlide ? "hidden sm:block " : ""}${showMultiUi ? "bottom-12 sm:bottom-3" : "bottom-3"}`}>
-            <PdpReviewsBadge storeId={storeId} />
+            <PdpReviewsBadge storeId={storeId} onOpenReviews={onOpenReviews} />
           </div>
 
 
