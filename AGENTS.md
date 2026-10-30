@@ -12,7 +12,7 @@
 - Product search metadata uses the shared neutral description/parent-price helper across app and edge renderers; Worker mirrors that contract, resolves PDP identities from the product and omits missing facts, because search/share representations must not contradict shopper data or invent commercial claims.
 - Static platform JSON-LD in index.html is authoritative for the landing page; do not mount duplicate client schemas or unsupported ratings/search actions. Store and Product hooks use distinct script identities so lifecycle cleanup cannot remove another entity.
 - The visible FAQ owns its matching FAQPage schema; marked platform schemas are removed before storefront app boot, and Worker utility HTML receives query-free identity with noindex/no-store at the response boundary to cover every shell exit without changing app data.
-- Rounded Classic navigation reuses Classic via a presentation-only flag, avoiding duplicated navigation logic.
+- Rounded Classic reuses Classic with a presentation flag.
 - Static platform robots and generated storefront robots use the shared crawler policy; AI crawler rendering must agree with those permissions, while authentication and utility noindex remain independent.
 - Public search/AI GET and HEAD requests dispatch to tenant SEO rendering before human HTML caches and cold/streaming shell exits; AI budgets remain host-scoped and bounded because user-agent names are not authentication.
 - Storefront Markdown is negotiated from the same successful public HTML renderer with a pinned converter; Worker caches separate format and page identity and vary by Accept, preventing cross-format leaks without changing browser or private pages.
@@ -25,7 +25,7 @@
 - Product category metadata resolves independently of photo readiness; use real public category slugs or a truthful Shop All fallback, never guessed slugs.
 - The storefront shell owns utility-page noindex metadata across themes, with query-free generic canonicals so private order/search parameters never become search identity.
 
-- WhatsApp tier checks use service-role aggregates, not row transfers.
+- WhatsApp tier checks use service-role aggregates.
 - Saved addresses use `replace_customer_address` for the one-address index.
 - Meesho imports use a local MV3 collector and authenticated single-product import: Meesho blocks cloud scraping; secrets never enter the extension.
 - New dashboard product-photo uploads create 160w thumbnail, 800w card, 1200w PDP, and 2000w zoom variants from one original decode; the 1200w URL is canonical. Only families explicitly marked thumb160 derive tiny siblings. Resolve card siblings by the upload-path timestamp (before 2026-09-30 05:59:09 UTC: 400w; after: 800w), and fall back to canonical on unrecognized paths; single-file legacy 800w URLs never derive siblings, because every derived URL must point to a real object.
@@ -34,10 +34,11 @@
 
 - WhatsApp onboarding uses the new owner session and CreateStore steps to match web setup and RLS.
 - Capacity tests are admin-only guarded Python, never browser traffic. Production allows low-rate read-only canaries; ramp/spike/soak require staging hosts unless overridden, protecting ads/payments.
-- Keep `is_best_selling` for storefront merchandising but do not restore the separate per-product award seal, because its controls and flag were retired.
+- Keep `is_best_selling` for merchandising; never restore the retired per-product award seal.
+- storefrontBranding gates platform copy by Utkal/Kalinga identity across cart, footer and checkout; payments stay unchanged.
 
 - JD Store Spy calls the platform API from store-page content scripts, never background, because Origin identifies the tenant.
-- Store-gated similar rails use lazy components, bounded cached queries and local image visibility so navigation never blocks the main photo.
+- Similar rails use store gates, lazy components, bounded cached queries and local photo visibility to avoid blocking the main photo.
 - Imitation World alone uses compact galleries without thumbnails; Utkal alone fits each photo's measured aspect ratio, retaining legacy video sizing/player. Preserve swipe, zoom and other stores.
 - All PDP themes pass category/slug eligibility to shared informational-slide ordering; defer URLs and preserve product data and main-photo priority.
 - PDP galleries: stable refs/passive readiness; key by product+media and never clear loaded state on Embla init; prepare adjacent slides at low priority after main readiness; retry an exact source once then offer manual recovery, because cached-readiness effects don't repeat and blank/looping galleries must not occur.
@@ -56,7 +57,7 @@
 - Store-gated cashback display is separate from charges to keep badges consistent.
 - PDP and warmup preserve errors; retry retains the URL and negative edge results defer to fresh lookup.
 
-- Dashboard/WhatsApp share tracking URLs; Valmo sync requires a supported feed.
+- Dashboard/WhatsApp share tracking URLs; Valmo requires a supported feed.
 
 - Order CSV uses store-scoped pages, saved order addresses and one row per item with shared supplier links; prepare before download for mobile support.
 

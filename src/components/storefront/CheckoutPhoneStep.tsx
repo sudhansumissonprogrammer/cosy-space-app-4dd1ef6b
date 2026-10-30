@@ -11,6 +11,7 @@
  */
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
+import { hidesPlatformBranding } from "@/lib/storefrontBranding";
 import secureBadge from "@/assets/trust/secure-payment-badge.webp.asset.json";
 import {
   ArrowLeft,
@@ -715,6 +716,7 @@ export default function CheckoutPhoneStep({
 
         {/* Trust footer */}
         <div className="pt-6 pb-2 text-center">
+          {!hidesPlatformBranding({ id: storeId, slug: storeSlug }) && <>
           <div className="text-[11px] text-muted-foreground mb-1">
             Powered by
           </div>
@@ -725,6 +727,7 @@ export default function CheckoutPhoneStep({
           <div className="text-[12px] text-muted-foreground mt-3">
             🔒 Your payment is securely processed by ShopBanao
           </div>
+          </>}
           <div className="flex items-center justify-center gap-4 mt-3 text-muted-foreground">
             <div className="flex items-center gap-1 text-[11px]">
               <ShieldCheck className="h-4 w-4" /> PCI DSS

@@ -18,6 +18,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Loader2, Lock, ShieldCheck } from "lucide-react";
 import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
+import { hidesPlatformBranding } from "@/lib/storefrontBranding";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
@@ -338,7 +339,7 @@ export default function CheckoutOtpSheet({ storeId, phone, onEdit, onVerified, o
             )}
           </div>
 
-          <div className="mt-5 inline-flex items-center gap-1.5 text-[12px] text-[#9CA3AF]">
+          {!hidesPlatformBranding({ id: storeId }) && <div className="mt-5 inline-flex items-center gap-1.5 text-[12px] text-[#9CA3AF]">
             Powered by
             <img
               src={shopbanaoLogo}
@@ -349,7 +350,7 @@ export default function CheckoutOtpSheet({ storeId, phone, onEdit, onVerified, o
               loading="lazy"
             />
             <span className="font-bold text-[#4B5563]">ShopBanao</span>
-          </div>
+          </div>}
         </div>
       </div>
     </div>,

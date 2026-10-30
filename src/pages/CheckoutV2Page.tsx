@@ -47,6 +47,7 @@ import { createPortal } from "react-dom";
 const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
 import { QRCodeSVG } from "qrcode.react";
 import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
+import { hidesPlatformBranding } from "@/lib/storefrontBranding";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { pixelPayloadFromItems } from "@/lib/expandBundleForPixel";
 const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPhoneStep"));
@@ -5495,12 +5496,14 @@ export default function CheckoutV2Page() {
           {/* Trust footer only shown when payment step isn't below */}
           {!showPayment && !addressComplete && (
             <div className="pt-6 pb-2 text-center">
+              {!hidesPlatformBranding(store) && <>
               <div className="text-[11px] text-muted-foreground mb-1">Powered by</div>
               <div className="inline-flex items-center justify-center gap-1.5 text-[14px] font-bold tracking-tight">
                 <img src={shopbanaoLogo} alt="ShopBanao" className="h-5 w-5 inline-block object-contain" loading="lazy" width="20" height="20" />
                 ShopBanao
               </div>
               <div className="text-[12px] text-muted-foreground mt-3">🔒 Your payment is securely processed by ShopBanao</div>
+              </>}
               <div className="flex items-center justify-center gap-4 mt-3 text-muted-foreground">
                 <div className="flex items-center gap-1 text-[11px]"><ShieldCheck className="h-4 w-4" /> PCI DSS<br/>Certified</div>
                 <div className="flex items-center gap-1 text-[11px]"><Lock className="h-4 w-4" /> Secured<br/>Payments</div>
