@@ -20,7 +20,7 @@ import { getPackagingOption } from "@/lib/packagingOptions";
 import { selectedUtkalPackaging, type CategoryPackaging } from "@/lib/categoryPackaging";
 import { fetchProductPackaging } from "@/hooks/useProductPackaging";
 import { isUtkalContentStore } from "../../supabase/functions/_shared/utkalContent";
-import { needsCheckoutPhoneScreen } from "@/lib/checkoutPhonePolicy";
+import { needsCheckoutPhoneScreen, checkoutAddressReady } from "@/lib/checkoutPhonePolicy";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import { formatPrice } from "@/lib/productUtils";
 import { normalizePhone, isValidIndianPhone, toCanonicalIndianPhone } from "@/lib/phoneUtils";
@@ -487,7 +487,7 @@ export default function CheckoutV2Page() {
   const buyNowPhone = (() => { try { return localStorage.getItem("checkout_phone") || ""; } catch { return ""; } })();
 
   const [phone, setPhone] = useState<string>(() => {
-    const s = buyNowPhone || savedInfo.phone || "";
+    const s = isUtkalPackaging ? savedInfo.phone || "" : buyNowPhone || savedInfo.phone || "";
     const canon = toCanonicalIndianPhone(s);
     return canon || (s ? String(s).replace(/\D/g, "").slice(-10) : "");
   });
@@ -1027,7 +1027,7 @@ export default function CheckoutV2Page() {
   };
 
   const phoneValid = !!toCanonicalIndianPhone(phone);
-  const addressComplete = !!(phoneValid && pincode && hasStreetAddress(streetAddress) && city && state && fullName);
+  const addressComplete = checkoutAddressReady({ phone, fullName, pincode, streetAddress, city, state });
   // Ref mirror so async mint paths read the live value, never a stale closure.
   const addressCompleteRef = useRef(addressComplete);
   addressCompleteRef.current = addressComplete;
@@ -1598,6 +1598,15 @@ export default function CheckoutV2Page() {
   // `sessionStorage[ac_${storeId}]` on submit, so we MUST re-read it here to
   // avoid a duplicate `capture_checkout_lead` call after the phone gate.
   const [abandonedCartId, setAbandonedCartId] = useState<string | null>(null);
+  const utkalCapturedPhoneRef = useRef("");
+  useEffect(() => {
+    if (!isUtkalPackaging) return;
+    const canon = toCanonicalIndianPhone(phone);
+    if (utkalCapturedPhoneRef.current !== canon) {
+      setAbandonedCartId(null);
+      utkalCapturedPhoneRef.current = canon;
+    }
+  }, [isUtkalPackaging, phone]);
   const utkalLeadIdentityRef = useRef("");
   useEffect(() => {
     if (!isUtkalPackaging || !store.id || checkoutItems.length === 0) return;
