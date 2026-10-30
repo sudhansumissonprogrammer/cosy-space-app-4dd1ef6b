@@ -6139,9 +6139,12 @@ export default function CheckoutV2Page() {
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-1 text-[14px] font-bold">
-                {formatPrice(total, currency)}
-                {placingCod ? <Loader2 className="h-4 w-4 animate-spin ml-1" /> : <ArrowLeft className="h-4 w-4 rotate-180 text-muted-foreground ml-1" />}
+              <div className="shrink-0 text-right">
+                <div className="flex items-center justify-end gap-1 text-[14px] font-bold">
+                  {formatPrice(total, currency)}
+                  {placingCod ? <Loader2 className="h-4 w-4 animate-spin ml-1" /> : <ArrowLeft className="h-4 w-4 rotate-180 text-muted-foreground ml-1" />}
+                </div>
+                {isUtkalContentStore(store) && <div className="mt-0.5 text-[10px] text-muted-foreground leading-tight">Delivery in 5–6 days</div>}
               </div>
             </button>
           )}
