@@ -51,16 +51,16 @@ export default function QualityAssuranceGrid({ modelSpecific = false }: { modelS
     <section
       className="mt-5 -mx-4 sm:mx-0"
       data-sf-qa
-      style={{ contentVisibility: "auto", containIntrinsicSize: "auto 420px" } as React.CSSProperties}
+      style={{ contentVisibility: "auto", containIntrinsicSize: modelSpecific ? "auto 290px" : "auto 420px" } as React.CSSProperties}
     >
       <div className="rounded-2xl bg-[#FBF7EE] p-2 sm:p-3">
 
 
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
+        <div className={`grid gap-2 sm:gap-3 ${modelSpecific ? "grid-cols-3" : "grid-cols-2 sm:grid-cols-3"}`}>
           {items.map(({ icon, title, sub }) => (
             <div
               key={title}
-              className="flex flex-col items-center rounded-xl bg-white/90 px-2 py-3 text-center shadow-[0_1px_3px_rgba(20,40,30,0.06)] ring-1 ring-[#E7DFC9]"
+              className={`flex min-w-0 flex-col items-center rounded-xl bg-white/90 text-center shadow-[0_1px_3px_rgba(20,40,30,0.06)] ring-1 ring-[#E7DFC9] ${modelSpecific ? "px-1.5 py-2" : "px-2 py-3"}`}
             >
               <img
                 src={icon}
@@ -69,7 +69,7 @@ export default function QualityAssuranceGrid({ modelSpecific = false }: { modelS
                 height={44}
                 loading="lazy"
                 decoding="async"
-                className="h-12 w-12 object-contain sm:h-14 sm:w-14"
+                className={modelSpecific ? "h-10 w-10 shrink-0 object-contain sm:h-12 sm:w-12" : "h-12 w-12 object-contain sm:h-14 sm:w-14"}
               />
 
               {/* Gold divider with diamond */}
@@ -80,12 +80,12 @@ export default function QualityAssuranceGrid({ modelSpecific = false }: { modelS
               </span>
 
               <h3
-                className="mt-1.5 text-[11px] font-bold uppercase leading-tight tracking-wide text-[#12372A] sm:text-[13px]"
+                className={`mt-1.5 max-w-full font-bold uppercase leading-tight text-[#12372A] ${modelSpecific ? "text-[10px] tracking-normal sm:text-[12px]" : "text-[11px] tracking-wide sm:text-[13px]"}`}
                 style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif" }}
               >
                 {title}
               </h3>
-              <p className="mt-0.5 text-[10px] leading-snug text-[#5D6B62] sm:text-[11px]">{sub}</p>
+              {!modelSpecific && <p className="mt-0.5 text-[10px] leading-snug text-[#5D6B62] sm:text-[11px]">{sub}</p>}
             </div>
           ))}
         </div>
