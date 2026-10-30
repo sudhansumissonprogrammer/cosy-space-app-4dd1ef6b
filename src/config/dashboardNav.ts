@@ -125,7 +125,7 @@ export function buildDashboardNav({
           keywords: ["category", "collection", "menu", "group", "hide category"],
           secondary: true,
         },
-        ...(storeSlug === "utkalwatches" ? [{
+        ...((storeSlug === "utkalwatches" || storeSlug === "utkalwatch") ? [{
           id: "packaging", label: "Packaging", icon: Package, path: `${s}/packaging`,
           alwaysVisible: true, description: "Set category box names, photos and extra prices.",
           keywords: ["packaging", "box", "gift", "category box"],

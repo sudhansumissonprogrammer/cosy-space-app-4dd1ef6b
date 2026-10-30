@@ -1,7 +1,7 @@
 /** Public, factual store context; never derives technical specifications. */
 export const UTKAL_STORE_ID = "ab19143d-87a9-490e-90b7-837313522782";
 export function isUtkalContentStore(store: { id?: string | null; slug?: string | null }): boolean {
-  return store.id ? store.id === UTKAL_STORE_ID : store.slug === "utkalwatches";
+  return store.id ? store.id === UTKAL_STORE_ID : store.slug === "utkalwatches" || store.slug === "utkalwatch";
 }
 export const UTKAL_STATUS = "Men's and women's watches online in India. Cash on delivery; dispatch from our Rajkot store.";
 export const UTKAL_QUALITY_TERMS = "Product features and specifications may vary by model. These are 1:1 inspired watches.";
