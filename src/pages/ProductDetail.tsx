@@ -1081,7 +1081,7 @@ export default function ProductDetail() {
               />
             </Suspense>
           )}
-          {showPackaging && (
+          {showPackaging && !isOutOfStock && (
             <Suspense fallback={null}>
               <PackagingSelector
                 basePrice={variantPrice}
