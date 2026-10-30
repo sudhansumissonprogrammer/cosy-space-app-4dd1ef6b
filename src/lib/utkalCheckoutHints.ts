@@ -18,10 +18,10 @@ export function utkalCodHint(store: StoreRef): string | null {
     : null;
 }
 
-/** Utkal-only flat ₹50 off for choosing the online advance (partial COD).
+/** Utkal-only flat ₹100 off for choosing the online advance (partial COD).
  * Comes out of the delivery balance, never the advance — same rule as coupons.
  * The server recomputes this in place-order; the client value is display-only. */
-export const UTKAL_PARTIAL_DISCOUNT = 50;
+export const UTKAL_PARTIAL_DISCOUNT = 100;
 export function utkalPartialDiscount(store: StoreRef): number {
   return isUtkalContentStore(store) ? UTKAL_PARTIAL_DISCOUNT : 0;
 }

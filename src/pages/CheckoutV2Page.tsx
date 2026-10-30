@@ -1508,7 +1508,7 @@ export default function CheckoutV2Page() {
 
   }, [checkoutItems, hasPartial, partialType, partialValue, subtotal, taxAmount, taxInclusive, shippingCharge, total]);
 
-  // Utkal-only ₹50 partial discount comes out of the delivery balance (never
+  // Utkal-only partial discount comes out of the delivery balance (never
   // the advance), mirroring coupon behaviour. Server recomputes in place-order.
   const { discount: partialOff, total: partialTotal, balance: partialBalanceDue } =
     checkoutPartialAmounts(total, partialAdvanceTotal, hasPartial ? utkalPartialDiscount(store) : 0);
