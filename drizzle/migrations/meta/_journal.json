@@ -141,6 +141,13 @@
       "when": 1793288760754,
       "tag": "0019_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793369073654,
+      "tag": "0020_utkal_category_packaging",
+      "breakpoints": true
     }
   ]
 }

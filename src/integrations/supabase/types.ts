@@ -399,6 +399,61 @@ export type Database = {
           },
         ]
       }
+      category_packaging_options: {
+        Row: {
+          category_id: string
+          id: string
+          image_url: string
+          is_active: boolean
+          label: string
+          store_id: string
+          surcharge: number
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          id?: string
+          image_url: string
+          is_active?: boolean
+          label: string
+          store_id: string
+          surcharge?: number
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          label?: string
+          store_id?: string
+          surcharge?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "category_packaging_options_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "category_packaging_options_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "category_packaging_options_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coupons: {
         Row: {
           auto_apply: boolean
@@ -6259,6 +6314,10 @@ export type Database = {
           id: string
           platform_name: string
         }[]
+      }
+      get_product_packaging: {
+        Args: { _product_id: string; _store_id: string }
+        Returns: Json
       }
       get_product_page: {
         Args: { _product_slug: string; _store_slug: string }
