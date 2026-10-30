@@ -4,7 +4,8 @@ import scratchIcon from "@/assets/qa/scratch.webp.asset.json";
 import warrantyIcon from "@/assets/qa/warranty.webp.asset.json";
 import qualityIcon from "@/assets/qa/quality.webp.asset.json";
 import realphotoIcon from "@/assets/qa/realphoto.webp.asset.json";
-import { ShieldCheck, Gem, Heart } from "lucide-react";
+import airplaneIcon from "@/assets/qa/airplane.webp";
+import { ShieldCheck, Gem, Heart, Banknote, RefreshCw, MapPin } from "lucide-react";
 
 /**
  * Premium gold "quality assurance" grid shown under the PDP price.
@@ -30,15 +31,22 @@ const STRIP = [
 // Utkal's merchant-approved sticker wording; keep other stores' copy unchanged.
 const MODEL_ITEMS = [
   { icon: steelIcon.url, title: "Premium Metal and Steel Build", sub: "High quality steel that's made to last" },
-  { icon: waterIcon.url, title: "Water Resistant", sub: "Wear it worry-free, rain or shine" },
+  { icon: airplaneIcon, title: "Express Air Shipping Available at Checkout", sub: "Express air shipping available under 3-day delivery" },
   { icon: scratchIcon.url, title: "Scratch Resistant Finish", sub: "Keeps your watch flawless every day" },
   { icon: warrantyIcon.url, title: "6 Months Warranty", sub: "Guaranteed quality you can trust" },
   { icon: qualityIcon.url, title: "Quality Checked Before Dispatch", sub: "Every piece is carefully inspected" },
   { icon: realphotoIcon.url, title: "Real Product Images", sub: "What you see is what you get" },
 ];
 
+const MODEL_STRIP = [
+  { Icon: Banknote, label: "Full COD Available" },
+  { Icon: RefreshCw, label: "Exchange Only Within 3 Days" },
+  { Icon: MapPin, label: "Live Tracking" },
+];
+
 export default function QualityAssuranceGrid({ modelSpecific = false }: { modelSpecific?: boolean } = {}) {
   const items = modelSpecific ? MODEL_ITEMS : ITEMS;
+  const strip = modelSpecific ? MODEL_STRIP : STRIP;
   return (
     <section
       className="mt-5 -mx-4 sm:mx-0"
@@ -87,12 +95,12 @@ export default function QualityAssuranceGrid({ modelSpecific = false }: { modelS
           className="mt-2 flex w-full items-center justify-between gap-1 rounded-xl px-2.5 py-2.5 sm:mt-3 sm:justify-center sm:gap-6 sm:py-3"
           style={{ background: "linear-gradient(90deg,#12372A 0%,#1B4A37 50%,#12372A 100%)" }}
         >
-          {STRIP.map(({ Icon, label }, i) => (
-            <div key={label} className="flex min-w-0 items-center">
+          {strip.map(({ Icon, label }, i) => (
+            <div key={label} className={`flex min-w-0 items-center ${modelSpecific ? "flex-1 justify-center" : ""}`}>
               {i > 0 && <span className="mr-1.5 h-3.5 w-px shrink-0 bg-white/25 sm:mr-6" aria-hidden="true" />}
-              <span className="flex items-center gap-1 whitespace-nowrap">
+              <span className={`flex items-center gap-1 ${modelSpecific ? "min-w-0" : "whitespace-nowrap"}`}>
                 <Icon className="h-3 w-3 shrink-0 text-[#E3C463] sm:h-4 sm:w-4" strokeWidth={2} aria-hidden="true" />
-                <span className="text-[9px] font-semibold uppercase tracking-[0.06em] text-white sm:text-xs sm:tracking-[0.14em]">
+                <span className={`text-[9px] font-semibold uppercase text-white sm:text-xs ${modelSpecific ? "text-center leading-tight" : "tracking-[0.06em] sm:tracking-[0.14em]"}`}>
                   {label}
                 </span>
               </span>
