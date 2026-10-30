@@ -62,6 +62,7 @@ import AutoCouponHint from "@/components/storefront/AutoCouponHint";
 import { useWaCouponPreview } from "@/hooks/useWaCouponPreview";
 import FestivalSaleBadge from "@/components/storefront/FestivalSaleBadge";
 import GalleryImage from "@/components/storefront/pdp/GalleryImage";
+import { activePhotoAspectRatio, photoAspectRatio } from "@/lib/pdpPhotoSizing";
 import { useGalleryPreparation } from "@/hooks/useGalleryPreparation";
 import { withImitationWorldCareGuide, imitationWorldCareGuideUrl } from "@/lib/imitationWorldCareSlides";
 
@@ -830,7 +831,7 @@ export default function ProductDetail() {
   };
 
   return (
-    <div className="relative mx-auto max-w-6xl lg:max-w-7xl px-0 sm:px-4 pt-0 sm:pt-8 pb-3 sm:pb-8" style={isV18 ? { backgroundColor: "var(--storefront-bg, #0a0a0a)", color: "var(--storefront-text, #ffffff)" } : {}}>
+    <div className={`relative mx-auto max-w-6xl lg:max-w-7xl px-0 sm:px-4 pt-0 ${isUtkalContentStore(store) ? "sm:pt-0" : "sm:pt-8"} pb-3 sm:pb-8`} style={isV18 ? { backgroundColor: "var(--storefront-bg, #0a0a0a)", color: "var(--storefront-text, #ffffff)" } : {}}>
       {/* Mobile-only floating back button — absolute so it never collides with the sticky header/hamburger */}
       <button
         type="button"
@@ -855,6 +856,7 @@ export default function ProductDetail() {
           showWarrantyBadge={!!(mainThemeConfig as any)?.show_warranty_badge}
           storeId={store.id}
           compactGallery={isKalingaStore(store)}
+          fitPhotoSlides={isUtkalContentStore(store)}
           onOpenReviews={() => setReviewsOpenRequest(request => request + 1)}
           galleryProduct={product}
           onShare={async () => {
@@ -1742,6 +1744,7 @@ function ImageGallery({
   showWarrantyBadge,
   storeId,
   compactGallery = false,
+  fitPhotoSlides = false,
   galleryProduct,
   onOpenReviews,
 }: {
@@ -1754,6 +1757,7 @@ function ImageGallery({
   showWarrantyBadge?: boolean;
   storeId?: string;
   compactGallery?: boolean;
+  fitPhotoSlides?: boolean;
   galleryProduct?: { slug?: string | null; category?: string | null };
   onOpenReviews: () => void;
 }) {
@@ -1769,6 +1773,7 @@ function ImageGallery({
   // The mobile gallery box adapts to it (clamped) so square / wide / extra-tall
   // photos don't sit inside a fixed 3:4 frame with big empty bands.
   const [imgRatio, setImgRatio] = useState<number | null>(null);
+  const [photoRatios, setPhotoRatios] = useState<Record<number, number>>({});
   const noteRatio = useCallback((w: number, h: number) => {
     if (!w || !h) return;
     // Preserve common portrait product photos (2:3 and 9:16 included) instead
@@ -1903,6 +1908,8 @@ function ImageGallery({
 
 
   const isVideoSlide = slides[activeIndex]?.kind === "video";
+  const fittedPhotoRatio = fitPhotoSlides ? activePhotoAspectRatio(slides, activeIndex, photoRatios) : null;
+  const fitActivePhoto = fittedPhotoRatio !== null;
   // The carousel viewport height must NOT depend on which slide is active.
   // Switching height on `select` forces Embla to re-measure and makes the page
   // jump while swiping. Measure the first product photo once and use that one
@@ -1925,7 +1932,7 @@ function ImageGallery({
   return (
     <>
       <div className="min-w-0 max-w-full space-y-1 sm:space-y-2 lg:sticky lg:top-4">
-        <div className={`relative ${compactGallery ? "mx-0" : "-mx-4"} sm:mx-0 p-0`}>
+        <div className={`relative ${compactGallery || fitActivePhoto ? "mx-0" : "-mx-4"} sm:mx-0 p-0`}>
           {hasDiscount && (
             <FestivalSaleBadge placement="pdp" className={`absolute bottom-4 ${compactGallery ? "left-3" : "left-7"} z-20 drop-shadow-lg sm:bottom-5 sm:left-3`} />
           )}
@@ -1961,10 +1968,11 @@ function ImageGallery({
           {/* Embla viewport */}
           <div
             ref={emblaRef}
-            className="overflow-hidden rounded-none sm:rounded-2xl cursor-zoom-in select-none h-[var(--pdp-gallery-h)] sm:h-auto sm:aspect-[4/5]"
+            className={`overflow-hidden rounded-none sm:rounded-2xl cursor-zoom-in select-none ${fitActivePhoto ? "aspect-[var(--pdp-photo-aspect)]" : "h-[var(--pdp-gallery-h)] sm:h-auto sm:aspect-[4/5]"}`}
             style={{
               backgroundColor: "var(--storefront-bg, hsl(var(--background)))",
               ["--pdp-gallery-h" as any]: mobileBoxHeight,
+              ["--pdp-photo-aspect" as any]: fittedPhotoRatio ?? undefined,
               // Isolate the gallery from the rest of the PDP so slide changes
               // never trigger a document-wide layout pass.
               contain: "layout paint",
@@ -2000,7 +2008,7 @@ function ImageGallery({
                     // Keep every slide tied to the measured carousel viewport.
                     // Absolute centering avoids Safari flexbox stretching/cropping
                     // tall source images at the bottom.
-                    className="relative h-full min-w-0 flex-[0_0_100%] overflow-hidden sm:h-auto sm:aspect-[4/5]"
+                    className={`relative h-full min-w-0 flex-[0_0_100%] overflow-hidden ${fitActivePhoto ? "" : "sm:h-auto sm:aspect-[4/5]"}`}
                     style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }}
                     onClick={() => setLightboxOpen(true)}
                   >
@@ -2020,6 +2028,10 @@ function ImageGallery({
                       draggable={false}
                       onReady={(el) => {
                         if (realIdx === 0) noteRatio(el.naturalWidth, el.naturalHeight);
+                        if (fitPhotoSlides) {
+                          const ratio = photoAspectRatio(el.naturalWidth, el.naturalHeight);
+                          if (ratio !== null) setPhotoRatios(previous => previous[realIdx] === ratio ? previous : { ...previous, [realIdx]: ratio });
+                        }
                         setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }));
                       }}
                       onError={() => setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }))}

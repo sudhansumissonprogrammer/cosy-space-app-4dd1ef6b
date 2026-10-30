@@ -38,7 +38,7 @@
 
 - JD Store Spy calls the platform API from store-page content scripts, never background, because Origin identifies the tenant.
 - Store-gated similar rails use lazy components, bounded cached queries and local image visibility so navigation never blocks the main photo.
-- Imitation World uses store-gated compact gallery sizing and hides only the underneath thumbnail strip, because existing swipe, video, and zoom behavior must remain intact without changing other stores.
+- Imitation World alone uses compact galleries without thumbnails; Utkal alone fits each photo's measured aspect ratio, retaining legacy video sizing/player. Preserve swipe, zoom and other stores.
 - All PDP themes pass category/slug eligibility to shared informational-slide ordering; defer URLs and preserve product data and main-photo priority.
 - PDP galleries: stable refs/passive readiness; key by product+media and never clear loaded state on Embla init; prepare adjacent slides at low priority after main readiness; retry an exact source once then offer manual recovery, because cached-readiness effects don't repeat and blank/looping galleries must not occur.
 - All storefront product-card themes share sticky mobile activation with one upcoming two-card buffer after visible opening photos settle or scrolling starts; a shared observer and frame-coalesced scheduler gate eager low-priority photos without per-card polling, because visibility-only/native-lazy double gating leaves blank rows. Desktop and PDP gallery scheduling stay separate; activated photos retain paint and PDP intent warmers keep canonical sources.
