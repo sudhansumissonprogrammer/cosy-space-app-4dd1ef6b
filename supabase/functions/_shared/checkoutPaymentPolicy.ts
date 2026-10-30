@@ -12,10 +12,10 @@ export function requiresCheckoutAdvance(store: {
 
 export const UTKAL_STORE_ID = "ab19143d-87a9-490e-90b7-837313522782";
 
-/** Utkal rewards choosing the online advance with a flat ₹50 off, taken out of
+/** Utkal rewards choosing the online advance with a flat ₹100 off, taken out of
  * the delivery balance (never the advance, mirroring coupon behaviour). Other
  * stores get no partial discount. */
-export const UTKAL_PARTIAL_DISCOUNT_INR = 50;
+export const UTKAL_PARTIAL_DISCOUNT_INR = 100;
 export function utkalPartialDiscount(storeId: string | null | undefined): number {
   return storeId === UTKAL_STORE_ID ? UTKAL_PARTIAL_DISCOUNT_INR : 0;
 }
