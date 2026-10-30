@@ -1,0 +1,2 @@
+ALTER TABLE public.order_items ADD COLUMN packaging jsonb;
+COMMENT ON COLUMN public.order_items.packaging IS 'Authoritative packaging choice snapshot: key, option_id, label, per-unit surcharge; retained when category settings change.';

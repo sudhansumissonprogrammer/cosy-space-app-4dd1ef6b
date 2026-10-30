@@ -148,6 +148,13 @@
       "when": 1793369073654,
       "tag": "0020_utkal_category_packaging",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1793369498331,
+      "tag": "0021_order_item_packaging_snapshot",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
 import { requiresCheckoutAdvance, utkalPartialDiscount } from "../_shared/checkoutPaymentPolicy.ts";
+import { resolveCategoryPackaging, UTKAL_PACKAGING_STORE_ID } from "../_shared/categoryPackaging.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -683,6 +684,17 @@ Deno.serve(async (req) => {
     // (which sums to the configured combo total) instead of resetting to MRP.
     // Upsell rows carry `__upsell_priced` — same rationale (incentive already applied).
     let serverSubtotal = 0;
+    const categoryBoxes = new Map<string, { id: string; label: string; surcharge: number }>();
+    if (store_id === UTKAL_PACKAGING_STORE_ID) {
+      for (const item of items) {
+        if ((item as any).meta?.packaging !== "brandkit") continue;
+        if ((item as any).meta?.__bundle_priced || (item as any).__upsell_priced) throw new Error("Packaging cannot be combined with this offer");
+        const { data: saved, error: packagingError } = await supabase.rpc("get_product_packaging", { _store_id: store_id, _product_id: item.productId });
+        if (packagingError) throw packagingError;
+        const box = resolveCategoryPackaging(store_id, "brandkit", (item as any).meta?.packaging_option_id, saved);
+        if (box) categoryBoxes.set(item.productId, box);
+      }
+    }
     for (const item of items) {
       const qty = Math.max(1, Math.floor(Number(item.quantity) || 0));
       if ((item as any).meta?.__bundle_priced || (item as any).__upsell_priced) {
@@ -699,16 +711,22 @@ Deno.serve(async (req) => {
         });
       }
       const variantPrice = variant?.price != null ? Number(variant.price) : null;
-      let cp = variantPrice != null && variantPrice >= 0 ? variantPrice : canonicalPrice.get(item.productId)!;
+      const canonicalUnitPrice = canonicalPrice.get(item.productId);
+      if (canonicalUnitPrice == null) throw new Error("Product price unavailable");
+      let cp = variantPrice != null && variantPrice >= 0 ? variantPrice : canonicalUnitPrice;
       // Packaging upgrade add-on: the client only sends the option key, the
       // surcharge is re-derived here so the price can't be tampered with.
       const pkgKey = String((item as any).meta?.packaging || "");
-      const pkgSurcharge = store_id === "ab19143d-87a9-490e-90b7-837313522782" && pkgKey === "brandkit" ? 0 : (PACKAGING_SURCHARGE[pkgKey] ?? 0);
-      if (pkgSurcharge > 0) {
+      const categoryBox = pkgKey === "brandkit" ? categoryBoxes.get(item.productId) : undefined;
+      const pkgSurcharge = categoryBox ? categoryBox.surcharge : (PACKAGING_SURCHARGE[pkgKey] ?? 0);
+      if (pkgSurcharge > 0 || categoryBox) {
         cp += pkgSurcharge;
-        (item as any).meta = { ...((item as any).meta || {}), packaging: pkgKey, packaging_surcharge: pkgSurcharge };
-        const label = PACKAGING_LABEL[pkgKey];
+        const label = categoryBox?.label ?? PACKAGING_LABEL[pkgKey];
+        (item as any).meta = { ...((item as any).meta || {}), packaging: pkgKey, packaging_surcharge: pkgSurcharge, packaging_label: label, packaging_option_id: categoryBox?.id };
         if (label && !String(item.name || "").includes(label)) item.name = `${item.name} + ${label}`;
+      }
+      if (categoryBox && Math.abs(Number(item.price) - cp) > 0.01) {
+        return new Response(JSON.stringify({ error: "The packaging price has changed. Refresh checkout before ordering." }), { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       item.price = cp;
       item.quantity = qty;
@@ -1338,6 +1356,7 @@ Deno.serve(async (req) => {
       unit_price: Number(item.price),
       total: Number(item.price) * Number(item.quantity),
       image_url: canonicalImage.get(item.productId) ?? (item as any).image ?? null,
+      packaging: (item as any).meta?.packaging ? { key: (item as any).meta.packaging, option_id: (item as any).meta.packaging_option_id ?? null, label: (item as any).meta.packaging_label ?? null, surcharge: (item as any).meta.packaging_surcharge ?? 0 } : null,
     }));
 
     if (reusedExistingOrder) {
