@@ -1,4 +1,4 @@
-import { Banknote, RefreshCw, ReceiptText } from "lucide-react";
+import { Banknote, RefreshCw, ReceiptText, Plane } from "lucide-react";
 
 /**
  * Three-up assurance strip shown directly above the packaging selector.
@@ -10,13 +10,14 @@ import { Banknote, RefreshCw, ReceiptText } from "lucide-react";
  */
 interface Props {
   codLabel?: string;
+  utkalAssurances?: boolean;
 }
 
-export default function CodAssuranceStrip({ codLabel = "100% COD\nAvailable" }: Props) {
+export default function CodAssuranceStrip({ codLabel = "100% COD\nAvailable", utkalAssurances = false }: Props) {
   const ITEMS = [
-    { Icon: Banknote, label: codLabel },
-    { Icon: RefreshCw, label: "3 Days\nReplacement" },
-    { Icon: ReceiptText, label: "Refund on\nEligible Returns" },
+    { Icon: Banknote, label: utkalAssurances ? "Full COD\nAvailable" : codLabel },
+    { Icon: RefreshCw, label: utkalAssurances ? "Exchange Only\nWithin 3 Days" : "3 Days\nReplacement" },
+    { Icon: utkalAssurances ? Plane : ReceiptText, label: utkalAssurances ? "Express Air Shipping\nAvailable at Checkout" : "Refund on\nEligible Returns" },
   ];
 
   return (
@@ -32,7 +33,7 @@ export default function CodAssuranceStrip({ codLabel = "100% COD\nAvailable" }: 
             >
               <Icon className="h-[18px] w-[18px] text-[#3E6B4F]" strokeWidth={1.6} aria-hidden="true" />
               <p
-                className="whitespace-pre-line text-[11.5px] font-bold leading-tight text-[#12372A] sm:text-[13px]"
+                className="max-w-full whitespace-pre-line text-[11.5px] font-bold leading-tight text-[#12372A] sm:text-[13px]"
                 style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif" }}
               >
                 {label}
