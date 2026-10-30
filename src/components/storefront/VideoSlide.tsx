@@ -11,13 +11,21 @@ interface VideoSlideProps {
   isActive: boolean;
   videoPlaying: boolean;
   setVideoPlaying: (v: boolean) => void;
+  /** Store has no product-video sound: always muted, sound tap shows a notice. */
+  silent?: boolean;
 }
 
 /**
  * Product gallery video slide with a centered play-button overlay.
  * The overlay disappears once the user starts playback and reappears on pause.
  */
-export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlaying }: VideoSlideProps) {
+export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlaying, silent = false }: VideoSlideProps) {
+  const [silentNotice, setSilentNotice] = useState(false);
+  useEffect(() => {
+    if (!silentNotice) return;
+    const t = window.setTimeout(() => setSilentNotice(false), 2000);
+    return () => window.clearTimeout(t);
+  }, [silentNotice]);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const source = normalizeProductVideoUrl(url);
   const [hasStarted, setHasStarted] = useState(false);
@@ -96,8 +104,8 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
     if (!v) return;
     // The tap is a real user gesture, so sound is allowed. If the browser
     // still refuses (some in-app webviews), fall back to muted playback.
-    v.muted = false;
-    setMuted(false);
+    v.muted = silent;
+    setMuted(silent);
     setHasStarted(true);
     if (v.readyState < 3) setBuffering(true);
     const attempt = v.play();
@@ -190,6 +198,11 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
       />
 
       {buffering && <VideoBufferDots />}
+      {silentNotice && (
+        <p role="status" className="pointer-events-none absolute left-1/2 top-4 z-20 -translate-x-1/2 rounded-full bg-black/70 px-3 py-1.5 text-xs font-medium text-white">
+          No music in this video
+        </p>
+      )}
 
 
 
@@ -224,6 +237,7 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
           muted={muted}
           onToggleMute={(e) => {
             e.stopPropagation();
+            if (silent) { setMuted(true); setSilentNotice(true); return; }
             setMuted((m) => !m);
           }}
 
