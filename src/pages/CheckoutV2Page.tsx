@@ -3791,11 +3791,11 @@ export default function CheckoutV2Page() {
     // tapping any without an address opens the address sheet via
     // requireAddressOrPrompt(). Intents mint themselves later, once the
     // address is filled (see the effect below).
-    if (!phoneValid) return;
+    if (!phoneValid && !isUtkalPackaging) return;
     autoAdvancedRef.current = true;
     setShowPayment(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phoneValid, pincode, streetAddress, city, state, fullName, showPayment, creatingOrder, paymentConfigLoaded]);
+  }, [phoneValid, isUtkalPackaging, pincode, streetAddress, city, state, fullName, showPayment, creatingOrder, paymentConfigLoaded]);
 
   // Never create/update an order merely because an address field became
   // non-empty. The shopper may still be typing. Order creation starts only

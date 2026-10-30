@@ -5,7 +5,7 @@ export const categoryPackagingSchema = z.object({
   category_id: z.string().uuid(),
   label: z.string().trim().min(1).max(80),
   image_url: z.string().url().max(2048).refine(url => url.startsWith("https://cdn.shopbanao.in/"), "Upload a box photo first"),
-  surcharge: z.number().finite().min(0).max(10000).refine(n => Math.round(n * 100) === n * 100, "Use at most two decimal places"),
+  surcharge: z.number().finite().min(0).max(10000).refine(n => Math.abs(Math.round(n * 100) - n * 100) < 0.000001, "Use at most two decimal places"),
   is_active: z.boolean(),
 });
 
