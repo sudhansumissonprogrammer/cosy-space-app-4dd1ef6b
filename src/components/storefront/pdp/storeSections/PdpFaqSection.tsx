@@ -1,7 +1,5 @@
 import { useState } from "react";
 import { Plus, Minus } from "lucide-react";
-import { Link } from "react-router-dom";
-import { storefrontPath } from "@/lib/subdomain";
 import type { ReactNode } from "react";
 
 const FAQS: { q: string; a: string }[] = [
