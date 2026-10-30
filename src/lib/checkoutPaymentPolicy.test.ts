@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { requiresCheckoutAdvance, utkalPartialDiscount } from "../../supabase/functions/_shared/checkoutPaymentPolicy";
 import { checkoutConfirmationAmounts } from "./checkoutConfirmationAmounts";
-import { utkalPartialDiscount as clientUtkalPartialDiscount } from "./utkalCheckoutHints";
+import { allowsFullPrepaid, utkalPartialDiscount as clientUtkalPartialDiscount } from "./utkalCheckoutHints";
 import { checkoutPartialAmounts } from "./checkoutPartialAmounts";
 
 describe("Utkal optional advance policy", () => {
+  it("disables full prepaid only for Utkal Watch by persisted ID or legacy slug", () => {
+    expect(allowsFullPrepaid({ id: "ab19143d-87a9-490e-90b7-837313522782" })).toBe(false);
+    expect(allowsFullPrepaid({ slug: "utkalwatches" })).toBe(false);
+    expect(allowsFullPrepaid({ id: "other-store" })).toBe(true);
+  });
   it("allows full COD alongside the configured ₹100 advance only at Utkal", () => {
     expect(requiresCheckoutAdvance({ id: "ab19143d-87a9-490e-90b7-837313522782", partial_payment_enabled: true, partial_payment_value: 100 })).toBe(false);
     expect(requiresCheckoutAdvance({ id: "other-store", partial_payment_enabled: true, partial_payment_value: 100 })).toBe(true);
