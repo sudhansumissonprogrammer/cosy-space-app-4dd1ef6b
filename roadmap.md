@@ -1,5 +1,6 @@
 # Roadmap
-- [ ] Add WhatsApp replied-only conversation filter, ordered by customer replies across all pages; verify with real signed-in inbox without sending messages.
+- [x] Added WhatsApp All/Replied only filter using access-checked incoming-first server paging, search and 15-second refresh; two tests pass, build OK. No messages sent; publish frontend.
+- [ ] Real Utkal replied-inbox verification awaits an authorized owner/admin session; requesting account has no store or role, so the inbox cannot load.
 - [x] Utkal direct checkout: OTP switch off, phone collected in delivery address, valid-phone gate retained and debounced recovery capture preserved. Guest direct checkout/address/invalid-phone/+91 entry checked; no order or recovery message sent. Publish frontend; completed order/automation delivery not tested.
 - [x] Utkal category Packaging menu: owner upload/save/reload, real category PDP third choice and ₹150 extra checkout verified with temporary unbranded test box; test setting removed. Server validates setting/category/price and stores snapshot; place-order deployed. 22 tests pass; publish frontend, completed order not placed.
 - [x] Hide platform branding in Utkal/Kalinga footer, cart, phone, OTP and both checkout implementations. Eleven identity tests pass; both real product→cart→phone flows checked without ordering. OTP/address gates checked in source, not live; payment-provider screens and emails unchanged. Publish frontend.
