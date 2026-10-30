@@ -168,7 +168,7 @@ export default function CheckoutExitOffer({
           </button>
 
           <div className="mt-2.5 flex items-center justify-center gap-1 text-[10px] opacity-60">
-            <ShieldCheck className="h-3 w-3" style={{ color: primary }} /> 100% secure payment
+            <ShieldCheck className="h-3 w-3" style={{ color: primary }} /> 100% secure checkout
           </div>
         </div>
       </div>
