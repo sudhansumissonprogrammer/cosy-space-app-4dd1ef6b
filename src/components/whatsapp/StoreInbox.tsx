@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { WaMediaBubble } from "@/components/whatsapp/WaMediaBubble";
@@ -118,6 +119,7 @@ export function StoreInbox({ storeId }: { storeId: string | undefined }) {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
+  const [threadFilter, setThreadFilter] = useState<"all" | "replied">("all");
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
@@ -138,12 +140,13 @@ export function StoreInbox({ storeId }: { storeId: string | undefined }) {
 
   /* threads — offset pagination, 30/page */
   const threadsQuery = useInfiniteQuery({
-    queryKey: ["store-wa-threads", storeId, debounced],
+    queryKey: ["store-wa-threads", storeId, debounced, threadFilter],
     enabled: !!storeId,
     initialPageParam: 0,
     staleTime: 30_000,
+    refetchInterval: 15_000,
     queryFn: async ({ pageParam }) => {
-      const { data, error } = await supabase.rpc("store_wa_threads" as any, {
+      const { data, error } = await supabase.rpc(threadFilter === "replied" ? "store_wa_replied_threads" : "store_wa_threads", {
         _store_id: storeId,
         _search: debounced || null,
         _limit: THREAD_PAGE,
@@ -330,14 +333,37 @@ export function StoreInbox({ storeId }: { storeId: string | undefined }) {
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {threadsQuery.isLoading ? (
+          <ToggleGroup
+            type="single"
+            value={threadFilter}
+            onValueChange={(value) => {
+              if (value !== "all" && value !== "replied") return;
+              setThreadFilter(value);
+              setSelectedPhone(null);
+            }}
+            aria-label="Conversation filter"
+            className="sticky top-0 z-10 justify-start border-b bg-background p-2"
+          >
+            <ToggleGroupItem value="all" size="sm" className="flex-1 gap-1.5">
+              <MessageSquare className="h-3.5 w-3.5" /> All
+            </ToggleGroupItem>
+            <ToggleGroupItem value="replied" size="sm" className="flex-1 gap-1.5">
+              <ArrowLeft className="h-3.5 w-3.5" /> Replied only
+            </ToggleGroupItem>
+          </ToggleGroup>
+          {threadsQuery.isError ? (
+            <div className="space-y-3 p-6 text-center">
+              <p className="text-sm text-destructive">Could not load conversations</p>
+              <Button variant="outline" size="sm" onClick={() => threadsQuery.refetch()}>Try again</Button>
+            </div>
+          ) : threadsQuery.isLoading ? (
             <div className="flex justify-center py-10">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : !threads.length ? (
             <div className="flex h-full flex-col items-center justify-center p-6 text-muted-foreground">
               <MessageSquare className="mb-3 h-10 w-10 opacity-30" />
-              <p className="text-sm">No conversations yet</p>
+              <p className="text-sm">{debounced ? "No matching conversations" : threadFilter === "replied" ? "No customer replies yet" : "No conversations yet"}</p>
             </div>
           ) : (
             <>
