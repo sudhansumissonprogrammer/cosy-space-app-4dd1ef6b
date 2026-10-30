@@ -6719,6 +6719,26 @@ export type Database = {
         Args: { _phone: string; _store_id: string }
         Returns: number
       }
+      store_wa_replied_threads: {
+        Args: {
+          _limit?: number
+          _offset?: number
+          _search?: string
+          _store_id: string
+        }
+        Returns: {
+          last_at: string
+          last_body: string
+          last_direction: string
+          last_incoming_at: string
+          last_media_type: string
+          last_status: string
+          name: string
+          phone: string
+          total_threads: number
+          unread: number
+        }[]
+      }
       store_wa_thread_messages: {
         Args: {
           _before?: string

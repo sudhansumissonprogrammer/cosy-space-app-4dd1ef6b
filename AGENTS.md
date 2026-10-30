@@ -66,4 +66,4 @@
 - Utkal brand-category headings, intros, FAQs and related links come from one shared helper (_shared/utkalCategorySeo.ts) used by the app and bot-render, built only from category names and listed product titles, because crawler and shopper pages must match and must not invent facts.
 - Language controls portal lower-left outside layout/overlays; non-English translation uses immediate cached controls, bounded visible-first requests, deduplication and generation cancellation, preserving names/digits and English loading.
 - Utkal's third box uses the latest active matching category setting, independent of product titles/entry URLs; checkout validates its ID and saved price, and orders retain a name/price snapshot.
-- Utkal bulk WhatsApp uses owner-gated utkal-wa-bulk into wa_send_queue, keeping wa-platform-send guards.
+- Utkal bulk uses owner-gated utkal-wa-bulk; replied inbox uses an access-checked RPC filtering before paging, latest incoming first, so sends never bury replies.
