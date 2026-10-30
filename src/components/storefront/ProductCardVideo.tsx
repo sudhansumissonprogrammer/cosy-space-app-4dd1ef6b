@@ -24,12 +24,20 @@ interface Props {
   videoUrl?: string | null;
   /** Set false to skip entirely (e.g. app disabled for the store). */
   enabled?: boolean;
+  /** Store has no product-video sound: always muted, sound tap shows a notice. */
+  silent?: boolean;
 }
 
 /** Only one card video may play at a time across the whole grid. */
 let activeStop: (() => void) | null = null;
 
-function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Props) {
+function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true, silent = false }: Props) {
+  const [silentNotice, setSilentNotice] = useState(false);
+  useEffect(() => {
+    if (!silentNotice) return;
+    const t = window.setTimeout(() => setSilentNotice(false), 2000);
+    return () => window.clearTimeout(t);
+  }, [silentNotice]);
   const videoUrl = normalizeProductVideoUrl(rawUrl) || "";
   const ref = useRef<HTMLVideoElement | null>(null);
   const retries = useRef(0);
@@ -38,7 +46,7 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
   const [fit, setFit] = useState({ objectFit: "cover", objectPosition: "center", borderRadius: "inherit" });
   const [open, setOpen] = useState(false);
   const [failed, setFailed] = useState(false);
-  const [muted, setMuted] = useState(false);
+  const [muted, setMuted] = useState(silent);
   // Shown from tap until the first frame renders (and on buffer under-runs), so
   // a slow network reads as "loading", not as a frozen card.
   const [buffering, setBuffering] = useState(false);
@@ -195,7 +203,7 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
 
     // Playback starts from a real tap, so sound is allowed. If the browser
     // still refuses (some in-app webviews), fall back to muted playback.
-    video.muted = muted;
+    video.muted = silent || muted;
     video.playsInline = true;
     video.src = videoUrl;
     video.load();
@@ -269,6 +277,11 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
         />
       )}
       {open && buffering && <VideoBufferDots size="sm" />}
+      {open && silentNotice && (
+        <p role="status" className="pointer-events-none absolute bottom-10 left-1.5 z-[3] rounded-full bg-black/70 px-2 py-1 text-[10px] font-medium text-white">
+          No music in this video
+        </p>
+      )}
 
       <div className="absolute bottom-1.5 left-1.5 z-[3] flex items-center gap-1">
         <button
@@ -282,7 +295,7 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
         {open && (
           <button
             type="button"
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMuted((m) => !m); }}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (silent) { setMuted(true); setSilentNotice(true); return; } setMuted((m) => !m); }}
             aria-label={muted ? "Unmute video" : "Mute video"}
             className="grid h-7 w-7 place-items-center rounded-full border border-white/40 bg-black/45 text-white shadow-[0_2px_8px_rgba(0,0,0,0.25)] transition-transform active:scale-90"
           >
