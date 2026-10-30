@@ -27,7 +27,7 @@ const DEFAULTS: Toggles = {
 
 export default function StoreWhatsAppSimple() {
   useDocumentTitle("WhatsApp Marketing");
-  const { storeId, store } = useDashboardStore();
+  const { storeId, store, storeSlug } = useDashboardStore() as any;
   const [toggles, setToggles] = useState<Toggles>(DEFAULTS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<ToggleKey | null>(null);
@@ -78,7 +78,7 @@ export default function StoreWhatsAppSimple() {
     { key: "abandoned_cart", icon: ShoppingCart, label: "Abandoned cart recovery", desc: "Customers who left items in their cart get one friendly reminder." },
   ];
 
-  const isUtkal = isUtkalContentStore({ id: storeId ?? store?.id, slug: store?.slug });
+  const isUtkal = isUtkalContentStore({ id: storeId ?? store?.id }) || isUtkalContentStore({ slug: store?.slug ?? storeSlug });
 
   return (
     <div className="space-y-5">
