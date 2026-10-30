@@ -211,7 +211,18 @@ Deno.serve(async (req) => {
     }
     for (const p of rot || []) targets.set(p.id, p as never);
 
-    const list = [...targets.values()].filter((p) => !!(p.source_id || p.slug));
+    // Utkal Sale products are temporarily disconnected from supplier stock:
+    // they keep merchant-set full stock and are never hidden by this sync.
+    const pinned = new Set<string>();
+    if (store.id === "ab19143d-87a9-490e-90b7-837313522782") {
+      const { data: saleCat } = await admin.from("categories").select("id").eq("store_id", store.id).eq("slug", "sale").maybeSingle();
+      if (saleCat) {
+        const { data: links, error: linkErr } = await admin.from("product_categories").select("product_id").eq("category_id", saleCat.id);
+        if (linkErr) { report.push({ store: store.slug, error: linkErr.message }); continue; }
+        for (const l of links || []) pinned.add((l as { product_id: string }).product_id);
+      }
+    }
+    const list = [...targets.values()].filter((p) => !pinned.has(p.id) && !!(p.source_id || p.slug));
 
     // 3) Fetch source stock with capped concurrency + throttle.
     //    Batched so a throttled window (their 200 req / 15 min quota is shared
