@@ -117,7 +117,7 @@ export default function CheckoutExitOffer({
             className="mt-1.5 pr-6 text-[15.5px] font-extrabold leading-tight"
             style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}
           >
-            {offerLabel ? `Wait — ${offerLabel} if you pay now` : "Your order isn't placed yet"}
+            {offerLabel ? `Wait — ${offerLabel} if you order now` : "Your order isn't placed yet"}
           </h3>
           <p className="mt-0.5 text-[11px] leading-snug opacity-60">
             {offerLabel
@@ -155,7 +155,7 @@ export default function CheckoutExitOffer({
             className="mt-2.5 w-full h-11 text-[13.5px] font-extrabold active:scale-[0.99] transition-transform"
             style={{ background: primary, color: onPrimary, borderRadius: radius }}
           >
-            {alreadyClaimed || !offerLabel ? "Continue & pay now" : `Claim ${offerLabel} & pay`}
+            {alreadyClaimed || !offerLabel ? "Continue & order now" : `Claim ${offerLabel} & order`}
           </button>
 
           <button
@@ -168,7 +168,7 @@ export default function CheckoutExitOffer({
           </button>
 
           <div className="mt-2.5 flex items-center justify-center gap-1 text-[10px] opacity-60">
-            <ShieldCheck className="h-3 w-3" style={{ color: primary }} /> 100% secure payment
+            <ShieldCheck className="h-3 w-3" style={{ color: primary }} /> 100% secure checkout
           </div>
         </div>
       </div>

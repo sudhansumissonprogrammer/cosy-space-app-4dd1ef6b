@@ -4269,6 +4269,7 @@ export default function CheckoutV2Page() {
   const placingCodRef = useRef(false);
   // Confirm-before-place popup, standalone COD only (never the partial flow).
   const [codConfirmOpen, setCodConfirmOpen] = useState(false);
+  const [codNoteHindi, setCodNoteHindi] = useState(false);
   const placeCod = async () => {
     if (placingCodRef.current || placingCod || creatingOrder || couponLoading || paymentAmountSyncing) return;
     // Partial-payment stores collect the configured advance online and only
@@ -6068,35 +6069,57 @@ export default function CheckoutV2Page() {
                 <X className="h-5 w-5" />
               </button>
               <div className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl p-4 pb-6 max-h-[85dvh] overflow-y-auto">
-                <div className="text-[17px] font-bold">Confirm Your Order</div>
                 {(() => {
-                  const note = utkalCodConfirmNote(store);
-                  if (!note) return null;
+                  // Only Utkal has the founder note, so only Utkal gets the in-place
+                  // Hindi toggle; other stores keep the original English sheet.
+                  const hasNote = Boolean(utkalCodConfirmNote(store));
+                  const hi = hasNote && codNoteHindi;
+                  const note = utkalCodConfirmNote(store, hi ? "hi" : "en");
                   return (
-                    <div className="mt-3 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5 space-y-1">
-                      {note.map((line, i) => (
-                        <p key={i} className={`text-[12px] leading-snug text-amber-950 ${i === 0 ? "font-semibold" : ""}`}>{line}</p>
-                      ))}
-                    </div>
+                    <>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-[17px] font-bold">{hi ? "अपना ऑर्डर कन्फर्म करें" : "Confirm Your Order"}</div>
+                        {hasNote && (
+                          <button
+                            type="button"
+                            translate="no"
+                            onClick={() => setCodNoteHindi((v) => !v)}
+                            aria-pressed={codNoteHindi}
+                            className="shrink-0 h-8 px-3 rounded-full border border-amber-300 bg-amber-50 text-amber-950 text-[12px] font-semibold active:scale-[0.98] transition-transform"
+                          >
+                            {hi ? "Read in English" : "Translate in Hindi"}
+                          </button>
+                        )}
+                      </div>
+                      {note && (
+                        <div translate="no" lang={hi ? "hi" : "en"} className="mt-3 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5 space-y-1">
+                          {note.map((line, i) => (
+                            <p key={i} className={`text-[12px] leading-snug text-amber-950 ${i === 0 ? "font-semibold" : ""}`}>{line}</p>
+                          ))}
+                        </div>
+                      )}
+                      <div className="mt-3 rounded-xl border border-[#ECECEC] p-4">
+                        <div className="text-[15px] font-semibold">
+                          {hi ? "कुल राशि" : "Total amount"}: {formatPrice(total, currency)}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => { setCodConfirmOpen(false); void placeCod(); }}
+                          disabled={placingCod}
+                          className="mt-4 w-full h-12 rounded-lg bg-blue-600 text-white text-[15px] font-bold flex items-center justify-center gap-2 active:scale-[0.99] transition-transform disabled:opacity-60"
+                        >
+                          {placingCod && <Loader2 className="h-4 w-4 animate-spin" />}
+                          {hi ? "हाँ, कन्फर्म करें" : "Yes"}
+                        </button>
+                      </div>
+                      <div className="mt-3 text-center text-[11px] text-muted-foreground">
+                        {hi
+                          ? `ऑर्डर डिलीवर होने पर आप ${formatPrice(total, currency)} कैश में देंगे।`
+                          : `You will pay ${formatPrice(total, currency)} in cash when the order is delivered.`}
+                      </div>
+                    </>
                   );
                 })()}
-                <div className="mt-3 rounded-xl border border-[#ECECEC] p-4">
-                  <div className="text-[15px] font-semibold">
-                    Total amount: {formatPrice(total, currency)}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => { setCodConfirmOpen(false); void placeCod(); }}
-                    disabled={placingCod}
-                    className="mt-4 w-full h-12 rounded-lg bg-blue-600 text-white text-[15px] font-bold flex items-center justify-center gap-2 active:scale-[0.99] transition-transform disabled:opacity-60"
-                  >
-                    {placingCod && <Loader2 className="h-4 w-4 animate-spin" />}
-                    Yes
-                  </button>
-                </div>
-                <div className="mt-3 text-center text-[11px] text-muted-foreground">
-                  You will pay {formatPrice(total, currency)} in cash when the order is delivered.
-                </div>
               </div>
             </div>,
             document.body
