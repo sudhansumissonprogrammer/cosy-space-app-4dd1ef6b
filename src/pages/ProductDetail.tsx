@@ -1070,10 +1070,9 @@ export default function ProductDetail() {
           )}
 
           {/* Packaging upgrade (wristlife / hopknock) */}
-          {!isOutOfStock && (
+          {!isOutOfStock && !isUtkalContentStore(store) && (
             <Suspense fallback={null}>
               <CodAssuranceStrip
-                utkalAssurances={isUtkalContentStore(store)}
                 codLabel={
                   (store as any)?.partial_payment_enabled
                     ? "Partial COD\nAvailable"

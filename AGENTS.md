@@ -7,7 +7,7 @@
 - Inline boot recovery has one asset-error-only guard and one navigation budget carried by URL/storage/cookie; never reload on a boot timeout, and clean recovery markers on successful boot without touching shopper parameters, because slow networks and blocked storage must not create refresh loops.
 - Utkal catalogue pages use identity-scoped supplier recency before merchandising; app/edge share catalogueOrder, category RPCs order before paging, and Worker mirrors it, because sorting only a loaded page cannot establish catalogue-wide order.
 - Utkal buying context is a store-identity-scoped shared public content contract for app and edge rendering; only the exact legacy generated snippet campaign is bypassed, preserving separate merchant overrides and never deriving technical watch facts.
-- Preserve store-scoped PDP slots during audits; fix individual copy, never suppress merchant sections.
+- Preserve merchant PDP slots during audits; fix copy only. Utkal assurances use the quality grid/compact strip, not a duplicate COD strip; generic stores and checkout stay unchanged.
 - Shared discovery-fact validation governs public stock and feed-required facts; both existing feed endpoints page visible tenant products and fail on query errors, because unknown inventory, guessed attributes and truncated catalogues must not be presented as verified merchant data.
 - Product search metadata uses the shared neutral description/parent-price helper across app and edge renderers; Worker mirrors that contract, resolves PDP identities from the product and omits missing facts, because search/share representations must not contradict shopper data or invent commercial claims.
 - Static platform JSON-LD in index.html is authoritative for the landing page; do not mount duplicate client schemas or unsupported ratings/search actions. Store and Product hooks use distinct script identities so lifecycle cleanup cannot remove another entity.
@@ -25,8 +25,8 @@
 - Product category metadata resolves independently of photo readiness; use real public category slugs or a truthful Shop All fallback, never guessed slugs.
 - The storefront shell owns utility-page noindex metadata across themes, with query-free generic canonicals so private order/search parameters never become search identity.
 
-- WhatsApp recipient tier checks use a service-role aggregate to avoid transferring 20,000 rows per send.
-- Saved addresses use `replace_customer_address` to respect the one-address unique index.
+- WhatsApp tier checks use service-role aggregates, not row transfers.
+- Saved addresses use `replace_customer_address` for the one-address index.
 - Meesho imports use a local MV3 collector and authenticated single-product import: Meesho blocks cloud scraping; secrets never enter the extension.
 - New dashboard product-photo uploads create 160w thumbnail, 800w card, 1200w PDP, and 2000w zoom variants from one original decode; the 1200w URL is canonical. Only families explicitly marked thumb160 derive tiny siblings. Resolve card siblings by the upload-path timestamp (before 2026-09-30 05:59:09 UTC: 400w; after: 800w), and fall back to canonical on unrecognized paths; single-file legacy 800w URLs never derive siblings, because every derived URL must point to a real object.
 - Reserve every PayU attempt with a service-role-only row-locked database function and treat unknown attempts as unsettled, because concurrent retries must not lose a paid reference or cancel an unresolved payment.
@@ -56,7 +56,7 @@
 - Store-gated cashback display is separate from charges to keep badges consistent.
 - PDP and warmup preserve errors; retry retains the URL and negative edge results defer to fresh lookup.
 
-- Share customer tracking URLs across dashboard and WhatsApp; Valmo has no automatic sync without a supported feed.
+- Dashboard/WhatsApp share tracking URLs; Valmo sync requires a supported feed.
 
 - Order CSV uses store-scoped pages, saved order addresses and one row per item with shared supplier links; prepare before download for mobile support.
 
