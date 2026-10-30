@@ -27,14 +27,14 @@ const STRIP = [
   { Icon: Heart, label: "Customer First" },
 ];
 
-// Preserve merchant artwork without making the same technical promise for every model.
+// Utkal's merchant-approved sticker wording; keep other stores' copy unchanged.
 const MODEL_ITEMS = [
-  { icon: steelIcon.url, title: "Build & Materials", sub: "Check this model's description for material details" },
-  { icon: waterIcon.url, title: "Water Resistance", sub: "Confirm the rating before exposing your watch to water" },
-  { icon: scratchIcon.url, title: "Finish & Care", sub: "Protect the glass and finish from scratches" },
-  { icon: warrantyIcon.url, title: "Warranty Information", sub: "Contact us to confirm coverage for this model" },
-  { icon: qualityIcon.url, title: "Product Details", sub: "Ask us about the model before ordering" },
-  { icon: realphotoIcon.url, title: "Product Photos", sub: "View the listed photos and ask for more details" },
+  { icon: steelIcon.url, title: "Premium Metal and Steel Build", sub: "High quality steel that's made to last" },
+  { icon: waterIcon.url, title: "Water Resistant", sub: "Wear it worry-free, rain or shine" },
+  { icon: scratchIcon.url, title: "Scratch Resistant Finish", sub: "Keeps your watch flawless every day" },
+  { icon: warrantyIcon.url, title: "6 Months Warranty", sub: "Guaranteed quality you can trust" },
+  { icon: qualityIcon.url, title: "Quality Checked Before Dispatch", sub: "Every piece is carefully inspected" },
+  { icon: realphotoIcon.url, title: "Real Product Images", sub: "What you see is what you get" },
 ];
 
 export default function QualityAssuranceGrid({ modelSpecific = false }: { modelSpecific?: boolean } = {}) {
