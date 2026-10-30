@@ -115,42 +115,12 @@ export async function fetchTrustReel(storeId: string, slug: string): Promise<Tru
     /* app registry unavailable — trust videos alone are fine */
   }
 
-  // Utkal Watch only: pin a fixed 4-product mini grid onto the FIRST slide
-  // so the opening trust video doubles as a shoppable collection card.
-  if ((slug === "utkalwatches" || slug === "utkalwatch") && slides.length > 0) {
-    try {
-      const TARGET_SLUGS = [
-        "chronograph-mens-watch-silver-gold-metal-watch-for-man",
-        "casio-edifice-chronograph-black-dial-gold-metal-mens-watch-efr-539sg-1avudf",
-        "casio-edifice-chronograph-with-black-stainless-steel-strap-mens-watch-black-gold-539bk",
-        "sb-premium-iluminator-regular-silver-body-dark-brown-digital-watch-casio-ab19",
-      ];
-      const { data: products } = await (supabase as any)
-        .from("products")
-        .select("id,slug,name,price,sale_price,currency,image_url")
-        .eq("store_id", storeId)
-        .eq("is_active", true)
-        .in("slug", TARGET_SLUGS)
-        .limit(4);
-      const bySlug = new Map(((products as any[]) || []).map((p) => [p.slug, p]));
-      const picked = TARGET_SLUGS.map((s) => bySlug.get(s)).filter(Boolean);
-      if (picked.length > 0) {
-        slides[0].featuredProducts = picked.map((p: any) => ({
-          name: p.name,
-          imageUrl: p.image_url ?? null,
-          price: p.price ?? null,
-          salePrice: p.sale_price ?? null,
-          currency: p.currency ?? null,
-          to: storefrontPath(slug, `product/${p.slug}`),
-        }));
-        // Bottom button now opens the full collection.
-        slides[0].ctaLabel = slides[0].ctaLabel || "See more";
-        slides[0].to = storefrontPath(slug, "category/casio-new");
-        delete slides[0].href;
-      }
-    } catch {
-      /* featured grid is optional — reel still works without it */
-    }
+  // Utkal Watch only: the opening trust video plays without product cards
+  // or action buttons.
+  if ((slug === "utkalwatches" || slug === "utkalwatch") && slides.length > 0 && !slides[0].product) {
+    slides[0].ctaLabel = null;
+    delete slides[0].to;
+    delete slides[0].href;
   }
 
   return slides;
