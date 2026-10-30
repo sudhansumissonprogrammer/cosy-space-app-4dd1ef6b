@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Add Utkal-only category Packaging menu, uploaded photo/name/price settings, product third-choice resolution and authoritative checkout charges; test tenant/category isolation and selection flow.
 - [x] Hide platform branding in Utkal/Kalinga footer, cart, phone, OTP and both checkout implementations. Eleven identity tests pass; both real product→cart→phone flows checked without ordering. OTP/address gates checked in source, not live; payment-provider screens and emails unchanged. Publish frontend.
 - [x] Merge Utkal PDP assurances into existing stickers: tiny lossless gold airplane shipping badge, compact COD/exchange/tracking strip, separate section removed; other stores unchanged. Four isolation tests pass, build OK; real mobile/desktop badge text, image readiness and no overflow checked. Publish frontend.
 - [x] Updated Utkal-only PDP assurances to Full COD Available, Exchange Only Within 3 Days, and Express Air Shipping Available at Checkout with airplane icon; real mobile/desktop labels and no overflow verified, seven regression tests/build pass. Display only; shipping configuration unchanged, publish frontend.
