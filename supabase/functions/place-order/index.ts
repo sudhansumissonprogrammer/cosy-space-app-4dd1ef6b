@@ -81,7 +81,7 @@ function isBotUA(ua: string | null | undefined): boolean {
 // single source of truth for the surcharge amount.
 const PACKAGING_SURCHARGE: Record<string, number> = { complimentary: 0, signature: 100, brandkit: 200 };
 const PACKAGING_LABEL: Record<string, string> = {
-  signature: "Utkal Signature Box",
+  signature: "Utkal Watch Box",
   brandkit: "OG Brand Kit",
 };
 
@@ -703,7 +703,7 @@ Deno.serve(async (req) => {
       // Packaging upgrade add-on: the client only sends the option key, the
       // surcharge is re-derived here so the price can't be tampered with.
       const pkgKey = String((item as any).meta?.packaging || "");
-      const pkgSurcharge = PACKAGING_SURCHARGE[pkgKey] ?? 0;
+      const pkgSurcharge = store_id === "ab19143d-87a9-490e-90b7-837313522782" && pkgKey === "brandkit" ? 0 : (PACKAGING_SURCHARGE[pkgKey] ?? 0);
       if (pkgSurcharge > 0) {
         cp += pkgSurcharge;
         (item as any).meta = { ...((item as any).meta || {}), packaging: pkgKey, packaging_surcharge: pkgSurcharge };

@@ -15,6 +15,7 @@ export interface PackagingOption {
   surcharge: number;
   /** Short line shown under the label. */
   note?: string;
+  unavailable?: boolean;
 }
 
 export const PACKAGING_OPTIONS: PackagingOption[] = [
@@ -24,6 +25,17 @@ export const PACKAGING_OPTIONS: PackagingOption[] = [
 ];
 
 export const DEFAULT_PACKAGING: PackagingKey = "complimentary";
+
+/** Utkal keeps its existing free/₹100 boxes; no branded kit is offered. */
+export const UTKAL_PACKAGING_OPTIONS: PackagingOption[] = [
+  { key: "complimentary", label: "Complimentary Box", surcharge: 0 },
+  { key: "signature", label: "Utkal Watch Box", surcharge: 100 },
+  { key: "brandkit", label: "Premium Box", surcharge: 0, note: "Unavailable", unavailable: true },
+];
+
+export function packagingVisibleForProduct(isUtkal: boolean, eligible: boolean, inCategory: boolean): boolean {
+  return isUtkal || (eligible && inCategory);
+}
 
 export function getPackagingOption(key?: string | null): PackagingOption {
   return PACKAGING_OPTIONS.find((o) => o.key === key) ?? PACKAGING_OPTIONS[0];

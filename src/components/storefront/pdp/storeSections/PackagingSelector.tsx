@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, Expand, X } from "lucide-react";
-import { PACKAGING_OPTIONS, type PackagingKey } from "@/lib/packagingOptions";
+import { PACKAGING_OPTIONS, type PackagingKey, type PackagingOption } from "@/lib/packagingOptions";
 import { formatPrice } from "@/lib/productUtils";
 import complimentaryImg from "@/assets/packaging/complimentary.webp.asset.json";
 import signatureImg from "@/assets/packaging/signature.webp.asset.json";
@@ -20,9 +20,10 @@ interface Props {
   onChange: (key: PackagingKey) => void;
   /** Optional per-option image URLs (merchant can add real photos later). */
   images?: Partial<Record<PackagingKey, string>>;
+  options?: PackagingOption[];
 }
 
-export default function PackagingSelector({ basePrice, currency, value, onChange, images }: Props) {
+export default function PackagingSelector({ basePrice, currency, value, onChange, images, options = PACKAGING_OPTIONS }: Props) {
   const [preview, setPreview] = useState<{ src: string; label: string } | null>(null);
 
   // Lock body scroll + close on Escape while the lightbox is open.
@@ -47,23 +48,24 @@ export default function PackagingSelector({ basePrice, currency, value, onChange
       </p>
 
       <div className="space-y-2">
-        {PACKAGING_OPTIONS.map((opt) => {
+        {options.map((opt) => {
           const selected = value === opt.key;
           const img = images?.[opt.key] ?? DEFAULT_IMAGES[opt.key];
           return (
             <div
               key={opt.key}
               role="radio"
-              tabIndex={0}
+              tabIndex={opt.unavailable ? -1 : 0}
               aria-checked={selected}
-              onClick={() => onChange(opt.key)}
+              aria-disabled={opt.unavailable || undefined}
+              onClick={() => { if (!opt.unavailable) onChange(opt.key); }}
               onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
+                if (!opt.unavailable && (e.key === "Enter" || e.key === " ")) {
                   e.preventDefault();
                   onChange(opt.key);
                 }
               }}
-              className={`flex w-full cursor-pointer items-center gap-3 rounded-xl border-2 p-2.5 text-left transition-all duration-200 active:scale-[0.99] ${
+              className={`flex w-full items-center gap-3 rounded-xl border-2 p-2.5 text-left transition-all duration-200 ${opt.unavailable ? "cursor-not-allowed opacity-60" : "cursor-pointer active:scale-[0.99]"} ${
                 selected
                   ? "border-primary bg-primary/5 shadow-sm"
                   : "border-border bg-card hover:border-primary/40"
@@ -117,7 +119,7 @@ export default function PackagingSelector({ basePrice, currency, value, onChange
               {/* price */}
               <span className="shrink-0 text-right">
                 <span className="block text-[13px] font-extrabold text-foreground sm:text-sm">
-                  {formatPrice(basePrice + opt.surcharge, currency)}
+                  {opt.unavailable ? "—" : formatPrice(basePrice + opt.surcharge, currency)}
                 </span>
                 {opt.surcharge > 0 && (
                   <span className="block text-[10px] font-semibold text-muted-foreground">

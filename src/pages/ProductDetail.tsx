@@ -52,7 +52,7 @@ import { hasCustomPdpSections } from "@/components/storefront/pdp/storeSections/
 import PartialPaymentTrustCard from "@/components/storefront/PartialPaymentTrustCard";
 const PackagingSelector = lazy(() => import("@/components/storefront/pdp/storeSections/PackagingSelector"));
 const CodAssuranceStrip = lazy(() => import("@/components/storefront/pdp/storeSections/CodAssuranceStrip"));
-import { DEFAULT_PACKAGING, packagingSurcharge, getPackagingOption, type PackagingKey } from "@/lib/packagingOptions";
+import { DEFAULT_PACKAGING, UTKAL_PACKAGING_OPTIONS, packagingVisibleForProduct, packagingSurcharge, getPackagingOption, type PackagingKey } from "@/lib/packagingOptions";
 import WarrantyBadge from "@/components/storefront/WarrantyBadge";
 import PdpTrustSeals from "@/components/storefront/PdpTrustSeals";
 import PdpTrustBadges from "@/components/storefront/PdpTrustBadges";
@@ -418,7 +418,7 @@ export default function ProductDetail() {
   const packagingEligible = hasCustomPdpSections(store);
   const { data: inPackagingCategory } = useQuery({
     queryKey: ["pdp-packaging-category", productId],
-    enabled: !!productId && packagingEligible,
+    enabled: !!productId && packagingEligible && !isUtkalContentStore(store),
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
@@ -694,7 +694,7 @@ export default function ProductDetail() {
   const variantPrice = basePrice; // variants no longer override price
   // Packaging add-on (store-scoped). Surcharge is re-derived server-side in
   // `place-order`, so this is display + cart metadata only.
-  const showPackaging = packagingEligible && inPackagingCategory === true;
+  const showPackaging = packagingVisibleForProduct(isUtkalContentStore(store), packagingEligible, inPackagingCategory === true);
   const pkgOption = getPackagingOption(showPackaging ? packaging : DEFAULT_PACKAGING);
   const pkgSurcharge = showPackaging ? packagingSurcharge(packaging) : 0;
   const unitPrice = variantPrice + pkgSurcharge;
@@ -1088,6 +1088,7 @@ export default function ProductDetail() {
                 currency={currency}
                 value={packaging}
                 onChange={setPackaging}
+                options={isUtkalContentStore(store) ? UTKAL_PACKAGING_OPTIONS : undefined}
               />
             </Suspense>
           )}
