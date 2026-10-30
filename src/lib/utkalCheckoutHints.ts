@@ -1,6 +1,11 @@
 import { isUtkalContentStore } from "../../supabase/functions/_shared/utkalContent";
 
 type StoreRef = { id?: string | null; slug?: string | null };
+/** Full prepaid is unavailable at Utkal; online gateways still collect its advance. */
+export function allowsFullPrepaid(store: StoreRef): boolean {
+  return !isUtkalContentStore(store);
+}
+
 export function utkalDeliveryHint(store: StoreRef, mode: "full" | "partial"): string | null {
   if (!isUtkalContentStore(store)) return null;
   return mode === "full"
@@ -9,7 +14,7 @@ export function utkalDeliveryHint(store: StoreRef, mode: "full" | "partial"): st
 }
 export function utkalCodHint(store: StoreRef): string | null {
   return isUtkalContentStore(store)
-    ? "70% of our customers choose prepaid — get discount & faster delivery"
+    ? "Choose Partial COD for discount & faster delivery"
     : null;
 }
 
@@ -24,7 +29,7 @@ export function utkalPartialDiscount(store: StoreRef): number {
 export const UTKAL_COD_CONFIRM_NOTE = [
   "Hey! 👋 I'm Sudhansu, founder of Utkal Watch. ❤️",
   "🙏 A humble request: Please confirm only if you'll accept delivery, as refused COD parcels cost us shipping charges. 📦",
-  "💳 Prepaid or Partial COD gets you faster delivery & special discounts!",
+  "💳 Partial COD gets you faster delivery & special discounts!",
   "⭐ Have doubts? Check our 300+ customer reviews on Instagram.",
   "Thank you for your trust & support! ❤️",
 ];
