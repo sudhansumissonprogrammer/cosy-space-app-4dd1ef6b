@@ -7,7 +7,7 @@ import { corsHeaders, normalizePhone } from "../_shared/wa-platform.ts";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
-const UTKAL_SLUG = "utkalwatches";
+const UTKAL_STORE_ID = "ab19143d-87a9-490e-90b7-837313522782";
 const MAX_RECIPIENTS = 10000;
 
 function json(b: unknown, s = 200) {
@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
     const { data: { user } } = await userClient.auth.getUser();
     if (!user) return json({ error: "unauthorized" }, 401);
 
-    const { data: store } = await admin.from("stores").select("id, owner_id").eq("slug", UTKAL_SLUG).maybeSingle();
+    const { data: store } = await admin.from("stores").select("id, owner_id").eq("id", UTKAL_STORE_ID).maybeSingle();
     if (!store) return json({ error: "store_not_found" }, 404);
     const { data: isAdmin } = await admin.rpc("has_role", { _user_id: user.id, _role: "admin" });
     if ((store as any).owner_id !== user.id && isAdmin !== true) return json({ error: "forbidden" }, 403);
