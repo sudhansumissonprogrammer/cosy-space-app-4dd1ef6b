@@ -46,11 +46,13 @@ const FAQS: { q: string; a: string }[] = [
 export default function PdpFaqSection({ store }: { store?: { slug: string } } = {}) {
   const [open, setOpen] = useState<number | null>(null);
   const faqs: { q: string; a: ReactNode }[] = store ? [
-    { q: "How can I contact support?", a: "Use the Call Now, Request Call or WhatsApp Now buttons on this page to contact the store about this watch." },
-    { q: "How do I check the materials and water resistance?", a: "Specifications vary by model. Check the product description and confirm missing details with the store before ordering or exposing the watch to water." },
-    { q: "Is the watch covered under warranty?", a: "Contact the store to confirm this model's warranty, coverage and exclusions before ordering." },
-    { q: "How long does delivery take?", a: <>Check the <Link className="underline" to={storefrontPath(store.slug, "shipping-policy")}>shipping policy</Link> and confirm delivery timing for your address with the store.</> },
-    { q: "How do I raise a return or refund request?", a: <>Read the <Link className="underline" to={storefrontPath(store.slug, "return-policy")}>returns and refund policy</Link> for deadlines, evidence requirements and applicable conditions, then contact the store with your order number.</> },
+    { q: "How can I contact support?", a: "You can reach us via WhatsApp, phone or email mentioned on the website." },
+    { q: "Will I receive confirmation before dispatch?", a: "Yes, you will receive a packing photo and invoice on WhatsApp before the order is shipped." },
+    { q: "Is the watch covered under warranty?", a: "Yes, the watch comes with a 6-month warranty covering the internal movement." },
+    { q: "What does the warranty include?", a: "The warranty covers functional issues related to the movement. Damage due to impact, mishandling or normal wear is not included." },
+    { q: "Is the watch water resistant?", a: "Yes, the watch is water resistant for daily use like hand washing and splashes. It is not meant for swimming or showering." },
+    { q: "What material is the watch made of?", a: "All our watches feature a stainless steel and metal build with a long-lasting premium finish." },
+    { q: "How long does delivery take?", a: "Orders are dispatched within 24–48 hours and usually delivered within 2–5 working days depending on your location." },
   ] : FAQS;
 
   return (
