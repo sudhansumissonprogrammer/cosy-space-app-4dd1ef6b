@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { analyticsRange } from "@/lib/analyticsRange";
+import { analyticsVisitorTitle } from "@/lib/analyticsMeasurement";
 import LiveStoreView from "@/components/dashboard/live-view/LiveStoreView";
 import AnalyticsAdvancedSections from "@/components/dashboard/AnalyticsAdvancedSections";
 import ReelVideoAnalytics from "@/components/dashboard/ReelVideoAnalytics";
@@ -408,7 +409,7 @@ export default function StoreAnalytics() {
 
       {/* Conversion, Returning & Unique Visitors */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5">
-        <MetricCard title="Unique Visitors" value={trafficError ? "Unavailable" : trafficLoading ? "…" : totalVisitors} icon={Users} change={visitorsChange} />
+        <MetricCard title={analyticsVisitorTitle(trafficTotals?.measurement)} value={trafficError ? "Unavailable" : trafficLoading ? "…" : totalVisitors} icon={Users} change={visitorsChange} />
         <MetricCard title="Conversion" value={trafficError || trafficLoading ? "—" : conversionRate.toFixed(2)} suffix={trafficError || trafficLoading ? "" : "%"} icon={ArrowUpRight} change={conversionChange} />
         <MetricCard title="Returning" value={returningRate.toFixed(1)} suffix="%" icon={Repeat} />
       </div>
