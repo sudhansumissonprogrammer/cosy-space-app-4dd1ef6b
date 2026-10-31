@@ -8147,8 +8147,8 @@ async function _handleFetch(request, env, ctx) {
             device: typeof body.device === "string" ? body.device.slice(0, 32) : null,
             browser: typeof body.browser === "string" ? body.browser.slice(0, 64) : null,
             os: typeof body.os === "string" ? body.os.slice(0, 64) : null,
-            landing_page: typeof body.landing_page === "string" ? body.landing_page.slice(0, 512) : null,
-            country: typeof body.country === "string" ? body.country.slice(0, 8) : null,
+            landing_path: typeof body.landing_path === "string" ? body.landing_path.slice(0, 200) : null,
+            country: typeof request.cf?.country === "string" ? request.cf.country.slice(0, 2) : null,
           };
           // Forward sanitised row to PostgREST.
           await fetch(`${SUPABASE_URL}/rest/v1/page_views`, {

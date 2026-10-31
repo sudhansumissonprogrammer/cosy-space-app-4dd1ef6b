@@ -20,7 +20,7 @@ import {
   TrendingUp, TrendingDown, ShoppingBag, Eye, DollarSign, Users,
   ShoppingCart, Repeat, ArrowUpRight, CalendarIcon,
 } from "lucide-react";
-import { format, subDays, startOfDay, endOfDay, parseISO, differenceInDays } from "date-fns";
+import { format, subDays, parseISO } from "date-fns";
 
 type DateRange = "today" | "yesterday" | "7d" | "30d" | "90d" | "custom" | "all";
 
@@ -99,7 +99,6 @@ export default function StoreAnalytics() {
   const [customTo, setCustomTo] = useState<Date | undefined>(new Date());
 
   const storeId = store?.id as string | undefined;
-  const storeIds = storeId ? [storeId] : [];
   const currency = store?.currency || "USD";
   const sym = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
 
@@ -241,7 +240,6 @@ export default function StoreAnalytics() {
   const priorAOV = priorOrders > 0 ? priorRevenue / priorOrders : 0;
   const aovChange = priorAOV > 0 ? ((avgOrderValue - priorAOV) / priorAOV) * 100 : undefined;
 
-  const todayStart = startOfDay(now);
 
   const totalSessions = Number(trafficTotals?.sessions ?? 0);
   const priorSessions = Number(trafficTotals?.prior_sessions ?? 0);
