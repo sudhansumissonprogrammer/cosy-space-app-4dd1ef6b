@@ -67,4 +67,4 @@
 - Language controls portal lower-left outside layout/overlays; non-English translation uses immediate cached controls, bounded visible-first requests, deduplication and generation cancellation, preserving names/digits and English loading.
 - Utkal's third box uses the latest active matching category setting, independent of product titles/entry URLs; checkout validates its ID and saved price, and orders retain a name/price snapshot.
 - Utkal bulk is owner-gated; replied inbox filters before paging, latest incoming first.
-- Analytics uses owner/admin aggregates and lazy Three.js/Natural Earth views; conservative city/state matches leave unknown geography unplotted. Raw/archive traffic selects once per local day; cleanup_app_logs never rewrites analytics, avoiding broken 30/90-day reports.
+- Analytics uses owner/admin aggregates and lazy Three.js/Natural Earth views; unknown geography stays unplotted. Raw/archive traffic selects once per local day; cleanup_app_logs never rewrites it. Daily archives are not whole-range unique visitors.
