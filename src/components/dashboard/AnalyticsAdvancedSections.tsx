@@ -86,36 +86,16 @@ interface FunnelPayload {
 
 
 export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEnd, breakdowns, rangeSessions, ordersBreakdown }: Props) {
-  // Live visitors — last 5 min, refetched every 20s
+  // Match the canonical visible-tab heartbeat count, not stale pageview activity.
   const { data: liveCount } = useQuery({
     queryKey: ["analytics-live-count", storeId],
     refetchInterval: 20_000,
     refetchIntervalInBackground: false,
     staleTime: 15_000,
     queryFn: async () => {
-      // Paginated fetch — a 5-min window on a busy store can exceed the 1000-row
-      // default cap. Range-scan defensively up to ~50k rows before giving up.
-      const since = new Date(Date.now() - 5 * 60_000).toISOString();
-      const PAGE = 1000;
-      const uniq = new Set<string>();
-      for (let from = 0; from < 50_000; from += PAGE) {
-        const { data, error } = await supabase
-          .from("page_views")
-          .select("session_id, visitor_id")
-          .eq("store_id", storeId)
-          .eq("is_bot", false)
-          .gte("created_at", since)
-          .order("created_at", { ascending: false })
-          .range(from, from + PAGE - 1);
-        if (error) break;
-        const batch = (data || []) as any[];
-        for (const r of batch) {
-          const k = r.session_id || r.visitor_id || "";
-          if (k) uniq.add(k);
-        }
-        if (batch.length < PAGE) break;
-      }
-      return uniq.size;
+      const { data, error } = await supabase.rpc("get_live_visitors", { _store_id: storeId });
+      if (error) throw error;
+      return Number((data as {active?:number} | null)?.active ?? 0);
     },
     enabled: !!storeId,
   });
@@ -307,7 +287,7 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
               <div className="absolute inset-0 h-2.5 w-2.5 rounded-full bg-success animate-ping opacity-75" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Live visitors (last 5 min)</p>
+              <p className="text-xs text-muted-foreground">Live visitors (last 90 seconds)</p>
               <p className="text-2xl font-bold text-foreground leading-tight">{liveCount ?? 0}</p>
             </div>
           </div>
@@ -365,10 +345,10 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
                 <div className="mt-2 pt-2 border-t border-border flex items-center justify-between text-xs">
                   <span className="text-destructive font-medium">Cancelled / failed at payment</span>
                   <span className="tabular-nums text-destructive font-semibold">
-                    {orderCounts!.cancelled} of {orderCounts!.created}
-                    {orderCounts!.created > 0 && (
+                    {orderCounts.cancelled} of {orderCounts.created}
+                    {orderCounts.created > 0 && (
                       <span className="ml-1 text-muted-foreground">
-                        ({((orderCounts!.cancelled / orderCounts!.created) * 100).toFixed(0)}%)
+                        ({((orderCounts.cancelled / orderCounts.created) * 100).toFixed(0)}%)
                       </span>
                     )}
                   </span>
