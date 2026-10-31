@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import Globe, { type GlobeMethods } from "react-globe.gl";
-import { MeshBasicMaterial } from "three";
-import { geoEqualEarth, geoPath } from "d3-geo";
+import { MeshBasicMaterial, CanvasTexture, SRGBColorSpace } from "three";
+import { geoEqualEarth, geoEquirectangular, geoPath } from "d3-geo";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { Button } from "@/components/ui/button";
 import { Globe2, Map, Minus, Plus, RotateCcw, Pause, Play } from "lucide-react";
 import { countries, type ActivityPoint } from "./geography";
 
-function token(name: string) { return `hsl(${getComputedStyle(document.documentElement).getPropertyValue(name).trim()})`; }
+function token(name: string) { return `hsl(${getComputedStyle(document.documentElement).getPropertyValue(name).trim().split(/\s+/).join(",")})`; }
 export default function ActivityEarth({ points }: { points: ActivityPoint[] }) {
   const host = useRef<HTMLDivElement>(null);
   const globe = useRef<GlobeMethods | undefined>(undefined);
@@ -18,7 +18,18 @@ export default function ActivityEarth({ points }: { points: ActivityPoint[] }) {
   const [webgl, setWebgl] = useState(true);
   const [selected, setSelected] = useState<ActivityPoint | null>(null);
   const palette = useMemo(() => ({ ocean: token("--earth-ocean"), land: token("--earth-land"), border: token("--earth-border"), order: token("--earth-order"), visitor: token("--earth-visitor") }), []);
-  const material = useMemo(() => new MeshBasicMaterial({ color: palette.ocean }), [palette]);
+  const material = useMemo(() => {
+    const canvas = document.createElement("canvas"); canvas.width = 2048; canvas.height = 1024;
+    const context = canvas.getContext("2d");
+    if (context) {
+      context.fillStyle = palette.ocean; context.fillRect(0, 0, 2048, 1024);
+      const draw = geoPath(geoEquirectangular().scale(2048 / (2 * Math.PI)).translate([1024, 512]), context);
+      context.fillStyle = palette.land; context.strokeStyle = palette.border; context.lineWidth = 0.7;
+      for (const country of countries) { context.beginPath(); draw(country); context.fill(); context.stroke(); }
+    }
+    const texture = new CanvasTexture(canvas); texture.colorSpace = SRGBColorSpace;
+    return new MeshBasicMaterial({ map: texture });
+  }, [palette]);
   const color = (p: ActivityPoint) => p.kind === "order" ? palette.order : palette.visitor;
   useEffect(() => {
     const el = host.current;
@@ -27,7 +38,7 @@ export default function ActivityEarth({ points }: { points: ActivityPoint[] }) {
     observer.observe(el);
     const canvas = document.createElement("canvas");
     if (!canvas.getContext("webgl2") && !canvas.getContext("webgl")) { setWebgl(false); setMode("map"); }
-    return () => { observer.disconnect(); material.dispose(); };
+    return () => { observer.disconnect(); material.map?.dispose(); material.dispose(); };
   }, [material]);
   useEffect(() => {
     const g = globe.current;
@@ -56,8 +67,7 @@ export default function ActivityEarth({ points }: { points: ActivityPoint[] }) {
     </div>
     {mode === "globe" ? <>
       <Globe ref={globe} width={width} height={460} backgroundColor={palette.ocean} globeMaterial={material} showAtmosphere={false} showGraticules
-        polygonsData={countries} polygonCapColor={() => palette.land} polygonSideColor={() => palette.land} polygonStrokeColor={() => palette.border} polygonAltitude={0.001} polygonsTransitionDuration={0}
-        pointsData={points} pointColor={p => color(p as ActivityPoint)} pointRadius={0.35} pointAltitude={0.015} pointsTransitionDuration={0}
+        pointsData={points} pointColor={p => color(p as ActivityPoint)} pointRadius={0.45} pointAltitude={0.025} pointsTransitionDuration={0}
         onPointClick={p => setSelected(p as ActivityPoint)}
         onGlobeReady={() => { globe.current?.pointOfView({ lat: 20, lng: 78, altitude: 2.3 }, 0); setReady(true); }} />
       {controls(() => zoom(0.8), () => zoom(1.25), () => globe.current?.pointOfView({ lat: 20, lng: 78, altitude: 2.3 }, 300))}

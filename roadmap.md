@@ -1,7 +1,8 @@
 # Roadmap
-- [ ] Repair analytics history selection and error states; verify 30/90-day totals against retained data.
-- [ ] Add Shopify-inspired live globe/map, store-scoped activity and honest geographic coverage; verify real dashboard.
-- [ ] Document Shopify research, measurement differences, historical limitations and deployment requirements.
+- [x] Repair history selection/retention conflict and errors; Utkal owner dashboard 30d=399 and 90d=1659 match independent retained-data calculations.
+- [x] Add store-scoped live globe/map, cart/checkout events, orders, approximate purchase cities and geographic coverage; real Utkal globe/map/dots, mobile no-overflow and rotation verified.
+- [x] Record Shopify research, measurement differences and archived-history limitations in docs/SHOPIFY-LIVE-VIEW-RESEARCH.md; focused tests and Worker syntax checked.
+- [ ] Publish frontend and manually deploy updated Worker for trusted visitor-country collection; historical missing geography cannot be reconstructed. Real-device GPU smoothness is unverified.
 - [x] Added WhatsApp All/Replied only filter using access-checked incoming-first server paging, search and 15-second refresh; two tests pass, build OK. No messages sent; publish frontend.
 - [ ] Real Utkal replied-inbox verification awaits an authorized owner/admin session; requesting account has no store or role, so the inbox cannot load.
 - [x] Utkal direct checkout: OTP switch off, phone collected in delivery address, valid-phone gate retained and debounced recovery capture preserved. Guest direct checkout/address/invalid-phone/+91 entry checked; no order or recovery message sent. Publish frontend; completed order/automation delivery not tested.

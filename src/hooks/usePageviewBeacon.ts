@@ -216,6 +216,13 @@ export function usePageviewBeacon(storeId: string | undefined | null) {
     };
 
     const send = () => {
+      // Worker-owned storefronts enrich geography from trusted Cloudflare data.
+      // Preview/localhost retain the existing ingest path.
+      if ((window as Window & { __SF_WORKER__?: boolean }).__SF_WORKER__) {
+        fetch("/__sf/pv", { method: "POST", keepalive: true, headers: { "Content-Type": "text/plain;charset=UTF-8" }, body: payload })
+          .then(r => { if (!r.ok) writeIngest(); }).catch(() => writeIngest());
+        return;
+      }
       // Beacon first (survives FB/Google in-app bounces). Only fall back to
       // fetch when the browser refused to queue the beacon — otherwise the
       // 700ms safety-net fetch was doubling every pageview in normal browsers
