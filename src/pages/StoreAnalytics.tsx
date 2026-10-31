@@ -625,6 +625,9 @@ export default function StoreAnalytics() {
         />
 
       )}
+
+      {/* Live view globe — bottom of the page */}
+      {storeId && <LiveStoreView key={storeId} storeId={storeId} symbol={sym} />}
     </div>
   );
 }
