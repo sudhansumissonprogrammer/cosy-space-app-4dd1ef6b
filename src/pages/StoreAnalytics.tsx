@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { analyticsRange } from "@/lib/analyticsRange";
+import LiveStoreView from "@/components/dashboard/live-view/LiveStoreView";
 import AnalyticsAdvancedSections from "@/components/dashboard/AnalyticsAdvancedSections";
 import ReelVideoAnalytics from "@/components/dashboard/ReelVideoAnalytics";
 import { useDashboardStore } from "@/contexts/DashboardStoreContext";
@@ -27,6 +29,7 @@ interface TrafficTotalsPayload {
   visitors?: number | string;
   prior_sessions?: number | string;
   prior_visitors?: number | string;
+  measurement?: string;
 }
 
 interface SalesAnalyticsPayload {
@@ -100,41 +103,9 @@ export default function StoreAnalytics() {
   const currency = store?.currency || "USD";
   const sym = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
 
-  // Range computation — all bounds are inclusive for the current period.
   const now = new Date();
-  let rangeStart: Date;
-  let rangeEnd: Date;
-  let priorStart: Date;
-  let priorEnd: Date;
-
-  if (dateRange === "today") {
-    rangeStart = startOfDay(now);
-    rangeEnd = now;
-    priorStart = startOfDay(subDays(now, 1));
-    priorEnd = endOfDay(subDays(now, 1));
-  } else if (dateRange === "yesterday") {
-    rangeStart = startOfDay(subDays(now, 1));
-    rangeEnd = endOfDay(subDays(now, 1));
-    priorStart = startOfDay(subDays(now, 2));
-    priorEnd = endOfDay(subDays(now, 2));
-  } else if (dateRange === "custom" && customFrom && customTo) {
-    rangeStart = startOfDay(customFrom);
-    rangeEnd = endOfDay(customTo);
-    const span = differenceInDays(customTo, customFrom) || 1;
-    priorStart = startOfDay(subDays(customFrom, span));
-    priorEnd = startOfDay(customFrom);
-  } else if (dateRange === "all") {
-    rangeStart = new Date(0);
-    rangeEnd = now;
-    priorStart = new Date(0);
-    priorEnd = new Date(0);
-  } else {
-    const days = dateRange === "7d" ? 7 : dateRange === "30d" ? 30 : 90;
-    rangeStart = startOfDay(subDays(now, days - 1));
-    rangeEnd = now;
-    priorStart = startOfDay(subDays(now, days * 2 - 1));
-    priorEnd = startOfDay(subDays(now, days - 1));
-  }
+  const timezone = store?.timezone || "Asia/Kolkata";
+  const { rangeStart, rangeEnd, priorStart, priorEnd } = analyticsRange(dateRange, now, timezone, customFrom, customTo);
   const { data: salesAnalytics, isLoading, isError, refetch } = useQuery({
     queryKey: [
       "analytics-sales-exact",
@@ -159,44 +130,15 @@ export default function StoreAnalytics() {
     },
   });
 
-  // Today's session count — exact server-side aggregate. Previously this pulled
-  // up to 200k raw page_view rows into the browser just to size one chart bucket.
-  const { data: todayTotals } = useQuery({
-    queryKey: ["analytics-today-totals", storeId],
-    staleTime: 60_000,
-    refetchInterval: 60_000,
-    refetchIntervalInBackground: false,
-    enabled: !!storeId,
+  const { data: trafficSeries, isError: seriesError } = useQuery({
+    queryKey: ["analytics-traffic-series", storeId, dateRange, customFrom?.toISOString(), customTo?.toISOString(), timezone],
+    enabled: !!storeId, staleTime: 60_000, refetchInterval: 60_000,
     queryFn: async () => {
-      const { data, error } = await (supabase as unknown as RpcClient).rpc<{ sessions?: number | string }>(
-        "get_today_analytics",
-        { _store_id: storeId },
-      );
+      const r = analyticsRange(dateRange, new Date(), timezone, customFrom, customTo);
+      const { data, error } = await supabase.rpc("get_store_traffic_series", { _store_id: storeId || "", _range_start: r.rangeStart.toISOString(), _range_end: r.rangeEnd.toISOString() });
       if (error) throw error;
-      return { sessions: Number(data?.sessions ?? 0) };
+      return (data || []) as unknown as {date:string;sessions:number;visitors:number;source:string}[];
     },
-  });
-
-  // Historical daily rollups — used for ranges > 30 days (90d / custom / all)
-  const { data: viewsDaily } = useQuery({
-    queryKey: ["analytics-views-daily", storeIds],
-    staleTime: 10 * 60 * 1000,
-    refetchOnWindowFocus: true,
-    refetchOnMount: "always",
-    queryFn: async () => {
-      // Cap to last 365 days — nothing in the UI plots older than 1 year and the
-      // table grows unbounded. Defends against multi-MB pulls on long-lived stores.
-      const since = startOfDay(subDays(new Date(), 365)).toISOString().slice(0, 10);
-      const { data, error } = await supabase
-        .from("page_views_daily")
-        .select("date, pageviews, sessions, visitors")
-        .in("store_id", storeIds)
-        .gte("date", since)
-        .order("date", { ascending: true });
-      if (error) throw error;
-      return (data || []) as any[];
-    },
-    enabled: storeIds.length > 0,
   });
 
   // Order breakdown for the SELECTED range — exact, server-side. The old client
@@ -228,7 +170,7 @@ export default function StoreAnalytics() {
   });
 
 
-  const { data: trafficTotals } = useQuery({
+  const { data: trafficTotals, isError: trafficError, isLoading: trafficLoading, refetch: retryTraffic } = useQuery({
     queryKey: [
       "analytics-traffic-exact",
       storeId,
@@ -243,40 +185,7 @@ export default function StoreAnalytics() {
     refetchOnMount: "always",
     enabled: !!storeId,
     queryFn: async () => {
-      const current = new Date();
-      let liveRangeStart: Date;
-      let liveRangeEnd: Date;
-      let livePriorStart: Date;
-      let livePriorEnd: Date;
-
-      if (dateRange === "today") {
-        liveRangeStart = startOfDay(current);
-        liveRangeEnd = current;
-        livePriorStart = startOfDay(subDays(current, 1));
-        livePriorEnd = endOfDay(subDays(current, 1));
-      } else if (dateRange === "yesterday") {
-        liveRangeStart = startOfDay(subDays(current, 1));
-        liveRangeEnd = endOfDay(subDays(current, 1));
-        livePriorStart = startOfDay(subDays(current, 2));
-        livePriorEnd = endOfDay(subDays(current, 2));
-      } else if (dateRange === "custom" && customFrom && customTo) {
-        liveRangeStart = startOfDay(customFrom);
-        liveRangeEnd = endOfDay(customTo);
-        const span = differenceInDays(customTo, customFrom) || 1;
-        livePriorStart = startOfDay(subDays(customFrom, span));
-        livePriorEnd = startOfDay(customFrom);
-      } else if (dateRange === "all") {
-        liveRangeStart = new Date(0);
-        liveRangeEnd = current;
-        livePriorStart = new Date(0);
-        livePriorEnd = new Date(0);
-      } else {
-        const days = dateRange === "7d" ? 7 : dateRange === "30d" ? 30 : 90;
-        liveRangeStart = startOfDay(subDays(current, days - 1));
-        liveRangeEnd = current;
-        livePriorStart = startOfDay(subDays(current, days * 2 - 1));
-        livePriorEnd = startOfDay(subDays(current, days - 1));
-      }
+      const { rangeStart: liveRangeStart, rangeEnd: liveRangeEnd, priorStart: livePriorStart, priorEnd: livePriorEnd } = analyticsRange(dateRange, new Date(), timezone, customFrom, customTo);
 
       const { data, error } = await (supabase as unknown as RpcClient).rpc<TrafficTotalsPayload>("get_analytics_traffic", {
         _store_id: storeId,
@@ -291,6 +200,7 @@ export default function StoreAnalytics() {
         visitors: Number(data?.visitors ?? 0),
         prior_sessions: Number(data?.prior_sessions ?? 0),
         prior_visitors: Number(data?.prior_visitors ?? 0),
+        measurement: data?.measurement,
       };
     },
   });
@@ -384,25 +294,7 @@ export default function StoreAnalytics() {
     }))
   ), [salesAnalytics?.payment_methods]);
 
-  const viewsByDay = useMemo(() => {
-    // Past days (< today): use rollup so charts stay accurate forever.
-    const past = (viewsDaily || [])
-      .filter((r: any) => {
-        const t = parseISO(r.date).getTime();
-        return t >= rangeStart.getTime() && t < todayStart.getTime() && t <= rangeEnd.getTime();
-      })
-      .map((r: any) => ({ date: r.date, views: Number(r.sessions) || 0 }));
-
-    // Today is not rolled up yet — use the exact server-side session count.
-    const includesToday = rangeEnd.getTime() >= todayStart.getTime();
-    const todayBuckets = includesToday && (todayTotals?.sessions ?? 0) > 0
-      ? [{ date: format(todayStart, "yyyy-MM-dd"), views: Number(todayTotals?.sessions || 0) }]
-      : [];
-
-    return [...past, ...todayBuckets].sort((a, b) => a.date.localeCompare(b.date));
-  }, [todayTotals, viewsDaily, rangeStart, rangeEnd, todayStart]);
-
-
+  const viewsByDay = useMemo(() => (trafficSeries || []).map(r => ({date:r.date,views:Number(r.sessions)})), [trafficSeries]);
 
   const topPages = useMemo(() => {
     return (analyticsBreakdowns?.top_pages || []).map((p) => ({
@@ -449,6 +341,8 @@ export default function StoreAnalytics() {
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-foreground">Analytics</h1>
       </div>
+
+      {storeId && <LiveStoreView key={storeId} storeId={storeId} symbol={sym} />}
 
       {/* Date range tabs */}
       <Tabs value={dateRange} onValueChange={(v) => setDateRange(v as DateRange)}>
@@ -510,16 +404,19 @@ export default function StoreAnalytics() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
         <MetricCard title="Total Sales" value={totalRevenue.toFixed(0)} prefix={sym} icon={DollarSign} change={revenueChange} />
         <MetricCard title="Orders" value={totalOrders} icon={ShoppingBag} change={ordersChange} />
-        <MetricCard title="Sessions" value={totalSessions} icon={Eye} change={sessionsChange} />
+        <MetricCard title="Sessions" value={trafficError ? "Unavailable" : trafficLoading ? "…" : totalSessions} icon={Eye} change={sessionsChange} />
         <MetricCard title="Avg Order" value={avgOrderValue.toFixed(0)} prefix={sym} icon={ShoppingCart} change={aovChange} />
       </div>
 
       {/* Conversion, Returning & Unique Visitors */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5">
-        <MetricCard title="Unique Visitors" value={totalVisitors} icon={Users} change={visitorsChange} />
-        <MetricCard title="Conversion" value={conversionRate.toFixed(2)} suffix="%" icon={ArrowUpRight} change={conversionChange} />
+        <MetricCard title="Unique Visitors" value={trafficError ? "Unavailable" : trafficLoading ? "…" : totalVisitors} icon={Users} change={visitorsChange} />
+        <MetricCard title="Conversion" value={trafficError || trafficLoading ? "—" : conversionRate.toFixed(2)} suffix={trafficError || trafficLoading ? "" : "%"} icon={ArrowUpRight} change={conversionChange} />
         <MetricCard title="Returning" value={returningRate.toFixed(1)} suffix="%" icon={Repeat} />
       </div>
+
+      {trafficError && <div role="alert" className="flex items-center justify-between gap-2 rounded border border-destructive/30 p-3 text-xs"><span>Session totals couldn’t load. They are not zero.</span><Button variant="outline" size="sm" onClick={() => retryTraffic()}>Retry</Button></div>}
+      {trafficTotals?.measurement === "daily_aggregates" && <p className="text-xs text-muted-foreground">Historical sessions and visitors use saved daily totals. Repeat visits across days may count more than once.</p>}
 
       {/* Sales Over Time */}
       <Card className="border shadow-none">
@@ -577,7 +474,7 @@ export default function StoreAnalytics() {
           <CardTitle className="text-sm font-medium">Sessions</CardTitle>
         </CardHeader>
         <CardContent className="p-3 pt-2">
-          {viewsByDay.length > 0 ? (
+          {seriesError ? <p role="alert" className="py-8 text-center text-xs text-destructive">Session history couldn’t load.</p> : viewsByDay.length > 0 ? (
             <ResponsiveContainer width="100%" height={180}>
               <AreaChart data={viewsByDay}>
                 <defs>
