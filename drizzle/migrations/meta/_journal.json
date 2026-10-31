@@ -162,6 +162,13 @@
       "when": 1793380990767,
       "tag": "0022_store_whatsapp_replied_threads",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793459672331,
+      "tag": "0023_store_analytics_history_and_live_view",
+      "breakpoints": true
     }
   ]
 }

@@ -6416,6 +6416,7 @@ export type Database = {
         }[]
       }
       get_store_footer_info: { Args: { _store_id: string }; Returns: Json }
+      get_store_live_view: { Args: { _store_id: string }; Returns: Json }
       get_store_monthly_sales: {
         Args: { _months?: number; _store_id: string }
         Returns: {
@@ -6460,6 +6461,10 @@ export type Database = {
           source_base_url: string
           source_platform: string
         }[]
+      }
+      get_store_traffic_series: {
+        Args: { _range_end: string; _range_start: string; _store_id: string }
+        Returns: Json
       }
       get_store_usage_stats: { Args: never; Returns: Json }
       get_store_views: {
