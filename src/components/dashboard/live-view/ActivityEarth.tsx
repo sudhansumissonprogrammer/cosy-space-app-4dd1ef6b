@@ -56,8 +56,8 @@ export default function ActivityEarth({ points }: { points: ActivityPoint[] }) {
     </div>
     {mode === "globe" ? <>
       <Globe ref={globe} width={width} height={460} backgroundColor={palette.ocean} globeMaterial={material} showAtmosphere={false} showGraticules
-        polygonsData={countries} polygonCapColor={() => palette.land} polygonSideColor={() => palette.land} polygonStrokeColor={() => palette.border} polygonAltitude={0.001} polygonsTransitionDuration={0}
-        pointsData={points} pointColor={p => color(p as ActivityPoint)} pointRadius={0.35} pointAltitude={0.015} pointsTransitionDuration={0}
+        polygonsData={countries} polygonCapColor={() => palette.land} polygonSideColor={() => palette.land} polygonStrokeColor={() => palette.border} polygonAltitude={0.01} polygonsTransitionDuration={0}
+        pointsData={points} pointColor={p => color(p as ActivityPoint)} pointRadius={0.45} pointAltitude={0.025} pointsTransitionDuration={0}
         onPointClick={p => setSelected(p as ActivityPoint)}
         onGlobeReady={() => { globe.current?.pointOfView({ lat: 20, lng: 78, altitude: 2.3 }, 0); setReady(true); }} />
       {controls(() => zoom(0.8), () => zoom(1.25), () => globe.current?.pointOfView({ lat: 20, lng: 78, altitude: 2.3 }, 300))}
