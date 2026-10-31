@@ -169,6 +169,13 @@
       "when": 1793459672331,
       "tag": "0023_store_analytics_history_and_live_view",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793459698367,
+      "tag": "0024_preserve_analytics_retention_and_rollup_keys",
+      "breakpoints": true
     }
   ]
 }
