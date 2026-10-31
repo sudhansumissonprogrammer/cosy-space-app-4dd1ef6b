@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Globe2, Map, Minus, Plus, RotateCcw, Pause, Play } from "lucide-react";
 import { countries, type ActivityPoint } from "./geography";
 
-function token(name: string) { return `hsl(${getComputedStyle(document.documentElement).getPropertyValue(name).trim()})`; }
+function token(name: string) { return `hsl(${getComputedStyle(document.documentElement).getPropertyValue(name).trim().split(/\s+/).join(",")})`; }
 export default function ActivityEarth({ points }: { points: ActivityPoint[] }) {
   const host = useRef<HTMLDivElement>(null);
   const globe = useRef<GlobeMethods | undefined>(undefined);
