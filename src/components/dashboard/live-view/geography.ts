@@ -3,9 +3,10 @@ import type { Topology, GeometryCollection } from "topojson-specification";
 import { geoCentroid } from "d3-geo";
 import atlas from "world-atlas/countries-110m.json";
 import cities from "./india-cities.json";
+import type { Feature, Geometry } from "geojson";
 
 const topology = atlas as unknown as Topology<{ countries: GeometryCollection }>;
-export const countries = feature(topology, topology.objects.countries).features;
+export const countries = feature(topology, topology.objects.countries).features as Feature<Geometry, { name: string }>[];
 export interface ActivityPoint { lat: number; lng: number; label: string; count: number; kind: "order" | "visitor" }
 const normalize = (s: string) => s.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 export function orderPoint(city: string | null, state: string | null, count: number): ActivityPoint | null {

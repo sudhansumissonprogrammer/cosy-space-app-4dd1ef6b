@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+.activity-earth { background: hsl(var(--earth-ocean)); height: 460px; }
+.earth-order-dot, .earth-visitor-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.earth-order-dot { background: hsl(var(--earth-order)); }
+.earth-visitor-dot { background: hsl(var(--earth-visitor)); }
+
 /* Self-hosted Inter font — eliminates Google Fonts roundtrips */
 @font-face {
   font-family: "Inter";
@@ -100,6 +105,11 @@
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
+    --earth-ocean: 160 18% 13%;
+    --earth-land: 156 13% 31%;
+    --earth-border: 154 11% 43%;
+    --earth-order: 44 94% 65%;
+    --earth-visitor: 157 72% 65%;
 
     font-family:
       "Inter",
