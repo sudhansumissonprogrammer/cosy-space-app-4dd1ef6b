@@ -341,7 +341,6 @@ export default function StoreAnalytics() {
         <h1 className="text-lg font-semibold text-foreground">Analytics</h1>
       </div>
 
-      {storeId && <LiveStoreView key={storeId} storeId={storeId} symbol={sym} />}
 
       {/* Date range tabs */}
       <Tabs value={dateRange} onValueChange={(v) => setDateRange(v as DateRange)}>
