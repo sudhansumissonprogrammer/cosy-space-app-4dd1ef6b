@@ -1,5 +1,6 @@
 # Roadmap
-- [ ] Check Serdiya Jewellers 30/90-day sessions and unique visitors against saved traffic; repair confirmed counting errors and verify authorized dashboard.
+- [x] Checked Serdiya owner traffic: 30d=41,878 sessions/37,643 unique visitors; 90d=195,478 sessions/188,608 summed daily visitors at Oct 31 15:42 UTC. Counts differ; corrected archive visitor label, five tests/build pass. No traffic rewritten.
+- [ ] Serdiya visual 90-day tab verification blocked by existing low-wallet dashboard lock; owner 30-day response and authorized 90-day RPC verified. Publish label correction; archived identities cannot reconstruct exact 90-day unique visitors.
 - [x] Repair history selection/retention conflict and errors; Utkal owner dashboard 30d=399 and 90d=1659 match independent retained-data calculations.
 - [x] Add store-scoped live globe/map, cart/checkout events, orders, approximate purchase cities and geographic coverage; real Utkal globe/map/dots, mobile no-overflow and rotation verified.
 - [x] Record Shopify research, measurement differences and archived-history limitations in docs/SHOPIFY-LIVE-VIEW-RESEARCH.md; focused tests and Worker syntax checked.
