@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Check Serdiya Jewellers 30/90-day sessions and unique visitors against saved traffic; repair confirmed counting errors and verify authorized dashboard.
 - [x] Repair history selection/retention conflict and errors; Utkal owner dashboard 30d=399 and 90d=1659 match independent retained-data calculations.
 - [x] Add store-scoped live globe/map, cart/checkout events, orders, approximate purchase cities and geographic coverage; real Utkal globe/map/dots, mobile no-overflow and rotation verified.
 - [x] Record Shopify research, measurement differences and archived-history limitations in docs/SHOPIFY-LIVE-VIEW-RESEARCH.md; focused tests and Worker syntax checked.
