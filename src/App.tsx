@@ -821,7 +821,6 @@ function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
         runIdle(() => { prefetchHomeChunk(theme).catch(() => {}); });
       } else {
         runIdle(() => { prefetchTargetPageChunk(path); });
-        runIdle(() => { prefetchHomeChunk(theme).catch(() => {}); });
       }
     };
     // Wait for load event so critical resources finish first.

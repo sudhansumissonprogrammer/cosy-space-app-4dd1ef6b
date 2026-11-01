@@ -33,7 +33,7 @@ import "@/styles/sf-glass.css";
 import "@/styles/sf-kalinga-mobile.css";
 
 // Lazy-load non-critical overlays
-const SideCart = lazy(() => import("@/components/storefront/SideCart"));
+import SideCartGate from "@/components/storefront/SideCartGate";
 
 /**
  * Single-skeleton policy: while React is loading the storefront,
@@ -485,11 +485,7 @@ export default function StorefrontShell({
       </Suspense>
       */}
       {/* Overlay chunks gated behind requestIdleCallback to keep them off first-paint */}
-      {overlaysReady && showSideCart && (
-        <Suspense fallback={null}>
-          <SideCart store={store} />
-        </Suspense>
-      )}
+      {showSideCart && <SideCartGate store={store} />}
       {/* WhatsApp now lives in the header. This slot hosts the trust-video reel
           launcher — it self-hides when the store has no active trust videos and
           only fetches the player chunk + media on tap. */}
