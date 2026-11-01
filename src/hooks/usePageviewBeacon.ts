@@ -216,13 +216,11 @@ export function usePageviewBeacon(storeId: string | undefined | null) {
     };
 
     const send = () => {
-      // Worker-owned storefronts enrich geography from trusted Cloudflare data.
-      // Preview/localhost retain the existing ingest path.
-      if ((window as Window & { __SF_WORKER__?: boolean }).__SF_WORKER__) {
-        fetch("/__sf/pv", { method: "POST", keepalive: true, headers: { "Content-Type": "text/plain;charset=UTF-8" }, body: payload })
-          .then(r => { if (!r.ok) writeIngest(); }).catch(() => writeIngest());
-        return;
-      }
+      // Always use the ingest function (service-role writer; it already reads
+      // the trusted cf-ipcountry header). Never route through the Worker's
+      // /__sf/pv: it answers 204 immediately, then writes with the anon key,
+      // which has no INSERT grant on page_views — every pageview was silently
+      // lost on live storefronts (2026-10-31 15:30 UTC regression).
       // Beacon first (survives FB/Google in-app bounces). Only fall back to
       // fetch when the browser refused to queue the beacon — otherwise the
       // 700ms safety-net fetch was doubling every pageview in normal browsers
