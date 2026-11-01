@@ -30,6 +30,7 @@ import { utkalCollectionIntroduction, isUtkalContentStore, UTKAL_STATUS } from "
 import { utkalCategoryHeading, utkalCategoryIntro, utkalCategoryFaq, relatedCategories } from "../../supabase/functions/_shared/utkalCategorySeo";
 import { useStorefrontCategories } from "@/hooks/useStorefrontCategories";
 import utkalSaleBanner from "@/assets/utkal-sale-banner-v4.webp.asset.json";
+import { afterStorefrontOpening } from "@/lib/storefrontOpeningReady";
 
 /**
  * Brand-grouped carousels: opt-in per store + category only. Lazy so no other
@@ -129,6 +130,7 @@ export default function CategoryDetail() {
     } catch { /* ignore */ }
     return null;
   };
+  const inlineRefreshKey = useRef<unknown[] | null>(null);
 
   const { data: category, isLoading: categoryLoading } = useQuery({
     queryKey: ["category", store.id, categorySlug],
@@ -190,25 +192,9 @@ export default function CategoryDetail() {
         if (Array.isArray(inline.products) && discoveryPage(new URLSearchParams(window.location.search).get("page")) === 1) {
           const qKey = ["cat-detail-v3", store.id, categorySlug || inline.category.name, "default", PAGE_SIZE];
           queryClient.setQueryData(qKey, seedInfinitePages(inline.products));
-          // PERF: the inline HTML payload can be stale, so we still refresh from
-          // the version-aware /api/products endpoint — but NOT synchronously.
-          // Invalidating during render queued the refetch inside the hydration
-          // burst, so on 4x-throttled mobile it landed at ~4.6s and competed
-          // with the render-critical chunks + hero images. Deferring it to idle
-          // keeps freshness while taking it off the first-paint critical path.
-          // Hold the refresh until well after first paint: invalidating the
-          // seeded pages refetches EVERY page (3 RPCs for a 41-product
-          // category) and, on the carousel route, re-groups the rails — which
-          // showed up as a large late layout shift. 2.5s puts it clear of the
-          // LCP window; idle callback only trims further if the tab is calm.
-          const refresh = () => queryClient.invalidateQueries({ queryKey: qKey });
-          setTimeout(() => {
-            if (typeof (window as any).requestIdleCallback === "function") {
-              (window as any).requestIdleCallback(refresh, { timeout: 2000 });
-            } else {
-              refresh();
-            }
-          }, 2500);
+          // Preserve freshness, but move the refresh into a cancellable effect
+          // after opening photos settle instead of launching it during render.
+          inlineRefreshKey.current = qKey;
         }
         return inline.category;
       }
@@ -241,8 +227,17 @@ export default function CategoryDetail() {
     // longer wait behind the category-name lookup round trip.
     categorySlug,
     queryKeyPrefix: "cat-detail-v3",
-    ready: true,
+    ready: !!category,
   });
+
+  useEffect(() => {
+    const key = inlineRefreshKey.current;
+    if (!key || key[2] !== categorySlug || categoryLoading || productsLoading) return;
+    return afterStorefrontOpening(() => {
+      inlineRefreshKey.current = null;
+      void queryClient.invalidateQueries({ queryKey: key });
+    }, 1000);
+  }, [categorySlug, categoryLoading, productsLoading, queryClient]);
 
 
   useMetaTags({
@@ -387,7 +382,7 @@ export default function CategoryDetail() {
   const relatedCats = utkalStore && category ? relatedCategories(category, (allStoreCategories ?? []).filter((c: any) => c?.slug && c?.name)) : [];
 
   return (
-    <div className={`mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 ${showUtkalSaleBanner ? "pt-0 pb-1" : hideFilters ? "py-1" : "py-5"}`}>
+    <div data-storefront-loading={categoryLoading || productsLoading || !comboShortcutsReady || !brandRailsReady ? "true" : undefined} className={`mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 ${showUtkalSaleBanner ? "pt-0 pb-1" : hideFilters ? "py-1" : "py-5"}`}>
       {showUtkalSaleBanner && (
         <div className="-mx-3 sm:-mx-4 lg:-mx-6">
           <img
