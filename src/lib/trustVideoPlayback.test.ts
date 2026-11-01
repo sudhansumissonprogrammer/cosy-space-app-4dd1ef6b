@@ -1,7 +1,28 @@
 import { describe, it, expect, vi } from "vitest";
-import { activateTrustVideo, TRUST_REVEAL_MS, TRUST_PREVIEW_DELAY_MS, allowsTrustPreview } from "./trustVideoPlayback";
+import { activateTrustVideo, toggleTrustPreviewSound, TRUST_REVEAL_MS, TRUST_PREVIEW_DELAY_MS, allowsTrustPreview } from "./trustVideoPlayback";
 
 describe("trust video activation", () => {
+  it("unmutes the existing preview on click and mutes it again without replacing it", async () => {
+    const play = vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
+    const video = document.createElement("video");
+    video.muted = true;
+    expect(await toggleTrustPreviewSound(video)).toBe(false);
+    expect(video.muted).toBe(false);
+    expect(video.volume).toBe(1);
+    expect(play.mock.instances[0]).toBe(video);
+    expect(await toggleTrustPreviewSound(video)).toBe(true);
+    expect(video.muted).toBe(true);
+    expect(play).toHaveBeenCalledTimes(1);
+    play.mockRestore();
+  });
+  it("keeps the preview muted if the browser rejects audible playback", async () => {
+    const play = vi.spyOn(HTMLMediaElement.prototype, "play").mockRejectedValue(new Error("Blocked"));
+    const video = document.createElement("video");
+    video.muted = true;
+    expect(await toggleTrustPreviewSound(video)).toBe(true);
+    expect(video.muted).toBe(true);
+    play.mockRestore();
+  });
   it("requests audible playback inside the click before asynchronous work", () => {
     const play = vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
     const video = activateTrustVideo("https://example.test/trust.mp4");

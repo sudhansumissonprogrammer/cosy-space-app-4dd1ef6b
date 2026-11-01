@@ -7,9 +7,9 @@
  */
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Play, X } from "lucide-react";
+import { Play, Volume2, VolumeX, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { activateTrustVideo, TRUST_PROBE_MS, TRUST_REVEAL_MS, TRUST_PREVIEW_DELAY_MS, allowsTrustPreview } from "@/lib/trustVideoPlayback";
+import { activateTrustVideo, toggleTrustPreviewSound, TRUST_PROBE_MS, TRUST_REVEAL_MS, TRUST_PREVIEW_DELAY_MS, allowsTrustPreview } from "@/lib/trustVideoPlayback";
 import {
   fetchTrustVideoProbe,
   fetchTrustReel,
@@ -58,6 +58,7 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
   const [loading, setLoading] = useState(false);
   const [previewReady, setPreviewReady] = useState(false);
   const [previewFailed, setPreviewFailed] = useState(false);
+  const [previewMuted, setPreviewMuted] = useState(true);
   const previewVideoRef = useRef<HTMLVideoElement | null>(null);
   const [pageVisible, setPageVisible] = useState(() => !document.hidden);
   useEffect(() => {
@@ -82,7 +83,11 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
   useEffect(() => {
     const video = previewVideoRef.current;
     if (!video) return;
-    if (open || !pageVisible || dismissed) video.pause();
+    if (open || !pageVisible || dismissed) {
+      video.pause();
+      video.muted = true;
+      setPreviewMuted(true);
+    }
     else void video.play().catch(() => {});
   }, [open, pageVisible, dismissed, previewReady, available, revealed]);
   const previewCaption = storeSlug === "serdiyajewellers"
@@ -187,6 +192,7 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
 
   const handleOpen = async () => {
     if (!preview || open) return;
+    setPreviewMuted(true);
     previewVideoRef.current?.pause();
     activatedVideoRef.current?.pause();
     activatedVideoRef.current = activateTrustVideo(slides?.[0]?.videoUrl || preview.videoUrl);
@@ -214,6 +220,14 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
     e.stopPropagation();
     setDismissed(true);
     try { sessionStorage.setItem(SS_DISMISS(storeId), "1"); } catch {}
+  };
+
+  const handlePreviewSound = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const video = previewVideoRef.current;
+    if (!video || open || !pageVisible) return;
+    const muted = await toggleTrustPreviewSound(video);
+    if (previewVideoRef.current === video) setPreviewMuted(muted);
   };
 
   if (!available || dismissed || !preview || !revealed) return null;
@@ -248,7 +262,7 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
               src={preview.videoUrl}
               poster={preview.posterUrl || undefined}
               className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-              muted
+              muted={previewMuted}
               autoPlay
               playsInline
               loop
@@ -279,8 +293,18 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
           )}
         </Button>
 
-        {/* WhatsApp lives only INSIDE the opened reel — the small floating
-            tile stays a pure tap-to-open target. */}
+        {previewReady && pageVisible && !open && !previewFailed && (
+          <Button variant="ghost" size="icon"
+            type="button"
+            onClick={handlePreviewSound}
+            aria-label={previewMuted ? "Unmute preview video" : "Mute preview video"}
+            aria-pressed={!previewMuted}
+            title={previewMuted ? "Unmute preview video" : "Mute preview video"}
+            className="absolute left-1 top-1 h-7 w-7 rounded-full bg-background/90 p-0 text-foreground shadow-md ring-1 ring-border hover:bg-background"
+          >
+            {previewMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+          </Button>
+        )}
 
         <Button variant="ghost" size="icon"
           type="button"
