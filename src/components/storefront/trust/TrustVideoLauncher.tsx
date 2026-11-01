@@ -13,6 +13,8 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Play, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { activateTrustVideo, TRUST_PROBE_MS, TRUST_REVEAL_MS } from "@/lib/trustVideoPlayback";
 import {
   fetchTrustVideoProbe,
   fetchTrustReel,
@@ -60,6 +62,12 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
   const [slides, setSlides] = useState<TrustSlide[] | null>(null);
   const [loading, setLoading] = useState(false);
   const prefetchedRef = useRef(false);
+  const activatedVideoRef = useRef<HTMLVideoElement | null>(null);
+  useEffect(() => () => { activatedVideoRef.current?.pause(); }, []);
+  const closeReel = () => {
+    activatedVideoRef.current?.pause();
+    setOpen(false);
+  };
 
 
   // Existence probe + first-video fetch — both idle, no LCP impact.
@@ -89,8 +97,8 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
       | ((cb: () => void, opts?: { timeout: number }) => number)
       | undefined;
     const handle = ric
-      ? ric(run, { timeout: 3000 })
-      : window.setTimeout(run, 1500);
+      ? ric(run, { timeout: TRUST_PROBE_MS })
+      : window.setTimeout(run, TRUST_PROBE_MS);
     return () => {
       cancelled = true;
       if (ric && typeof handle === "number") (window as any).cancelIdleCallback?.(handle);
@@ -98,7 +106,7 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
     };
   }, [storeId, dismissed]);
 
-  // Reveal after the shopper has scrolled, OR after 3s of page load.
+  // Reveal after scrolling or 1.5 seconds; the preview never streams video.
   // The tile + poster still only render once the idle probe confirms
   // availability, so the first-paint / LCP window is untouched.
   useEffect(() => {
@@ -117,7 +125,7 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
 
     check();
     window.addEventListener("scroll", check, { passive: true });
-    loadTimer = window.setTimeout(reveal, 3000);
+    loadTimer = window.setTimeout(reveal, Math.max(0, TRUST_REVEAL_MS - performance.now()));
 
     return () => {
       window.removeEventListener("scroll", check);
@@ -149,6 +157,9 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
   }, [bubbleShown, storeId]);
 
   const handleOpen = async () => {
+    if (!preview || open) return;
+    activatedVideoRef.current?.pause();
+    activatedVideoRef.current = activateTrustVideo(slides?.[0]?.videoUrl || preview.videoUrl);
     fireStorefrontEvent({ storeId, eventName: "reel_open" });
     // Open IMMEDIATELY — the shopper gets a full-screen response on the very
     // first tap. Slides load behind the overlay (previously a slow/failed
@@ -158,11 +169,11 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
     setLoading(true);
     try {
       const list = await fetchTrustReel(storeId, storeSlug);
-      if (list.length === 0) { setOpen(false); setAvailable(false); return; }
+      if (list.length === 0) { closeReel(); setAvailable(false); return; }
       setSlides(list);
     } catch {
       // Network hiccup — let the next tap retry instead of dead-ending.
-      setOpen(false);
+      closeReel();
     } finally {
       setLoading(false);
     }
@@ -181,15 +192,15 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
     <>
       <div
         className="fixed bottom-[4.5rem] right-3 z-40 animate-fade-in sm:bottom-5"
-        style={{ width: 78 }}
+        style={{ width: 96 }}
       >
-        <button
+        <Button variant="ghost"
           type="button"
           onClick={handleOpen}
           onPointerEnter={prefetch}
           onTouchStart={prefetch}
           aria-label="Watch customer videos"
-          className="relative block w-full overflow-hidden rounded-2xl bg-black shadow-[0_10px_28px_rgba(0,0,0,0.32)] ring-1 ring-white/25 transition-transform duration-200 active:scale-[0.96]"
+          className="relative block h-auto w-full overflow-hidden whitespace-normal rounded-lg bg-primary p-0 text-primary-foreground shadow-xl ring-1 ring-border transition-transform duration-200 active:scale-[0.96] hover:bg-primary"
           style={{ aspectRatio: "9 / 16" }}
         >
           {preview.posterUrl ? (
@@ -198,7 +209,7 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
               alt=""
               aria-hidden
               className="absolute inset-0 h-full w-full object-cover"
-              loading="lazy"
+              loading="eager"
               decoding="async"
             />
           ) : null}
@@ -212,7 +223,7 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
 
           <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-1 bg-gradient-to-t from-black/70 via-black/20 to-transparent px-1.5 pb-1.5 pt-6">
             <span className="text-[9px] font-semibold uppercase tracking-wide text-white/95 drop-shadow">
-              Reels
+              Watch video
             </span>
           </div>
 
@@ -222,19 +233,19 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
               <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
             </span>
           )}
-        </button>
+        </Button>
 
         {/* WhatsApp lives only INSIDE the opened reel — the small floating
             tile stays a pure tap-to-open target. */}
 
-        <button
+        <Button variant="ghost" size="icon"
           type="button"
           onClick={handleDismiss}
           aria-label="Hide videos"
-          className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/85 text-white shadow-md ring-1 ring-white/30 backdrop-blur transition active:scale-90"
+          className="absolute -top-1.5 -right-1.5 h-6 w-6 rounded-full bg-primary p-0 text-primary-foreground shadow-md ring-1 ring-border hover:bg-primary"
         >
           <X className="h-3 w-3" strokeWidth={3} />
-        </button>
+        </Button>
       </div>
 
       {/* Instant full-screen response while the reel data loads. */}
@@ -244,7 +255,7 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
             <span className="h-9 w-9 animate-spin rounded-full border-2 border-white/80 border-t-transparent" />
             <button
               type="button"
-              onClick={() => setOpen(false)}
+              onClick={closeReel}
               aria-label="Close video"
               className="absolute left-3 top-3 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur-xl"
             >
@@ -258,7 +269,8 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
         <Suspense fallback={null}>
           <TrustVideoReel
             slides={slides}
-            onClose={() => setOpen(false)}
+            onClose={closeReel}
+            activatedVideo={activatedVideoRef.current}
             storeId={storeId}
             storeName={storeName}
             whatsappNumber={whatsappNumber}

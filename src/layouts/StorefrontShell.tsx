@@ -490,7 +490,7 @@ export default function StorefrontShell({
       {/* WhatsApp now lives in the header. This slot hosts the trust-video reel
           launcher — it self-hides when the store has no active trust videos and
           only fetches the player chunk + media on tap. */}
-      {overlaysReady && !/\/checkout(\/|$)/.test(pathname) && (
+      {!/\/checkout(\/|$)/.test(pathname) && (
         <Suspense fallback={null}>
           <TrustVideoLauncher
             storeId={store.id}

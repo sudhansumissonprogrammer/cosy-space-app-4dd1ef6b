@@ -16,6 +16,7 @@ import { waPhoneNumber, type TrustSlide } from "@/lib/trustVideos";
 import { formatPrice } from "@/lib/productUtils";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import { fireStorefrontEvent } from "@/lib/storefrontEvents";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   slides: TrustSlide[];
@@ -23,12 +24,13 @@ interface Props {
   storeId?: string;
   storeName: string;
   whatsappNumber?: string | null;
+  activatedVideo?: HTMLVideoElement | null;
 }
 
 
 type WatchStat = { seconds: number; duration: number; maxPos: number; completed: boolean; last: number };
 
-export default function TrustVideoReel({ slides, onClose, storeId, storeName, whatsappNumber }: Props) {
+export default function TrustVideoReel({ slides, onClose, storeId, storeName, whatsappNumber, activatedVideo }: Props) {
   // Watch-time tracking: real played seconds per reel, sent once per reel
   // when the viewer closes or leaves the page (keepalive, never blocks UX).
   const watchRef = useRef<Record<number, WatchStat>>({});
@@ -82,6 +84,36 @@ export default function TrustVideoReel({ slides, onClose, storeId, storeName, wh
   const [buffering, setBuffering] = useState(true);
 
   const [muted, setMuted] = useState(false);
+  const [playBlocked, setPlayBlocked] = useState(false);
+
+  useEffect(() => {
+    if (!activatedVideo) return;
+    const note = () => noteTime(0, activatedVideo);
+    const ready = () => { setBuffering(false); setPlayBlocked(false); };
+    const waiting = () => { if (!activatedVideo.paused) setBuffering(true); };
+    const error = () => { setFailed((f) => ({ ...f, [slides[0].id]: true })); setBuffering(false); };
+    activatedVideo.addEventListener("timeupdate", note);
+    activatedVideo.addEventListener("playing", ready);
+    activatedVideo.addEventListener("waiting", waiting);
+    activatedVideo.addEventListener("error", error);
+    return () => {
+      activatedVideo.pause();
+      activatedVideo.removeEventListener("timeupdate", note);
+      activatedVideo.removeEventListener("playing", ready);
+      activatedVideo.removeEventListener("waiting", waiting);
+      activatedVideo.removeEventListener("error", error);
+    };
+  }, [activatedVideo, slides]);
+
+  const toggleSound = () => {
+    const next = !muted;
+    setMuted(next);
+    const video = videoRefs.current[active];
+    if (video) {
+      video.muted = next;
+      void video.play().then(() => setPlayBlocked(false)).catch(() => setPlayBlocked(true));
+    }
+  };
 
   const waPhone = waPhoneNumber(whatsappNumber);
   const waMessage = encodeURIComponent(
@@ -104,8 +136,7 @@ export default function TrustVideoReel({ slides, onClose, storeId, storeName, wh
   }, [onClose]);
 
   // Play only the visible slide; everything else stays paused + unbuffered.
-  // Sound is ON by default; if the browser blocks unmuted autoplay, we fall
-  // back to muted playback so the reel still starts immediately.
+  // Preserve the click-activated element and never silently switch sound off.
   useEffect(() => {
     const root = scrollerRef.current;
     if (!root) return;
@@ -123,9 +154,8 @@ export default function TrustVideoReel({ slides, onClose, storeId, storeName, wh
             const attempt = v.play();
             if (attempt && typeof attempt.catch === "function") {
               attempt.catch(() => {
-                v.muted = true;
-                setMuted(true);
-                v.play().catch(() => {});
+                setPlayBlocked(true);
+                setBuffering(false);
               });
             }
             // Warm just the next clip's header so the swipe feels instant.
@@ -189,7 +219,7 @@ export default function TrustVideoReel({ slides, onClose, storeId, storeName, wh
             </a>
           )}
           <button
-            onClick={() => setMuted((m) => !m)}
+            onClick={toggleSound}
             className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur-xl transition-transform active:scale-[0.92]"
             aria-label={muted ? "Unmute" : "Mute"}
           >
@@ -210,7 +240,14 @@ export default function TrustVideoReel({ slides, onClose, storeId, storeName, wh
             data-idx={i}
             className="relative flex h-full w-full snap-start items-center justify-center"
           >
-            <video
+            {i === 0 && activatedVideo ? (
+              <div className="h-full w-full" ref={(host) => {
+                if (!host) return;
+                videoRefs.current[0] = activatedVideo;
+                activatedVideo.className = "h-full w-full object-contain";
+                if (activatedVideo.parentElement !== host) host.appendChild(activatedVideo);
+              }} />
+            ) : <video
               ref={(el) => { videoRefs.current[i] = el; }}
               src={s.videoUrl}
               poster={s.posterUrl || undefined}
@@ -226,8 +263,18 @@ export default function TrustVideoReel({ slides, onClose, storeId, storeName, wh
               onPlaying={() => { if (i === active) setBuffering(false); }}
               onCanPlay={() => { if (i === active) setBuffering(false); }}
               onError={() => { setFailed((f) => ({ ...f, [s.id]: true })); setBuffering(false); }}
-              onClick={() => setMuted((m) => !m)}
-            />
+              onClick={toggleSound}
+            />}
+
+            {i === active && playBlocked && !failed[s.id] && (
+              <Button className="absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2" onClick={() => {
+                const video = videoRefs.current[i];
+                if (!video) return;
+                video.muted = false;
+                setMuted(false);
+                void video.play().then(() => setPlayBlocked(false)).catch(() => setPlayBlocked(true));
+              }}><Volume2 />Play with sound</Button>
+            )}
 
             {i === active && buffering && !failed[s.id] && (
               <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
