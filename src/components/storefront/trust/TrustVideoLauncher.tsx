@@ -278,12 +278,6 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
             </span>
           )}
         </Button>
-        {packingPrompt && (
-          <Button variant="outline" onClick={handleOpen} className="mt-1 h-auto w-full flex-col gap-1 whitespace-normal rounded-lg px-2 py-2 text-left shadow-lg">
-            <span className="w-full text-[11px] font-semibold leading-tight">{packingPrompt.title}</span>
-            <span className="w-full text-[10px] font-normal leading-tight text-muted-foreground">{packingPrompt.detail}</span>
-          </Button>
-        )}
 
         {/* WhatsApp lives only INSIDE the opened reel — the small floating
             tile stays a pure tap-to-open target. */}
