@@ -387,7 +387,6 @@ export default defineConfig(({ mode }) => ({
             id.includes("/src/components/storefront/UniversalProductCard") ||
             id.includes("/src/components/storefront/UniversalCategories") ||
             id.includes("/src/components/storefront/StorefrontMarquee") ||
-            id.includes("/src/components/storefront/StorefrontMobileHero") ||
             id.includes("/src/hooks/useVariantCounts") ||
             id.includes("/src/hooks/useStorefrontProducts") ||
             id.includes("/src/hooks/useFacebookPixel") ||
@@ -402,8 +401,6 @@ export default defineConfig(({ mode }) => ({
             // only the variant it selected (~5-10KB instead of ~70KB for all 11).
             id.includes("/src/components/storefront/MobileBottomNav.tsx") ||
             id.includes("/src/components/storefront/MobileBottomNavSwitcher.tsx") ||
-            id.includes("/src/components/storefront/HeroBannerCarousel") ||
-            id.includes("/src/components/storefront/MobileHeroCarousel") ||
             // v8.6 — absorb shadcn Sheet primitive into storefront-shell.
             // Sheet is used by HamburgerMenu, SideCart, MobileAppHeader,
             // StorefrontLayoutV2, and ShopFilterBar (filter drawer on

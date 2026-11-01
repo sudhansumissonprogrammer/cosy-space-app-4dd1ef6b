@@ -6,7 +6,9 @@ import { CartProvider } from "@/contexts/CartContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
 import { StorefrontAuthProvider } from "@/contexts/StorefrontAuthContext";
 import StorefrontAutoLogin from "@/components/storefront/StorefrontAutoLogin";
-const AutoFreeGift = lazy(() => import("@/components/storefront/AutoFreeGift"));
+import AutoFreeGiftGate from "@/components/storefront/AutoFreeGiftGate";
+import { useStoreEnabledApps } from "@/hooks/useStoreEnabledApps";
+import { hasStorefrontApp } from "@/lib/storefrontCapabilities";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useThemePreview } from "@/hooks/useThemePreview";
 import { useMetaTags } from "@/hooks/useMetaTags";
@@ -31,7 +33,7 @@ import "@/styles/sf-glass.css";
 import "@/styles/sf-kalinga-mobile.css";
 
 // Lazy-load non-critical overlays
-const SideCart = lazy(() => import("@/components/storefront/SideCart"));
+import SideCartGate from "@/components/storefront/SideCartGate";
 
 /**
  * Single-skeleton policy: while React is loading the storefront,
@@ -128,6 +130,7 @@ export default function StorefrontShell({
   children,
 }: StorefrontShellProps) {
   const { store, isLoading, isError, refetch, slug, themeConfig: shellThemeConfig } = useStorefront(slugOverride);
+  const { data: enabledApps } = useStoreEnabledApps(store?.slug);
   const viewTracked = useRef(false);
 
   // Analytics hooks — safe to call even when store is null
@@ -482,11 +485,7 @@ export default function StorefrontShell({
       </Suspense>
       */}
       {/* Overlay chunks gated behind requestIdleCallback to keep them off first-paint */}
-      {overlaysReady && showSideCart && (
-        <Suspense fallback={null}>
-          <SideCart store={store} />
-        </Suspense>
-      )}
+      {showSideCart && <SideCartGate store={store} />}
       {/* WhatsApp now lives in the header. This slot hosts the trust-video reel
           launcher — it self-hides when the store has no active trust videos and
           only fetches the player chunk + media on tap. */}
@@ -519,7 +518,7 @@ export default function StorefrontShell({
           <OrderConfettiOverlay />
         </Suspense>
       )}
-      {overlaysReady && (
+      {overlaysReady && hasStorefrontApp(enabledApps) && (
         <Suspense fallback={null}>
           <StorefrontApps store={store} primaryColor={primaryColor} />
         </Suspense>
@@ -534,7 +533,7 @@ export default function StorefrontShell({
         <WishlistProvider slug={store.slug}>
           <StorefrontAuthProvider storeId={store.id}>
             <StorefrontAutoLogin storeId={store.id} />
-            <Suspense fallback={null}><AutoFreeGift storeSlug={store.slug} /></Suspense>
+            <AutoFreeGiftGate storeSlug={store.slug} />
             {content}
           </StorefrontAuthProvider>
         </WishlistProvider>
@@ -547,7 +546,7 @@ export default function StorefrontShell({
     <CartProvider slug={store.slug} storeId={store.id} currency={store.currency || "INR"}>
       <StorefrontAuthProvider storeId={store.id}>
         <StorefrontAutoLogin storeId={store.id} />
-        <Suspense fallback={null}><AutoFreeGift storeSlug={store.slug} /></Suspense>
+        <AutoFreeGiftGate storeSlug={store.slug} />
         {content}
       </StorefrontAuthProvider>
     </CartProvider>

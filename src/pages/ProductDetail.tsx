@@ -44,7 +44,7 @@ import { fireMetaCAPI } from "@/lib/metaCapi";
 import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 import { lazy, Suspense } from "react";
 import { fetchPdpEdge } from "@/lib/storefrontEdgeApi";
-import { readPdpRpcResult, resolvePdpPayload } from "@/lib/pdpPayload";
+import { readPdpRpcResult, firstValidPdpPayload } from "@/lib/pdpPayload";
 import ProductLoadError from "@/components/storefront/pdp/ProductLoadError";
 import { pdpPrefetchCache } from "@/lib/prefetchProductDetail";
 import DeferUntilVisible from "@/components/storefront/DeferUntilVisible";
@@ -143,23 +143,6 @@ export default function ProductDetail() {
   const queryClient = useQueryClient();
   const mainThemeConfig = useStorefrontThemeConfig(store?.id);
   const bilingualCta = ((store as any)?.theme === "theme-16" || (store as any)?.theme === "theme-21") && !!(mainThemeConfig as any)?.bilingual_cta;
-
-  // Fetch store shipping config for free shipping threshold
-  const { data: shippingConfig } = useQuery({
-    queryKey: ["storefront-shipping-config", store.id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("store_shipping_config")
-        .select("free_shipping_above, flat_rate, is_active")
-        .eq("store_id", store.id)
-        .maybeSingle();
-      return data;
-    },
-    enabled: !!store.id,
-    staleTime: 10 * 60 * 1000,
-  });
-
-  const FREE_SHIPPING_THRESHOLD = shippingConfig?.free_shipping_above ?? 499;
 
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
   const [quantity, setQuantity] = useState(1);
@@ -260,7 +243,8 @@ export default function ProductDetail() {
         return null;
       });
 
-      const edge = await edgePromise;
+      const rpc = await firstValidPdpPayload(edgePromise, rpcPromise);
+      const edge = rpc;
       if (edge?.product) {
         // Edge/inline PDP cache can be older than a just-saved product video.
         // Keep the fast edge paint, then replace it with the fresh RPC row if
@@ -283,8 +267,6 @@ export default function ProductDetail() {
           }
         }).catch(() => {});
       }
-      const rpc = await resolvePdpPayload(edge, rpcPromise);
-
       if (rpc?.product) {
         // Hydrate sibling queries so they don't refetch
         if (rpc.images) queryClient.setQueryData(["product-images", rpc.product.id], rpc.images);
@@ -343,13 +325,31 @@ export default function ProductDetail() {
 
   const contentReadyRef = useRef(false);
 
+  // Bundled inline/edge/RPC shipping seeds this cache before the observer;
+  // only legacy payloads need an additional request after product resolution.
+  const { data: shippingConfig } = useQuery({
+    queryKey: ["storefront-shipping-config", store.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("store_shipping_config")
+        .select("free_shipping_above, flat_rate, is_active")
+        .eq("store_id", store.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!store.id && !!product && !isFetching,
+    staleTime: 10 * 60 * 1000,
+  });
+  const FREE_SHIPPING_THRESHOLD = shippingConfig?.free_shipping_above ?? 499;
+
   useEffect(() => {
     contentReadyRef.current = false;
   }, [productSlug]);
 
   // Prefetch the checkout chunks so "Buy Now" navigation feels instant.
-  // We kick off immediately on mount (idle-scheduled) AND expose a
-  // `prefetchCheckout` fn that we wire to onPointerDown of every Buy Now
+  // Only prepare on shopper intent, never while opening photos download.
+  // `prefetchCheckout` is wired to onPointerDown of every Buy Now
   // button — that captures shopper intent ~100-300ms before the click
   // event, giving the JS a head start on slow networks.
   const checkoutPrefetchedRef = useRef(false);
@@ -359,17 +359,6 @@ export default function ProductDetail() {
     import("./CheckoutV2Page").catch(() => { checkoutPrefetchedRef.current = false; });
     import("@/components/storefront/CheckoutPhoneStep").catch(() => {});
   }, []);
-  useEffect(() => {
-    const ric = (window as any).requestIdleCallback as
-      | ((cb: () => void, opts?: { timeout?: number }) => number)
-      | undefined;
-    if (ric) {
-      const id = ric(prefetchCheckout, { timeout: 800 });
-      return () => (window as any).cancelIdleCallback?.(id);
-    }
-    const t = setTimeout(prefetchCheckout, 100);
-    return () => clearTimeout(t);
-  }, [prefetchCheckout]);
 
 
   useEffect(() => {
@@ -2418,7 +2407,7 @@ function FullscreenLightbox({
 /* ── Product Detail Skeleton ── */
 export function ProductDetailSkeleton() {
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
+    <div data-storefront-loading="true" className="mx-auto max-w-6xl px-4 py-8">
       <Skeleton className="mb-4 h-4 w-48" />
       <div className="grid gap-8 lg:grid-cols-2">
         <div className="space-y-3">

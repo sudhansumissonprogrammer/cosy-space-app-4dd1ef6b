@@ -3,10 +3,10 @@
  * product context, and renders <UpsellStrip placement="pdp"> when any
  * offer applies.
  */
-import { useMemo } from "react";
+import { lazy, Suspense, useMemo } from "react";
 import { useUpsellOffers } from "@/hooks/useUpsellOffers";
 import { matchOffers } from "@/lib/appStore/upsell/matchEngine";
-import UpsellStrip from "./UpsellStrip";
+const UpsellStrip = lazy(() => import("./UpsellStrip"));
 
 interface Props {
   storeSlug: string;
@@ -44,6 +44,7 @@ export default function PdpUpsellSection({
   if (!offers.length) return null;
   return (
     <div className="mt-6">
+      <Suspense fallback={null}>
       <UpsellStrip
         storeId={storeId}
         currency={currency}
@@ -52,6 +53,7 @@ export default function PdpUpsellSection({
         excludeProductIds={[productId]}
         triggerCategoryId={categoryId}
       />
+      </Suspense>
     </div>
   );
 }

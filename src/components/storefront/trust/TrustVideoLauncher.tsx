@@ -9,7 +9,8 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Play, Volume2, VolumeX, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { activateTrustVideo, toggleTrustPreviewSound, TRUST_PROBE_MS, TRUST_REVEAL_MS, TRUST_PREVIEW_DELAY_MS, allowsTrustPreview } from "@/lib/trustVideoPlayback";
+import { activateTrustVideo, toggleTrustPreviewSound, TRUST_PROBE_MS, TRUST_PREVIEW_DELAY_MS, allowsTrustPreview } from "@/lib/trustVideoPlayback";
+import { afterStorefrontOpening } from "@/lib/storefrontOpeningReady";
 import {
   fetchTrustVideoProbe,
   fetchTrustReel,
@@ -31,9 +32,6 @@ interface Props {
 const LS_KEY = (id: string) => `sf_trust_videos_${id}`;
 const LS_PREVIEW = (id: string) => `sf_trust_preview_${id}`;
 const SS_DISMISS = (id: string) => `sf_trust_dismiss_${id}`;
-/** px of scroll before the floating tile is allowed to appear */
-const SCROLL_REVEAL_PX = 500;
-
 type PreviewCache = { videoUrl: string; posterUrl: string | null };
 
 export default function TrustVideoLauncher({ storeId, storeSlug, storeName, whatsappNumber }: Props) {
@@ -68,17 +66,11 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
   }, []);
   useEffect(() => {
     const connection = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
-    if (!allowsTrustPreview(connection) || dismissed) return;
-    let timer: number | undefined;
-    const schedule = () => {
-      timer = window.setTimeout(() => setPreviewReady(true), TRUST_PREVIEW_DELAY_MS);
-    };
-    if (document.readyState === "complete") schedule();
-    else window.addEventListener("load", schedule, { once: true });
-    return () => {
-      window.removeEventListener("load", schedule);
-      if (timer !== undefined) window.clearTimeout(timer);
-    };
+    if (dismissed) return;
+    return afterStorefrontOpening(() => {
+      setRevealed(true);
+      setPreviewReady(allowsTrustPreview(connection));
+    }, TRUST_PREVIEW_DELAY_MS);
   }, [dismissed]);
   useEffect(() => {
     const video = previewVideoRef.current;
@@ -139,33 +131,6 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
       else window.clearTimeout(handle as number);
     };
   }, [storeId, dismissed]);
-
-  // Reveal poster after scrolling or 1.5 seconds; video is separately deferred.
-  // The tile + poster still only render once the idle probe confirms
-  // availability, so the first-paint / LCP window is untouched.
-  useEffect(() => {
-    if (dismissed || revealed) return;
-
-    let loadTimer: number | undefined;
-    const reveal = () => {
-      setRevealed(true);
-      if (loadTimer !== undefined) window.clearTimeout(loadTimer);
-      window.removeEventListener("scroll", check);
-    };
-
-    const check = () => {
-      if (window.scrollY >= SCROLL_REVEAL_PX) reveal();
-    };
-
-    check();
-    window.addEventListener("scroll", check, { passive: true });
-    loadTimer = window.setTimeout(reveal, Math.max(0, TRUST_REVEAL_MS - performance.now()));
-
-    return () => {
-      window.removeEventListener("scroll", check);
-      if (loadTimer !== undefined) window.clearTimeout(loadTimer);
-    };
-  }, [dismissed, revealed]);
 
   /** Warm the reel chunk + first video on touch-start so tap feels instant. */
   const prefetch = () => {

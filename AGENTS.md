@@ -1,5 +1,6 @@
 # Project architecture decisions
-- Trust reels retain click-activated audible elements across lazy loading; preview autoplay waits for page load plus its delay, pauses when hidden/open, and keeps posters on data-saving connections to protect initial media priority. Preview sound toggles activate the existing media element inside the click without opening/loading the reel; hidden/open previews reset to muted to avoid surprise audio on resume.
+- Trust reveal/autoplay waits for document, route and visible photos plus delay; preserve click-activated sound across lazy loading, preview toggles, data-saving posters and hidden/open mute resets to protect loading and avoid surprise audio.
+- Optional apps share cached state, gate implementations and preserve stale-gift cleanup; separate shopper loaders from dashboard registry metadata to skip unused code.
 - Subdirectories may have their own AGENTS.md; read it before changing files there.
 - SEO skills are agent-only; shell titles exclude route metadata.
 - Utkal Sale keeps lazy two-row rails, additive membership and transform-only swipe cues; its category-only banner reserves intrinsic dimensions and retains an accessible heading without visible intro spacing.
@@ -46,7 +47,7 @@
 - All storefront product-card themes share sticky mobile activation with one upcoming two-card buffer after visible opening photos settle or scrolling starts; a shared observer and frame-coalesced scheduler gate eager low-priority photos without per-card polling, because visibility-only/native-lazy double gating leaves blank rows. Desktop and PDP gallery scheduling stay separate; activated photos retain paint and PDP intent warmers keep canonical sources.
 - Bootstrap photo hints are route-scoped: one PDP main photo, two known category card variants, no arbitrary homepage or saved catalog photo hints; category collages activate at visibility, because early hints must match actual displayed sources.
 - Small photos up to 320px use the uploaded manifest; unknown and card/PDP/zoom URLs stay unchanged to preserve originals and avoid missing siblings.
-- Keep homepage route components and inactive theme layouts out of the shared storefront manual chunk; retain the dominant layout's critical path, because category/PDP ad entries should not parse homepage-only code.
+- Keep homepage carousels/routes and inactive themes out of shared chunks; never group PDP routes (TDZ risk). Prepare checkout on intent because idle CPU is not spare bandwidth.
 
 - Confirmations use completed payment methods and preserve historical amounts. Every store, including Utkal, uses dashboard-configured online gateways and required-advance policy, without identity-based payment gates or partial-payment discounts, because checkout and order enforcement must agree with merchant controls.
 
@@ -56,7 +57,7 @@
 
 - Validate exit coupons independently; replace only smaller discounts and hide competing sheets to prevent overlap.
 - Store-gated cashback display is separate from charges to keep badges consistent.
-- PDP and warmup preserve errors; retry retains the URL and negative edge results defer to fresh lookup.
+- PDP accepts first valid data with late freshness; preserve errors/retry URLs and cached-miss fallback. Category paging consumes its payload first; inline refresh waits for visible photos with cleanup to avoid duplicate requests.
 
 - Dashboard/WhatsApp share tracking URLs; Valmo needs a feed.
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { activateTrustVideo, toggleTrustPreviewSound, TRUST_REVEAL_MS, TRUST_PREVIEW_DELAY_MS, allowsTrustPreview } from "./trustVideoPlayback";
+import { activateTrustVideo, toggleTrustPreviewSound, TRUST_PREVIEW_DELAY_MS, allowsTrustPreview } from "./trustVideoPlayback";
 
 describe("trust video activation", () => {
   it("unmutes the existing preview on click and mutes it again without replacing it", async () => {
@@ -32,9 +32,6 @@ describe("trust video activation", () => {
     expect(video.volume).toBe(1);
     expect(video.playsInline).toBe(true);
     play.mockRestore();
-  });
-  it("targets floating preview visibility within the requested 1–2 seconds", () => {
-    expect(TRUST_REVEAL_MS).toBe(1500);
   });
   it("waits three seconds after initial loading before preview autoplay", () => {
     expect(TRUST_PREVIEW_DELAY_MS).toBe(3000);
