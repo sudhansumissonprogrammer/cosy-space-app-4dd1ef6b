@@ -61,6 +61,11 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
   const [open, setOpen] = useState(false);
   const [slides, setSlides] = useState<TrustSlide[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const packingPrompt = storeSlug === "serdiyajewellers"
+    ? { title: "Transparent-box delivery", detail: "See through the box. Pay your COD balance on delivery." }
+    : ["utkalwatch", "utkalwatches"].includes(storeSlug)
+      ? { title: "Warehouse packing video", detail: "Watch how we pack your watches." }
+      : null;
   const prefetchedRef = useRef(false);
   const activatedVideoRef = useRef<HTMLVideoElement | null>(null);
   useEffect(() => () => { activatedVideoRef.current?.pause(); }, []);
@@ -192,16 +197,16 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
     <>
       <div
         className="fixed bottom-[4.5rem] right-3 z-40 animate-fade-in sm:bottom-5"
-        style={{ width: 96 }}
+        style={{ width: packingPrompt ? 128 : 96 }}
       >
         <Button variant="ghost"
           type="button"
           onClick={handleOpen}
           onPointerEnter={prefetch}
           onTouchStart={prefetch}
-          aria-label="Watch customer videos"
+          aria-label={packingPrompt ? `Watch video: ${packingPrompt.title}` : "Watch customer videos"}
           className="relative block h-auto w-full overflow-hidden whitespace-normal rounded-lg bg-primary p-0 text-primary-foreground shadow-xl ring-1 ring-border transition-transform duration-200 active:scale-[0.96] hover:bg-primary"
-          style={{ aspectRatio: "9 / 16" }}
+          style={{ aspectRatio: packingPrompt ? "1 / 1" : "9 / 16" }}
         >
           {preview.posterUrl ? (
             <img
@@ -216,13 +221,13 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
 
           {/* Play affordance — tap loads and plays the reel with sound */}
           <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-black shadow-md">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-background text-foreground shadow-md">
               <Play className="h-3.5 w-3.5 translate-x-[1px] fill-current" strokeWidth={0} />
             </span>
           </span>
 
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-1 bg-gradient-to-t from-black/70 via-black/20 to-transparent px-1.5 pb-1.5 pt-6">
-            <span className="text-[9px] font-semibold uppercase tracking-wide text-white/95 drop-shadow">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-1 bg-primary/85 px-1.5 py-1.5">
+            <span className="text-[10px] font-semibold text-primary-foreground">
               Watch video
             </span>
           </div>
@@ -234,6 +239,12 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
             </span>
           )}
         </Button>
+        {packingPrompt && (
+          <Button variant="outline" onClick={handleOpen} className="mt-1 h-auto w-full flex-col gap-1 whitespace-normal rounded-lg px-2 py-2 text-left shadow-lg">
+            <span className="w-full text-[11px] font-semibold leading-tight">{packingPrompt.title}</span>
+            <span className="w-full text-[10px] font-normal leading-tight text-muted-foreground">{packingPrompt.detail}</span>
+          </Button>
+        )}
 
         {/* WhatsApp lives only INSIDE the opened reel — the small floating
             tile stays a pure tap-to-open target. */}
