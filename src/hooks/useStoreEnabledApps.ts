@@ -82,7 +82,7 @@ function useStoreAppsStateQuery(storeSlug: string | undefined) {
     enabled: !!storeSlug,
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
-    queryFn: () => fetchStoreAppsState(storeSlug!),
+    queryFn: () => fetchStoreAppsState(storeSlug),
   });
 }
 
