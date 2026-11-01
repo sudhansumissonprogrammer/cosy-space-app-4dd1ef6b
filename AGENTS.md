@@ -1,4 +1,5 @@
 # Project architecture decisions
+- Trust reels keep the video element activated synchronously by the launcher click through lazy loading; never silently mute blocked playback, and keep pre-click previews poster-only to protect media budgets.
 - Subdirectories may have their own AGENTS.md; read it before changing files there.
 - SEO skills are agent-only; shell titles exclude route metadata.
 - Utkal Sale keeps lazy two-row rails, additive membership and transform-only swipe cues; its category-only banner reserves intrinsic dimensions and retains an accessible heading without visible intro spacing.

@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Make trust-video appearance target 1–2 seconds, start sound on click, verify playback and assess clearer packing prompts; confirm Serdiya inspection-before-payment policy before adding that promise.
 - [x] Restored Utkal dashboard-controlled full/partial payments; removed standalone COD exception and custom partial discount. Settings match Serdiya; real phone→partial→full→summary checked (₹1799 = ₹100 advance + ₹1699 balance); 12 tests/build pass and deployed COD guard rejects zero-advance conversion. Existing full-prepaid dashboard discount/historical orders retained; no order/payment placed. Frontend publication required.
 - [x] Checked Serdiya owner traffic: 30d=41,878 sessions/37,643 unique visitors; 90d=195,478 sessions/188,608 summed daily visitors at Oct 31 15:42 UTC. Counts differ; corrected archive visitor label, five tests/build pass. No traffic rewritten.
 - [ ] Serdiya visual 90-day tab verification blocked by existing low-wallet dashboard lock; owner 30-day response and authorized 90-day RPC verified. Publish label correction; archived identities cannot reconstruct exact 90-day unique visitors.
