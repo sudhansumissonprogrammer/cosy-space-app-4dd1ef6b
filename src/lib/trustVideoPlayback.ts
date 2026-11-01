@@ -14,3 +14,8 @@ export function activateTrustVideo(source: string): HTMLVideoElement {
 
 export const TRUST_REVEAL_MS = 1500;
 export const TRUST_PROBE_MS = 250;
+export const TRUST_PREVIEW_DELAY_MS = 3000;
+
+export function allowsTrustPreview(connection?: { saveData?: boolean; effectiveType?: string }): boolean {
+  return !connection?.saveData && !["slow-2g", "2g"].includes(connection?.effectiveType || "");
+}

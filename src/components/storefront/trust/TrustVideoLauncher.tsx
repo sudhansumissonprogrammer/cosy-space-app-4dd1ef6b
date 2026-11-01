@@ -1,20 +1,15 @@
 /**
  * TrustVideoLauncher — Flipkart-style floating video preview.
  *
- * ZERO page-load cost by design (v2):
- *  - Nothing renders until the shopper has scrolled (~500px) — the launcher
- *    never exists during the LCP / product-image window.
- *  - The floating tile is a POSTER IMAGE ONLY. No <video> element, no
- *    autoplay, no muted background streaming. Previously a 3-5MB mp4 was
- *    being pulled on every home / category view.
- *  - The reel chunk + the video bytes are fetched only on tap (with a warm
- *    prefetch on touch-start so the first frame paints fast).
+ * Poster first; muted preview media waits until page load plus three seconds.
+ * Hidden tabs, dismissed tiles and open reels pause the preview. Data-saving
+ * connections keep the poster. The full reel chunk still loads only on intent.
  */
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Play, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { activateTrustVideo, TRUST_PROBE_MS, TRUST_REVEAL_MS } from "@/lib/trustVideoPlayback";
+import { activateTrustVideo, TRUST_PROBE_MS, TRUST_REVEAL_MS, TRUST_PREVIEW_DELAY_MS, allowsTrustPreview } from "@/lib/trustVideoPlayback";
 import {
   fetchTrustVideoProbe,
   fetchTrustReel,
@@ -61,6 +56,35 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
   const [open, setOpen] = useState(false);
   const [slides, setSlides] = useState<TrustSlide[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [previewReady, setPreviewReady] = useState(false);
+  const [previewFailed, setPreviewFailed] = useState(false);
+  const previewVideoRef = useRef<HTMLVideoElement | null>(null);
+  const [pageVisible, setPageVisible] = useState(() => !document.hidden);
+  useEffect(() => {
+    const update = () => setPageVisible(!document.hidden);
+    document.addEventListener("visibilitychange", update);
+    return () => document.removeEventListener("visibilitychange", update);
+  }, []);
+  useEffect(() => {
+    const connection = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+    if (!allowsTrustPreview(connection) || dismissed) return;
+    let timer: number | undefined;
+    const schedule = () => {
+      timer = window.setTimeout(() => setPreviewReady(true), TRUST_PREVIEW_DELAY_MS);
+    };
+    if (document.readyState === "complete") schedule();
+    else window.addEventListener("load", schedule, { once: true });
+    return () => {
+      window.removeEventListener("load", schedule);
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
+  }, [dismissed]);
+  useEffect(() => {
+    const video = previewVideoRef.current;
+    if (!video) return;
+    if (open || !pageVisible || dismissed) video.pause();
+    else void video.play().catch(() => {});
+  }, [open, pageVisible, dismissed, previewReady, available, revealed]);
   const packingPrompt = storeSlug === "serdiyajewellers"
     ? { title: "Transparent-box delivery", detail: "See through the box. Pay your COD balance on delivery." }
     : ["utkalwatch", "utkalwatches"].includes(storeSlug)
@@ -111,7 +135,7 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
     };
   }, [storeId, dismissed]);
 
-  // Reveal after scrolling or 1.5 seconds; the preview never streams video.
+  // Reveal poster after scrolling or 1.5 seconds; video is separately deferred.
   // The tile + poster still only render once the idle probe confirms
   // availability, so the first-paint / LCP window is untouched.
   useEffect(() => {
@@ -163,6 +187,7 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
 
   const handleOpen = async () => {
     if (!preview || open) return;
+    previewVideoRef.current?.pause();
     activatedVideoRef.current?.pause();
     activatedVideoRef.current = activateTrustVideo(slides?.[0]?.videoUrl || preview.videoUrl);
     fireStorefrontEvent({ storeId, eventName: "reel_open" });
@@ -218,6 +243,21 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
               decoding="async"
             />
           ) : null}
+          {previewReady && pageVisible && !open && !previewFailed && (
+            <video
+              ref={previewVideoRef}
+              src={preview.videoUrl}
+              poster={preview.posterUrl || undefined}
+              className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+              muted
+              autoPlay
+              playsInline
+              loop
+              preload="none"
+              aria-hidden="true"
+              onError={() => setPreviewFailed(true)}
+            />
+          )}
 
           {/* Play affordance — tap loads and plays the reel with sound */}
           <span className="pointer-events-none absolute inset-0 flex items-center justify-center">

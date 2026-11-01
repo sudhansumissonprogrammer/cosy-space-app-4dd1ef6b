@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { activateTrustVideo, TRUST_REVEAL_MS } from "./trustVideoPlayback";
+import { activateTrustVideo, TRUST_REVEAL_MS, TRUST_PREVIEW_DELAY_MS, allowsTrustPreview } from "./trustVideoPlayback";
 
 describe("trust video activation", () => {
   it("requests audible playback inside the click before asynchronous work", () => {
@@ -14,5 +14,13 @@ describe("trust video activation", () => {
   });
   it("targets floating preview visibility within the requested 1–2 seconds", () => {
     expect(TRUST_REVEAL_MS).toBe(1500);
+  });
+  it("waits three seconds after initial loading before preview autoplay", () => {
+    expect(TRUST_PREVIEW_DELAY_MS).toBe(3000);
+  });
+  it("keeps poster previews on data-saving or very slow connections", () => {
+    expect(allowsTrustPreview({ saveData: true })).toBe(false);
+    expect(allowsTrustPreview({ effectiveType: "2g" })).toBe(false);
+    expect(allowsTrustPreview({ effectiveType: "4g" })).toBe(true);
   });
 });
