@@ -124,3 +124,4 @@
 - [x] Worker: getBotRoute /stores + /stores/:city (code done; OWNER MUST DEPLOY docs/cloudflare-worker-current.js)
 - [x] Tests + build + browser validation (288 tests, build OK, browser + live edge checks passed)
 - [x] Handover doc docs/UTKAL-CITY-STORES-2026-10-26.md (20-city table, missing facts, remaining steps) + AGENTS.md rule
+- [x] Fixed sessions/visitors collapse since 2026-10-31 15:30 UTC: beacon routed to Worker /__sf/pv (anon insert silently failing); now always uses ingest. Needs publish; lost hours cannot be recovered.
