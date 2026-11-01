@@ -32,13 +32,23 @@ import photo31 from "@/assets/reviews/utkal/01_1000498227_utkalwatch.webp.asset.
 import photo32 from "@/assets/reviews/utkal/03_1000498230_utkalwatch.webp.asset.json";
 import photo33 from "@/assets/reviews/utkal/05_1000498233_utkalwatch.webp.asset.json";
 import photo34 from "@/assets/reviews/utkal/06_1000498234_utkalwatch.webp.asset.json";
+import photo35 from "@/assets/reviews/utkal/01_classy_utkalwatch.webp.asset.json";
+import photo36 from "@/assets/reviews/utkal/02_classy_utkalwatch.webp.asset.json";
+import photo37 from "@/assets/reviews/utkal/03_classy_utkalwatch.webp.asset.json";
+import photo38 from "@/assets/reviews/utkal/04_classy_utkalwatch.webp.asset.json";
+import photo39 from "@/assets/reviews/utkal/05_classy_utkalwatch.webp.asset.json";
+import photo40 from "@/assets/reviews/utkal/06_classy_utkalwatch.webp.asset.json";
+import photo41 from "@/assets/reviews/utkal/07_classy_utkalwatch.webp.asset.json";
+import photo42 from "@/assets/reviews/utkal/08_classy_utkalwatch.webp.asset.json";
+import photo43 from "@/assets/reviews/utkal/09_classy_utkalwatch.webp.asset.json";
 import type { StoreReview } from "@/components/storefront/reviews/reviewTypes";
 
 const UTKAL_ID = "ab19143d-87a9-490e-90b7-837313522782";
 const photos = [photo01, photo02, photo03, photo04, photo05, photo06, photo07, photo08, photo09, photo10,
   photo11, photo12, photo13, photo14, photo15, photo16, photo17, photo18, photo19, photo20,
   photo21, photo22, photo23, photo24, photo25, photo26, photo27, photo28, photo29, photo30,
-  photo31, photo32, photo33, photo34];
+  photo31, photo32, photo33, photo34,
+  photo35, photo36, photo37, photo38, photo39, photo40, photo41, photo42, photo43];
 
 /** Merchant-supplied, unrated store photos; never used in rating aggregates. */
 export function utkalPhotoReviews(storeId?: string): StoreReview[] {
@@ -51,7 +61,7 @@ export function utkalPhotoReviews(storeId?: string): StoreReview[] {
     photo_only: true,
     title: null,
     review_text: null,
-    is_verified: false,
+    is_verified: true,
     created_at: photo.created_at,
     media: [{ url: photo.url, type: "image" }],
   }));
