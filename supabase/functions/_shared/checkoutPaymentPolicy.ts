@@ -1,21 +1,8 @@
-/** Utkal explicitly offers full COD alongside an optional online advance.
- * All other stores retain their required-advance policy. Use persisted IDs.
- */
+/** Every store follows its dashboard-configured required-advance policy. */
 export function requiresCheckoutAdvance(store: {
   id?: string | null;
   partial_payment_enabled?: boolean | null;
   partial_payment_value?: number | string | null;
 }): boolean {
-  return store.id !== "ab19143d-87a9-490e-90b7-837313522782" &&
-    store.partial_payment_enabled === true && Number(store.partial_payment_value || 0) > 0;
-}
-
-export const UTKAL_STORE_ID = "ab19143d-87a9-490e-90b7-837313522782";
-
-/** Utkal rewards choosing the online advance with a flat ₹100 off, taken out of
- * the delivery balance (never the advance, mirroring coupon behaviour). Other
- * stores get no partial discount. */
-export const UTKAL_PARTIAL_DISCOUNT_INR = 100;
-export function utkalPartialDiscount(storeId: string | null | undefined): number {
-  return storeId === UTKAL_STORE_ID ? UTKAL_PARTIAL_DISCOUNT_INR : 0;
+  return store.partial_payment_enabled === true && Number(store.partial_payment_value || 0) > 0;
 }

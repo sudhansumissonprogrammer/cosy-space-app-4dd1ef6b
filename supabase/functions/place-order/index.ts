@@ -1,6 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
-import { requiresCheckoutAdvance, utkalPartialDiscount } from "../_shared/checkoutPaymentPolicy.ts";
+import { requiresCheckoutAdvance } from "../_shared/checkoutPaymentPolicy.ts";
 import { resolveCategoryPackaging, UTKAL_PACKAGING_STORE_ID } from "../_shared/categoryPackaging.ts";
 
 const corsHeaders = {
@@ -966,15 +966,6 @@ Deno.serve(async (req) => {
         advancePaid = Math.min(Number(order.total), Math.max(50, Math.round(raw)));
 
         balanceDue = Math.max(0, Number(order.total) - advancePaid);
-        // Utkal-only ₹100 partial discount: comes out of the delivery balance
-        // (never the advance), mirroring coupon behaviour. Client shows the
-        // same reduced balance; this server value is authoritative.
-        const partialOff = Math.min(balanceDue, utkalPartialDiscount(store_id));
-        if (partialOff > 0) {
-          balanceDue = Math.max(0, balanceDue - partialOff);
-          const note = `Partial payment discount: -${partialOff.toFixed(2)}`;
-          order.notes = order.notes ? `${order.notes}\n${note}` : note;
-        }
       } else {
         // Store doesn't actually offer partial — downgrade to full instead of
         // silently stamping payment_type=partial with advance_paid=0.
