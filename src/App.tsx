@@ -95,7 +95,7 @@ const ProductDetailSkeleton = () => {
   const price = p?.salePrice ?? p?.price ?? null;
   const original = p?.salePrice ? p?.price : null;
   return (
-    <div className="mx-auto max-w-6xl px-4 pb-8 pt-2 sm:py-8">
+    <div data-storefront-loading="true" className="mx-auto max-w-6xl px-4 pb-8 pt-2 sm:py-8">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
         <div className="relative aspect-square overflow-hidden rounded-xl bg-muted/40">
           {p?.image ? (
