@@ -144,23 +144,6 @@ export default function ProductDetail() {
   const mainThemeConfig = useStorefrontThemeConfig(store?.id);
   const bilingualCta = ((store as any)?.theme === "theme-16" || (store as any)?.theme === "theme-21") && !!(mainThemeConfig as any)?.bilingual_cta;
 
-  // Fetch store shipping config for free shipping threshold
-  const { data: shippingConfig } = useQuery({
-    queryKey: ["storefront-shipping-config", store.id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("store_shipping_config")
-        .select("free_shipping_above, flat_rate, is_active")
-        .eq("store_id", store.id)
-        .maybeSingle();
-      return data;
-    },
-    enabled: !!store.id,
-    staleTime: 10 * 60 * 1000,
-  });
-
-  const FREE_SHIPPING_THRESHOLD = shippingConfig?.free_shipping_above ?? 499;
-
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
@@ -341,6 +324,24 @@ export default function ProductDetail() {
   });
 
   const contentReadyRef = useRef(false);
+
+  // Bundled inline/edge/RPC shipping seeds this cache before the observer;
+  // only legacy payloads need an additional request after product resolution.
+  const { data: shippingConfig } = useQuery({
+    queryKey: ["storefront-shipping-config", store.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("store_shipping_config")
+        .select("free_shipping_above, flat_rate, is_active")
+        .eq("store_id", store.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!store.id && !!product && !isFetching,
+    staleTime: 10 * 60 * 1000,
+  });
+  const FREE_SHIPPING_THRESHOLD = shippingConfig?.free_shipping_above ?? 499;
 
   useEffect(() => {
     contentReadyRef.current = false;
