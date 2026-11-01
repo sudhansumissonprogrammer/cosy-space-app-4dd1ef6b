@@ -68,7 +68,7 @@ import { isKalingaStore } from "@/lib/kalingaStore";
 import { checkoutExitCoupon, KALINGA_EXIT_CODE } from "@/lib/checkoutExitCoupon";
 import { checkoutCashback } from "@/lib/checkoutCashback";
 import { kalingaCodPrepaidHint, kalingaUpiDeliveryHint } from "@/lib/kalingaCheckoutHints";
-import { allowsFullPrepaid, utkalCodConfirmNote, utkalCodHint, utkalDeliveryHint, utkalPartialDiscount } from "@/lib/utkalCheckoutHints";
+import { utkalCodConfirmNote, utkalCodHint, utkalDeliveryHint } from "@/lib/utkalCheckoutHints";
 import { requiresCheckoutAdvance } from "../../supabase/functions/_shared/checkoutPaymentPolicy";
 
 type UpiApp = "gpay" | "phonepe" | "paytm" | "bhim" | "any";
@@ -719,11 +719,7 @@ export default function CheckoutV2Page() {
   const hasRazorpay = availableMethods.includes("razorpay");
   const hasCashfree = availableMethods.includes("cashfree");
   const hasPayu = availableMethods.includes("payu");
-  const fullPrepaidAllowed = allowsFullPrepaid(store);
-  // Retain gateways for Utkal's advance, but never fall back to full prepaid
-  // if partial settings are absent or not yet hydrated.
-  const hasOnline = (hasRazorpay || hasCashfree || hasPayu) &&
-    (fullPrepaidAllowed || (store.partial_payment_enabled === true && Number(store.partial_payment_value || 0) > 0));
+  const hasOnline = hasRazorpay || hasCashfree || hasPayu;
   /** A store with no online gateway configured must still be orderable:
    *  fall back to Cash on Delivery so checkout never dead-ends. */
   const codAvailable = hasCod || (!hasOnline && paymentConfigLoaded);
@@ -1542,13 +1538,12 @@ export default function CheckoutV2Page() {
 
   }, [checkoutItems, hasPartial, partialType, partialValue, subtotal, taxAmount, taxInclusive, shippingCharge, total]);
 
-  // Utkal-only partial discount comes out of the delivery balance (never
-  // the advance), mirroring coupon behaviour. Server recomputes in place-order.
+  // Partial payments have no additional discount; coupons already affect total.
   const { discount: partialOff, total: partialTotal, balance: partialBalanceDue } =
-    checkoutPartialAmounts(total, partialAdvanceTotal, hasPartial ? utkalPartialDiscount(store) : 0);
+    checkoutPartialAmounts(total, partialAdvanceTotal, 0);
 
   const [payMode, setPayModeState] = useState<"full" | "partial">("partial");
-  const isPartialOrder = hasPartial && (!fullPrepaidAllowed || payMode === "partial");
+  const isPartialOrder = hasPartial && payMode === "partial";
   const effectiveMode: "full" | "partial" = isPartialOrder ? "partial" : "full";
   const onlineDeliveryHint = utkalDeliveryHint(store, effectiveMode) ?? upiDeliveryHint;
   // Wrap setPayMode so a user-driven Partial↔Full toggle always resets the
@@ -1557,7 +1552,6 @@ export default function CheckoutV2Page() {
   // amount…" forever — the snapshot changes, tiles flip to loading, but the
   // remint is silently blocked by the 8-mint cap.
   const setPayMode = (next: "full" | "partial") => {
-    if (next === "full" && !fullPrepaidAllowed) return;
     mintCountRef.current = 0;
     mintLoopBlockedRef.current = false;
     lastMintAtRef.current = 0;
@@ -5642,7 +5636,7 @@ export default function CheckoutV2Page() {
                     </div>
                   </div>
                 </button>
-                {fullPrepaidAllowed && <button
+                <button
                   type="button"
                   onClick={() => setPayMode("full")}
                   className={`w-full text-left rounded-lg border-2 px-2.5 py-2 transition-colors ${payMode === "full" ? "border-black bg-black/5" : "border-[#ECECEC]"}`}
@@ -5671,7 +5665,7 @@ export default function CheckoutV2Page() {
 
                     </div>
                   </div>
-                </button>}
+                </button>
 
               </div>
               {isPartialOrder && (

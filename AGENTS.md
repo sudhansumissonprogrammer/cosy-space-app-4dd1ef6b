@@ -47,7 +47,7 @@
 - Small photos up to 320px use the uploaded manifest; unknown and card/PDP/zoom URLs stay unchanged to preserve originals and avoid missing siblings.
 - Keep homepage route components and inactive theme layouts out of the shared storefront manual chunk; retain the dominant layout's critical path, because category/PDP ad entries should not parse homepage-only code.
 
-- Confirmations use completed payment methods. Utkal checkout gates full prepaid by store identity while retaining gateways for advances and standalone COD; others retain configured choices. place-order recomputes utkalPartialDiscount; checkoutPartialAmounts caps savings to the delivery balance so net payable equals advance plus balance without changing gross totals.
+- Confirmations use completed payment methods and preserve historical amounts. Every store, including Utkal, uses dashboard-configured online gateways and required-advance policy, without identity-based payment gates or partial-payment discounts, because checkout and order enforcement must agree with merchant controls.
 
 - Resolve Kalinga public content and store-only features through its shared helper; known IDs override legacy slugs to prevent stale identity and cross-store overrides.
 - Kalinga's lazy carousel shares teaser cache; glass cards keep the separate popup/teaser.
