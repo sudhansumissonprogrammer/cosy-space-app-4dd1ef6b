@@ -85,11 +85,11 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
     if (open || !pageVisible || dismissed) video.pause();
     else void video.play().catch(() => {});
   }, [open, pageVisible, dismissed, previewReady, available, revealed]);
-  const packingPrompt = storeSlug === "serdiyajewellers"
-    ? { title: "Transparent-box delivery", detail: "See through the box. Pay your COD balance on delivery." }
+  const previewCaption = storeSlug === "serdiyajewellers"
+    ? "Transparent box delivery"
     : ["utkalwatch", "utkalwatches"].includes(storeSlug)
-      ? { title: "Warehouse packing video", detail: "Watch how we pack your watches." }
-      : null;
+      ? "Packing video"
+      : "Watch video";
   const prefetchedRef = useRef(false);
   const activatedVideoRef = useRef<HTMLVideoElement | null>(null);
   useEffect(() => () => { activatedVideoRef.current?.pause(); }, []);
@@ -221,17 +221,16 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
   return (
     <>
       <div
-        className="fixed bottom-[4.5rem] right-3 z-40 animate-fade-in sm:bottom-5"
-        style={{ width: packingPrompt ? 128 : 96 }}
+        className="fixed bottom-[4.5rem] right-3 z-40 w-24 animate-fade-in sm:bottom-5"
       >
         <Button variant="ghost"
           type="button"
           onClick={handleOpen}
           onPointerEnter={prefetch}
           onTouchStart={prefetch}
-          aria-label={packingPrompt ? `Watch video: ${packingPrompt.title}` : "Watch customer videos"}
+          aria-label={`Watch video: ${previewCaption}`}
           className="relative block h-auto w-full overflow-hidden whitespace-normal rounded-lg bg-primary p-0 text-primary-foreground shadow-xl ring-1 ring-border transition-transform duration-200 active:scale-[0.96] hover:bg-primary"
-          style={{ aspectRatio: packingPrompt ? "1 / 1" : "9 / 16" }}
+          style={{ aspectRatio: "9 / 16" }}
         >
           {preview.posterUrl ? (
             <img
@@ -267,8 +266,8 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
           </span>
 
           <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-1 bg-primary/85 px-1.5 py-1.5">
-            <span className="text-[10px] font-semibold text-primary-foreground">
-              Watch video
+            <span className="text-[10px] font-semibold leading-tight text-primary-foreground">
+              {previewCaption}
             </span>
           </div>
 
