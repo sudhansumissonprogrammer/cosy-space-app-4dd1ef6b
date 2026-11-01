@@ -15,8 +15,8 @@ function Probe() {
 }
 
 describe("usePageviewBeacon", () => {
-  const beacon = vi.fn(() => true);
-  const fetchMock = vi.fn(() => Promise.resolve(new Response(null, { status: 204 })));
+  const beacon = vi.fn((_url: string, _data?: BodyInit) => true);
+  const fetchMock = vi.fn((_url: string, _init?: RequestInit) => Promise.resolve(new Response(null, { status: 204 })));
 
   beforeEach(() => {
     sessionStorage.clear();
