@@ -948,7 +948,7 @@ function AppRouter() {
   // dashboard providers. Capability is fragment-only and the feature is off.
   const host = window.location.hostname;
   const platformHost = host === ROOT_DOMAIN || host === `www.${ROOT_DOMAIN}` || host === "localhost" || host.endsWith(".lovable.app");
-  const utkalReturn = host === "utkalwatch.in" && location.pathname === "/checkout" && location.hash.startsWith("#platform_payment=");
+  const utkalReturn = host === "utkalwatch.in" && location.pathname === "/checkout" && (new URLSearchParams(location.search).get("platform_return") === "1" || new URLSearchParams(location.hash.slice(1)).has("platform_payment"));
   if ((platformHost && location.pathname === "/utkalwatch/checkout") || utkalReturn) {
     return <Suspense fallback={<LoadingSpinner />}><UtkalPlatformCheckout /></Suspense>;
   }

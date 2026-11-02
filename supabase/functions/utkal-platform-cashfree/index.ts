@@ -88,8 +88,12 @@ Deno.serve(async req => {
       const result = await admin.rpc("finalize_utkal_platform_payment", { p_attempt_id: attempt.id, p_payment_id: String(successful.cf_payment_id) });
       if (result.error) throw new Error("Payment confirmation unavailable");
       if (result.data?.paid) {
-        await firePurchaseCapi(admin, attempt.order_id, { source: "utkal-platform-cashfree" });
-        await fireWaOrderEvent(admin, attempt.order_id);
+        // A notification failure must not turn a committed payment into an error.
+        const notifications = Promise.allSettled([
+          firePurchaseCapi(admin, attempt.order_id, { source: "utkal-platform-cashfree" }),
+          fireWaOrderEvent(admin, attempt.order_id),
+        ]);
+        EdgeRuntime.waitUntil(notifications);
       }
       return result.data;
     };

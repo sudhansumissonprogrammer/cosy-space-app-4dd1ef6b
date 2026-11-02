@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { loadCashfree } from "@/lib/loadCashfree";
 import { UTKAL_PLATFORM_CASHFREE_ENABLED } from "@/lib/utkalPlatformCashfree";
+import { PAYMENT_RETURN_CHECK_DELAYS_MS, platformConfirmationUrl } from "../../supabase/functions/_shared/utkalPlatformCashfreePolicy";
 
 type Payment = { order_id: string; amount: number; total: number; balance: number; payment_type: string; paid?: boolean; review?: boolean; payment_session_id?: string; environment?: "sandbox" | "production" };
 const STORAGE_KEY = "utkal_platform_handoff";
@@ -17,7 +18,10 @@ function readCapability() {
     try { sessionStorage.setItem(STORAGE_KEY, fresh); } catch { /* cookie fallback */ }
     document.cookie = `${COOKIE_NAME}=${fresh}; Path=${window.location.pathname}; Max-Age=1800; SameSite=Lax; Secure`;
     // Capabilities never enter request URLs, referrers, metadata or analytics.
-    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    const cleanUrl = new URL(window.location.href);
+    cleanUrl.hash = "";
+    if (hash.has("platform_payment")) cleanUrl.searchParams.set("platform_return", "1");
+    window.history.replaceState(null, "", cleanUrl.pathname + cleanUrl.search);
     return fresh;
   }
   try {
@@ -34,8 +38,20 @@ export default function UtkalPlatformCheckout() {
   const [busy, setBusy] = useState(false);
   const started = useRef(false);
   const checking = useRef(false);
+  const mounted = useRef(true);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const finishDelay = useRef<(() => void) | null>(null);
   const isStoreReturn = window.location.hostname === "utkalwatch.in";
   const returned = isStoreReturn || new URLSearchParams(window.location.search).has("returned");
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      if (timer.current) clearTimeout(timer.current);
+      finishDelay.current?.();
+    };
+  }, []);
 
   useEffect(() => {
     const robots = document.createElement("meta");
@@ -58,14 +74,24 @@ export default function UtkalPlatformCheckout() {
     checking.current = true;
     setBusy(true); setError("");
     try {
-      const result = await invoke("verify");
-      setPayment(result);
-      if (result.paid && !isStoreReturn) {
-        window.location.replace(`https://utkalwatch.in/checkout#platform_payment=${encodeURIComponent(token)}`);
-      } else if (result.review) setError("Payment needs review. Do not pay again.");
-      else if (!result.paid) setError("Payment is not confirmed yet. Check again before paying again.");
+      for (const delay of PAYMENT_RETURN_CHECK_DELAYS_MS) {
+        if (delay) await new Promise<void>(resolve => {
+          finishDelay.current = resolve;
+          timer.current = setTimeout(resolve, delay);
+        });
+        if (!mounted.current) return;
+        const result = await invoke("verify");
+        if (!mounted.current) return;
+        setPayment(result);
+        if (result.paid) {
+          if (!isStoreReturn) window.location.replace(platformConfirmationUrl(token));
+          return;
+        }
+        if (result.review) { setError("Payment needs review. Do not pay again."); return; }
+      }
+      setError("Payment is not confirmed yet. Do not pay again if money was deducted. Check payment status again.");
     } catch (e) { setError(e instanceof Error ? e.message : "Could not check payment."); }
-    finally { checking.current = false; setBusy(false); }
+    finally { checking.current = false; if (mounted.current) setBusy(false); }
   };
 
   useEffect(() => {
@@ -106,7 +132,8 @@ export default function UtkalPlatformCheckout() {
         {busy && <div role="status" className="flex items-center gap-2 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />{returned ? "Checking payment…" : "Opening Cashfree…"}</div>}
         {error && <p role="alert" className="text-sm text-muted-foreground">{error}</p>}
         {UTKAL_PLATFORM_CASHFREE_ENABLED && token && !payment?.paid && <Button onClick={() => void check()} disabled={busy} variant="outline">Check payment status</Button>}
-        <Button variant="outline" asChild><a href="https://utkalwatch.in">Return to Utkal Watch</a></Button>
+        {payment?.paid && !isStoreReturn && token && <Button asChild><a href={platformConfirmationUrl(token)}>View order confirmation</a></Button>}
+        <Button variant="outline" asChild><a href="https://utkalwatch.in">{payment?.paid ? "Continue shopping" : "Return to Utkal Watch"}</a></Button>
       </div>
     </main>
   );
