@@ -99,14 +99,14 @@ Deno.serve(async req => {
     if (body.action === "verify") return json({ ...summary, ...await verify(), return_url: "https://utkalwatch.in/checkout" });
     if (attempt.state === "paid") return json({ ...summary, paid: true });
     if (attempt.state === "review") return json({ error: "Payment needs review. Do not pay again." }, 409);
-    const { data: order, error: orderError } = await admin.from("orders").select("id,status,total,advance_paid,payment_type,currency,customer_name,customer_phone,customer_email").eq("id", attempt.order_id).eq("store_id", UTKAL_STORE_ID).single();
+    const { data: order, error: orderError } = await admin.from("orders").select("id,status,total,advance_paid,payment_type,currency,customer_name,customer_phone").eq("id", attempt.order_id).eq("store_id", UTKAL_STORE_ID).single();
     if (orderError || !order || order.status !== "pending" || Math.round(Number(order.total) * 100) !== Number(attempt.total_minor) || order.payment_type !== attempt.payment_type || (order.payment_type === "partial" && Math.round(Number(order.advance_paid) * 100) !== Number(attempt.amount_minor))) return json({ error: "Order changed. Return to checkout." }, 409);
     if (!attempt.payment_session_id) {
       const phone = String(order.customer_phone || "").replace(/\D/g, "").slice(-10);
       if (!/^[6-9]\d{9}$/.test(phone)) return json({ error: "Invalid customer phone" }, 400);
       const payment = await cf("/orders", {
         method: "POST", headers: { "x-idempotency-key": attempt.id },
-        body: JSON.stringify({ order_id: attempt.provider_order_id, order_amount: summary.amount, order_currency: "INR", customer_details: { customer_id: attempt.order_id, customer_phone: phone, customer_name: order.customer_name, ...(order.customer_email ? { customer_email: order.customer_email } : {}) }, order_tags: { store_order_id: attempt.order_id, store_id: UTKAL_STORE_ID }, order_meta: { return_url: `https://shopbanao.in${PLATFORM_CASHFREE_PATH}?returned=1`, notify_url: `${url}/functions/v1/utkal-platform-cashfree?webhook=1` } }),
+        body: JSON.stringify({ order_id: attempt.provider_order_id, order_amount: summary.amount, order_currency: "INR", customer_details: { customer_id: attempt.order_id, customer_phone: phone, customer_name: order.customer_name }, order_tags: { store_order_id: attempt.order_id, store_id: UTKAL_STORE_ID }, order_meta: { return_url: `https://shopbanao.in${PLATFORM_CASHFREE_PATH}?returned=1`, notify_url: `${url}/functions/v1/utkal-platform-cashfree?webhook=1` } }),
       });
       if (!payment.payment_session_id) return json({ error: "Payment session unavailable" }, 502);
       const saved = await admin.from("utkal_platform_payment_attempts").update({ payment_session_id: payment.payment_session_id, state: "ready" }).eq("id", attempt.id).eq("state", "reserved").select("payment_session_id").maybeSingle();
