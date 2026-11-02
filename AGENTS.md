@@ -1,7 +1,7 @@
 # Project architecture decisions
 - Trust reveal/autoplay waits for document, route and visible photos plus delay; preserve click-activated sound across lazy loading, preview toggles, data-saving posters and hidden/open mute resets to protect loading and avoid surprise audio.
 - Optional apps share state; separate gated shopper code from dashboard metadata and preserve stale-gift cleanup.
-- Read nested AGENTS.md. Platform Cashfree uses isolated, capability-protected, default-off gates so merchant payments remain unchanged.
+- Read nested AGENTS.md. Isolated payment returns clear edge HTML; off gates preserve existing-payment verification and merchant gateways.
 - SEO skills are agent-only; shell titles exclude route metadata.
 - Utkal Sale keeps lazy two-row rails, additive membership and transform-only swipe cues; its category-only banner reserves intrinsic dimensions and retains an accessible heading without visible intro spacing.
 - Storefront shell load errors remain distinct from confirmed missing stores and retry the same query without navigation; preserve registered tenant slugs and use custom domains in shared links, because temporary failures must not imply deleted stores or break existing integrations.
