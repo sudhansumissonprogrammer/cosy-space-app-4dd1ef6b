@@ -1,6 +1,5 @@
 import { useEffect, useRef, useMemo, useState, Suspense, lazy, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
-import { isKalingaStore } from "@/lib/kalingaStore";
 import { usesWideMobileCards } from "@/lib/wideMobileCards";
 import { useStorefront, type StoreData } from "@/layouts/StorefrontLayout.logic";
 import { CartProvider } from "@/contexts/CartContext";
