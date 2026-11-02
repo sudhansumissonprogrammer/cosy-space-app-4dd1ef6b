@@ -1,7 +1,8 @@
 import { canUsePlatformCashfree, PLATFORM_CASHFREE_PATH } from "../../supabase/functions/_shared/utkalPlatformCashfreePolicy";
 
-// Explicit owner requirement: do not enable or test payments until requested.
-export const UTKAL_PLATFORM_CASHFREE_ENABLED = false;
+// TEMPORARY (2026-11-02): owner switched this on for testing only.
+// Turn back to false after the owner finishes testing (store keeps its own gateway).
+export const UTKAL_PLATFORM_CASHFREE_ENABLED = true;
 
 export function usesUtkalPlatformCashfree(storeId: string): boolean {
   return canUsePlatformCashfree(storeId, UTKAL_PLATFORM_CASHFREE_ENABLED);
