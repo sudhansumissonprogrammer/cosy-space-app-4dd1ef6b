@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canUsePlatformCashfree, platformCharge, matchesPlatformPayment, HANDOFF_TTL_MS, platformConfirmationUrl, isPlatformStoreReturn, PAYMENT_RETURN_CHECK_DELAYS_MS } from "../../supabase/functions/_shared/utkalPlatformCashfreePolicy";
+import { canUsePlatformCashfree, permitsPlatformAction, platformCharge, matchesPlatformPayment, HANDOFF_TTL_MS, platformConfirmationUrl, isPlatformStoreReturn, PAYMENT_RETURN_CHECK_DELAYS_MS } from "../../supabase/functions/_shared/utkalPlatformCashfreePolicy";
 import { UTKAL_STORE_ID } from "../../supabase/functions/_shared/utkalContent";
 import { UTKAL_PLATFORM_CASHFREE_ENABLED, usesUtkalPlatformCashfree } from "./utkalPlatformCashfree";
 
@@ -23,10 +23,15 @@ describe("Utkal platform Cashfree policy", () => {
     expect(PAYMENT_RETURN_CHECK_DELAYS_MS.length).toBe(7);
     expect(PAYMENT_RETURN_CHECK_DELAYS_MS.reduce((a, b) => a + b, 0)).toBe(32000);
   });
-  // Temporary owner test window: switched on for Utkal only.
-  it("is on for Utkal during the owner test window", () => {
-    expect(UTKAL_PLATFORM_CASHFREE_ENABLED).toBe(true);
-    expect(usesUtkalPlatformCashfree(UTKAL_STORE_ID)).toBe(true);
+  it("is off after the owner ends the temporary test", () => {
+    expect(UTKAL_PLATFORM_CASHFREE_ENABLED).toBe(false);
+    expect(usesUtkalPlatformCashfree(UTKAL_STORE_ID)).toBe(false);
+  });
+  it("blocks new collection while allowing capability-protected verification after disable", () => {
+    expect(permitsPlatformAction(UTKAL_STORE_ID, false, "handoff")).toBe(false);
+    expect(permitsPlatformAction(UTKAL_STORE_ID, false, "session")).toBe(false);
+    expect(permitsPlatformAction(UTKAL_STORE_ID, false, "verify")).toBe(true);
+    expect(permitsPlatformAction("other-store", false, "verify")).toBe(false);
   });
   it("never applies to another store even when enabled", () => {
     expect(canUsePlatformCashfree("04010cad-1cbe-40ac-b818-07d9a79c1bf7", true)).toBe(false);

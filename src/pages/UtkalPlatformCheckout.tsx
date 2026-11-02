@@ -34,7 +34,7 @@ function readCapability() {
 export default function UtkalPlatformCheckout() {
   const [token] = useState(readCapability);
   const [payment, setPayment] = useState<Payment | null>(null);
-  const [error, setError] = useState(UTKAL_PLATFORM_CASHFREE_ENABLED ? "" : "This payment option is not active yet.");
+  const [error, setError] = useState(UTKAL_PLATFORM_CASHFREE_ENABLED ? "" : "This payment option is switched off. New orders use Utkal Watch’s own payment gateway.");
   const [busy, setBusy] = useState(false);
   const started = useRef(false);
   const checking = useRef(false);
@@ -54,6 +54,12 @@ export default function UtkalPlatformCheckout() {
   }, []);
 
   useEffect(() => {
+    // This isolated route bypasses StorefrontShell, so it must perform the
+    // same body handoff itself. Otherwise the Worker's catalogue/contact
+    // HTML remains visibly above the real confirmation after payment.
+    document.getElementById("seo-content")?.remove();
+    window.dispatchEvent(new Event("storefront:content-ready"));
+    window.scrollTo({ top: 0, behavior: "auto" });
     const robots = document.createElement("meta");
     robots.name = "robots"; robots.content = "noindex,nofollow";
     const referrer = document.createElement("meta");
@@ -70,7 +76,7 @@ export default function UtkalPlatformCheckout() {
   };
 
   const check = async () => {
-    if (!UTKAL_PLATFORM_CASHFREE_ENABLED || !token || checking.current) return;
+    if (!token || checking.current) return;
     checking.current = true;
     setBusy(true); setError("");
     try {
@@ -95,9 +101,10 @@ export default function UtkalPlatformCheckout() {
   };
 
   useEffect(() => {
-    if (!UTKAL_PLATFORM_CASHFREE_ENABLED || started.current) return;
+    if (started.current) return;
     started.current = true;
-    if (!token) { setError("This payment link is invalid or expired."); return; }
+    if (!token) { if (UTKAL_PLATFORM_CASHFREE_ENABLED) setError("This payment link is invalid or expired."); return; }
+    if (!UTKAL_PLATFORM_CASHFREE_ENABLED) { void check(); return; }
     if (returned) { void check(); return; }
     setBusy(true);
     void (async () => {
@@ -131,8 +138,9 @@ export default function UtkalPlatformCheckout() {
         </dl>}
         {busy && <div role="status" className="flex items-center gap-2 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />{returned ? "Checking payment…" : "Opening Cashfree…"}</div>}
         {error && <p role="alert" className="text-sm text-muted-foreground">{error}</p>}
-        {UTKAL_PLATFORM_CASHFREE_ENABLED && token && !payment?.paid && <Button onClick={() => void check()} disabled={busy} variant="outline">Check payment status</Button>}
+        {token && !payment?.paid && <Button onClick={() => void check()} disabled={busy} variant="outline">Check payment status</Button>}
         {payment?.paid && !isStoreReturn && token && <Button asChild><a href={platformConfirmationUrl(token)}>View order confirmation</a></Button>}
+        {payment?.paid && isStoreReturn && <Button asChild><a href={`https://utkalwatch.in/account/orders/${encodeURIComponent(payment.order_id)}`}>View order details</a></Button>}
         <Button variant="outline" asChild><a href="https://utkalwatch.in">{payment?.paid ? "Continue shopping" : "Return to Utkal Watch"}</a></Button>
       </div>
     </main>
