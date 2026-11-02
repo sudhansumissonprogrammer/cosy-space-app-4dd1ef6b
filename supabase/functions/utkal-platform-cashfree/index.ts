@@ -1,7 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { UTKAL_STORE_ID } from "../_shared/utkalContent.ts";
-import { canUsePlatformCashfree, matchesPlatformPayment, PLATFORM_CASHFREE_PATH } from "../_shared/utkalPlatformCashfreePolicy.ts";
+import { permitsPlatformAction, matchesPlatformPayment, PLATFORM_CASHFREE_PATH } from "../_shared/utkalPlatformCashfreePolicy.ts";
 import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
 import { fireWaOrderEvent } from "../_shared/wa-fire-order-event.ts";
 
@@ -41,7 +41,7 @@ Deno.serve(async req => {
     const { data: settings, error: settingsError } = await admin.from("utkal_platform_payment_settings").select("enabled,environment").eq("store_id", UTKAL_STORE_ID).maybeSingle();
     if (settingsError) return json({ error: "Payment service unavailable" }, 503);
     // No configuration row, false, or the wrong store can never collect money.
-    if (!webhook && !canUsePlatformCashfree(body.store_id ?? UTKAL_STORE_ID, settings?.enabled === true)) return json({ error: "This payment feature is disabled", code: "disabled" }, 403);
+    if (!webhook && !permitsPlatformAction(body.store_id ?? UTKAL_STORE_ID, settings?.enabled === true, body.action)) return json({ error: "This payment feature is disabled", code: "disabled" }, 403);
 
     if (body.action === "handoff" && !webhook) {
       if (body.store_id !== UTKAL_STORE_ID || !validId(body.order_id) || typeof body.checkout_token !== "string" || body.checkout_token.length < 8 || body.checkout_token.length > 256) return json({ error: "Invalid checkout" }, 400);

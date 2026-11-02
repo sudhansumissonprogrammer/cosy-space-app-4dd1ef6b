@@ -1,8 +1,7 @@
 import { canUsePlatformCashfree, PLATFORM_CASHFREE_PATH } from "../../supabase/functions/_shared/utkalPlatformCashfreePolicy";
 
-// TEMPORARY (2026-11-02): owner switched this on for testing only.
-// Turn back to false after the owner finishes testing (store keeps its own gateway).
-export const UTKAL_PLATFORM_CASHFREE_ENABLED = true;
+// Owner ended the temporary test; new checkouts use the merchant's gateway.
+export const UTKAL_PLATFORM_CASHFREE_ENABLED = false;
 
 export function usesUtkalPlatformCashfree(storeId: string): boolean {
   return canUsePlatformCashfree(storeId, UTKAL_PLATFORM_CASHFREE_ENABLED);

@@ -21,6 +21,12 @@ export function canUsePlatformCashfree(storeId: string, enabled: boolean): boole
   return enabled === true && storeId === UTKAL_STORE_ID;
 }
 
+// Disabling collection must not strand a shopper returning from an existing payment.
+// Verification still requires the original validated capability in the endpoint.
+export function permitsPlatformAction(storeId: string, enabled: boolean, action: unknown): boolean {
+  return storeId === UTKAL_STORE_ID && (enabled === true || action === "verify");
+}
+
 export function platformCharge(order: { total: unknown; advance_paid: unknown; payment_type: unknown; currency: unknown }) {
   if (order.currency !== "INR") throw new Error("Only INR is supported");
   const total = Math.round(Number(order.total) * 100);
