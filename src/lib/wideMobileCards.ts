@@ -3,7 +3,9 @@ import { KALINGA_STORE_ID } from "@/lib/kalingaStore";
 /**
  * Stores that use Kalinga Jewels' wider mobile product cards (tighter page
  * padding and card gutters). Gated by permanent store ID so slug/domain
- * renames never change the layout.
+ * renames never change the layout. Storefront custom domains are served from
+ * the preview build by the Worker, so this only reaches them after a fresh
+ * preview build (publishing alone updates shopbanao.in only).
  */
 export const WIDE_MOBILE_CARD_STORE_IDS: ReadonlySet<string> = new Set([
   KALINGA_STORE_ID, // Kalinga Jewels
