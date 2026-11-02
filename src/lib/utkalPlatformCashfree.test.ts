@@ -4,9 +4,10 @@ import { UTKAL_STORE_ID } from "../../supabase/functions/_shared/utkalContent";
 import { UTKAL_PLATFORM_CASHFREE_ENABLED, usesUtkalPlatformCashfree } from "./utkalPlatformCashfree";
 
 describe("Utkal platform Cashfree policy", () => {
-  it("remains disabled even for Utkal", () => {
-    expect(UTKAL_PLATFORM_CASHFREE_ENABLED).toBe(false);
-    expect(usesUtkalPlatformCashfree(UTKAL_STORE_ID)).toBe(false);
+  // Temporary owner test window: switched on for Utkal only.
+  it("is on for Utkal during the owner test window", () => {
+    expect(UTKAL_PLATFORM_CASHFREE_ENABLED).toBe(true);
+    expect(usesUtkalPlatformCashfree(UTKAL_STORE_ID)).toBe(true);
   });
   it("never applies to another store even when enabled", () => {
     expect(canUsePlatformCashfree("04010cad-1cbe-40ac-b818-07d9a79c1bf7", true)).toBe(false);
