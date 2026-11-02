@@ -11,7 +11,7 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel";
 import UniversalProductCard from "./UniversalProductCard";
-import { isKalingaStore } from "@/lib/kalingaStore";
+import { usesWideMobileCards } from "@/lib/wideMobileCards";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import BestSellerBadge from "@/components/storefront/BestSellerBadge";
@@ -27,7 +27,7 @@ export default function BestSellingCarousel({ products, slug, store, cardStyle =
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
   const [count, setCount] = useState(0);
-  const isKalinga = isKalingaStore(store);
+  const isKalinga = usesWideMobileCards(store);
 
   useEffect(() => {
     if (!api) return;
