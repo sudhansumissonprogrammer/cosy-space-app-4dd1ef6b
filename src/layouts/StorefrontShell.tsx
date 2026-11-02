@@ -1,6 +1,6 @@
 import { useEffect, useRef, useMemo, useState, Suspense, lazy, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
-import { isKalingaStore } from "@/lib/kalingaStore";
+import { usesWideMobileCards } from "@/lib/wideMobileCards";
 import { useStorefront, type StoreData } from "@/layouts/StorefrontLayout.logic";
 import { CartProvider } from "@/contexts/CartContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
@@ -472,7 +472,7 @@ export default function StorefrontShell({
 
   // Build provider tree — conditionally include WishlistProvider
   const content = (
-    <div className={`${wrapperClassName}${isKalingaStore(store) ? " sf-kalinga-mobile" : ""}`} style={mergedStyle} data-storefront-ready="true">
+    <div className={`${wrapperClassName}${usesWideMobileCards(store) ? " sf-kalinga-mobile" : ""}`} style={mergedStyle} data-storefront-ready="true">
       <LanguageStrip />
       {children(renderProps)}
 
