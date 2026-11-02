@@ -176,6 +176,13 @@
       "when": 1793459698367,
       "tag": "0024_preserve_analytics_retention_and_rollup_keys",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1793606588663,
+      "tag": "0025_utkal_platform_cashfree_disabled_handoff",
+      "breakpoints": true
     }
   ]
 }
