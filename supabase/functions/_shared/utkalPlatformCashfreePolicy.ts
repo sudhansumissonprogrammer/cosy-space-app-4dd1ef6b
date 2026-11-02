@@ -3,6 +3,20 @@ import { UTKAL_STORE_ID } from "./utkalContent.ts";
 export const PLATFORM_CASHFREE_PATH = "/utkalwatch/checkout";
 export const HANDOFF_TTL_MS = 30 * 60 * 1000;
 
+// Pending provider results are never proof of failure or permission to pay again.
+export const PAYMENT_RETURN_CHECK_DELAYS_MS = [0, 1500, 2500, 4000, 6000, 8000, 10000];
+
+export function platformConfirmationUrl(token: string): string {
+  if (!/^[a-f0-9]{64}$/.test(token)) throw new Error("Invalid payment capability");
+  return `https://utkalwatch.in/checkout?platform_return=1#platform_payment=${token}`;
+}
+
+export function isPlatformStoreReturn(host: string, path: string, search: string, hash: string): boolean {
+  const fragment = new URLSearchParams(hash.replace(/^#/, ""));
+  return host === "utkalwatch.in" && path === "/checkout" &&
+    (new URLSearchParams(search).get("platform_return") === "1" || fragment.has("platform_payment"));
+}
+
 export function canUsePlatformCashfree(storeId: string, enabled: boolean): boolean {
   return enabled === true && storeId === UTKAL_STORE_ID;
 }

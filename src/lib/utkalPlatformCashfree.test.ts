@@ -1,9 +1,28 @@
 import { describe, expect, it } from "vitest";
-import { canUsePlatformCashfree, platformCharge, matchesPlatformPayment, HANDOFF_TTL_MS } from "../../supabase/functions/_shared/utkalPlatformCashfreePolicy";
+import { canUsePlatformCashfree, platformCharge, matchesPlatformPayment, HANDOFF_TTL_MS, platformConfirmationUrl, isPlatformStoreReturn, PAYMENT_RETURN_CHECK_DELAYS_MS } from "../../supabase/functions/_shared/utkalPlatformCashfreePolicy";
 import { UTKAL_STORE_ID } from "../../supabase/functions/_shared/utkalContent";
 import { UTKAL_PLATFORM_CASHFREE_ENABLED, usesUtkalPlatformCashfree } from "./utkalPlatformCashfree";
 
 describe("Utkal platform Cashfree policy", () => {
+  it("returns to the Utkal confirmation with a fragment-only capability", () => {
+    const token = "a".repeat(64);
+    const url = new URL(platformConfirmationUrl(token));
+    expect(url.origin).toBe("https://utkalwatch.in");
+    expect(url.pathname).toBe("/checkout");
+    expect(url.searchParams.get("platform_return")).toBe("1");
+    expect(url.search.includes(token)).toBe(false);
+    expect(url.hash).toBe(`#platform_payment=${token}`);
+    expect(() => platformConfirmationUrl("invalid")).toThrow();
+  });
+  it("keeps the confirmation route after the capability fragment is removed", () => {
+    expect(isPlatformStoreReturn("utkalwatch.in", "/checkout", "?platform_return=1", "")).toBe(true);
+    expect(isPlatformStoreReturn("other.in", "/checkout", "?platform_return=1", "")).toBe(false);
+    expect(isPlatformStoreReturn("utkalwatch.in", "/checkout", "", "")).toBe(false);
+  });
+  it("bounds automatic pending-payment rechecks to seven within 32 seconds", () => {
+    expect(PAYMENT_RETURN_CHECK_DELAYS_MS.length).toBe(7);
+    expect(PAYMENT_RETURN_CHECK_DELAYS_MS.reduce((a, b) => a + b, 0)).toBe(32000);
+  });
   // Temporary owner test window: switched on for Utkal only.
   it("is on for Utkal during the owner test window", () => {
     expect(UTKAL_PLATFORM_CASHFREE_ENABLED).toBe(true);
