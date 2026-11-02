@@ -33,6 +33,7 @@ import { pixelPayloadFromItems } from "@/lib/expandBundleForPixel";
 import { getOrCreateCheckoutToken, mintCheckoutToken, writeCheckoutTokenCookie, clearCheckoutTokenCookie } from "@/lib/checkoutTokenStore";
 import { purchaseEventIdFor } from "@/lib/pixelOutbox";
 import { getFunctionErrorMessage } from "@/lib/functionError";
+import { redirectToUtkalPlatformCashfree } from "@/lib/utkalPlatformCashfree";
 
 const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
 const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPhoneStep"));
@@ -1375,6 +1376,7 @@ function V22CheckoutPageInner() {
 
   // Open Cashfree drop-in checkout for an existing order (used for both initial and retry)
   const openCashfreeForOrder = async (order: { id: string; number: string | null; profit: number | null }) => {
+    if (await redirectToUtkalPlatformCashfree(store.id, order.id, checkoutTokenRef.current)) return;
     const env = (paymentConfig?.cashfree_env as any) === "sandbox" ? "sandbox" : "production";
     const [cashfree, cfData] = await Promise.all([
       loadCashfree(env),

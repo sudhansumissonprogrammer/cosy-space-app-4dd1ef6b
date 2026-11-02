@@ -89,6 +89,7 @@ const V22ProductDetail = lazy(() => import("./pages/V22ProductDetail"));
 import { getPdpPreload } from "@/lib/pdpPreload";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 const NotFound = lazy(() => import("./pages/NotFound"));
+const UtkalPlatformCheckout = lazy(() => import("./pages/UtkalPlatformCheckout"));
 
 const ProductDetailSkeleton = () => {
   const p = typeof window !== "undefined" ? getPdpPreload() : null;
@@ -942,6 +943,15 @@ function AppRouter() {
   const location = useLocation();
   const subdomainSlug = getSubdomainSlug();
   const { slug: customDomainSlug, loading: customDomainLoading, isCustomDomain } = useCustomDomainSlug();
+
+  // Isolated platform payment page: never enters merchant /store redirects or
+  // dashboard providers. Capability is fragment-only and the feature is off.
+  const host = window.location.hostname;
+  const platformHost = host === ROOT_DOMAIN || host === `www.${ROOT_DOMAIN}` || host === "localhost" || host.endsWith(".lovable.app");
+  const utkalReturn = host === "utkalwatch.in" && location.pathname === "/checkout" && location.hash.startsWith("#platform_payment=");
+  if ((platformHost && location.pathname === "/utkalwatch/checkout") || utkalReturn) {
+    return <Suspense fallback={<LoadingSpinner />}><UtkalPlatformCheckout /></Suspense>;
+  }
 
   // ── STOREFRONT: Subdomain (slug.shopbanao.in) ──
   if (subdomainSlug) {
