@@ -1579,6 +1579,7 @@ function V22CheckoutPageInner() {
       const newOrder = await createOrder();
 
       if (isOnline) {
+        if (await redirectToUtkalPlatformCashfree(store.id, newOrder.id, checkoutTokenRef.current)) return;
         setPlacingStep(2);
         if (activeGateway === "cashfree") {
           await openCashfreeForOrder(newOrder);
