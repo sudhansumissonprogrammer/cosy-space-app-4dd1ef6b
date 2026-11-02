@@ -4909,6 +4909,121 @@ export type Database = {
         }
         Relationships: []
       }
+      utkal_platform_payment_attempts: {
+        Row: {
+          amount_minor: number
+          created_at: string
+          currency: string
+          environment: string
+          expires_at: string
+          id: string
+          order_id: string
+          payment_session_id: string | null
+          payment_type: string
+          provider_order_id: string
+          provider_payment_id: string | null
+          state: string
+          store_id: string
+          token_hash: string
+          total_minor: number
+          verified_at: string | null
+        }
+        Insert: {
+          amount_minor: number
+          created_at?: string
+          currency?: string
+          environment: string
+          expires_at: string
+          id?: string
+          order_id: string
+          payment_session_id?: string | null
+          payment_type: string
+          provider_order_id: string
+          provider_payment_id?: string | null
+          state?: string
+          store_id: string
+          token_hash: string
+          total_minor: number
+          verified_at?: string | null
+        }
+        Update: {
+          amount_minor?: number
+          created_at?: string
+          currency?: string
+          environment?: string
+          expires_at?: string
+          id?: string
+          order_id?: string
+          payment_session_id?: string | null
+          payment_type?: string
+          provider_order_id?: string
+          provider_payment_id?: string | null
+          state?: string
+          store_id?: string
+          token_hash?: string
+          total_minor?: number
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "utkal_platform_payment_attempts_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "utkal_platform_payment_attempts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "utkal_platform_payment_attempts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      utkal_platform_payment_settings: {
+        Row: {
+          enabled: boolean
+          environment: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          enabled?: boolean
+          environment?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          environment?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "utkal_platform_payment_settings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "utkal_platform_payment_settings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wa_active_conversations: {
         Row: {
           category: string
@@ -6219,6 +6334,10 @@ export type Database = {
           store_id: string
         }[]
       }
+      finalize_utkal_platform_payment: {
+        Args: { p_attempt_id: string; p_payment_id: string }
+        Returns: Json
+      }
       generate_partner_code: { Args: never; Returns: string }
       get_admin_analytics: { Args: never; Returns: Json }
       get_admin_stats: { Args: never; Returns: Json }
@@ -6631,6 +6750,14 @@ export type Database = {
       reserve_payu_attempt: {
         Args: { _order_id: string; _store_id: string }
         Returns: string
+      }
+      reserve_utkal_platform_payment: {
+        Args: {
+          p_checkout_token: string
+          p_order_id: string
+          p_token_hash: string
+        }
+        Returns: Json
       }
       rollup_customer_cohorts_monthly: {
         Args: { _months_back?: number }

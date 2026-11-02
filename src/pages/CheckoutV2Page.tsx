@@ -70,6 +70,7 @@ import { checkoutCashback } from "@/lib/checkoutCashback";
 import { kalingaCodPrepaidHint, kalingaUpiDeliveryHint } from "@/lib/kalingaCheckoutHints";
 import { utkalCodConfirmNote, utkalCodHint, utkalDeliveryHint } from "@/lib/utkalCheckoutHints";
 import { requiresCheckoutAdvance } from "../../supabase/functions/_shared/checkoutPaymentPolicy";
+import { redirectToUtkalPlatformCashfree, usesUtkalPlatformCashfree } from "@/lib/utkalPlatformCashfree";
 
 type UpiApp = "gpay" | "phonepe" | "paytm" | "bhim" | "any";
 type PayMethod = "upi" | "gateway" | "cod";
@@ -3617,6 +3618,11 @@ export default function CheckoutV2Page() {
           return;
         }
         const order = await createOrderIfNeeded(activeGateway, { userInitiated });
+        if (usesUtkalPlatformCashfree(store.id)) {
+          // Background preparation never redirects or creates merchant UPI sessions.
+          if (userInitiated) await redirectToUtkalPlatformCashfree(store.id, order.id, checkoutTokenRef.current);
+          return;
+        }
         setShowPayment(true);
         try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { step: "continue_to_pay", dev: deviceTag() } as any }); } catch { /* noop */ }
 
@@ -3989,6 +3995,7 @@ export default function CheckoutV2Page() {
   };
 
   const openCashfree = async (order: PendingOrder) => {
+    if (await redirectToUtkalPlatformCashfree(store.id, order.id, checkoutTokenRef.current)) return;
     const env = (paymentConfig?.cashfree_env as any) === "sandbox" ? "sandbox" : "production";
     let cashfreeReturnUrl: string;
     try {
@@ -4289,6 +4296,7 @@ export default function CheckoutV2Page() {
     setOpeningGateway(true);
     try {
       const order = await createOrderIfNeeded(activeGateway, { userInitiated: true });
+      if (await redirectToUtkalPlatformCashfree(store.id, order.id, checkoutTokenRef.current)) return;
       setShowPayment(true);
       try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { method: activeGateway, dev: deviceTag() } as any }); } catch { /* noop */ }
       if (activeGateway === "razorpay") await openRazorpay(order);
