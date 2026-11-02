@@ -1,7 +1,9 @@
 # Utkal-only platform Cashfree handoff
 
 ## Status
-Implemented as dormant code. No payments or provider test transactions performed. Frontend flag is false and the service-only settings table has no enabled row. Existing storefront gateway, amounts and merchant payment settings are unchanged.
+2026-11-02: TEMPORARILY ON for owner testing (frontend flag true, settings enabled with environment=production because the platform Cashfree keys are live). Switch both back off after the test.
+
+Originally implemented as dormant code. No payments or provider test transactions performed. Frontend flag is false and the service-only settings table has no enabled row. Existing storefront gateway, amounts and merchant payment settings are unchanged.
 
 Owner states Cashfree approval exists; account-specific approval, product eligibility, production-domain whitelisting and test credentials are not independently verified.
 
