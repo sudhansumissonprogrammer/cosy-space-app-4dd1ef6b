@@ -539,6 +539,7 @@ function prefersMarkdown(accept) {
 }
 
 function isUtilitySearchPath(pathname) {
+  if (pathname === "/utkalwatch/checkout") return true;
   return /^\/(?:store\/[^/]+\/)?(?:cart|checkout|account|search|track-order|wishlist|auth|login|signup|order-confirmation)(?:\/|$)/.test(pathname);
 }
 

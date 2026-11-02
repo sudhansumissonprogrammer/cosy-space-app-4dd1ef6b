@@ -15,7 +15,7 @@ function readCapability() {
   const fresh = hash.get("handoff") || hash.get("platform_payment");
   if (fresh && /^[a-f0-9]{64}$/.test(fresh)) {
     try { sessionStorage.setItem(STORAGE_KEY, fresh); } catch { /* cookie fallback */ }
-    document.cookie = `${COOKIE_NAME}=${fresh}; Path=/utkalwatch/checkout; Max-Age=1800; SameSite=Lax; Secure`;
+    document.cookie = `${COOKIE_NAME}=${fresh}; Path=${window.location.pathname}; Max-Age=1800; SameSite=Lax; Secure`;
     // Capabilities never enter request URLs, referrers, metadata or analytics.
     window.history.replaceState(null, "", window.location.pathname + window.location.search);
     return fresh;
@@ -33,6 +33,7 @@ export default function UtkalPlatformCheckout() {
   const [error, setError] = useState(UTKAL_PLATFORM_CASHFREE_ENABLED ? "" : "This payment option is not active yet.");
   const [busy, setBusy] = useState(false);
   const started = useRef(false);
+  const checking = useRef(false);
   const isStoreReturn = window.location.hostname === "utkalwatch.in";
   const returned = isStoreReturn || new URLSearchParams(window.location.search).has("returned");
 
@@ -53,7 +54,8 @@ export default function UtkalPlatformCheckout() {
   };
 
   const check = async () => {
-    if (!UTKAL_PLATFORM_CASHFREE_ENABLED || !token || busy) return;
+    if (!UTKAL_PLATFORM_CASHFREE_ENABLED || !token || checking.current) return;
+    checking.current = true;
     setBusy(true); setError("");
     try {
       const result = await invoke("verify");
@@ -63,7 +65,7 @@ export default function UtkalPlatformCheckout() {
       } else if (result.review) setError("Payment needs review. Do not pay again.");
       else if (!result.paid) setError("Payment is not confirmed yet. Check again before paying again.");
     } catch (e) { setError(e instanceof Error ? e.message : "Could not check payment."); }
-    finally { setBusy(false); }
+    finally { checking.current = false; setBusy(false); }
   };
 
   useEffect(() => {
@@ -76,11 +78,12 @@ export default function UtkalPlatformCheckout() {
       try {
         const result = await invoke("session");
         setPayment(result);
-        if (result.paid) { setBusy(false); await check(); return; }
+        if (result.paid) { await check(); return; }
         if (!result.payment_session_id) throw new Error("Payment session unavailable.");
         const cashfree = await loadCashfree(result.environment === "sandbox" ? "sandbox" : "production");
         const response = await cashfree.checkout({ paymentSessionId: result.payment_session_id, redirectTarget: "_self" });
         if (response?.error) throw new Error("Payment was not completed. Check payment status before trying again.");
+        await check();
       } catch (e) { setError(e instanceof Error ? e.message : "Could not open payment."); }
       finally { setBusy(false); }
     })();
