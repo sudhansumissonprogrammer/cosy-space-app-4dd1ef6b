@@ -43,13 +43,13 @@
 - Similar rails use store gates, lazy components and bounded visible queries, never blocking the main photo.
 - Imitation World alone uses compact galleries without thumbnails; Utkal alone fits each photo's measured aspect ratio, retaining legacy video sizing/player. Preserve swipe, zoom and other stores.
 - All PDP themes pass category/slug eligibility to shared informational-slide ordering; defer URLs and preserve product data and main-photo priority.
-- PDP galleries: stable refs/passive readiness; key by product+media and never clear loaded state on Embla init; prepare adjacent slides at low priority after main readiness; retry an exact source once then offer manual recovery, because cached-readiness effects don't repeat and blank/looping galleries must not occur.
-- All storefront product-card themes share sticky mobile activation with one upcoming two-card buffer after visible opening photos settle or scrolling starts; a shared observer and frame-coalesced scheduler gate eager low-priority photos without per-card polling, because visibility-only/native-lazy double gating leaves blank rows. Desktop and PDP gallery scheduling stay separate; activated photos retain paint and PDP intent warmers keep canonical sources.
+- PDP galleries: stable refs/passive readiness, keyed by product+media, never clear loaded state on Embla init; adjacent slides load low-priority after main; retry a source once then offer manual recovery, because cached-readiness effects don't repeat.
+- Product-card themes share sticky mobile activation (one two-card buffer after opening photos settle or scroll) via a shared observer and frame-coalesced scheduler, no per-card polling, because double lazy gating leaves blank rows; desktop/PDP scheduling stay separate and activated photos retain paint.
 - Bootstrap photo hints are route-scoped: one PDP main photo, two known category card variants, no arbitrary homepage or saved catalog photo hints; category collages activate at visibility, because early hints must match actual displayed sources.
 - Small photos up to 320px use the uploaded manifest; unknown and card/PDP/zoom URLs stay unchanged to preserve originals and avoid missing siblings.
 - Keep homepage carousels/routes and inactive themes out of shared chunks; never group PDP routes (TDZ risk). Prepare checkout on intent because idle CPU is not spare bandwidth.
 
-- Confirmations use completed payment methods and preserve historical amounts. Every store, including Utkal, uses dashboard-configured online gateways and required-advance policy, without identity-based payment gates or partial-payment discounts, because checkout and order enforcement must agree with merchant controls.
+- Confirmations use completed payment methods and preserve historical amounts; every store uses dashboard-configured gateways and advance policy, with no identity-based payment gates or partial discounts, because checkout and order enforcement must agree.
 
 - Resolve Kalinga public content and store-only features through its shared helper; known IDs override legacy slugs to prevent stale identity and cross-store overrides.
 - Kalinga's lazy carousel shares teaser cache; glass cards keep the separate popup/teaser.
