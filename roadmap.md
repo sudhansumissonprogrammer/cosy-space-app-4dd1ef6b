@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Repair Utkal platform payment verification and automatic confirmation return after Cashfree; preserve temporary test activation.
 - [x] Built Utkal-only protected ShopBanao Cashfree handoff for saved full/partial amounts, immutable attempts, signed verification and original-order confirmation; frontend/server remain disabled, zero attempts. Nineteen tests/build pass; disabled page makes no payment requests. No gateway transaction tests performed. docs/UTKAL-PLATFORM-CASHFREE.md records activation limits.
 - [x] 2026-11-02: switched Utkal platform Cashfree ON for owner testing (frontend flag + live-account setting). Service accepts Utkal only, rejects other stores and fake orders.
 - [ ] Owner test of real full/partial payment (needs frontend publish). Blocked on owner.
