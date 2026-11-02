@@ -69,4 +69,4 @@
 - Utkal bulk is owner-gated; replied inbox filters before paging, latest incoming first.
 - Analytics uses owner/admin aggregates and lazy Three.js/Natural Earth views; unknown geography stays unplotted. Raw/archive traffic selects once per local day; cleanup_app_logs never rewrites it. Daily archives are not whole-range unique visitors.
 - Storefront pageviews are written only through the service-role ingest function (which reads cf-ipcountry); never route the browser beacon to the Worker /__sf/pv path, because anon has no page_views grant and that path acknowledges then silently drops every visit.
-- Storefront hosts are served by the Worker from the project preview build (ORIGIN_HOST), not the published build; verify storefront changes against the preview host, because publishing alone updates only shopbanao.in.
+- Worker serves storefront hosts from the preview build (ORIGIN_HOST); verify storefront changes there, because publishing only updates shopbanao.in.
