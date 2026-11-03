@@ -1,5 +1,5 @@
 import { reviewCountLabel } from "@/lib/utkalCheckoutHints";
-import { isUtkalContentStore } from "@/lib/utkalPublicContent";
+import { isUtkalContentStore } from "../../../../supabase/functions/_shared/utkalContent";
 /**
  * Tiny "real customer photos" strip for the checkout payment step.
  *
