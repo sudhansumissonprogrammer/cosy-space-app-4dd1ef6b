@@ -12,7 +12,7 @@ describe("product video sound", () => {
     expect(video).not.toBeNull();
     expect(video?.muted).toBe(true);
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "Play video", exact: true }));
+      fireEvent.click(screen.getByRole("button", { name: /^Play video$/ }));
     });
     expect(video?.muted).toBe(false);
   });
