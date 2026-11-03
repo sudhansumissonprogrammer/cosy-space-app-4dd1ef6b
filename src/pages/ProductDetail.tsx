@@ -1990,7 +1990,6 @@ function ImageGallery({
                       isActive={isActive}
                       videoPlaying={videoPlaying}
                       setVideoPlaying={setVideoPlaying}
-                      silent={fitPhotoSlides}
                     />
                   );
                 }
