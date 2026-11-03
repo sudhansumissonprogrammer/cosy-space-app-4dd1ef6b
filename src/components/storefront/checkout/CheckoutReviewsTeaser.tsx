@@ -1,4 +1,5 @@
 import { reviewCountLabel } from "@/lib/utkalCheckoutHints";
+import { isUtkalContentStore } from "../../../../supabase/functions/_shared/utkalContent";
 /**
  * Tiny "real customer photos" strip for the checkout payment step.
  *
@@ -195,6 +196,11 @@ export default function CheckoutReviewsTeaser({
                   <ReviewStars rating={average} className="h-3.5 w-3.5" activeClassName="fill-warning text-warning" />
                   <span className="text-xs text-muted-foreground">{reviewCountLabel(storeId, total)} reviews</span>
                 </div>
+                {isUtkalContentStore({ id: storeId }) && (
+                  <p className="mt-1 text-[10px] leading-snug text-muted-foreground">
+                    2,000+ watches delivered across multiple PIN codes
+                  </p>
+                )}
               </div>
               <Button
                 variant="ghost"
