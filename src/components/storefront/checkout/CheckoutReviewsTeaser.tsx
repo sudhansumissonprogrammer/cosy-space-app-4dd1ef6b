@@ -198,7 +198,7 @@ export default function CheckoutReviewsTeaser({
                 </div>
                 {isUtkalContentStore({ id: storeId }) && (
                   <p className="mt-1 text-[10px] leading-snug text-muted-foreground">
-                    2,000+ watches delivered across multiple PIN codes
+                    2,000+ orders delivered across multiple PIN codes
                   </p>
                 )}
               </div>
