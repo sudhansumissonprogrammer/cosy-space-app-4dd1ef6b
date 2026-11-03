@@ -76,7 +76,6 @@ import { useVariantCount } from "@/hooks/useVariantCounts";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import WarrantyBadge from "./WarrantyBadge";
 import ProductCardVideo from "./ProductCardVideo";
-import { isUtkalContentStore } from "../../../supabase/functions/_shared/utkalContent";
 import { useAppDisabled } from "@/hooks/useAppDisabled";
 
 
@@ -218,7 +217,7 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
         </p>
       )}
       {active && showCardVideo && cardVideoUrl && (
-        <ProductCardVideo hostRef={hostRef} enabled videoUrl={cardVideoUrl} silent={isUtkalContentStore(store)} />
+        <ProductCardVideo hostRef={hostRef} enabled videoUrl={cardVideoUrl} />
       )}
 
       {hasVariants && variantOpen && (
