@@ -27,7 +27,7 @@ export function getDiscountPercent(price: number, salePrice?: number | null): nu
 /** Format price with currency symbol and Indian locale */
 export function formatPrice(amount: number, currency?: string): string {
   const symbol = !currency || currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
-  return `${symbol}${Number(amount).toLocaleString("en-IN")}`;
+  return `${symbol}${Number(amount).toLocaleString("en-IN", { useGrouping: false })}`;
 }
 
 /** Deterministic social proof stats from product ID (for ProductDetail page) */

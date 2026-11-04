@@ -217,7 +217,7 @@ export default function FixedBundleCard({ store, bundle }: Props) {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold leading-snug line-clamp-2">{r.name}</p>
                   <div className="mt-1 flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-bold">{symbol}{price.toLocaleString("en-IN")}</span>
+                    <span className="text-sm font-bold">{symbol}{price.toLocaleString("en-IN", { useGrouping: false })}</span>
                     {isAnchor && (
                       <span className="rounded bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide">
                         This item
@@ -253,12 +253,12 @@ export default function FixedBundleCard({ store, bundle }: Props) {
               {activeChildren.length} item{activeChildren.length === 1 ? "" : "s"} · Total
             </p>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-lg font-bold">{symbol}{total.toLocaleString("en-IN")}</span>
+              <span className="text-lg font-bold">{symbol}{total.toLocaleString("en-IN", { useGrouping: false })}</span>
               {savings > 0 && (
                 <>
-                  <span className="text-xs text-muted-foreground line-through">{symbol}{mrp.toLocaleString("en-IN")}</span>
+                  <span className="text-xs text-muted-foreground line-through">{symbol}{mrp.toLocaleString("en-IN", { useGrouping: false })}</span>
                   <span className="rounded bg-emerald-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                    Save {symbol}{savings.toLocaleString("en-IN")} ({pctOff}%)
+                    Save {symbol}{savings.toLocaleString("en-IN", { useGrouping: false })} ({pctOff}%)
                   </span>
                 </>
               )}

@@ -43,7 +43,7 @@ export default function PartialPaymentTrustCard({
   advance = Math.min(advance, effective); // never exceed price
   const balance = Math.max(0, effective - advance);
 
-  const fmt = (n: number) => `${currencySymbol}${Math.round(n).toLocaleString("en-IN")}`;
+  const fmt = (n: number) => `${currencySymbol}${Math.round(n).toLocaleString("en-IN", { useGrouping: false })}`;
 
   return (
     <div

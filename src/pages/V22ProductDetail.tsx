@@ -774,12 +774,12 @@ export default function V22ProductDetail() {
             <div className="min-w-0">
               <div className="flex items-baseline gap-2.5 flex-wrap">
               <span className={`text-2xl font-extrabold sm:text-3xl ${isV18 ? '' : 'text-foreground'}`} style={isV18 ? { color: "#ffffff", ...v18Font, fontWeight: 400 } : {}}>
-                {isV18 ? `₹${Number(variantPrice).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${formatPrice(Number(variantPrice), currency)}`}
+                {isV18 ? `₹${Number(variantPrice).toLocaleString("en-IN", { useGrouping: false, minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${formatPrice(Number(variantPrice), currency)}`}
               </span>
               {hasDiscount && (
                 <>
                   <span className={`text-sm line-through ${isV18 ? '' : 'text-muted-foreground'}`} style={isV18 ? { color: "#666666", ...v18Font } : {}}>
-                    {isV18 ? `₹${Number(product.price).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${formatPrice(Number(product.price), currency)}`}
+                    {isV18 ? `₹${Number(product.price).toLocaleString("en-IN", { useGrouping: false, minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${formatPrice(Number(product.price), currency)}`}
                   </span>
                   {!isV18 && (
                     <Badge className="bg-emerald-600 text-white text-[11px] font-bold border-0 px-2 py-0.5">

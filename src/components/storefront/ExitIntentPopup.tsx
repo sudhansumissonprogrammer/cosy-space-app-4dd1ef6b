@@ -84,7 +84,7 @@ export default function ExitIntentPopup({ storeId, storeName }: ExitIntentPopupP
 
   const discountText = coupon.discount_type === "percentage"
     ? `${coupon.discount_value}% OFF`
-    : `₹${Number(coupon.discount_value).toLocaleString("en-IN")} OFF`;
+    : `₹${Number(coupon.discount_value).toLocaleString("en-IN", { useGrouping: false })} OFF`;
 
   return (
     <Dialog open={show} onOpenChange={setShow}>
