@@ -44,6 +44,11 @@ const PINNED_FIRST = new Set<string>([
   "e4205ba1-7edd-485a-9075-a156fbdd4254", // Fossil Machine Chronograph Gunmetal Brown
 ]);
 
+const pinRank = (p: any): number => {
+  if (p?.is_category_pinned) return 2 + (Date.parse(p.category_pinned_at || "") || 0) / 1e14;
+  return PINNED_FIRST.has(p?.id) ? 1 : 0;
+};
+
 export function groupSaleProductsByBrand(products: any[]) {
   const used = new Set<string>();
   const out: { key: string; label: string; items: any[] }[] = [];
@@ -55,8 +60,9 @@ export function groupSaleProductsByBrand(products: any[]) {
     });
     // Owner request: show each brand row in reverse of the loaded order,
     // with owner-pinned watches first.
+    // Dashboard "Pin to top of category" wins first (newest pin first).
     const ordered = items.reverse();
-    ordered.sort((a, b) => (PINNED_FIRST.has(b.id) ? 1 : 0) - (PINNED_FIRST.has(a.id) ? 1 : 0));
+    ordered.sort((a, b) => pinRank(b) - pinRank(a));
     if (ordered.length) out.push({ key: brand.key, label: brand.label, items: ordered });
   }
   const rest = products.filter((p) => !used.has(p.id));

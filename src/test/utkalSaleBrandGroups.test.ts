@@ -22,3 +22,13 @@ it("opens Sale with Seiko, Tissot, Fossil, Rolex and Patek, then Hublot, preserv
   expect(result.map((group) => group.key)).toEqual(["seiko", "tissot", "fossil", "rolex", "patek-philippe", "hublot", "audemars-piguet", "casio", "more"]);
   for (const group of result) expect(group.items).toEqual([`${group.key}-second`, `${group.key}-first`]);
 });
+it("puts dashboard-pinned watches first in their Sale brand row, newest pin first", () => {
+  const products = [
+    { id: "pin-old", name: "Tissot A", is_category_pinned: true, category_pinned_at: "2026-11-03T19:40:47Z" },
+    { id: "pin-new", name: "Tissot B", is_category_pinned: true, category_pinned_at: "2026-11-04T08:52:27Z" },
+    { id: "newest", name: "Tissot C" },
+    { id: "older", name: "Tissot D" },
+  ];
+  const tissot = groupSaleProductsByBrand(products).find((g) => g.key === "tissot")!;
+  expect(tissot.items.map((p) => p.id)).toEqual(["pin-new", "pin-old", "older", "newest"]);
+});
