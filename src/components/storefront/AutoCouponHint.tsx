@@ -21,6 +21,7 @@ function fmt(n: number, currency = "INR") {
       style: "currency",
       currency,
       maximumFractionDigits: 0,
+      useGrouping: false,
     }).format(Math.max(0, Math.round(n)));
   } catch {
     return `₹${Math.max(0, Math.round(n))}`;

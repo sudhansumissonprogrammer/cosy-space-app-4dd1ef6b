@@ -15,7 +15,7 @@ interface Props {
 
 export default function CodAssuranceStrip({ codLabel = "100% COD\nAvailable", utkalAssurances = false }: Props) {
   const ITEMS = [
-    { Icon: Banknote, label: utkalAssurances ? "Full COD\nAvailable" : codLabel },
+    { Icon: Banknote, label: utkalAssurances ? "COD\nAvailable" : codLabel },
     { Icon: RefreshCw, label: utkalAssurances ? "Exchange Only\nWithin 3 Days" : "3 Days\nReplacement" },
     { Icon: utkalAssurances ? Plane : ReceiptText, label: utkalAssurances ? "Express Air Shipping\nAvailable at Checkout" : "Refund on\nEligible Returns" },
   ];

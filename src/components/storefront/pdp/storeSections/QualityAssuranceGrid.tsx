@@ -39,7 +39,7 @@ const MODEL_ITEMS = [
 ];
 
 const MODEL_STRIP = [
-  { Icon: Banknote, label: "Full COD Available" },
+  { Icon: Banknote, label: "COD Available" },
   { Icon: RefreshCw, label: "Exchange Only Within 3 Days" },
   { Icon: MapPin, label: "Live Tracking" },
 ];
