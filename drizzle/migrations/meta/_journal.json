@@ -183,6 +183,13 @@
       "when": 1793606588663,
       "tag": "0025_utkal_platform_cashfree_disabled_handoff",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1793783686249,
+      "tag": "0026_category_pins_before_catalogue_order",
+      "breakpoints": true
     }
   ]
 }
