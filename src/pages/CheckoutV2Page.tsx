@@ -65,7 +65,7 @@ import { getFunctionErrorMessage } from "@/lib/functionError";
 import { checkoutConfirmationAmounts } from "@/lib/checkoutConfirmationAmounts";
 import { checkoutPartialAmounts } from "@/lib/checkoutPartialAmounts";
 import { isKalingaStore } from "@/lib/kalingaStore";
-import { checkoutExitCoupon, KALINGA_EXIT_CODE } from "@/lib/checkoutExitCoupon";
+import { checkoutExitCoupon, KALINGA_EXIT_CODE, usesSave50Exit } from "@/lib/checkoutExitCoupon";
 import { checkoutCashback } from "@/lib/checkoutCashback";
 import { kalingaCodPrepaidHint, kalingaUpiDeliveryHint } from "@/lib/kalingaCheckoutHints";
 import { utkalCodConfirmNote, utkalCodHint, utkalDeliveryHint } from "@/lib/utkalCheckoutHints";
@@ -1426,7 +1426,7 @@ export default function CheckoutV2Page() {
   // Separate from WhatsApp recovery: offered only on checkout exit.
   const { data: kalingaExitCoupon } = useQuery({
     queryKey: ["checkout-exit-coupon", store?.id, KALINGA_EXIT_CODE],
-    enabled: isKalingaStore(store),
+    enabled: usesSave50Exit(store),
     staleTime: 60 * 1000,
     queryFn: async () => {
       const { data, error } = await (supabase as any).rpc("validate_store_coupon", {
@@ -2423,7 +2423,7 @@ export default function CheckoutV2Page() {
   const exitGuardPushedRef = useRef(false);
 
   const exitCoupon = useMemo(() => {
-    return checkoutExitCoupon(store, isKalingaStore(store) ? kalingaExitCoupon : waCoupon,
+    return checkoutExitCoupon(store, usesSave50Exit(store) ? kalingaExitCoupon : waCoupon,
       subtotal, appliedCoupon?.code, couponDiscount);
   }, [store, kalingaExitCoupon, waCoupon, subtotal, appliedCoupon, couponDiscount]);
 
@@ -2511,8 +2511,8 @@ export default function CheckoutV2Page() {
   const exitOfferDialog = (
     <CheckoutExitOffer
       open={exitOfferOpen}
-      offerLabel={exitCoupon ? `${formatPrice(exitCoupon.value, currency)} OFF` : !isKalingaStore(store) && couponDiscount > 0 ? `${formatPrice(couponDiscount, currency)} OFF` : undefined}
-      offerCode={exitCoupon?.code || (!isKalingaStore(store) ? appliedCoupon?.code : undefined)}
+      offerLabel={exitCoupon ? `${formatPrice(exitCoupon.value, currency)} OFF` : !usesSave50Exit(store) && couponDiscount > 0 ? `${formatPrice(couponDiscount, currency)} OFF` : undefined}
+      offerCode={exitCoupon?.code || (!usesSave50Exit(store) ? appliedCoupon?.code : undefined)}
       currentTotalLabel={exitExtraSaving > 0 ? formatPrice(total, currency) : undefined}
       newTotalLabel={exitExtraSaving > 0 ? formatPrice(Math.max(0, total - exitExtraSaving), currency) : formatPrice(total, currency)}
       alreadyClaimed={!exitCoupon}

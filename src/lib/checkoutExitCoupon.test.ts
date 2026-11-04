@@ -28,4 +28,9 @@ describe("Kalinga checkout exit offers", () => {
   it("preserves Serdiya's ₹100 exit offer", () => {
     expect(checkoutExitCoupon({ id: "771a3012-393c-421a-b1c9-2ca918e6917f" }, { ...save50, code: "FLAT100", discount_value: 100 }, 699)).toEqual({ code: "FLAT100", value: 100 });
   });
+  it("Utkal exit offers SAVE50 ₹50, never the ₹100 WhatsApp coupon", () => {
+    const utkal = { id: "ab19143d-87a9-490e-90b7-837313522782" };
+    expect(checkoutExitCoupon(utkal, save50, 1499)).toEqual({ code: "SAVE50", value: 50 });
+    expect(checkoutExitCoupon(utkal, { ...save50, code: "FLAT100", discount_value: 100 }, 1499)).toBeNull();
+  });
 });
