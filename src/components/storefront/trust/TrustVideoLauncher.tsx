@@ -200,7 +200,7 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
   return (
     <>
       <div
-        className="fixed bottom-[4.5rem] right-3 z-40 w-24 animate-fade-in sm:bottom-5"
+        className="fixed bottom-[4.5rem] right-3 z-40 w-20 animate-fade-in sm:bottom-5"
       >
         <Button variant="ghost"
           type="button"
@@ -239,13 +239,13 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
 
           {/* Play affordance — tap loads and plays the reel with sound */}
           <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-background text-foreground shadow-md">
-              <Play className="h-3.5 w-3.5 translate-x-[1px] fill-current" strokeWidth={0} />
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-background text-foreground shadow-md">
+              <Play className="h-3 w-3 translate-x-[1px] fill-current" strokeWidth={0} />
             </span>
           </span>
 
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-1 bg-primary/85 px-1.5 py-1.5">
-            <span className="text-[10px] font-semibold leading-tight text-primary-foreground">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-1 bg-primary/85 px-1 py-1">
+            <span className="text-[9px] font-semibold leading-tight text-primary-foreground">
               {previewCaption}
             </span>
           </div>
@@ -265,9 +265,9 @@ export default function TrustVideoLauncher({ storeId, storeSlug, storeName, what
             aria-label={previewMuted ? "Unmute preview video" : "Mute preview video"}
             aria-pressed={!previewMuted}
             title={previewMuted ? "Unmute preview video" : "Mute preview video"}
-            className="absolute left-1 top-1 h-7 w-7 rounded-full bg-background/90 p-0 text-foreground shadow-md ring-1 ring-border hover:bg-background"
+            className="absolute left-1 top-1 h-6 w-6 rounded-full bg-background/90 p-0 text-foreground shadow-md ring-1 ring-border hover:bg-background"
           >
-            {previewMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+            {previewMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
           </Button>
         )}
 
