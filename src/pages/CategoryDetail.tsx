@@ -1,4 +1,4 @@
-import { useOutletContext, useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
+import { useOutletContext, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,9 +26,8 @@ import CategoryCrossShopCard, { isSerdiyaCrossShopCategory } from "@/components/
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 import { hidesCategoryFilters } from "@/components/storefront/pdp/storeSections/config";
-import { utkalCollectionIntroduction, isUtkalContentStore, UTKAL_STATUS } from "../../supabase/functions/_shared/utkalContent";
-import { utkalCategoryHeading, utkalCategoryIntro, utkalCategoryFaq, relatedCategories } from "../../supabase/functions/_shared/utkalCategorySeo";
-import { useStorefrontCategories } from "@/hooks/useStorefrontCategories";
+import { isUtkalContentStore } from "../../supabase/functions/_shared/utkalContent";
+import { utkalCategoryHeading } from "../../supabase/functions/_shared/utkalCategorySeo";
 import utkalSaleBanner from "@/assets/utkal-sale-banner-v4.webp.asset.json";
 import { afterStorefrontOpening } from "@/lib/storefrontOpeningReady";
 
@@ -104,7 +103,6 @@ export default function CategoryDetail() {
 
 
 
-  const allStoreCategories = useStorefrontCategories(store.id);
   const [sort, setSort] = useState<SortKey>("default");
   const [categorySearchOpen, setCategorySearchOpen] = useState(false);
 
@@ -377,9 +375,6 @@ export default function CategoryDetail() {
 
   const utkalStore = isUtkalContentStore(store);
   const showUtkalSaleBanner = utkalStore && categorySlug === "sale";
-  const brandIntro = utkalStore && category && page === 1 ? utkalCategoryIntro(category, rawProducts.slice(0, PAGE_SIZE).map((p: any) => p.name || "")) : undefined;
-  const categoryFaq = utkalStore && category && page === 1 ? utkalCategoryFaq(category) : [];
-  const relatedCats = utkalStore && category ? relatedCategories(category, (allStoreCategories ?? []).filter((c: any) => c?.slug && c?.name)) : [];
 
   return (
     <div data-storefront-loading={categoryLoading || productsLoading || !comboShortcutsReady || !brandRailsReady ? "true" : undefined} className={`mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 ${showUtkalSaleBanner ? "pt-0 pb-1" : hideFilters ? "py-1" : "py-5"}`}>
@@ -397,14 +392,7 @@ export default function CategoryDetail() {
           />
         </div>
       )}
-      <h1 className={utkalStore && !showUtkalSaleBanner ? "py-2 text-lg font-semibold text-foreground" : "sr-only"}>{utkalStore && category ? utkalCategoryHeading(category) : <>{category?.name || (categorySlug ? categorySlug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Category")}{utkalStore && !category ? "" : ` — ${store.name}`}</>}</h1>
-      {utkalStore && !showUtkalSaleBanner && category && page === 1 && (
-        <div className="space-y-2 pb-3 text-sm leading-relaxed text-muted-foreground">
-          {brandIntro && <p>{brandIntro}</p>}
-          {utkalCollectionIntroduction(store, categorySlug) && <p>{utkalCollectionIntroduction(store, categorySlug)}</p>}
-          <p>{UTKAL_STATUS}</p>
-        </div>
-      )}
+      <h1 className="sr-only">{utkalStore && category ? utkalCategoryHeading(category) : <>{category?.name || (categorySlug ? categorySlug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Category")}{utkalStore && !category ? "" : ` — ${store.name}`}</>}</h1>
       {!hideFilters && <CategoryQuickJump storeId={store.id} slug={slug!} activeCategory={categorySlug} />}
 
       {hideFilters ? null : (
@@ -515,29 +503,6 @@ export default function CategoryDetail() {
         )}
       </div>
       <CataloguePagination firstPageHasNext={(data?.pages[0]?.products.length ?? 0) === PAGE_SIZE} />
-      {categoryFaq.length > 0 && (
-        <section className="mt-6 space-y-3 border-t border-border pt-5 text-sm">
-          <h2 className="text-base font-semibold text-foreground">Frequently asked questions</h2>
-          {categoryFaq.map((f) => (
-            <div key={f.question}>
-              <h3 className="font-medium text-foreground">{f.question}</h3>
-              <p className="text-muted-foreground">{f.answer}</p>
-            </div>
-          ))}
-        </section>
-      )}
-      {!showUtkalSaleBanner && relatedCats.length > 0 && (
-        <nav aria-label="Related collections" className="mt-6 border-t border-border pt-5 pb-4">
-          <h2 className="mb-3 text-base font-semibold text-foreground">Related collections</h2>
-          <div className="flex flex-wrap gap-2">
-            {relatedCats.map((c: any) => (
-              <Link key={c.slug} to={storefrontPath(slug!, `category/${c.slug}`)} className="rounded-full border border-border bg-card px-3 py-1.5 text-xs text-foreground hover:bg-accent">
-                {utkalCategoryHeading(c)}
-              </Link>
-            ))}
-          </div>
-        </nav>
-      )}
     </div>
   );
 }
