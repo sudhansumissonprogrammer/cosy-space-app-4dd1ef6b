@@ -297,7 +297,7 @@ export default function BundleBuilderPage() {
                             style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}
                           >
                             {symbol}
-                            {Number(price).toLocaleString("en-IN")}
+                            {Number(price).toLocaleString("en-IN", { useGrouping: false })}
                           </span>
                           <span
                             className="text-[10px] sm:text-xs whitespace-nowrap line-through"
@@ -307,7 +307,7 @@ export default function BundleBuilderPage() {
                             }}
                           >
                             {symbol}
-                            {Number(p.price).toLocaleString("en-IN")}
+                            {Number(p.price).toLocaleString("en-IN", { useGrouping: false })}
                           </span>
                           {discount && (
                             <span className="rounded-full bg-success px-1 py-0.5 text-[8px] font-bold text-success-foreground whitespace-nowrap shrink-0">
@@ -321,7 +321,7 @@ export default function BundleBuilderPage() {
                           style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}
                         >
                           {symbol}
-                          {Number(price).toLocaleString("en-IN")}
+                          {Number(price).toLocaleString("en-IN", { useGrouping: false })}
                         </span>
                       )}
                     </div>
@@ -431,8 +431,8 @@ export default function BundleBuilderPage() {
             </div>
             {complete && mrpTotal > bundle!.bundle_price && (
               <p className="mt-1 text-[11px]">
-                <span className="text-muted-foreground line-through">{symbol}{mrpTotal.toLocaleString("en-IN")}</span>
-                <span className="ml-1.5 font-bold">{symbol}{Number(bundle!.bundle_price).toLocaleString("en-IN")}</span>
+                <span className="text-muted-foreground line-through">{symbol}{mrpTotal.toLocaleString("en-IN", { useGrouping: false })}</span>
+                <span className="ml-1.5 font-bold">{symbol}{Number(bundle!.bundle_price).toLocaleString("en-IN", { useGrouping: false })}</span>
                 <span className="ml-1 rounded bg-emerald-500 px-1 py-px text-[9px] font-bold text-white">
                   Save {Math.round(((mrpTotal - bundle!.bundle_price) / mrpTotal) * 100)}%
                 </span>

@@ -179,15 +179,15 @@ function ProductCardStyle6Impl({ product, slug, store, priority = false, onVaria
             {product.sale_price ? (
               <>
                 <span className="text-[14px] font-bold tracking-[0.01em]" style={{ color: "#D0021B" }}>
-                  {currency}{Number(product.sale_price).toLocaleString("en-IN")}
+                  {currency}{Number(product.sale_price).toLocaleString("en-IN", { useGrouping: false })}
                 </span>
                 <span className="text-[11px] line-through" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 45%, transparent)" }}>
-                  {currency}{Number(product.price).toLocaleString("en-IN")}
+                  {currency}{Number(product.price).toLocaleString("en-IN", { useGrouping: false })}
                 </span>
               </>
             ) : (
               <span className="text-[14px] font-bold tracking-[0.01em]" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
-                {currency}{Number(product.price).toLocaleString("en-IN")}
+                {currency}{Number(product.price).toLocaleString("en-IN", { useGrouping: false })}
               </span>
             )}
           </div>

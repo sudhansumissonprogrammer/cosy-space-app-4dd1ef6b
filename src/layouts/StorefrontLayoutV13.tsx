@@ -58,7 +58,7 @@ function CheckoutOrderBar({ store, tableNumber }: { store: StoreData; tableNumbe
               <span className="text-xs opacity-80">{cartCount} item{cartCount > 1 ? "s" : ""}</span>
             </div>
           </div>
-          <span className="text-lg font-bold">{currency}{cartTotal.toLocaleString()}</span>
+          <span className="text-lg font-bold">{currency}{cartTotal.toLocaleString("en-IN", { useGrouping: false })}</span>
         </button>
       </div>
     </div>

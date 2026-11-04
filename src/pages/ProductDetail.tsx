@@ -951,13 +951,13 @@ export default function ProductDetail() {
                 </>
               ) : (
                 <span className={`${isKalingaStore(store) ? "text-xl sm:text-2xl" : "text-2xl sm:text-3xl"} font-extrabold ${isV18 ? '' : 'text-foreground'}`} style={isV18 ? { color: "#ffffff", ...v18Font, fontWeight: 400 } : {}}>
-                  {isV18 ? `₹${Number(variantPrice).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${formatPrice(Number(variantPrice), currency)}`}
+                  {isV18 ? `₹${Number(variantPrice).toLocaleString("en-IN", { useGrouping: false, minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${formatPrice(Number(variantPrice), currency)}`}
                 </span>
               )}
               {hasDiscount && (
                 <>
                   <span className={`text-sm line-through ${isV18 ? '' : 'text-muted-foreground'}`} style={isV18 ? { color: "#666666", ...v18Font } : {}}>
-                    {isV18 ? `₹${Number(product.price).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${formatPrice(Number(product.price), currency)}`}
+                    {isV18 ? `₹${Number(product.price).toLocaleString("en-IN", { useGrouping: false, minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${formatPrice(Number(product.price), currency)}`}
                   </span>
                 </>
               )}

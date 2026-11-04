@@ -126,11 +126,11 @@ function MenuItemCard({
               className="text-sm font-bold"
               style={{ color: "var(--storefront-text, #1a1a1a)" }}
             >
-              {currency}{price.toLocaleString()}
+              {currency}{price.toLocaleString("en-IN", { useGrouping: false })}
             </span>
             {hasDiscount && (
               <span className="text-xs line-through opacity-40">
-                {currency}{originalPrice.toLocaleString()}
+                {currency}{originalPrice.toLocaleString("en-IN", { useGrouping: false })}
               </span>
             )}
           </div>
@@ -323,7 +323,7 @@ function MenuSearchBar({
                 </p>
               </div>
               <span className="text-xs font-bold" style={{ color: "var(--storefront-text, #1a1a1a)" }}>
-                {(p.sale_price || p.price).toLocaleString()}
+                {(p.sale_price || p.price).toLocaleString("en-IN", { useGrouping: false })}
               </span>
             </button>
           ))}

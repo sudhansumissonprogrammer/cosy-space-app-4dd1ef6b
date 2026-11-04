@@ -35,7 +35,7 @@ function ProductCardStyle5Impl({ product, slug, store, priority = false }: Props
   const symbol = currencySymbol(store.currency);
 
   const formatAmount = (amt: number) => {
-    return Number(amt).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return Number(amt).toLocaleString("en-IN", { useGrouping: false, minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   return (

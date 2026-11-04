@@ -140,11 +140,11 @@ function ProductCardStyle4Impl({ product, slug, store, priority = false, onVaria
               className="text-sm font-bold"
               style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}
             >
-              {currency}{price.toLocaleString()}
+              {currency}{price.toLocaleString("en-IN", { useGrouping: false })}
             </span>
             {hasDiscount && (
               <span className="price-strike-draw text-xs opacity-40" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
-                {currency}{originalPrice.toLocaleString()}
+                {currency}{originalPrice.toLocaleString("en-IN", { useGrouping: false })}
               </span>
             )}
           </div>

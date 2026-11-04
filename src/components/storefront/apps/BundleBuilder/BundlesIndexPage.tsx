@@ -74,7 +74,7 @@ export default function BundlesIndexPage() {
                   {b.name}
                 </h2>
                 <p className="text-lg md:text-xl font-bold whitespace-nowrap">
-                  {symbol}{Number(b.bundle_price).toLocaleString("en-IN")}
+                  {symbol}{Number(b.bundle_price).toLocaleString("en-IN", { useGrouping: false })}
                 </p>
               </div>
 
@@ -94,7 +94,7 @@ export default function BundlesIndexPage() {
                 >
                   <div className="text-center">
                     <p className="text-2xl md:text-3xl font-extrabold text-slate-800">
-                      Pick {b.pick_count} @ {symbol}{Number(b.bundle_price).toLocaleString("en-IN")}
+                      Pick {b.pick_count} @ {symbol}{Number(b.bundle_price).toLocaleString("en-IN", { useGrouping: false })}
                     </p>
                     <p className="text-xs md:text-sm text-slate-600 mt-1">NO CODE NEEDED. LIMITED TIME ONLY.</p>
                   </div>

@@ -56,7 +56,7 @@ interface Props {
 
 function formatMoney(amount: number, currency: string) {
   const sym = currency === "USD" ? "$" : currency === "EUR" ? "€" : currency === "GBP" ? "£" : "₹";
-  return `${sym}${Math.round(amount).toLocaleString("en-IN")}`;
+  return `${sym}${Math.round(amount).toLocaleString("en-IN", { useGrouping: false })}`;
 }
 
 export default function ShopByVideoCarousel({ storeSlug: storeSlugProp, storeId, previewConfig, previewProducts }: Props) {

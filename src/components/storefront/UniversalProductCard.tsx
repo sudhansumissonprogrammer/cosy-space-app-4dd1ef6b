@@ -213,7 +213,7 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
       {active ? <CardImageReadiness.Provider value>{wrapped}</CardImageReadiness.Provider> : <ProductCardSkeleton />}
       {couponPrice != null && (
         <p className="mt-1 px-1.5 text-xs font-extrabold text-destructive">
-          ₹{couponPrice.toLocaleString("en-IN")} <span className="font-semibold">with SAVE100 (−₹100)</span>
+          ₹{couponPrice.toLocaleString("en-IN", { useGrouping: false })} <span className="font-semibold">with SAVE100 (−₹100)</span>
         </p>
       )}
       {active && showCardVideo && cardVideoUrl && (
