@@ -65,7 +65,7 @@ import { getFunctionErrorMessage } from "@/lib/functionError";
 import { checkoutConfirmationAmounts } from "@/lib/checkoutConfirmationAmounts";
 import { checkoutPartialAmounts } from "@/lib/checkoutPartialAmounts";
 import { isKalingaStore } from "@/lib/kalingaStore";
-import { checkoutExitCoupon, KALINGA_EXIT_CODE } from "@/lib/checkoutExitCoupon";
+import { checkoutExitCoupon, KALINGA_EXIT_CODE, usesSave50Exit } from "@/lib/checkoutExitCoupon";
 import { checkoutCashback } from "@/lib/checkoutCashback";
 import { kalingaCodPrepaidHint, kalingaUpiDeliveryHint } from "@/lib/kalingaCheckoutHints";
 import { utkalCodConfirmNote, utkalCodHint, utkalDeliveryHint } from "@/lib/utkalCheckoutHints";
