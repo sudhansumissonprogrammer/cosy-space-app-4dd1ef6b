@@ -7,7 +7,7 @@ export function hasHindiShoppingVoice(store?: { id?: string | null } | null) {
 
 // Everyday Hinglish (Hindi with common English shopping words), as shoppers actually speak.
 export const hindiVoiceScripts = {
-  home: "नमस्ते! हमारे store में आपका welcome है। नीचे scroll करके हमारे सारे designs देखिए। Chain, ring या कोई भी category चुनिए, और जो design पसंद आए, उसकी photo पर click कीजिए।",
+  home: "नमस्ते! हमारे store में आपका स्वागत है। आप category wise shopping कर सकते हो — कोई भी category चुनिए और पसंद का design देखिए।",
   category: "इस collection के सारे designs यहीं हैं। नीचे scroll करते जाइए। जो design पसंद आए, उसकी photo पर click करके पूरी details देखिए, और वहीं से order कर सकते हो।",
   product: "Photo पर tap करके zoom करके देखिए, और बाकी photos के लिए side में swipe कीजिए। Design पसंद आए, तो नीचे Buy Now button दबाइए।",
   cart: "अपने चुने हुए items और quantity एक बार check कर लीजिए। सब सही है, तो order के लिए आगे वाला button दबाइए।",
