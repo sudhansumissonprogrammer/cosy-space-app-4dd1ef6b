@@ -8,7 +8,9 @@ export function hasHindiShoppingVoice(store?: { id?: string | null } | null) {
 // Everyday Hinglish (Hindi with common English shopping words), as shoppers actually speak.
 export const hindiVoiceScripts = {
   home: "नमस्ते! हमारे store में आपका स्वागत है। आप category wise shopping कर सकते हो — कोई भी category चुनिए और पसंद का design देखिए।",
+  homeSerdiya: "नमस्ते! आपका Serdiya Jewellers में स्वागत है। आप category wise shopping कर सकते हो — कोई भी category चुनिए और पसंद का design देखिए।",
   category: "इस collection के सारे designs यहीं हैं। नीचे scroll करते जाइए। जो design पसंद आए, उसकी photo पर click करके पूरी details देखिए, और वहीं से order कर सकते हो।",
+  categorySerdiya: "नमस्ते! आपका Serdiya Jewellers में स्वागत है। इस collection के सारे designs यहीं हैं। नीचे scroll करते जाइए। जो design पसंद आए, उसकी photo पर click करके पूरी details देखिए, और वहीं से order कर सकते हो।",
   product: "Photo पर tap करके zoom करके देखिए, और बाकी photos के लिए side में swipe कीजिए। Design पसंद आए, तो नीचे Buy Now button दबाइए।",
   cart: "अपने चुने हुए items और quantity एक बार check कर लीजिए। सब सही है, तो order के लिए आगे वाला button दबाइए।",
   phone: "Order के लिए अपना 10 digit mobile number डालिए, वही number जिस पर हम आपसे बात कर सकें। फिर आगे वाला button दबाइए।",
@@ -63,4 +65,11 @@ export function voiceRouteClip(pathname: string, storeSlug: string): HindiVoiceC
   if (/^\/product\//.test(path)) return "product";
   if (path === "/cart") return "cart";
   return null;
+}
+/** Serdiya Jewellers greets shoppers by store name on home and category pages; other stores keep the generic lines. */
+export function voiceStoreClip(clip: HindiVoiceClip | null, storeId: string): HindiVoiceClip | null {
+  if (storeId !== SERDIYA_VOICE_STORE_ID) return clip;
+  if (clip === "home") return "homeSerdiya";
+  if (clip === "category") return "categorySerdiya";
+  return clip;
 }
