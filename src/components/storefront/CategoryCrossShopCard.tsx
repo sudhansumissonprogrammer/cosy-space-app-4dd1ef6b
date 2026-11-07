@@ -20,6 +20,32 @@ type ShortcutProduct = {
   image_url: string | null;
 };
 
+export function crossShopTargetSlug(currentCategorySlug: string) {
+  return currentCategorySlug === "ring-1" ? "chain" : "ring-1";
+}
+
+export function crossShopQueryKey(storeId: string, targetSlug: string) {
+  return ["serdiya-category-cross-shop", storeId, targetSlug, "top4"] as const;
+}
+
+/** Top 4 products exactly as the target category page orders them (pins first). */
+export async function fetchCrossShopProducts(storeId: string, targetSlug: string): Promise<ShortcutProduct[]> {
+  const { data, error } = await (supabase as any).rpc("get_category_products_page_by_slug", {
+    _store_id: storeId,
+    _category_slug: targetSlug,
+    _offset: 0,
+    _limit: 8,
+  });
+  if (error) throw error;
+  const rows = ((data as any[]) || []).filter((p) => p?.image_url).slice(0, 4);
+  const items = rows.map((p) => ({ id: String(p.id), image_url: p.image_url as string }));
+  if (typeof window !== "undefined") {
+    // Start photo downloads the moment the list arrives, before the card renders.
+    for (const p of items) { const img = new Image(); img.decoding = "async"; img.src = optimizeImageUrl(p.image_url!, 300, 80); }
+  }
+  return items;
+}
+
 interface CategoryCrossShopCardProps {
   storeId: string;
   storeSlug: string;
@@ -38,20 +64,8 @@ export default function CategoryCrossShopCard({
     : { name: "Ring-1", slug: "ring-1", label: "Rings", action: "Shop Rings" };
 
   const { data: products = [], isLoading, isError } = useQuery({
-    queryKey: ["serdiya-category-cross-shop", storeId, target.slug],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("id,image_url")
-        .eq("store_id", storeId)
-        .eq("is_active", true)
-        .eq("category", target.name)
-        .not("image_url", "is", null)
-        .order("display_order", { ascending: true })
-        .limit(4);
-      if (error) throw error;
-      return (data || []) as ShortcutProduct[];
-    },
+    queryKey: crossShopQueryKey(storeId, target.slug),
+    queryFn: () => fetchCrossShopProducts(storeId, target.slug),
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
     enabled: active,
