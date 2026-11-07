@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
-import { Headphones, Loader2, Pause, Play, RotateCcw, X, ChevronDown } from "lucide-react";
+import { GripVertical, Headphones, Loader2, Minus, Pause, Play, RotateCcw, X, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { afterStorefrontOpening } from "@/lib/storefrontOpeningReady";
 import { getVoiceCheckout, subscribeVoiceCheckout, hindiVoiceScripts, voicePaymentClip, voiceRouteClip, type HindiVoiceClip } from "@/lib/hindiShoppingVoice";
@@ -24,6 +24,19 @@ import success from "@/assets/shopping-voice/success.mp3.asset.json";
 
 const clips = { home, category, product, cart, phone, address, name, postal, street, partial100, partial, full, cod, waiting, failed, success };
 
+const POS_KEY = "sf_hindi_voice_pos";
+const STATE_KEY = "sf_hindi_voice_state";
+type PanelState = "open" | "bubble" | "closed";
+function readStored<T>(key: string, storage: () => Storage, fallback: T): T {
+  try { const v = storage().getItem(key); return v ? JSON.parse(v) as T : fallback; } catch { return fallback; }
+}
+function writeStored(key: string, storage: () => Storage, value: unknown) {
+  try { storage().setItem(key, JSON.stringify(value)); } catch { /* storage blocked */ }
+}
+function clampPos(p: { x: number; y: number }, w: number, h: number) {
+  return { x: Math.min(Math.max(4, p.x), Math.max(4, window.innerWidth - w - 4)), y: Math.min(Math.max(4, p.y), Math.max(4, window.innerHeight - h - 4)) };
+}
+
 export default function HindiShoppingVoice({ storeId, storeSlug }: { storeId: string; storeSlug: string }) {
   const { pathname } = useLocation();
   const checkout = useSyncExternalStore(subscribeVoiceCheckout, getVoiceCheckout);
@@ -32,12 +45,18 @@ export default function HindiShoppingVoice({ storeId, storeSlug }: { storeId: st
   const pageClip = currentCheckout ? currentCheckout.stage === "loading" ? null : currentCheckout.stage === "payment" ? voicePaymentClip(currentCheckout) : currentCheckout.stage : inCheckout ? null : voiceRouteClip(pathname, storeSlug);
   const [fieldClip, setFieldClip] = useState<HindiVoiceClip | null>(null);
   const clip = fieldClip || pageClip;
-  const [enabled, setEnabled] = useState(false);
+  // Speaks automatically by default; a shopper who closes or stops it stays silent for the visit.
+  const [enabled, setEnabled] = useState(() => readStored(STATE_KEY, () => sessionStorage, "open" as PanelState) !== "closed");
+  const [panel, setPanel] = useState<PanelState>(() => readStored(STATE_KEY, () => sessionStorage, "open" as PanelState));
   const [ready, setReady] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  const [waitingTap, setWaitingTap] = useState(false);
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(() => readStored(POS_KEY, () => localStorage, null));
+  const boxRef = useRef<HTMLElement | null>(null);
+  const drag = useRef<{ dx: number; dy: number; moved: boolean; id: number } | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const seen = useRef(new Set<string>());
   const generation = useRef(0);
@@ -48,6 +67,7 @@ export default function HindiShoppingVoice({ storeId, storeSlug }: { storeId: st
     setPlaying(false);
     setLoading(false);
   }, []);
+  const changePanel = useCallback((next: PanelState) => { setPanel(next); writeStored(STATE_KEY, () => sessionStorage, next); }, []);
 
   useEffect(() => {
     const audio = new Audio();
@@ -58,11 +78,11 @@ export default function HindiShoppingVoice({ storeId, storeSlug }: { storeId: st
     return () => { audio.pause(); audio.removeAttribute("src"); audio.load(); audioRef.current = null; };
   }, []);
 
-  const play = useCallback(() => {
+  const play = useCallback((fromGesture = false) => {
     const audio = audioRef.current;
     if (!clip || !audio || document.hidden) return;
     // Do not speak over a shopper's playing shop/product video.
-    if (Array.from(document.querySelectorAll<HTMLMediaElement>("video, audio")).some(media => !media.paused && !media.muted && media.volume > 0)) return;
+    if (Array.from(document.querySelectorAll<HTMLMediaElement>("video, audio")).some(media => media !== audio && !media.paused && !media.muted && media.volume > 0)) return;
     const id = ++generation.current;
     audio.pause();
     audio.src = clips[clip].url;
@@ -72,13 +92,16 @@ export default function HindiShoppingVoice({ storeId, storeSlug }: { storeId: st
     void audio.play().then(() => {
       if (generation.current !== id) { audio.pause(); return; }
       seen.current.add(activeKey);
+      setWaitingTap(false);
       setLoading(false);
       setPlaying(true);
-    }).catch(() => {
+    }).catch((err: unknown) => {
       if (generation.current !== id) return;
       setLoading(false);
       setPlaying(false);
-      setError(true);
+      // Browsers block sound until the shopper's first touch; speak on that touch instead.
+      if (!fromGesture && err instanceof DOMException && err.name === "NotAllowedError") setWaitingTap(true);
+      else setError(true);
     });
   }, [clip, activeKey]);
 
@@ -90,9 +113,22 @@ export default function HindiShoppingVoice({ storeId, storeSlug }: { storeId: st
   useEffect(() => {
     stop();
     if (!ready || !enabled || !clip || seen.current.has(activeKey)) return;
-    const timer = window.setTimeout(play, 350);
+    const timer = window.setTimeout(() => play(false), 350);
     return () => { window.clearTimeout(timer); stop(); };
   }, [ready, enabled, clip, activeKey, play, stop]);
+
+  // First touch/key anywhere on the page unlocks sound and starts the pending guidance.
+  useEffect(() => {
+    if (!waitingTap || !enabled) return;
+    const unlock = (event: Event) => {
+      if (boxRef.current?.contains(event.target as Node)) return;
+      play(true);
+    };
+    const opts = { capture: true, once: true } as const;
+    document.addEventListener("pointerup", unlock, opts);
+    document.addEventListener("keydown", unlock, opts);
+    return () => { document.removeEventListener("pointerup", unlock, opts); document.removeEventListener("keydown", unlock, opts); };
+  }, [waitingTap, enabled, play]);
 
   useEffect(() => {
     const onFocus = (event: FocusEvent) => {
@@ -103,41 +139,85 @@ export default function HindiShoppingVoice({ storeId, storeSlug }: { storeId: st
     };
     const onVisibility = () => { if (document.hidden) stop(); };
     const onOtherMedia = (event: Event) => {
-      if (event.target instanceof HTMLMediaElement && !event.target.muted && event.target.volume > 0) stop();
+      if (event.target instanceof HTMLMediaElement && event.target !== audioRef.current && !event.target.muted && event.target.volume > 0) stop();
     };
+    const onResize = () => setPos(p => p && boxRef.current ? clampPos(p, boxRef.current.offsetWidth, boxRef.current.offsetHeight) : p);
     document.addEventListener("focusin", onFocus);
     document.addEventListener("visibilitychange", onVisibility);
     document.addEventListener("play", onOtherMedia, true);
     document.addEventListener("volumechange", onOtherMedia, true);
+    window.addEventListener("resize", onResize);
     return () => {
       document.removeEventListener("focusin", onFocus);
       document.removeEventListener("visibilitychange", onVisibility);
       document.removeEventListener("play", onOtherMedia, true);
       document.removeEventListener("volumechange", onOtherMedia, true);
+      window.removeEventListener("resize", onResize);
     };
   }, [inCheckout, stop]);
 
-  if (!ready || !clip) return null;
+  const onDragStart = (event: React.PointerEvent) => {
+    const box = boxRef.current; if (!box) return;
+    const rect = box.getBoundingClientRect();
+    drag.current = { dx: event.clientX - rect.left, dy: event.clientY - rect.top, moved: false, id: event.pointerId };
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+  };
+  const onDragMove = (event: React.PointerEvent) => {
+    const d = drag.current, box = boxRef.current; if (!d || !box || d.id !== event.pointerId) return;
+    const next = clampPos({ x: event.clientX - d.dx, y: event.clientY - d.dy }, box.offsetWidth, box.offsetHeight);
+    const rect = box.getBoundingClientRect();
+    if (Math.abs(next.x - rect.left) + Math.abs(next.y - rect.top) > 3) d.moved = true;
+    if (d.moved) setPos(next);
+  };
+  const onDragEnd = (event: React.PointerEvent) => {
+    const d = drag.current; drag.current = null;
+    if (!d) return;
+    if (d.moved) { const box = boxRef.current; if (box) { const r = box.getBoundingClientRect(); writeStored(POS_KEY, () => localStorage, { x: r.left, y: r.top }); } }
+    else if (panel === "bubble" && event.type === "pointerup") { changePanel("open"); setEnabled(true); play(true); }
+  };
+  const dragProps = { onPointerDown: onDragStart, onPointerMove: onDragMove, onPointerUp: onDragEnd, onPointerCancel: onDragEnd, style: { touchAction: "none" as const } };
+
+  if (!ready || !clip || panel === "closed") return null;
+  const placement = pos ? { left: pos.x, top: pos.y } : undefined;
+  const busy = playing || loading;
+
+  if (panel === "bubble") return createPortal(
+    <aside ref={boxRef} lang="hi" data-hindi-voice={clip} style={placement} className={`fixed z-30 ${pos ? "" : "right-2 top-28 sm:right-4"}`}>
+      <button type="button" {...dragProps} aria-label="हिंदी सहायक खोलें" title="हिंदी सहायक खोलें (खींचकर कहीं भी रखें)" className="relative flex h-11 w-11 cursor-grab items-center justify-center rounded-full border border-border bg-primary text-primary-foreground shadow-lg active:cursor-grabbing">
+        <Headphones className="h-5 w-5" />
+        {busy && <span className="absolute -right-0.5 -top-0.5 h-3 w-3 animate-pulse rounded-full border-2 border-background bg-accent" />}
+      </button>
+    </aside>, document.body,
+  );
+
   return createPortal(
-    <aside lang="hi" data-hindi-voice={clip} className="fixed right-2 top-28 z-30 max-w-[min(280px,calc(100vw-16px))] rounded-md border border-border bg-background text-foreground shadow-md sm:right-4">
-      <div className="flex items-center gap-1 p-1">
-        <Button variant="ghost" size="sm" className="gap-1.5 px-2 text-xs" aria-label={playing || loading ? "आवाज़ बंद करें" : "हिंदी में सुनें"} title={playing || loading ? "आवाज़ बंद करें" : "हिंदी में सुनें"} onClick={() => {
-          if (playing || loading) { setEnabled(false); stop(); }
-          else { setEnabled(true); play(); }
+    <aside ref={boxRef} lang="hi" data-hindi-voice={clip} style={placement} className={`fixed z-30 w-[min(260px,calc(100vw-16px))] overflow-hidden rounded-xl border border-border bg-background/95 text-foreground shadow-lg backdrop-blur ${pos ? "" : "right-2 top-28 sm:right-4"}`}>
+      <div className="flex items-center gap-1 bg-primary px-1.5 py-1 text-primary-foreground">
+        <span {...dragProps} aria-label="खींचकर जगह बदलें" title="खींचकर जगह बदलें" className="flex cursor-grab items-center gap-1 rounded px-1 py-1 active:cursor-grabbing">
+          <GripVertical className="h-4 w-4 opacity-80" />
+          <Headphones className="h-4 w-4" />
+          <span className="text-xs font-semibold">हिंदी सहायक</span>
+        </span>
+        <span className="flex-1" />
+        <button type="button" aria-label="छोटा करें" title="छोटा करें" onClick={() => { changePanel("bubble"); setExpanded(false); }} className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-primary-foreground/15"><Minus className="h-4 w-4" /></button>
+        <button type="button" aria-label="पूरी तरह हटाएँ" title="पूरी तरह हटाएँ" onClick={() => { setEnabled(false); stop(); changePanel("closed"); }} className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-primary-foreground/15"><X className="h-4 w-4" /></button>
+      </div>
+      <div className="flex items-center gap-2 px-2 py-2">
+        <Button size="icon" className="h-9 w-9 shrink-0 rounded-full" aria-label={busy ? "आवाज़ रोकें" : "हिंदी में सुनें"} onClick={() => {
+          if (busy) { setEnabled(false); stop(); } else { setEnabled(true); play(true); }
         }}>
-          {loading ? <Loader2 className="animate-spin" /> : playing ? <Pause /> : <Headphones />}
-          {playing ? "सुन रहे हैं" : "हिंदी में सुनें"}
+          {loading ? <Loader2 className="animate-spin" /> : playing ? <Pause /> : <Play />}
         </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="हिंदी निर्देश पढ़ें" title="हिंदी निर्देश पढ़ें" aria-expanded={expanded} onClick={() => setExpanded(value => !value)}><ChevronDown /></Button>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-medium leading-4">{playing ? "सुन रहे हैं…" : waitingTap ? "स्क्रीन छूते ही आवाज़ शुरू होगी" : error ? "आवाज़ के लिए दबाइए" : "हिंदी में सुनें"}</p>
+          {playing && <div className="mt-1 flex h-2 items-end gap-0.5" aria-hidden>{[0, 1, 2, 3, 4].map(i => <span key={i} className="w-1 animate-pulse rounded-sm bg-primary" style={{ height: `${40 + ((i * 37) % 60)}%`, animationDelay: `${i * 120}ms` }} />)}</div>}
+        </div>
+        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="फिर से सुनें" title="फिर से सुनें" onClick={() => { setEnabled(true); play(true); }}><RotateCcw className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="हिंदी निर्देश पढ़ें" title="हिंदी निर्देश पढ़ें" aria-expanded={expanded} onClick={() => setExpanded(value => !value)}>{expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}</Button>
       </div>
       {expanded && <div className="max-h-[35vh] overflow-y-auto border-t border-border px-3 py-2">
         {currentCheckout?.stage === "payment" && currentCheckout.mode === "partial" && <p className="mb-2 text-sm font-semibold">अभी ₹{currentCheckout.amount} · डिलीवरी पर ₹{currentCheckout.balance}</p>}
         <p className="text-sm leading-6">{hindiVoiceScripts[clip]}</p>
-        {error && <p className="mt-2 text-xs text-muted-foreground">आवाज़ सुनने के लिए फिर से दबाइए।</p>}
-        <div className="mt-2 flex justify-end gap-1">
-          <Button variant="ghost" size="icon" aria-label="फिर से सुनें" title="फिर से सुनें" onClick={() => { setEnabled(true); play(); }}><RotateCcw /></Button>
-          <Button variant="ghost" size="icon" aria-label="आवाज़ बंद करके निर्देश समेटें" title="बंद करें" onClick={() => { setEnabled(false); stop(); setExpanded(false); }}><X /></Button>
-        </div>
       </div>}
     </aside>, document.body,
   );
