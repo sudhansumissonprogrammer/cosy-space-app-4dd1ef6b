@@ -5,23 +5,25 @@ export function hasHindiShoppingVoice(store?: { id?: string | null } | null) {
   return store?.id === SERDIYA_VOICE_STORE_ID || store?.id === KALINGA_STORE_ID;
 }
 
+// Everyday Hinglish (Hindi with common English shopping words), as shoppers actually speak.
 export const hindiVoiceScripts = {
-  home: "नमस्ते! अपनी पसंद के गहने देखने के लिए नीचे की ओर उँगली चलाइए। चेन, अंगूठी या दूसरी श्रेणी चुनिए। जो डिज़ाइन पसंद आए, उसकी फोटो पर दबाइए।",
-  category: "यहाँ सभी डिज़ाइन देख सकते हैं। नीचे की ओर उँगली चलाते जाइए। जो डिज़ाइन पसंद आए, उसकी फोटो पर दबाकर पूरी जानकारी देखिए।",
-  product: "फोटो को छूकर बड़ा करके देखिए। और फोटो देखने के लिए उँगली बाईं ओर चलाइए। पसंद आए तो नीचे अभी खरीदें, यानी बाय नाउ का बटन दबाइए।",
-  cart: "अपने चुने हुए गहने और उनकी गिनती देख लीजिए। सब सही हो तो ऑर्डर करने के लिए आगे बढ़ें का बटन दबाइए।",
-  phone: "ऑर्डर करने के लिए अपना दस अंकों वाला मोबाइल नंबर भरिए। फिर आगे बढ़ें का बटन दबाइए। जिस नंबर पर आपसे संपर्क हो सके, वही नंबर दीजिए।",
-  address: "अपना नाम और पूरा पता भरिए। गाँव या शहर, घर या मोहल्ला, और छह अंकों वाला पिन कोड सही लिखिए। फिर पता जाँचकर भुगतान का तरीका चुनिए।",
-  name: "यहाँ अपना पूरा नाम लिखिए, ताकि पार्सल सही व्यक्ति तक पहुँचे।",
-  postal: "यहाँ अपने इलाके का छह अंकों वाला पिन कोड लिखिए। गाँव या शहर की जानकारी सही है या नहीं, जाँच लीजिए।",
-  street: "यहाँ घर, मोहल्ले और गाँव का पूरा पता लिखिए। पास की कोई पहचान भी लिख सकते हैं, ताकि पार्सल पहुँचाने में आसानी हो।",
-  partial100: "इस विकल्प में ऑर्डर बुक करने के लिए सौ रुपये अभी देने हैं। यह आपके ऑर्डर की कीमत में शामिल है, अलग शुल्क नहीं है। बाकी रकम पार्सल मिलने पर दीजिए। कुछ ऑर्डर स्वीकार नहीं किए जाते, जिससे दुकान को नुकसान होता है। इसलिए सही और पक्के ऑर्डर के लिए छोटा अग्रिम लेते हैं। भरोसे के लिए ग्राहकों की राय और दुकान का वीडियो देख सकते हैं। सवाल हो तो दुकान से संपर्क करके वीडियो कॉल के बारे में पूछिए। तैयार हों तो नीचे भुगतान का बटन दबाइए।",
-  partial: "आपने थोड़ा भुगतान अभी और बाकी पार्सल मिलने पर देने का विकल्प चुना है। अभी देनी वाली रकम और बाकी रकम ऊपर देख लीजिए। अग्रिम रकम ऑर्डर की कीमत में शामिल है, अलग शुल्क नहीं है। पार्सल स्वीकार न किए जाने से दुकान को नुकसान होता है, इसलिए पक्का ऑर्डर करने के लिए छोटा अग्रिम लेते हैं। भरोसे के लिए ग्राहकों की राय और दुकान का वीडियो देखिए। सवाल हो तो दुकान से संपर्क कीजिए।",
-  full: "आपने पूरा भुगतान अभी करने का विकल्प चुना है। कुल रकम और पता जाँच लीजिए। फिर अपनी भुगतान सुविधा चुनिए। भुगतान पूरा होने पर इसी पन्ने पर वापस आइए।",
-  cod: "आपने पार्सल मिलने पर भुगतान करने का विकल्प चुना है। अपना पता और कुल रकम जाँच लीजिए। पार्सल स्वीकार करने के लिए तैयार हों, तभी ऑर्डर पक्का कीजिए।",
-  waiting: "आपके भुगतान की जाँच हो रही है। इसी पन्ने पर रुकिए। पैसे कट गए हों तो दोबारा भुगतान मत कीजिए। पुष्टि होने तक इंतज़ार कीजिए।",
-  failed: "भुगतान की पुष्टि नहीं हुई है। पैसे कट गए हों तो दोबारा भुगतान मत कीजिए। पहले स्थिति जाँचिए या दुकान से संपर्क कीजिए।",
-  success: "आपका ऑर्डर पक्का हो गया है। ऑर्डर की जानकारी और बाकी भुगतान, अगर कोई हो, इस पन्ने पर देख लीजिए। धन्यवाद!",
+  home: "नमस्ते! हमारे store में आपका welcome है। नीचे scroll करके हमारे सारे designs देखिए। Chain, ring या कोई भी category चुनिए, और जो design पसंद आए, उसकी photo पर click कीजिए।",
+  category: "इस collection के सारे designs यहीं हैं। नीचे scroll करते जाइए। जो design पसंद आए, उसकी photo पर click करके पूरी details देखिए, और वहीं से order कर सकते हो।",
+  product: "Photo पर tap करके zoom करके देखिए, और बाकी photos के लिए side में swipe कीजिए। Design पसंद आए, तो नीचे Buy Now button दबाइए।",
+  cart: "अपने चुने हुए items और quantity एक बार check कर लीजिए। सब सही है, तो order के लिए आगे वाला button दबाइए।",
+  phone: "Order के लिए अपना 10 digit mobile number डालिए, वही number जिस पर हम आपसे बात कर सकें। फिर आगे वाला button दबाइए।",
+  address: "अब अपना नाम और पूरा address भरिए। घर, गली, गाँव या शहर, और 6 digit pincode सही से लिखिए। उसके बाद payment option चुनिए।",
+  address100: "अब अपना नाम और पूरा address भरिए, और 6 digit pincode सही से लिखिए। Address के बाद सिर्फ़ 100 रुपये pay करके आपका order book हो जाएगा, और बाकी पैसे delivery पर देने हैं।",
+  name: "यहाँ अपना पूरा नाम लिखिए, ताकि parcel सही person तक पहुँचे।",
+  postal: "यहाँ अपने area का 6 digit pincode डालिए, और check कीजिए कि शहर या गाँव सही आ रहा है।",
+  street: "यहाँ घर number, गली, मोहल्ला और गाँव, पूरा address लिखिए। पास का कोई landmark भी लिख दीजिए, ताकि delivery आसानी से हो जाए।",
+  partial100: "बस 100 रुपये अभी pay करके अपना order book कीजिए। ये 100 रुपये आपके order total में ही जुड़ जाते हैं, कोई extra charge नहीं है। बाकी amount parcel मिलने पर delivery के time दीजिए। ये छोटा advance इसलिए लेते हैं, क्योंकि fake orders से shop को shipping का नुकसान होता है। कोई भी doubt हो, तो आप हमारी shop को video call कर सकते हो, और हमारी shop की videos website के video section में जाकर देख सकते हो। Ready हैं, तो नीचे pay वाला button दबाइए।",
+  partial: "आपने partial payment चुना है, यानी थोड़ा अभी और बाकी delivery पर। अभी कितना देना है और delivery पर कितना, ऊपर देख लीजिए। ये advance आपके order total में ही शामिल है, कोई extra charge नहीं है। कोई doubt हो, तो हमारी shop को video call कर सकते हो, और shop की videos website के video section में देख सकते हो।",
+  full: "आपने full payment online चुना है। Total amount और address एक बार check कर लीजिए, फिर अपना payment option चुनिए। Payment होने के बाद इसी page पर वापस आइए।",
+  cod: "आपने Cash on Delivery चुना है। Address और total amount check कर लीजिए। Parcel लेने के लिए पक्का ready हों, तभी order confirm कीजिए।",
+  waiting: "आपका payment check हो रहा है, please इसी page पर रुकिए। अगर पैसे कट गए हैं, तो दोबारा payment मत कीजिए। Confirmation आने तक थोड़ा wait कीजिए।",
+  failed: "Payment confirm नहीं हुआ है। अगर पैसे कट गए हैं, तो दोबारा pay मत कीजिए। पहले status check कीजिए, या shop से contact कीजिए।",
+  success: "बधाई हो, आपका order confirm हो गया है! Order details, और delivery पर बचा हुआ amount अगर कोई है, इसी page पर देख लीजिए। Thank you!",
 } as const;
 export type HindiVoiceClip = keyof typeof hindiVoiceScripts;
 export type VoiceCheckoutState = {
@@ -46,6 +48,13 @@ export function voicePaymentClip(state: VoiceCheckoutState): HindiVoiceClip {
   if (state.mode === "cod") return "cod";
   if (state.mode === "full") return "full";
   return state.amount === 100 ? "partial100" : "partial";
+}
+/** Mentions the ₹100 booking only when the shopper's selected advance is actually ₹100. */
+export function voiceCheckoutClip(state: VoiceCheckoutState): HindiVoiceClip | null {
+  if (state.stage === "loading") return null;
+  if (state.stage === "payment") return voicePaymentClip(state);
+  if (state.stage === "address") return state.mode === "partial" && state.amount === 100 ? "address100" : "address";
+  return state.stage;
 }
 export function voiceRouteClip(pathname: string, storeSlug: string): HindiVoiceClip | null {
   const path = pathname.replace(new RegExp(`^/store/${storeSlug}(?=/|$)`), "") || "/";
