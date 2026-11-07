@@ -70,4 +70,4 @@
 - Analytics uses owner/admin aggregates and lazy Three.js/Natural Earth views; unknown geography stays unplotted. Raw/archive traffic selects once per local day; cleanup_app_logs never rewrites it. Daily archives are not whole-range unique visitors.
 - Storefront pageviews are written only through the service-role ingest function (which reads cf-ipcountry); never route the browser beacon to the Worker /__sf/pv path, because anon has no page_views grant and that path acknowledges then silently drops every visit.
 - Worker serves storefront hosts from the preview build (ORIGIN_HOST); verify storefront changes there, because publishing only updates shopbanao.in.
-- Dashboard Leads pages come from the owner/admin-gated get_store_leads_page RPC (merge, dedupe, purchase filter, paging server-side); never reload every lead/cart/order in the browser, because high-volume stores froze.
+- Leads paging uses owner/admin get_store_leads_page server-side; never bulk-load leads in browser (froze big stores).
