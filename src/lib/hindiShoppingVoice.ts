@@ -37,6 +37,16 @@ export type VoiceCheckoutState = {
 };
 let checkout: VoiceCheckoutState | null = null;
 const listeners = new Set<() => void>();
+const paymentStoppedStores = new Set<string>();
+export const getVoicePaymentStopped = (storeId: string) => paymentStoppedStores.has(storeId);
+export function stopVoiceForPayment(storeId: string) {
+  if (!hasHindiShoppingVoice({ id: storeId })) return;
+  paymentStoppedStores.add(storeId);
+  listeners.forEach(listener => listener());
+}
+export function resetVoicePaymentStopped(storeId: string) {
+  if (paymentStoppedStores.delete(storeId)) listeners.forEach(listener => listener());
+}
 export const getVoiceCheckout = () => checkout;
 export function publishVoiceCheckout(next: VoiceCheckoutState | null) {
   checkout = next;
@@ -53,7 +63,7 @@ export function voicePaymentClip(state: VoiceCheckoutState): HindiVoiceClip {
 }
 /** Mentions the ₹100 booking only when the shopper's selected advance is actually ₹100. */
 export function voiceCheckoutClip(state: VoiceCheckoutState): HindiVoiceClip | null {
-  if (state.stage === "loading") return null;
+  if (state.stage === "loading" || state.stage === "waiting") return null;
   if (state.stage === "payment") return voicePaymentClip(state);
   if (state.stage === "address") return state.mode === "partial" && state.amount === 100 ? "address100" : "address";
   return state.stage;

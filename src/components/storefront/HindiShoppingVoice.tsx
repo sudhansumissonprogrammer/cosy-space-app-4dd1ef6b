@@ -4,7 +4,7 @@ import { useLocation } from "react-router-dom";
 import { GripVertical, Headphones, Loader2, Minus, Pause, Play, RotateCcw, X, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { afterStorefrontOpening } from "@/lib/storefrontOpeningReady";
-import { getVoiceCheckout, subscribeVoiceCheckout, hindiVoiceScripts, voiceCheckoutClip, voiceRouteClip, voiceStoreClip, type HindiVoiceClip } from "@/lib/hindiShoppingVoice";
+import { getVoiceCheckout, subscribeVoiceCheckout, getVoicePaymentStopped, resetVoicePaymentStopped, hindiVoiceScripts, voiceCheckoutClip, voiceRouteClip, voiceStoreClip, type HindiVoiceClip } from "@/lib/hindiShoppingVoice";
 import home from "@/assets/shopping-voice/home.mp3.asset.json";
 import category from "@/assets/shopping-voice/category.mp3.asset.json";
 import homeSerdiya from "@/assets/shopping-voice/home_serdiya.mp3.asset.json";
@@ -44,6 +44,7 @@ export default function HindiShoppingVoice({ storeId, storeSlug }: { storeId: st
   const { pathname } = useLocation();
   const checkout = useSyncExternalStore(subscribeVoiceCheckout, getVoiceCheckout);
   const inCheckout = /\/checkout\/?$/.test(pathname);
+  const paymentStopped = useSyncExternalStore(subscribeVoiceCheckout, () => getVoicePaymentStopped(storeId));
   const currentCheckout = inCheckout && checkout?.storeId === storeId ? checkout : null;
   const pageClip = currentCheckout ? voiceCheckoutClip(currentCheckout) : inCheckout ? null : voiceStoreClip(voiceRouteClip(pathname, storeSlug), storeId);
   const [fieldClip, setFieldClip] = useState<HindiVoiceClip | null>(null);
@@ -75,6 +76,14 @@ export default function HindiShoppingVoice({ storeId, storeSlug }: { storeId: st
   }, []);
   const changePanel = useCallback((next: PanelState) => { setPanel(next); writeStored(STATE_KEY, () => sessionStorage, next); }, []);
 
+  // The payment handler notifies synchronously, before awaiting or launching an app.
+  useEffect(() => subscribeVoiceCheckout(() => {
+    if (getVoicePaymentStopped(storeId)) { stop(); setWaitingTap(false); }
+  }), [storeId, stop]);
+  useEffect(() => {
+    if (!inCheckout) resetVoicePaymentStopped(storeId);
+  }, [inCheckout, storeId]);
+
   useEffect(() => {
     const audio = new Audio();
     audio.preload = "none";
@@ -86,7 +95,7 @@ export default function HindiShoppingVoice({ storeId, storeSlug }: { storeId: st
 
   const play = useCallback((fromGesture = false) => {
     const audio = audioRef.current;
-    if (!clip || !audio || document.hidden) return;
+    if (!clip || !audio || document.hidden || (inCheckout && getVoicePaymentStopped(storeId))) return;
     // Do not speak over a shopper's playing shop/product video.
     if (Array.from(document.querySelectorAll<HTMLMediaElement>("video, audio")).some(media => media !== audio && !media.paused && !media.muted && media.volume > 0)) return;
     const id = ++generation.current;
@@ -96,7 +105,7 @@ export default function HindiShoppingVoice({ storeId, storeSlug }: { storeId: st
     setLoading(true);
     setError(false);
     void audio.play().then(() => {
-      if (generation.current !== id) { audio.pause(); return; }
+      if (generation.current !== id || (inCheckout && getVoicePaymentStopped(storeId))) { audio.pause(); return; }
       seen.current.add(activeKey);
       setWaitingTap(false);
       setLoading(false);
@@ -109,7 +118,7 @@ export default function HindiShoppingVoice({ storeId, storeSlug }: { storeId: st
       if (!fromGesture && err instanceof DOMException && err.name === "NotAllowedError") setWaitingTap(true);
       else setError(true);
     });
-  }, [clip, activeKey]);
+  }, [clip, activeKey, inCheckout, storeId]);
 
   useEffect(() => {
     stop(); setFieldClip(null); setReady(false); setExpanded(false);
@@ -118,10 +127,10 @@ export default function HindiShoppingVoice({ storeId, storeSlug }: { storeId: st
   useEffect(() => { setFieldClip(null); }, [pageClip]);
   useEffect(() => {
     stop();
-    if (!ready || !enabled || !clip || seen.current.has(activeKey)) return;
+    if (!ready || !enabled || !clip || (inCheckout && paymentStopped) || seen.current.has(activeKey)) return;
     const timer = window.setTimeout(() => play(false), 350);
     return () => { window.clearTimeout(timer); stop(); };
-  }, [ready, enabled, clip, activeKey, play, stop]);
+  }, [ready, enabled, clip, activeKey, play, stop, inCheckout, paymentStopped]);
 
   // First touch/key anywhere on the page unlocks sound and starts the pending guidance.
   useEffect(() => {
@@ -183,7 +192,7 @@ export default function HindiShoppingVoice({ storeId, storeSlug }: { storeId: st
   };
   const dragProps = { onPointerDown: onDragStart, onPointerMove: onDragMove, onPointerUp: onDragEnd, onPointerCancel: onDragEnd, style: { touchAction: "none" as const } };
 
-  if (!ready || !clip || panel === "closed") return null;
+  if (!ready || !clip || panel === "closed" || (inCheckout && paymentStopped)) return null;
   const placement = pos ? { left: pos.x, top: pos.y } : undefined;
   const busy = playing || loading;
 
