@@ -71,6 +71,7 @@ import { kalingaCodPrepaidHint, kalingaUpiDeliveryHint } from "@/lib/kalingaChec
 import { utkalCodConfirmNote, utkalCodHint, utkalDeliveryHint } from "@/lib/utkalCheckoutHints";
 import { requiresCheckoutAdvance } from "../../supabase/functions/_shared/checkoutPaymentPolicy";
 import { redirectToUtkalPlatformCashfree, usesUtkalPlatformCashfree } from "@/lib/utkalPlatformCashfree";
+import { hasHindiShoppingVoice, publishVoiceCheckout } from "@/lib/hindiShoppingVoice";
 
 type UpiApp = "gpay" | "phonepe" | "paytm" | "bhim" | "any";
 type PayMethod = "upi" | "gateway" | "cod";
@@ -4393,6 +4394,20 @@ export default function CheckoutV2Page() {
   const forceRecheck = () => { manualRecheck(); };
 
   // ─── Loading skeletons ──────────────────────────────────────────────────
+  // Read-only guidance consumes the selected checkout policy; never changes charges.
+  useEffect(() => {
+    if (!hasHindiShoppingVoice(store)) return;
+    const loading = (isSingleMode && buyNowProductLoading && !buyNowProduct) || !paymentConfigFetched;
+    publishVoiceCheckout({
+      storeId: store.id,
+      stage: loading ? "loading" : orderPlaced ? "success" : waiting || confirmingPayment ? "waiting" : paymentFailed ? "failed" : needsCheckoutPhoneScreen(store, phone) ? "phone" : showAddressFormSheet || !addressComplete ? "address" : "payment",
+      mode: payMethod === "cod" ? "cod" : isPartialOrder ? "partial" : "full",
+      amount: chargeAmount,
+      balance: isPartialOrder ? partialBalanceDue : 0,
+    });
+    return () => publishVoiceCheckout(null);
+  }, [store.id, isSingleMode, buyNowProductLoading, buyNowProduct, paymentConfigFetched, orderPlaced, waiting, confirmingPayment, paymentFailed, phone, showAddressFormSheet, addressComplete, payMethod, isPartialOrder, chargeAmount, partialBalanceDue]);
+
   if ((isSingleMode && buyNowProductLoading && !buyNowProduct) || (isUtkalPackaging && packagingRequests.length > 0 && packagingCheck.isPending)) {
     return (
       <div className="mx-auto max-w-md p-4 space-y-4">
