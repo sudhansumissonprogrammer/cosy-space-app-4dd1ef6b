@@ -71,7 +71,7 @@ import { kalingaCodPrepaidHint, kalingaUpiDeliveryHint } from "@/lib/kalingaChec
 import { utkalCodConfirmNote, utkalCodHint, utkalDeliveryHint } from "@/lib/utkalCheckoutHints";
 import { requiresCheckoutAdvance } from "../../supabase/functions/_shared/checkoutPaymentPolicy";
 import { redirectToUtkalPlatformCashfree, usesUtkalPlatformCashfree } from "@/lib/utkalPlatformCashfree";
-import { hasHindiShoppingVoice, publishVoiceCheckout } from "@/lib/hindiShoppingVoice";
+import { hasHindiShoppingVoice, publishVoiceCheckout, stopVoiceForPayment } from "@/lib/hindiShoppingVoice";
 
 type UpiApp = "gpay" | "phonepe" | "paytm" | "bhim" | "any";
 type PayMethod = "upi" | "gateway" | "cod";
@@ -2937,6 +2937,7 @@ export default function CheckoutV2Page() {
 
 
   const tapUpiApp = (app: UpiApp, event?: MouseEvent<HTMLAnchorElement | HTMLButtonElement>, opts?: { gesture?: boolean }) => {
+    stopVoiceForPayment(store.id);
     const gesture = opts?.gesture !== false;
     event?.preventDefault();
     // Telemetry: EVERY tile tap is recorded with the branch it took. Without
@@ -4276,6 +4277,7 @@ export default function CheckoutV2Page() {
   // ─── "Pay with card/wallet" (opens active gateway modal) ────────────────
   const [openingGateway, setOpeningGateway] = useState(false);
   const startGatewayPayment = async () => {
+    stopVoiceForPayment(store.id);
     if (openingGateway || creatingOrder || couponLoading || paymentAmountSyncing) return;
     // PAYMENT-FIRST address gate — same as UPI tap.
     if (!requireAddressOrPrompt(() => { void startGatewayPayment(); })) return;
@@ -4311,6 +4313,7 @@ export default function CheckoutV2Page() {
   };
 
   const handleRetryPayment = async () => {
+    stopVoiceForPayment(store.id);
     if (!pendingOrder) return;
     // NEVER start a second charge before re-checking the first one. A late
     // bank/gateway confirmation (very common on UPI) can land after we've
@@ -4345,6 +4348,7 @@ export default function CheckoutV2Page() {
   const [codConfirmOpen, setCodConfirmOpen] = useState(false);
   const [codNoteHindi, setCodNoteHindi] = useState(false);
   const placeCod = async () => {
+    stopVoiceForPayment(store.id);
     if (placingCodRef.current || placingCod || creatingOrder || couponLoading || paymentAmountSyncing) return;
     // Partial-payment stores collect the configured advance online and only
     // the remaining balance on delivery. Never allow a separate zero-advance
