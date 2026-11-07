@@ -22,7 +22,7 @@ import { fetchCategoryEdge, CATEGORY_PAGE_LIMIT } from "@/lib/storefrontEdgeApi"
 import { categoryPrefetchCache, categoryPrefetchResolved } from "@/lib/prefetchCategory";
 import CategoryQuickJump from "@/components/storefront/CategoryQuickJump";
 import ComboSetCategoryShortcuts from "@/components/storefront/ComboSetCategoryShortcuts";
-import CategoryCrossShopCard, { isSerdiyaCrossShopCategory } from "@/components/storefront/CategoryCrossShopCard";
+import CategoryCrossShopCard, { isSerdiyaCrossShopCategory, crossShopQueryKey, crossShopTargetSlug, fetchCrossShopProducts } from "@/components/storefront/CategoryCrossShopCard";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 import { hidesCategoryFilters } from "@/components/storefront/pdp/storeSections/config";
@@ -86,6 +86,15 @@ export default function CategoryDetail() {
   const [isMobileViewport, setIsMobileViewport] = useState(
     () => typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches,
   );
+  useEffect(() => {
+    if (!showCrossShopCard || !categorySlug || !isMobileViewport) return;
+    const target = crossShopTargetSlug(categorySlug);
+    void queryClient.prefetchQuery({
+      queryKey: crossShopQueryKey(store.id, target),
+      queryFn: () => fetchCrossShopProducts(store.id, target),
+      staleTime: 5 * 60 * 1000,
+    });
+  }, [showCrossShopCard, categorySlug, isMobileViewport, store.id, queryClient]);
   const [comboShortcutsReady, setComboShortcutsReady] = useState(
     () => !showComboShortcuts || typeof window === "undefined" || !window.matchMedia("(max-width: 767px)").matches,
   );
