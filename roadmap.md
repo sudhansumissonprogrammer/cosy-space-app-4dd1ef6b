@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Inspect external Serdiya Hindi voice; add lightweight Serdiya/Kalinga-only prerecorded female Hindi shopping guidance with accurate checkout steps, mute/replay and mobile verification.
 - [x] Receive all platform WhatsApp message types with commit-first deduplication and retryable write errors; admin defaults to Incoming with unassigned chats, full selected conversation and error states. Receiver deployed; message and inbox regression checks added; existing admin/merchant RLS preserved.
 - [ ] Real admin inbox/new phone-message end-to-end check requires an admin account: requesting account redirects to admin login and has no admin role. Frontend publication required; no messages sent or old history replayed.
 - [x] 2026-11-04: Category pins now win first in every member category (all stores; Utkal pins precede newest-first) and inside Sale brand rows; Sale-1/Tissot Premium/Men's Watch verified live. Shopper prices across all stores show no commas; Utkal PDP label now "COD Available". 228 tests/build pass. Publish frontend for comma/label/Sale-row changes; category order is already live.
