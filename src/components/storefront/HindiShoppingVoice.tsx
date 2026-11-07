@@ -65,7 +65,8 @@ export default function HindiShoppingVoice({ storeId, storeSlug }: { storeId: st
   const generation = useRef(0);
   // Each guidance clip speaks only once per visit: the first category page speaks,
   // later category pages stay silent so shoppers are not irritated on every page.
-  const activeKey = `${clip}:${currentCheckout?.amount ?? ""}`;
+  // Category guides speak again on each different category page; product and other guides speak once.
+  const activeKey = `${clip}:${currentCheckout?.amount ?? ""}${clip === "category" || clip === "categorySerdiya" ? `:${pathname}` : ""}`;
   const stop = useCallback(() => {
     generation.current++;
     audioRef.current?.pause();
