@@ -1,4 +1,3 @@
-import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
@@ -37,7 +36,6 @@ export default function CategoryCrossShopCard({
   const target = currentCategorySlug === "ring-1"
     ? { name: "chain", slug: "chain", label: "Chains", action: "Shop Chains" }
     : { name: "Ring-1", slug: "ring-1", label: "Rings", action: "Shop Rings" };
-  const [imagesReady, setImagesReady] = useState(false);
 
   const { data: products = [], isLoading, isError } = useQuery({
     queryKey: ["serdiya-category-cross-shop", storeId, target.slug],
@@ -59,30 +57,6 @@ export default function CategoryCrossShopCard({
     enabled: active,
   });
 
-  const imageUrls = useMemo(
-    () => products.map((product) => optimizeImageUrl(product.image_url, 300, 80)).filter(Boolean),
-    [products],
-  );
-
-  useEffect(() => {
-    setImagesReady(false);
-    if (isLoading || imageUrls.length === 0) return;
-    let mounted = true;
-    void Promise.all(
-      imageUrls.map(
-        (url) => new Promise<void>((resolve) => {
-          const image = new Image();
-          image.onload = () => resolve();
-          image.onerror = () => resolve();
-          image.src = url;
-        }),
-      ),
-    ).then(() => {
-      if (mounted) setImagesReady(true);
-    });
-    return () => { mounted = false; };
-  }, [imageUrls, isLoading]);
-
   return (
     <Link
       to={storefrontPath(storeSlug, `category/${target.slug}`)}
@@ -101,7 +75,9 @@ export default function CategoryCrossShopCard({
         >
           {Array.from({ length: 4 }).map((_, index) => {
             const product = products[index];
-            return product?.image_url && imagesReady ? (
+            // Each photo paints as soon as it arrives (like product cards), instead of
+            // waiting for all four to finish downloading.
+            return product?.image_url ? (
               <img
                 key={product.id}
                 src={optimizeImageUrl(product.image_url, 300, 80)}
@@ -109,13 +85,14 @@ export default function CategoryCrossShopCard({
                 width={300}
                 height={400}
                 loading="eager"
-                decoding="sync"
-                className="h-full w-full object-cover"
+                decoding="async"
+                fetchPriority="high"
+                className="h-full w-full bg-muted object-cover"
               />
-            ) : isLoading || (!imagesReady && !isError && imageUrls.length > 0) ? (
-              <Skeleton key={product?.id || index} className="h-full w-full rounded-none" />
+            ) : isLoading && !isError ? (
+              <Skeleton key={index} className="h-full w-full rounded-none" />
             ) : (
-              <div key={product?.id || index} className="h-full w-full bg-muted" aria-hidden="true" />
+              <div key={index} className="h-full w-full bg-muted" aria-hidden="true" />
             );
           })}
         </div>
