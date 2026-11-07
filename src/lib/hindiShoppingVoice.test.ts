@@ -1,7 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { hasHindiShoppingVoice, voiceCheckoutClip, voiceStoreClip, voicePaymentClip, voiceRouteClip, SERDIYA_VOICE_STORE_ID } from "./hindiShoppingVoice";
+import { hasHindiShoppingVoice, voiceCheckoutClip, voiceStoreClip, voicePaymentClip, voiceRouteClip, SERDIYA_VOICE_STORE_ID, stopVoiceForPayment, getVoicePaymentStopped, resetVoicePaymentStopped, subscribeVoiceCheckout } from "./hindiShoppingVoice";
 import { KALINGA_STORE_ID } from "./kalingaStore";
 describe("Hindi shopping voice eligibility and payment truth", () => {
+  it("stops immediately on a payment tap and stays stopped until checkout is left", () => {
+    resetVoicePaymentStopped(SERDIYA_VOICE_STORE_ID);
+    let notified = false;
+    const unsubscribe = subscribeVoiceCheckout(() => { notified = true; });
+    stopVoiceForPayment(SERDIYA_VOICE_STORE_ID);
+    expect(notified).toBe(true);
+    expect(getVoicePaymentStopped(SERDIYA_VOICE_STORE_ID)).toBe(true);
+    expect(getVoicePaymentStopped(KALINGA_STORE_ID)).toBe(false);
+    resetVoicePaymentStopped(SERDIYA_VOICE_STORE_ID);
+    expect(getVoicePaymentStopped(SERDIYA_VOICE_STORE_ID)).toBe(false);
+    unsubscribe();
+  });
+  it("does not speak while payment is being verified", () => {
+    expect(voiceCheckoutClip({ storeId: SERDIYA_VOICE_STORE_ID, stage: "waiting", mode: "partial", amount: 100, balance: 1700 })).toBe(null);
+  });
   it("enables only Serdiya Jewellers and Kalinga", () => {
     expect(hasHindiShoppingVoice({ id: SERDIYA_VOICE_STORE_ID })).toBe(true);
     expect(hasHindiShoppingVoice({ id: KALINGA_STORE_ID })).toBe(true);
