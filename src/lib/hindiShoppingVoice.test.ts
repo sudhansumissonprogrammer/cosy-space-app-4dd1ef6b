@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hasHindiShoppingVoice, voicePaymentClip, voiceRouteClip, SERDIYA_VOICE_STORE_ID } from "./hindiShoppingVoice";
+import { hasHindiShoppingVoice, voiceCheckoutClip, voicePaymentClip, voiceRouteClip, SERDIYA_VOICE_STORE_ID } from "./hindiShoppingVoice";
 import { KALINGA_STORE_ID } from "./kalingaStore";
 describe("Hindi shopping voice eligibility and payment truth", () => {
   it("enables only Serdiya Jewellers and Kalinga", () => {
@@ -23,5 +23,12 @@ describe("Hindi shopping voice eligibility and payment truth", () => {
     expect(voiceRouteClip("/store/kalingajewels", "kalingajewels")).toBe("home");
     expect(voiceRouteClip("/account", "kalingajewels")).toBe(null);
     expect(voiceRouteClip("/checkout", "kalingajewels")).toBe(null);
+  });
+  it("mentions the ₹100 booking on the address step only for an actual ₹100 partial advance", () => {
+    const state = { storeId: SERDIYA_VOICE_STORE_ID, stage: "address" as const, mode: "partial" as const, amount: 100, balance: 1700 };
+    expect(voiceCheckoutClip(state)).toBe("address100");
+    expect(voiceCheckoutClip({ ...state, amount: 200 })).toBe("address");
+    expect(voiceCheckoutClip({ ...state, mode: "full" })).toBe("address");
+    expect(voiceCheckoutClip({ ...state, stage: "payment" })).toBe("partial100");
   });
 });
