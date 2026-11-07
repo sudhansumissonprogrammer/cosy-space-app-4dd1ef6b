@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hasHindiShoppingVoice, voiceCheckoutClip, voicePaymentClip, voiceRouteClip, SERDIYA_VOICE_STORE_ID } from "./hindiShoppingVoice";
+import { hasHindiShoppingVoice, voiceCheckoutClip, voiceStoreClip, voicePaymentClip, voiceRouteClip, SERDIYA_VOICE_STORE_ID } from "./hindiShoppingVoice";
 import { KALINGA_STORE_ID } from "./kalingaStore";
 describe("Hindi shopping voice eligibility and payment truth", () => {
   it("enables only Serdiya Jewellers and Kalinga", () => {
@@ -30,5 +30,12 @@ describe("Hindi shopping voice eligibility and payment truth", () => {
     expect(voiceCheckoutClip({ ...state, amount: 200 })).toBe("address");
     expect(voiceCheckoutClip({ ...state, mode: "full" })).toBe("address");
     expect(voiceCheckoutClip({ ...state, stage: "payment" })).toBe("partial100");
+  });
+  it("greets by Serdiya Jewellers name only on Serdiya home and category pages", () => {
+    expect(voiceStoreClip("home", SERDIYA_VOICE_STORE_ID)).toBe("homeSerdiya");
+    expect(voiceStoreClip("category", SERDIYA_VOICE_STORE_ID)).toBe("categorySerdiya");
+    expect(voiceStoreClip("product", SERDIYA_VOICE_STORE_ID)).toBe("product");
+    expect(voiceStoreClip("home", KALINGA_STORE_ID)).toBe("home");
+    expect(voiceStoreClip("category", KALINGA_STORE_ID)).toBe("category");
   });
 });

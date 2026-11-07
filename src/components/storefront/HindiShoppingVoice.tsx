@@ -4,9 +4,11 @@ import { useLocation } from "react-router-dom";
 import { GripVertical, Headphones, Loader2, Minus, Pause, Play, RotateCcw, X, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { afterStorefrontOpening } from "@/lib/storefrontOpeningReady";
-import { getVoiceCheckout, subscribeVoiceCheckout, hindiVoiceScripts, voiceCheckoutClip, voiceRouteClip, type HindiVoiceClip } from "@/lib/hindiShoppingVoice";
+import { getVoiceCheckout, subscribeVoiceCheckout, hindiVoiceScripts, voiceCheckoutClip, voiceRouteClip, voiceStoreClip, type HindiVoiceClip } from "@/lib/hindiShoppingVoice";
 import home from "@/assets/shopping-voice/home.mp3.asset.json";
 import category from "@/assets/shopping-voice/category.mp3.asset.json";
+import homeSerdiya from "@/assets/shopping-voice/home_serdiya.mp3.asset.json";
+import categorySerdiya from "@/assets/shopping-voice/category_serdiya.mp3.asset.json";
 import product from "@/assets/shopping-voice/product.mp3.asset.json";
 import cart from "@/assets/shopping-voice/cart.mp3.asset.json";
 import phone from "@/assets/shopping-voice/phone.mp3.asset.json";
@@ -23,7 +25,7 @@ import waiting from "@/assets/shopping-voice/waiting.mp3.asset.json";
 import failed from "@/assets/shopping-voice/failed.mp3.asset.json";
 import success from "@/assets/shopping-voice/success.mp3.asset.json";
 
-const clips = { home, category, product, cart, phone, address, address100, name, postal, street, partial100, partial, full, cod, waiting, failed, success };
+const clips = { home, homeSerdiya, category, categorySerdiya, product, cart, phone, address, address100, name, postal, street, partial100, partial, full, cod, waiting, failed, success };
 
 const POS_KEY = "sf_hindi_voice_pos";
 const STATE_KEY = "sf_hindi_voice_state";
@@ -43,7 +45,7 @@ export default function HindiShoppingVoice({ storeId, storeSlug }: { storeId: st
   const checkout = useSyncExternalStore(subscribeVoiceCheckout, getVoiceCheckout);
   const inCheckout = /\/checkout\/?$/.test(pathname);
   const currentCheckout = inCheckout && checkout?.storeId === storeId ? checkout : null;
-  const pageClip = currentCheckout ? voiceCheckoutClip(currentCheckout) : inCheckout ? null : voiceRouteClip(pathname, storeSlug);
+  const pageClip = currentCheckout ? voiceCheckoutClip(currentCheckout) : inCheckout ? null : voiceStoreClip(voiceRouteClip(pathname, storeSlug), storeId);
   const [fieldClip, setFieldClip] = useState<HindiVoiceClip | null>(null);
   const clip = fieldClip || pageClip;
   // Speaks automatically by default; a shopper who closes or stops it stays silent for the visit.
