@@ -184,9 +184,9 @@ export default function HindiShoppingVoice({ storeId, storeSlug }: { storeId: st
 
   if (panel === "bubble") return createPortal(
     <aside ref={boxRef} lang="hi" data-hindi-voice={clip} style={placement} className={`fixed z-30 ${pos ? "" : "right-2 top-28 sm:right-4"}`}>
-      <button type="button" {...dragProps} aria-label="हिंदी सहायक खोलें" title="हिंदी सहायक खोलें (खींचकर कहीं भी रखें)" className="relative flex h-11 w-11 cursor-grab items-center justify-center rounded-full border border-border bg-primary text-primary-foreground shadow-lg active:cursor-grabbing">
-        <Headphones className="h-5 w-5" />
-        {busy && <span className="absolute -right-0.5 -top-0.5 h-3 w-3 animate-pulse rounded-full border-2 border-background bg-accent" />}
+      <button type="button" {...dragProps} aria-label="हिंदी सहायक खोलें" title="हिंदी सहायक खोलें (खींचकर कहीं भी रखें)" className="relative flex h-9 w-9 cursor-grab items-center justify-center rounded-full border border-border bg-primary text-primary-foreground shadow-md active:cursor-grabbing">
+        <Headphones className="h-4 w-4" />
+        {busy && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 animate-pulse rounded-full border-2 border-background bg-accent" />}
       </button>
     </aside>, document.body,
   );
