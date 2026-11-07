@@ -6535,6 +6535,10 @@ export type Database = {
         }[]
       }
       get_store_footer_info: { Args: { _store_id: string }; Returns: Json }
+      get_store_leads_page: {
+        Args: { _page?: number; _page_size?: number; _store_id: string }
+        Returns: Json
+      }
       get_store_live_view: { Args: { _store_id: string }; Returns: Json }
       get_store_monthly_sales: {
         Args: { _months?: number; _store_id: string }
