@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { WaMediaBubble } from "@/components/whatsapp/WaMediaBubble";
@@ -23,21 +24,24 @@ export function AdminChatTab() {
   const [sending, setSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
+  const [inboxFilter, setInboxFilter] = useState("incoming");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const { data: allMessages } = useQuery({
-    queryKey: ["admin-whatsapp-all-messages"],
+  const { data: allMessages, isPending, error: inboxError, refetch } = useQuery({
+    queryKey: ["admin-whatsapp-all-messages", inboxFilter],
     queryFn: async () => {
       // Paginate so busy platform inboxes don't lose older threads at 1000.
       const PAGE = 1000;
       const rows: any[] = [];
       for (let from = 0; from < 10_000; from += PAGE) {
-        const { data, error } = await supabase
+        let request = supabase
           .from("whatsapp_messages")
           .select("*, stores:store_id(name, slug)")
           .order("created_at", { ascending: false })
           .range(from, from + PAGE - 1);
+        if (inboxFilter === "incoming") request = request.eq("direction", "incoming");
+        const { data, error } = await request;
         if (error) throw error;
         const batch = (data || []) as any[];
         rows.push(...batch);
@@ -45,7 +49,7 @@ export function AdminChatTab() {
       }
       return rows;
     },
-    refetchInterval: (query) => (typeof document !== "undefined" && document.visibilityState === "visible") ? 60000 : false,
+    refetchInterval: () => (typeof document !== "undefined" && document.visibilityState === "visible") ? 15000 : false,
     refetchOnWindowFocus: true,
   });
 
@@ -56,6 +60,7 @@ export function AdminChatTab() {
       .channel("admin-wa-inbox")
       .on("postgres_changes", { event: "*", schema: "public", table: "whatsapp_messages" }, () => {
         queryClient.invalidateQueries({ queryKey: ["admin-whatsapp-all-messages"] });
+        queryClient.invalidateQueries({ queryKey: ["admin-whatsapp-thread"] });
       })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
@@ -104,7 +109,7 @@ export function AdminChatTab() {
       if (!phone) continue;
       const effectiveStoreId = m.store_id || phoneToStore.get(phone) || null;
       const key = `${effectiveStoreId}_${phone}`;
-      const storeName = m.stores?.name || "Unknown Store";
+      const storeName = m.stores?.name || "ShopBanao · Unassigned";
       // "there" is the template fallback we send when we have no real name —
       // don't treat it as a customer name in the inbox.
       const cleanName = (n: string | null | undefined) =>
@@ -112,9 +117,10 @@ export function AdminChatTab() {
       if (!map.has(key)) {
         map.set(key, { phone, storeId: effectiveStoreId, storeName, name: cleanName(msg.recipient_name), messages: [], lastMessage: msg, unread: 0, lastIncomingAt: null });
       }
-      const conv = map.get(key)!;
+      const conv = map.get(key);
+      if (!conv) continue;
       // storeName: prefer any non-Unknown label we encounter.
-      if (conv.storeName === "Unknown Store" && m.stores?.name) conv.storeName = m.stores.name;
+      if (conv.storeName === "ShopBanao · Unassigned" && m.stores?.name) conv.storeName = m.stores.name;
       conv.messages.push(msg);
       if (m.direction === "incoming") {
         if (msg.status === "received") conv.unread++;
@@ -139,12 +145,20 @@ export function AdminChatTab() {
     return conversations.filter((c) => c.phone.includes(q) || (c.name && c.name.toLowerCase().includes(q)) || c.storeName.toLowerCase().includes(q));
   }, [conversations, searchQuery]);
 
-  const selectedConversation = useMemo(() => {
-    if (!selectedPhone) return [];
-    // storeId may legitimately be null (orphan thread). Match on both fields explicitly.
-    const conv = conversations.find((c) => c.phone === selectedPhone && (c.storeId ?? null) === (selectedStoreId ?? null));
-    return conv ? [...conv.messages].reverse() : [];
-  }, [selectedPhone, selectedStoreId, conversations]);
+  const { data: selectedConversation = [], error: threadError, isPending: threadPending } = useQuery({
+    queryKey: ["admin-whatsapp-thread", selectedPhone, selectedStoreId],
+    enabled: !!selectedPhone,
+    queryFn: async () => {
+      if (!selectedPhone) return [];
+      let request = supabase.from("whatsapp_messages").select("*")
+        .eq("recipient_phone", selectedPhone).order("created_at", { ascending: false }).limit(100);
+      request = selectedStoreId ? request.eq("store_id", selectedStoreId) : request.is("store_id", null);
+      const { data, error } = await request;
+      if (error) throw error;
+      return [...(data || [])].reverse();
+    },
+    refetchInterval: () => document.visibilityState === "visible" ? 15000 : false,
+  });
 
   const currentConv = useMemo(
     () => conversations.find((c) => c.phone === selectedPhone && (c.storeId ?? null) === (selectedStoreId ?? null)),
@@ -231,6 +245,7 @@ export function AdminChatTab() {
       }
       setMessage("");
       queryClient.invalidateQueries({ queryKey: ["admin-whatsapp-all-messages"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-whatsapp-thread"] });
       inputRef.current?.focus();
     } catch (e: any) {
       const raw = String(e?.message || "");
@@ -289,13 +304,19 @@ export function AdminChatTab() {
               <Search className="h-4 w-4" />
             </Button>
           </div>
+          <RadioGroup value={inboxFilter} onValueChange={setInboxFilter} className="flex gap-4 border-b px-4 py-2">
+            <label className="flex items-center gap-2 text-sm"><RadioGroupItem value="incoming" />Incoming</label>
+            <label className="flex items-center gap-2 text-sm"><RadioGroupItem value="all" />All messages</label>
+          </RadioGroup>
           {showSearch && (
             <div className="px-3 py-2 border-b">
               <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search by name, phone, or store..." className="text-sm h-8" autoFocus />
             </div>
           )}
           <div className="flex-1 overflow-y-auto">
-            {!filteredConversations.length ? (
+            {isPending ? <div role="status" className="p-6 text-muted-foreground">Loading messages…</div> : inboxError ? (
+              <div role="alert" className="p-6 text-destructive">Messages couldn’t load.<Button variant="outline" onClick={() => refetch()}>Try again</Button></div>
+            ) : !filteredConversations.length ? (
               <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-6">
                 <MessageSquare className="h-10 w-10 opacity-30 mb-3" />
                 <p className="text-sm">No conversations yet</p>
@@ -303,9 +324,9 @@ export function AdminChatTab() {
             ) : filteredConversations.map((conv) => {
               const isActive = selectedPhone === conv.phone && selectedStoreId === conv.storeId;
               return (
-                <button key={`${conv.storeId}_${conv.phone}`}
+                <Button variant="ghost" key={`${conv.storeId}_${conv.phone}`}
                   onClick={() => { setSelectedPhone(conv.phone); setSelectedStoreId(conv.storeId); }}
-                  className={cn("w-full text-left px-3 py-3 flex items-center gap-3 transition-colors border-b border-border/50", isActive ? "bg-accent" : "hover:bg-muted/50")}>
+                  className={cn("h-auto rounded-none w-full text-left px-3 py-3 flex items-center gap-3 transition-colors border-b border-border/50", isActive ? "bg-accent" : "hover:bg-muted/50")}>
                   <div className={cn("h-11 w-11 rounded-full flex items-center justify-center text-white font-semibold text-sm shrink-0", getAvatarColor(conv.phone))}>
                     {getInitials(conv.name, conv.phone)}
                   </div>
@@ -315,10 +336,10 @@ export function AdminChatTab() {
                       <span className="text-[11px] text-muted-foreground shrink-0 ml-2">{formatListDate(conv.lastMessage.created_at)}</span>
                     </div>
                     <div className="flex items-center justify-between mt-0.5">
-                      <p className="text-[12px] text-muted-foreground truncate flex-1">
+                      <div className="text-[12px] text-muted-foreground truncate flex-1">
                         <Badge variant="outline" className="text-[9px] mr-1 py-0">{conv.storeName}</Badge>
                         {prettyTemplateName(conv.lastMessage.message_body)?.slice(0, 32)}
-                      </p>
+                      </div>
                       {conv.unread > 0 && (
                         <span className="ml-2 h-5 min-w-[20px] rounded-full bg-[hsl(142,72%,40%)] text-white text-[11px] font-bold flex items-center justify-center px-1.5">
                           {conv.unread}
@@ -326,7 +347,7 @@ export function AdminChatTab() {
                       )}
                     </div>
                   </div>
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -360,6 +381,8 @@ export function AdminChatTab() {
                 )}
               </div>
               <div className="flex-1 overflow-y-auto px-3 py-2 space-y-0.5 bg-muted/20">
+                {threadPending && <p role="status" className="text-sm text-muted-foreground">Loading conversation…</p>}
+                {threadError && <p role="alert" className="text-sm text-destructive">Conversation couldn’t load.</p>}
                 {selectedConversation.map((msg: any, idx: number) => {
                   const isOutgoing = msg.direction !== "incoming";
                   const showDate = idx === 0 || formatDate(msg.created_at) !== formatDate(selectedConversation[idx - 1].created_at);

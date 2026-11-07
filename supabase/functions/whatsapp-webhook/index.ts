@@ -3,6 +3,7 @@ import { verifyMetaSignature } from "../_shared/security.ts";
 import { handleCodReply } from "../_shared/wa-cod-confirm.ts";
 import { handleStoreOnboarding } from "../_shared/wa-store-onboarding.ts";
 import { sendStoreSupportRedirect } from "../_shared/wa-support-redirect.ts";
+import { parseIncomingMessage, persistIncomingMessage } from "../_shared/wa-incoming.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -217,15 +218,10 @@ Deno.serve(async (req) => {
         const messages = value?.messages || [];
         for (const msg of messages) {
           const from = msg?.from;
+          if (!from) continue;
           const msgType = msg?.type || "text";
-          // Quick-reply buttons on a template arrive as type "button"
-          // ({ button: { text, payload } }); interactive replies as
-          // type "interactive" ({ interactive: { button_reply: { title } } }).
-          const buttonText: string =
-            msg?.button?.text || msg?.button?.payload ||
-            msg?.interactive?.button_reply?.title ||
-            msg?.interactive?.list_reply?.title || "";
-          const msgBody = (msg?.text?.body || buttonText || "").trim();
+          const parsed = parseIncomingMessage(msg);
+          const msgBody = parsed.text;
 
           // Resolve access token used for media download:
           //   platform delivery → platform token
@@ -252,28 +248,12 @@ Deno.serve(async (req) => {
 
           // Media handling
           let mediaUrl: string | null = null;
-          let mediaType: string | null = null;
-          let mediaIdStored: string | null = null;
-          const mediaTypes = ["image", "video", "document", "audio"];
-          if (mediaTypes.includes(msgType) && msg[msgType]) {
-            const mediaId = msg[msgType]?.id;
-            mediaType = msgType;
-            mediaIdStored = mediaId || null;
-            if (mediaId && mediaToken) {
-              try {
-                const mediaResp = await fetch(
-                  `https://graph.facebook.com/v21.0/${mediaId}`,
-                  { headers: { Authorization: `Bearer ${mediaToken}` } },
-                );
-                const mediaData = await mediaResp.json();
-                mediaUrl = mediaData?.url || null;
-              } catch (e) {
-                console.error("media url fetch failed:", (e as Error).message);
-              }
-            }
-          }
+          const mediaType = parsed.mediaType;
+          const mediaIdStored = parsed.mediaId;
+          // wa-media resolves the authenticated URL only when the attachment
+          // is opened; inbox persistence must not wait on a Meta media fetch.
           const caption = msg[msgType]?.caption || "";
-          const finalBody = msgBody || caption || (mediaType ? `[${mediaType}]` : "");
+          const finalBody = parsed.body;
 
           // Opt-out keywords — exact whole-word match (avoids false positives like
           // "cancel my order"). Short message + exact keyword = opt-out intent.
@@ -289,24 +269,15 @@ Deno.serve(async (req) => {
 
 
 
-          if (!from) continue;
-
-          // Idempotency via webhook_events
-          let alreadyProcessed = false;
-          if (msg?.id) {
-            const { error: dedupeErr } = await adminClient
-              .from("webhook_events")
-              .insert({ provider: "whatsapp", event_id: msg.id });
-            if (dedupeErr) alreadyProcessed = true;
-          }
-
-          if (!alreadyProcessed && (finalBody || mediaUrl || mediaIdStored)) {
-            await adminClient.from("whatsapp_messages").insert({
+          // Commit the inbox row first. The existing unique Meta message ID
+          // makes retries safe even if an earlier pre-insert marker was saved.
+          const stored = await persistIncomingMessage(adminClient, {
               store_id: storeId,
               inferred_store_id: inferredStoreId,
               message_type: "incoming",
               recipient_phone: from,
               sender_phone: from,
+              recipient_name: value?.contacts?.find((contact: any) => contact?.wa_id === from)?.profile?.name || null,
               message_body: finalBody,
               status: "received",
               direction: "incoming",
@@ -315,7 +286,10 @@ Deno.serve(async (req) => {
               media_type: mediaType,
               media_id: mediaIdStored,
               sent_via: isPlatformDelivery ? "platform" : "merchant",
-            });
+          });
+          const alreadyProcessed = !stored;
+
+          if (stored) {
 
             // Mark our most-recent outbound to this phone as "replied".
             // Background: never delay the customer's button reply for analytics.
@@ -429,7 +403,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error("whatsapp-webhook error:", (error as Error).message);
     return new Response(JSON.stringify({ error: "internal" }), {
-      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
