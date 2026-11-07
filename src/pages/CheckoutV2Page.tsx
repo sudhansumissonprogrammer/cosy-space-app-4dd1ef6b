@@ -4397,16 +4397,16 @@ export default function CheckoutV2Page() {
   // Read-only guidance consumes the selected checkout policy; never changes charges.
   useEffect(() => {
     if (!hasHindiShoppingVoice(store)) return;
-    const loading = (isSingleMode && buyNowProductLoading && !buyNowProduct) || !paymentConfigFetched;
+    const loading = (isSingleMode && buyNowProductLoading && !buyNowProduct) || !paymentConfigLoaded;
     publishVoiceCheckout({
       storeId: store.id,
       stage: loading ? "loading" : orderPlaced ? "success" : waiting || confirmingPayment ? "waiting" : paymentFailed ? "failed" : needsCheckoutPhoneScreen(store, phone) ? "phone" : showAddressFormSheet || !addressComplete ? "address" : "payment",
-      mode: isPartialOrder ? "partial" : "full",
+      mode: codConfirmOpen ? "cod" : isPartialOrder ? "partial" : "full",
       amount: chargeAmount,
       balance: isPartialOrder ? partialBalanceDue : 0,
     });
     return () => publishVoiceCheckout(null);
-  }, [store.id, isSingleMode, buyNowProductLoading, buyNowProduct, paymentConfigFetched, orderPlaced, waiting, confirmingPayment, paymentFailed, phone, showAddressFormSheet, addressComplete, isPartialOrder, chargeAmount, partialBalanceDue]);
+  }, [store.id, isSingleMode, buyNowProductLoading, buyNowProduct, paymentConfigLoaded, orderPlaced, waiting, confirmingPayment, paymentFailed, phone, showAddressFormSheet, addressComplete, codConfirmOpen, isPartialOrder, chargeAmount, partialBalanceDue]);
 
   if ((isSingleMode && buyNowProductLoading && !buyNowProduct) || (isUtkalPackaging && packagingRequests.length > 0 && packagingCheck.isPending)) {
     return (
