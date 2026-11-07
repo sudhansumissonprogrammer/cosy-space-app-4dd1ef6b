@@ -30,6 +30,7 @@ describe("Admin incoming WhatsApp inbox", () => {
     await waitFor(() => expect(eq).toHaveBeenCalledWith("direction", "incoming"));
     await waitFor(() => expect(eq).toHaveBeenCalledWith("recipient_phone", "919876543210"));
     expect(await screen.findByText("hi", { selector: "p" })).toBeInTheDocument();
+    expect(eq).not.toHaveBeenCalledWith("store_id", expect.any(String));
   });
   it("shows a load error instead of claiming no conversations", async () => {
     setup(new Error("failed")); mount();

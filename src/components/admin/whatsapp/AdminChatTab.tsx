@@ -336,10 +336,10 @@ export function AdminChatTab() {
                       <span className="text-[11px] text-muted-foreground shrink-0 ml-2">{formatListDate(conv.lastMessage.created_at)}</span>
                     </div>
                     <div className="flex items-center justify-between mt-0.5">
-                      <p className="text-[12px] text-muted-foreground truncate flex-1">
+                      <div className="text-[12px] text-muted-foreground truncate flex-1">
                         <Badge variant="outline" className="text-[9px] mr-1 py-0">{conv.storeName}</Badge>
                         {prettyTemplateName(conv.lastMessage.message_body)?.slice(0, 32)}
-                      </p>
+                      </div>
                       {conv.unread > 0 && (
                         <span className="ml-2 h-5 min-w-[20px] rounded-full bg-[hsl(142,72%,40%)] text-white text-[11px] font-bold flex items-center justify-center px-1.5">
                           {conv.unread}
