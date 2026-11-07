@@ -34,7 +34,7 @@ type NavGroup = { label: string; items: NavItem[] };
 
 export default function AdminWhatsApp() {
   const { isPlatformOnly } = useWhatsAppMode();
-  const [activeTab, setActiveTab] = useState("platform");
+  const [activeTab, setActiveTab] = useState("chat");
   useDocumentTitle("WhatsApp · Admin");
 
   const groups: NavGroup[] = [
