@@ -184,41 +184,41 @@ export default function HindiShoppingVoice({ storeId, storeSlug }: { storeId: st
 
   if (panel === "bubble") return createPortal(
     <aside ref={boxRef} lang="hi" data-hindi-voice={clip} style={placement} className={`fixed z-30 ${pos ? "" : "right-2 top-28 sm:right-4"}`}>
-      <button type="button" {...dragProps} aria-label="हिंदी सहायक खोलें" title="हिंदी सहायक खोलें (खींचकर कहीं भी रखें)" className="relative flex h-11 w-11 cursor-grab items-center justify-center rounded-full border border-border bg-primary text-primary-foreground shadow-lg active:cursor-grabbing">
-        <Headphones className="h-5 w-5" />
-        {busy && <span className="absolute -right-0.5 -top-0.5 h-3 w-3 animate-pulse rounded-full border-2 border-background bg-accent" />}
+      <button type="button" {...dragProps} aria-label="हिंदी सहायक खोलें" title="हिंदी सहायक खोलें (खींचकर कहीं भी रखें)" className="relative flex h-9 w-9 cursor-grab items-center justify-center rounded-full border border-border bg-primary text-primary-foreground shadow-md active:cursor-grabbing">
+        <Headphones className="h-4 w-4" />
+        {busy && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 animate-pulse rounded-full border-2 border-background bg-accent" />}
       </button>
     </aside>, document.body,
   );
 
   return createPortal(
-    <aside ref={boxRef} lang="hi" data-hindi-voice={clip} style={placement} className={`fixed z-30 w-[min(260px,calc(100vw-16px))] overflow-hidden rounded-xl border border-border bg-background/95 text-foreground shadow-lg backdrop-blur ${pos ? "" : "right-2 top-28 sm:right-4"}`}>
-      <div className="flex items-center gap-1 bg-primary px-1.5 py-1 text-primary-foreground">
-        <span {...dragProps} aria-label="खींचकर जगह बदलें" title="खींचकर जगह बदलें" className="flex cursor-grab items-center gap-1 rounded px-1 py-1 active:cursor-grabbing">
-          <GripVertical className="h-4 w-4 opacity-80" />
-          <Headphones className="h-4 w-4" />
-          <span className="text-xs font-semibold">हिंदी सहायक</span>
+    <aside ref={boxRef} lang="hi" data-hindi-voice={clip} style={placement} className={`fixed z-30 w-[min(190px,calc(100vw-16px))] overflow-hidden rounded-lg border border-border bg-background/95 text-foreground shadow-md backdrop-blur ${pos ? "" : "right-2 top-28 sm:right-4"}`}>
+      <div className="flex items-center gap-0.5 bg-primary px-1 py-0.5 text-primary-foreground">
+        <span {...dragProps} aria-label="खींचकर जगह बदलें" title="खींचकर जगह बदलें" className="flex cursor-grab items-center gap-0.5 rounded px-0.5 py-0.5 active:cursor-grabbing">
+          <GripVertical className="h-3 w-3 opacity-80" />
+          <Headphones className="h-3 w-3" />
+          <span className="text-[10px] font-semibold leading-3">हिंदी सहायक</span>
         </span>
         <span className="flex-1" />
-        <button type="button" aria-label="छोटा करें" title="छोटा करें" onClick={() => { changePanel("bubble"); setExpanded(false); }} className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-primary-foreground/15"><Minus className="h-4 w-4" /></button>
-        <button type="button" aria-label="पूरी तरह हटाएँ" title="पूरी तरह हटाएँ" onClick={() => { setEnabled(false); stop(); changePanel("closed"); }} className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-primary-foreground/15"><X className="h-4 w-4" /></button>
+        <button type="button" aria-label="छोटा करें" title="छोटा करें" onClick={() => { changePanel("bubble"); setExpanded(false); }} className="flex h-5 w-5 items-center justify-center rounded-full hover:bg-primary-foreground/15"><Minus className="h-3 w-3" /></button>
+        <button type="button" aria-label="पूरी तरह हटाएँ" title="पूरी तरह हटाएँ" onClick={() => { setEnabled(false); stop(); changePanel("closed"); }} className="flex h-5 w-5 items-center justify-center rounded-full hover:bg-primary-foreground/15"><X className="h-3 w-3" /></button>
       </div>
-      <div className="flex items-center gap-2 px-2 py-2">
-        <Button size="icon" className="h-9 w-9 shrink-0 rounded-full" aria-label={busy ? "आवाज़ रोकें" : "हिंदी में सुनें"} onClick={() => {
+      <div className="flex items-center gap-1 px-1 py-1">
+        <Button size="icon" className="h-7 w-7 shrink-0 rounded-full" aria-label={busy ? "आवाज़ रोकें" : "हिंदी में सुनें"} onClick={() => {
           if (busy) { setEnabled(false); stop(); } else { setEnabled(true); play(true); }
         }}>
-          {loading ? <Loader2 className="animate-spin" /> : playing ? <Pause /> : <Play />}
+          {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
         </Button>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium leading-4">{playing ? "सुन रहे हैं…" : waitingTap ? "स्क्रीन छूते ही आवाज़ शुरू होगी" : error ? "आवाज़ के लिए दबाइए" : "हिंदी में सुनें"}</p>
-          {playing && <div className="mt-1 flex h-2 items-end gap-0.5" aria-hidden>{[0, 1, 2, 3, 4].map(i => <span key={i} className="w-1 animate-pulse rounded-sm bg-primary" style={{ height: `${40 + ((i * 37) % 60)}%`, animationDelay: `${i * 120}ms` }} />)}</div>}
+          <p className="truncate text-[10px] font-medium leading-3">{playing ? "सुन रहे हैं…" : waitingTap ? "छूते ही आवाज़ शुरू" : error ? "आवाज़ के लिए दबाइए" : "हिंदी में सुनें"}</p>
+          {playing && <div className="mt-0.5 flex h-1.5 items-end gap-0.5" aria-hidden>{[0, 1, 2, 3, 4].map(i => <span key={i} className="w-0.5 animate-pulse rounded-sm bg-primary" style={{ height: `${40 + ((i * 37) % 60)}%`, animationDelay: `${i * 120}ms` }} />)}</div>}
         </div>
-        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="फिर से सुनें" title="फिर से सुनें" onClick={() => { setEnabled(true); play(true); }}><RotateCcw className="h-4 w-4" /></Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="हिंदी निर्देश पढ़ें" title="हिंदी निर्देश पढ़ें" aria-expanded={expanded} onClick={() => setExpanded(value => !value)}>{expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}</Button>
+        <Button variant="ghost" size="icon" className="h-6 w-6" aria-label="फिर से सुनें" title="फिर से सुनें" onClick={() => { setEnabled(true); play(true); }}><RotateCcw className="h-3 w-3" /></Button>
+        <Button variant="ghost" size="icon" className="h-6 w-6" aria-label="हिंदी निर्देश पढ़ें" title="हिंदी निर्देश पढ़ें" aria-expanded={expanded} onClick={() => setExpanded(value => !value)}>{expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}</Button>
       </div>
-      {expanded && <div className="max-h-[35vh] overflow-y-auto border-t border-border px-3 py-2">
-        {currentCheckout?.stage === "payment" && currentCheckout.mode === "partial" && <p className="mb-2 text-sm font-semibold">अभी ₹{currentCheckout.amount} · डिलीवरी पर ₹{currentCheckout.balance}</p>}
-        <p className="text-sm leading-6">{hindiVoiceScripts[clip]}</p>
+      {expanded && <div className="max-h-[35vh] overflow-y-auto border-t border-border px-2 py-1.5">
+        {currentCheckout?.stage === "payment" && currentCheckout.mode === "partial" && <p className="mb-1 text-xs font-semibold">अभी ₹{currentCheckout.amount} · डिलीवरी पर ₹{currentCheckout.balance}</p>}
+        <p className="text-xs leading-5">{hindiVoiceScripts[clip]}</p>
       </div>}
     </aside>, document.body,
   );
