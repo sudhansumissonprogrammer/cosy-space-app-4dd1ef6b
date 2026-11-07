@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "asset_id": "e4428d3b-a8bf-49d8-b618-6a8889938567",
+  "asset_id": "5ecbdd49-ffe7-4f1b-9a7d-d9d56269c6c3",
   "project_id": "9e0e1986-9137-471c-8208-6cea82b9c0a2",
-  "url": "/__l5e/assets-v1/e4428d3b-a8bf-49d8-b618-6a8889938567/hindi-guide-product.mp3",
-  "r2_key": "a/v1/9e0e1986-9137-471c-8208-6cea82b9c0a2/e4428d3b-a8bf-49d8-b618-6a8889938567/hindi-guide-product.mp3",
-  "original_filename": "hindi-guide-product.mp3",
-  "size": 90093,
+  "url": "/__l5e/assets-v1/5ecbdd49-ffe7-4f1b-9a7d-d9d56269c6c3/hindi-guide-product-v2.mp3",
+  "r2_key": "a/v1/9e0e1986-9137-471c-8208-6cea82b9c0a2/5ecbdd49-ffe7-4f1b-9a7d-d9d56269c6c3/hindi-guide-product-v2.mp3",
+  "original_filename": "hindi-guide-product-v2.mp3",
+  "size": 86829,
   "content_type": "audio/mpeg",
-  "created_at": "2026-11-07T12:42:54Z"
+  "created_at": "2026-11-07T13:27:27Z"
 }
