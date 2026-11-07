@@ -9,6 +9,7 @@ import StorefrontAutoLogin from "@/components/storefront/StorefrontAutoLogin";
 import AutoFreeGiftGate from "@/components/storefront/AutoFreeGiftGate";
 import { useStoreEnabledApps } from "@/hooks/useStoreEnabledApps";
 import { hasStorefrontApp } from "@/lib/storefrontCapabilities";
+import { hasHindiShoppingVoice } from "@/lib/hindiShoppingVoice";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useThemePreview } from "@/hooks/useThemePreview";
 import { useMetaTags } from "@/hooks/useMetaTags";
@@ -44,6 +45,7 @@ import SideCartGate from "@/components/storefront/SideCartGate";
  * "double skeleton" flash and to ship less JS per theme.
  */
 const TrustVideoLauncher = lazy(() => import("@/components/storefront/trust/TrustVideoLauncher"));
+const HindiShoppingVoice = lazy(() => import("@/components/storefront/HindiShoppingVoice"));
 const DynamicPwaManifest = lazy(() => import("@/components/storefront/DynamicPwaManifest"));
 const SmartInstallPrompt = lazy(() => import("@/components/SmartInstallPrompt"));
 const ExitIntentPopup = lazy(() => import("@/components/storefront/ExitIntentPopup"));
@@ -475,6 +477,11 @@ export default function StorefrontShell({
     <div className={`${wrapperClassName}${usesWideMobileCards(store) ? " sf-kalinga-mobile" : ""}`} style={mergedStyle} data-storefront-ready="true">
       <LanguageStrip />
       {children(renderProps)}
+      {overlaysReady && hasHindiShoppingVoice(store) && (
+        <Suspense fallback={null}>
+          <HindiShoppingVoice key={store.id} storeId={store.id} storeSlug={store.slug} />
+        </Suspense>
+      )}
 
       {/* Lazy overlays — shared across all themes */}
       {/* PWA install prompts temporarily disabled */}
