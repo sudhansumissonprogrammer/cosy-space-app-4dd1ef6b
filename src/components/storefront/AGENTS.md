@@ -1,0 +1,2 @@
+# Voice guidance
+- Hindi guidance is permanent-store-ID-gated and lazy prerecorded CDN audio; gesture-enabled playback cancels on route, field or media changes, and reads selected checkout amounts without modifying payment policy.

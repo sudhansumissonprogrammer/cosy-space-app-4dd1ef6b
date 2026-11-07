@@ -4401,12 +4401,12 @@ export default function CheckoutV2Page() {
     publishVoiceCheckout({
       storeId: store.id,
       stage: loading ? "loading" : orderPlaced ? "success" : waiting || confirmingPayment ? "waiting" : paymentFailed ? "failed" : needsCheckoutPhoneScreen(store, phone) ? "phone" : showAddressFormSheet || !addressComplete ? "address" : "payment",
-      mode: payMethod === "cod" ? "cod" : isPartialOrder ? "partial" : "full",
+      mode: isPartialOrder ? "partial" : "full",
       amount: chargeAmount,
       balance: isPartialOrder ? partialBalanceDue : 0,
     });
     return () => publishVoiceCheckout(null);
-  }, [store.id, isSingleMode, buyNowProductLoading, buyNowProduct, paymentConfigFetched, orderPlaced, waiting, confirmingPayment, paymentFailed, phone, showAddressFormSheet, addressComplete, payMethod, isPartialOrder, chargeAmount, partialBalanceDue]);
+  }, [store.id, isSingleMode, buyNowProductLoading, buyNowProduct, paymentConfigFetched, orderPlaced, waiting, confirmingPayment, paymentFailed, phone, showAddressFormSheet, addressComplete, isPartialOrder, chargeAmount, partialBalanceDue]);
 
   if ((isSingleMode && buyNowProductLoading && !buyNowProduct) || (isUtkalPackaging && packagingRequests.length > 0 && packagingCheck.isPending)) {
     return (
