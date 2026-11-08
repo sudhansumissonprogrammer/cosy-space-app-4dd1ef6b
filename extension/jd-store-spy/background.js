@@ -1,7 +1,6 @@
 // JD Store Spy — background service worker
-// Role: proxies all platform API calls so the content script bypasses the
-// storefront's CORS restrictions, and detects whether the active tab is a
-// JD-hosted store (even on a custom domain).
+// Only the bundled directory is available. API scanning is disabled because
+// private platform credentials cannot be protected inside a browser extension.
 
 const API_BASE = "https://byeetjlpwzpy.jdwebnship.in/api";
 const API_KEY = "9e5a4f4b49da226ab3b1bc396020bf831cb3c14584ced963";
