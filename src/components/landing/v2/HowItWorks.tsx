@@ -3,7 +3,7 @@ const steps = [
   { n: "02", title: "Plug in integrations", body: "UPI, Razorpay, Cashfree, Shiprocket, Delhivery, WhatsApp Business — connected in clicks, not days." },
   { n: "03", title: "Set up WhatsApp", body: "Order updates, COD confirmation and abandoned-cart recovery go out automatically on WhatsApp." },
   { n: "04", title: "Activate logistics", body: "Auto-assign couriers by pincode, RTO score and weight. AI calls high-risk COD before pickup." },
-  { n: "05", title: "Watch the data unify", body: "Every order, recovery call and delivery in one timeline. Pay a flat 3% on every sale." },
+  { n: "05", title: "Watch the data unify", body: "Every order, recovery call and delivery in one timeline. Pay a flat 2% on every sale." },
 ];
 
 const HowItWorks = () => (
