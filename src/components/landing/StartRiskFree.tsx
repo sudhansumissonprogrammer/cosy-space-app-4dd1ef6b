@@ -1,6 +1,6 @@
 import { Check, ArrowRight } from "lucide-react";
 
-const points = ["₹0 subscription", "No setup cost", "Cancel anytime", "Flat 3% per order", "Full support included"];
+const points = ["₹0 subscription", "No setup cost", "Cancel anytime", "Flat 2% per order", "Full support included"];
 
 const StartRiskFree = () => {
   return (
