@@ -9,11 +9,4 @@
       <div style="color:#6b7280;font-size:11px">${x.host}${x.phone ? " · " + x.phone : ""}</div></div>`).join("") || '<div style="color:#6b7280;padding:20px 0;text-align:center">No match</div>';
   };
   q.addEventListener("input", draw); draw();
-  document.getElementById("scan").addEventListener("click", async () => {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab?.id) return;
-    await chrome.scripting.insertCSS({ target: { tabId: tab.id }, files: ["panel.css"] });
-    await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content.js"] });
-    window.close();
-  });
 })();
