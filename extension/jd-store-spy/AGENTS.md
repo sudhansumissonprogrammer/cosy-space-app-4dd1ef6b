@@ -1,0 +1,2 @@
+# Extension credential safety
+- Keep API-backed scanning disabled unless JD supplies a secret-free public client contract; never bundle private credentials or proxy arbitrary API paths because extensions cannot hide secrets.
